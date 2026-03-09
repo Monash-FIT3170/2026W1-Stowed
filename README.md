@@ -8,3 +8,4 @@
 - Hamzah Khan: hkha0037@student.monash.edu
 - Jason Huang: jhua0160@student.monash.edu
 - Andrew Ho: ahoo0035@student.monash.edu
+- Jessica Pianta: jpia0005@student.monash.edu
