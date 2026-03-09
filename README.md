@@ -7,3 +7,4 @@
 - Selena Xue Yue Tan: stan0231@student.monash.edu
 - Hamzah Khan: hkha0037@student.monash.edu
 - Jason Huang: jhua0160@student.monash.edu
+- Andrew Ho: ahoo0035@student.monash.edu
