@@ -11,3 +11,4 @@
 - Jessica Pianta: jpia0005@student.monash.edu
 - Chi Cheng (Ivana) Chan: ccha0249@student.monash.edu
 - Jordan Leong: jleo0051@student.monash.edu
+- Sameeksha Manjunath: sman0077@student.monash.edu
