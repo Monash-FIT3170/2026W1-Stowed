@@ -1,37 +1,22 @@
-import { Meteor } from 'meteor/meteor';
-import { LinksCollection } from '/imports/api/links';
+import { Meteor } from "meteor/meteor";
+import '/imports/api/itemMethods';
+import { Items } from "/imports/api/items";
 
-async function insertLink({ title, url }) {
-  await LinksCollection.insertAsync({ title, url, createdAt: new Date() });
+async function addItem({ name, quantity, location }) {
+  await Items.insertAsync({ name, quantity, location });
 }
 
 Meteor.startup(async () => {
-  // If the Links collection is empty, add some data.
-  if (await LinksCollection.find().countAsync() === 0) {
-    await insertLink({
-      title: 'Do the Tutorial',
-      url: 'https://react-tutorial.meteor.com/simple-todos/01-creating-app.html',
-    });
+  const itemCount = await Items.find().countAsync();
 
-    await insertLink({
-      title: 'Follow the Guide',
-      url: 'http://guide.meteor.com',
-    });
-
-    await insertLink({
-      title: 'Read the Docs',
-      url: 'https://docs.meteor.com',
-    });
-
-    await insertLink({
-      title: 'Discussions',
-      url: 'https://forums.meteor.com',
-    });
+  if(itemCount == 0) {
+    addItem({ name: "Boxes", quantity: 5, location: "Shelf 1" });
+    addItem({ name: "Tools", quantity: 7, location: "Shelf 2" });
+    addItem({ name: "Batteries", quantity: 12, location: "Shelf 4" });
   }
 
-  // We publish the entire Links collection to all clients.
-  // In order to be fetched in real-time to the clients
-  Meteor.publish("links", function () {
-    return LinksCollection.find();
+  Meteor.publish('items', function () {
+    return Items.find();
   });
+
 });
