@@ -3,13 +3,17 @@ name: CI
 on:
   push:
     branches: [develop]
-  pull_request:
 
 jobs:
-  check:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run basic check
-        run: echo "CI is working"
+      - name: Install dependencies and run tests
+        run: |
+          curl https://install.meteor.com/?release=3.0.4 | sh
+          export PATH="$HOME/.meteor:$PATH"
+          cd Stowed
+          npm ci
+          npm test
