@@ -1,2 +1,1 @@
-import "./smoke.test";
-import "./itemDetail.test";
+import "./smoke.test.js";
