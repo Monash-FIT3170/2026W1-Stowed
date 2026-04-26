@@ -1,23 +1,33 @@
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
-import { ItemList } from './ItemList';
-import { ItemForm } from './ItemForm';
-
+import { Sidebar } from './Sidebar';
+import { InventoryPage }  from './pages/InventoryPage';
+import { ItemDetailPage } from './pages/ItemDetailPage';
+import { FloorMapPage }   from './pages/FloorMapPage';
+import { ListsPage }      from './pages/ListsPage';
+import { StocktakePage }  from './pages/StocktakePage';
+import { QRCodesPage }    from './pages/QRCodesPage';
+import { ForecastPage }   from './pages/ForecastPage';
+import { AlertsPage }     from './pages/AlertsPage';
 
 export function App() {
-    return (
-        <BrowserRouter>
-            <main className='min-h-screen bg-slate-50 text-slate-900'>
-                <section className='mx-auto w-full px-4 py-10 md:px-6'>
-                    <h1 className='mb-4 text-center text-4xl font-bold tracking-tight text-blue-700'>Inventory Management</h1>
-                    <div className='mb-8 w-full border-t-2 border-slate-300'/>
-                    <Routes>
-                        <Route path='/' element={<ItemList />} />
-                        <Route path='/items/new' element={<ItemForm/>} />
-                        <Route path='/items/:itemId/edit' element={<ItemForm mode='edit' />} />
-                        <Route path='*' element={<Navigate to='/' replace/>} />
-                    </Routes>
-                </section>
-            </main>
-        </BrowserRouter>
-    );
+  return (
+    <BrowserRouter>
+      <div className="flex h-screen overflow-hidden bg-white">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          <Routes>
+            <Route path="/"                    element={<InventoryPage />} />
+            <Route path="/inventory/:itemId"   element={<ItemDetailPage />} />
+            <Route path="/floor-map"           element={<FloorMapPage />} />
+            <Route path="/lists"               element={<ListsPage />} />
+            <Route path="/stocktake"           element={<StocktakePage />} />
+            <Route path="/qr-codes"            element={<QRCodesPage />} />
+            <Route path="/forecast"            element={<ForecastPage />} />
+            <Route path="/alerts"              element={<AlertsPage />} />
+            <Route path="*"                    element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
 }
