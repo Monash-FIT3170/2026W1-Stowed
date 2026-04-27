@@ -4,11 +4,14 @@ import { StatusBadge } from "../components/StatusBadge";
 
 // Inline placeholder data — replace with import from imports/api/mockLowStockItems once cherry-picked
 const PLACEHOLDER_ITEMS = [
-  { _id: "1", name: "AAA Battery Pack", quantity: 50, lowStockThreshold: 10, location: "Aisle 4 - Section 1" },
-  { _id: "2", name: "Safety Helmet",    quantity: 5,  lowStockThreshold: 10, location: "Aisle 3 - Section 2" },
-  { _id: "3", name: "Hard Hat Liner",   quantity: 0,  lowStockThreshold: 5,  location: "Aisle 3 - Section 3" },
-  { _id: "4", name: "Work Gloves",      quantity: 25, lowStockThreshold: 25, location: "Aisle 2 - Section 1" },
-  { _id: "5", name: "Steel Toe Boots",  quantity: 100, lowStockThreshold: 20, location: "Aisle 1 - Section 4" },
+  { _id: "1", name: "AAA Battery Pack", tag: "electrical",  quantity: 50,  lowStockThreshold: 10, location: "Aisle 4 - Section 1" },
+  { _id: "2", name: "Safety Helmet",    tag: "safety",      quantity: 5,   lowStockThreshold: 10, location: "Aisle 3 - Section 2" },
+  { _id: "3", name: "Hard Hat Liner",   tag: "safety",      quantity: 0,   lowStockThreshold: 5,  location: "Aisle 3 - Section 3" },
+  { _id: "4", name: "Work Gloves",      tag: "safety",      quantity: 25,  lowStockThreshold: 25, location: "Aisle 2 - Section 1" },
+  { _id: "5", name: "Steel Toe Boots",  tag: "safety",      quantity: 100, lowStockThreshold: 20, location: "Aisle 1 - Section 4" },
+  { _id: "6", name: "Hex bolts M8",     tag: "fasteners",   quantity: 4,   lowStockThreshold: 25, location: "Cabinet 2" },
+  { _id: "7", name: "Wood screws",      tag: "fasteners",   quantity: 0,   lowStockThreshold: 50, location: "Drawer 3" },
+  { _id: "8", name: "Cable ties 200mm", tag: "misc",        quantity: 3,   lowStockThreshold: 30, location: "Bin 2" },
 ];
 
 function getLowStockPlaceholder(items) {
@@ -33,7 +36,12 @@ export function InventoryListPage() {
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      items = items.filter((item) => item.name.toLowerCase().includes(query));
+      items = items.filter((item) => {
+        const name = (item.name || "").toLowerCase();
+        const tag = (item.tag || "").toLowerCase();
+        const id = (item._id || "").toLowerCase();
+        return name.includes(query) || tag.includes(query) || id.includes(query);
+      });
     }
 
     return items;
@@ -43,8 +51,8 @@ export function InventoryListPage() {
 
   const filters = [
     { id: "all", label: "All", count: PLACEHOLDER_ITEMS.length },
-    { id: "low-stock", label: "Low stock", count: lowStockCount },
-    { id: "category", label: "Category ▾" },
+    { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
+    { id: "tag", label: "Tag ▾" },
     { id: "location", label: "Location ▾" },
   ];
 
@@ -70,7 +78,7 @@ export function InventoryListPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Find anything…"
+          placeholder="Search by ID, name, or tag"
           style={{
             flex: 1,
             background: "#F5EFE6",
@@ -120,6 +128,7 @@ export function InventoryListPage() {
         }}
       >
         <span>Item</span>
+        <span>Tag</span>
         <span>Location</span>
         <span>Stock</span>
         <span>Status</span>
@@ -143,6 +152,20 @@ export function InventoryListPage() {
             }}
           >
             <span>{item.name}</span>
+            <span>
+              <span
+                style={{
+                  background: "#F5EFE6",
+                  color: "#5C4F3F",
+                  padding: "2px 8px",
+                  borderRadius: "10px",
+                  fontSize: "10px",
+                  fontWeight: 500,
+                }}
+              >
+                {item.tag || "—"}
+              </span>
+            </span>
             <span style={{ color: "#998874" }}>{item.location}</span>
             <span>
               {item.quantity}/{item.lowStockThreshold}
