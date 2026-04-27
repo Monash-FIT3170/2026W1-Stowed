@@ -13,13 +13,13 @@ import {
  * This publication supports the location setup flow:
  * Site -> FloorMap -> StorageUnit -> StorageLocation
  *
- * Only authenticated users can access location data. If the user is not
- * logged in, no documents are published.
+ * In development, unauthenticated access is allowed so the location UI can be
+ * exercised without wiring a full auth flow first.
  *
- * @returns {Mongo.Cursor[]|void} Location-related cursors for authenticated users.
+ * @returns {Mongo.Cursor[]|void} Location-related cursors.
  */
 Meteor.publish('locations.all', function () {
-  if (!this.userId) {
+  if (!this.userId && !Meteor.isDevelopment) {
     return this.ready();
   }
 

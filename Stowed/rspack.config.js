@@ -1,11 +1,7 @@
 const { defineConfig } = require("@meteorjs/rspack");
 
-module.exports = defineConfig((Meteor) => {
+module.exports = defineConfig(() => {
   return {
-    devServer: {
-      port: 3001, // change from 8080 → avoids conflict
-    },
-
     module: {
       rules: [
         {

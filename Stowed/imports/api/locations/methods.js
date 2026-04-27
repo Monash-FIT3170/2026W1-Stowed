@@ -22,17 +22,21 @@ Meteor.methods({
    * @param {string} [params.description=''] - Optional description of the site.
    * @returns {string} The ID of the created site document.
    *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in.
+   *
+   * In development, unauthenticated access is allowed so the location UI can be
+   * exercised without wiring a full auth flow first.
+   *
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    */
-  'sites.create'({ name, description = '' }) {
+  async 'sites.create'({ name, description = '' }) {
     check(name, String);
     check(description, String);
 
-    if (!this.userId) {
+    if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
-    return Sites.insert({
+    return Sites.insertAsync({
       name,
       description,
       createdAt: new Date(),
@@ -52,26 +56,26 @@ Meteor.methods({
    * @param {string} [params.imageUrl=''] - Optional URL/path for the floor map image.
    * @returns {string} The ID of the created floor map document.
    *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in.
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-site if the parent Site does not exist.
    */
-  'floorMaps.create'({ siteId, name, imageUrl = '' }) {
+  async 'floorMaps.create'({ siteId, name, imageUrl = '' }) {
     check(siteId, String);
     check(name, String);
     check(imageUrl, String);
 
-    if (!this.userId) {
+    if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
     // Prevent orphaned floor maps by ensuring the parent Site exists first.
-    const site = Sites.findOne(siteId);
+    const site = await Sites.findOneAsync(siteId);
 
     if (!site) {
       throw new Meteor.Error('invalid-site', 'Site does not exist.');
     }
 
-    return FloorMaps.insert({
+    return FloorMaps.insertAsync({
       siteId,
       name,
       imageUrl,
@@ -97,27 +101,27 @@ Meteor.methods({
    * @param {number} params.position.height - Height of the unit on the floor map.
    * @returns {string} The ID of the created storage unit document.
    *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in.
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-floor-map if the parent FloorMap does not exist.
    */
-  'storageUnits.create'({ floorMapId, name, type, position }) {
+  async 'storageUnits.create'({ floorMapId, name, type, position }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
     check(position, Object);
 
-    if (!this.userId) {
+    if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
     // Prevent orphaned storage units by ensuring the parent FloorMap exists first.
-    const floorMap = FloorMaps.findOne(floorMapId);
+    const floorMap = await FloorMaps.findOneAsync(floorMapId);
 
     if (!floorMap) {
       throw new Meteor.Error('invalid-floor-map', 'Floor map does not exist.');
     }
 
-    return StorageUnits.insert({
+    return StorageUnits.insertAsync({
       floorMapId,
       name,
       type,
@@ -139,26 +143,26 @@ Meteor.methods({
    * @param {string} params.code - Short unique/code-style label for the location.
    * @returns {string} The ID of the created storage location document.
    *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in.
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-storage-unit if the parent StorageUnit does not exist.
    */
-  'storageLocations.create'({ storageUnitId, name, code }) {
+  async 'storageLocations.create'({ storageUnitId, name, code }) {
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
 
-    if (!this.userId) {
+    if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
     // Prevent orphaned storage locations by ensuring the parent StorageUnit exists first.
-    const storageUnit = StorageUnits.findOne(storageUnitId);
+    const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
 
     if (!storageUnit) {
       throw new Meteor.Error('invalid-storage-unit', 'Storage unit does not exist.');
     }
 
-    return StorageLocations.insert({
+    return StorageLocations.insertAsync({
       storageUnitId,
       name,
       code,
