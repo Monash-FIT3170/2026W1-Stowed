@@ -8,10 +8,12 @@ import { StocktakePage }  from './pages/StocktakePage';
 import { QRCodesPage }    from './pages/QRCodesPage';
 import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
+import { FloorMapPage }  from './pages/FloorMapPage';
 
-const FloorMapPage = lazy(() =>
-  import('./pages/FloorMapPage').then((module) => ({ default: module.FloorMapPage })),
+const LocationsPage = lazy(() =>
+  import('./pages/LocationsPage').then((module) => ({ default: module.LocationsPage })),
 );
+
 
 export function App() {
   return (
@@ -24,6 +26,7 @@ export function App() {
               <Route path="/"                    element={<InventoryPage />} />
               <Route path="/inventory/:itemId"   element={<ItemDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
+              <Route path="/locations"           element={<LocationsPage />} />
               <Route path="/lists"               element={<ListsPage />} />
               <Route path="/stocktake"           element={<StocktakePage />} />
               <Route path="/qr-codes"            element={<QRCodesPage />} />

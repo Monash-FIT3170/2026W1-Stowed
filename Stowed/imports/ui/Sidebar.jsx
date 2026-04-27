@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 
 const WORKSPACE_LINKS = [
-  { to: '/floor-map', label: 'Locations' },
+  { to: '/locations', label: 'Locations' },
+  { to: '/floor-map', label: 'Floor Map' },
   { to: '/',          label: 'Inventory' },
   { to: '/stocktake', label: 'Stocktake' },
   { to: '/lists', label: 'Lists' },
