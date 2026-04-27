@@ -11,9 +11,11 @@ import React from "react";
 export function StatusBadge({ quantity, threshold }) {
   let label;
   let style;
+  let icon = "";
 
   if (quantity <= threshold) {
     label = "Low!";
+    icon = "⚠ ";
     style = { background: "#F8DDD2", color: "#B5532A" };
   } else if (quantity <= threshold * 1.5) {
     label = "Getting low";
@@ -34,7 +36,7 @@ export function StatusBadge({ quantity, threshold }) {
         display: "inline-block",
       }}
     >
-      {label}
+      {icon}{label}
     </span>
   );
 }
