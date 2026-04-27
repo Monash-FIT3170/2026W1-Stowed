@@ -1,14 +1,21 @@
 import { useRef, useState, useEffect, forwardRef } from "react";
 import { COLOURS } from "../Colours";
 
+// --- CONSTANTS ---
 const METERS_PER_CELL = 1;
 const PIXELS_PER_METER = 50;
-// test
+
 const TEST_WIDTH = 500;
 const TEST_HEIGHT = 500;
 const GRID_SIZE = PIXELS_PER_METER * METERS_PER_CELL;
 
+const TOOLS = {
+  SELECT : "select",
+  MOVE : "move",
+  DELETE : "delete"
+};
 
+// --- CANVAS ---
 // use forwardRef so FloorMapPage can pass ref in
 const Canvas = forwardRef(function Canvas({ style }, ref) {
   const internalRef = useRef(null);
@@ -61,6 +68,7 @@ const Canvas = forwardRef(function Canvas({ style }, ref) {
   );
 });
 
+// --- GRID LABELS ---
 function CLabels({width, height, gridSize}) {
   /**
    * Adds grid labels to canvas
@@ -104,34 +112,89 @@ function CLabels({width, height, gridSize}) {
   return <>{labels}</>; 
 }
 
+// --- TOOLS ---
+function Toolbar({activeTool, setActiveTool}) {
+  return (
+    <div style={{
+      display: "flex",
+      gap: "10px",
+      padding: "10px",
+      background: COLOURS.TOOL_BAR_COLOUR,
+      borderBottom: "1px solid #ccc",
+    }}
+    >
+      <button onClick={() => setActiveTool("select")}>
+        Select
+      </button>
+
+      <button onClick={() => setActiveTool("move")}>
+        Move
+      </button>
+
+      <button onClick={() => setActiveTool("delete")}>
+        Delete
+      </button>
+
+      <div style={{ marginLeft: "20px"}}>
+        Active Tool: <b>{activeTool}</b>
+      </div>
+    </div>
+  );
+}
+
 export function FloorMapPage() {
   const canvasRef = useRef(null);
+
+  const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
 
   return (
     <div
       style={{
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        flexDirection: "column",
         height: "100vh",
-        overflow: "auto",
       }}
     >
+      {/* TOOLBAR */}
+      <Toolbar
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+      />
 
-      <div style={{ position: "relative" }}>
-        <Canvas
-          ref={canvasRef}
-          style={{
-            width: `${TEST_WIDTH}px`,
-            height: `${TEST_HEIGHT}px`,
-            border: "2px solid #999",
-          }}
-        />
+      {/* CENTER AREA */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ position: "relative" }}>
+          <Canvas
+            ref={canvasRef}
+            style={{
+              width: `${TEST_WIDTH}px`,
+              height: `${TEST_HEIGHT}px`,
+              border: "2px solid #999",
+            }}
+          />
 
-        <div style={{ position: "absolute", top: 0, left: 0, zIndex: 10 }}>
-          <CLabels width={TEST_WIDTH} height={TEST_HEIGHT} gridSize={GRID_SIZE} />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              zIndex: 10,
+            }}
+          >
+            <CLabels
+              width={TEST_WIDTH}
+              height={TEST_HEIGHT}
+              gridSize={GRID_SIZE}
+            />
+          </div>
         </div>
-
       </div>
     </div>
   );
