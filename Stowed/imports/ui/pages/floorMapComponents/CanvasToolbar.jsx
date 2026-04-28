@@ -1,14 +1,24 @@
 import { useState } from "react"; 
-import { COLOURS } from "../../Colours";
+import { COLOURS } from "./FloorMapStyles";
 import { CANVAS_CONFIG } from "./Canvas";
 
+/**
+ * Toolbar component for selecting tools and adjusting floor dimensions
+ *
+ * @param {string} activeTool - Currently selected tool
+ * @param {(tool: string) => void} setActiveTool - State setter for updating the active tool
+ * @param {{ width: number, height: number }} floorSize - Floor dimensions in pixels
+ * @param {(updater: (prev: { width: number, height: number }) => { width: number, height: number }) => void} setFloorSize - State setter for updating floor dimensions
+ *
+ * @returns {JSX.Element} Toolbar UI element
+ */
 export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSize }) {
     // store input seperately from pixels to avoid crash
     const [inputMeters, setInputMeters] = useState({
       width: floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER,
       height: floorSize.height /  CANVAS_CONFIG.PIXELS_PER_METER,
     });
-  
+    
     return (
       <div style={{
         display: "flex",
