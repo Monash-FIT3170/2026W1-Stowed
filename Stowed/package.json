@@ -11,6 +11,7 @@
     "@babel/runtime": "^7.23.5",
     "@swc/helpers": "^0.5.17",
     "@tailwindcss/postcss": "^4.2.2",
+    "fuse.js": "^7.3.0",
     "meteor-node-stubs": "^1.2.12",
     "postcss": "^8.5.8",
     "postcss-load-config": "^6.0.1",

@@ -25,9 +25,20 @@ export function getMockItemDetailById(itemId) {
 
 
 export function searchForItemByNameOrDescription(inputString) {
-  return mockItemDetails.find(
-    (item) =>
-      item._name.toLowerCase() === inputString.toLowerCase() ||
-      item.description.toLowerCase() === inputString.toLowerCase()
-  ) || null;
+  import Fuse from "fuse.js";
+
+
+  const fuse = new Fuse(mockItemDetails, {
+    keys: ["name", "description"],
+    threshold: 0.4,
+  });
+
+  const lower = inputString.toLowerCase();
+
+  const results = fuse.search(inputString);
+  if (results.length > 0) {
+    return results[0].item;
+  }
+  return null;
 }
+
