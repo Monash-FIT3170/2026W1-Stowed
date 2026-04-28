@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+
+@layer base {
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+}
+
+
+@layer components {
+  .btn {
+    @apply cursor-pointer rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1;
+  }
+
+
+  .btn-primary {
+    @apply border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 focus-visible:ring-blue-400;
+  }
+
+
+  .btn-danger {
+    @apply border-red-300 bg-red-50 text-red-700 hover:bg-red-100 focus-visible:ring-red-400;
+  }
+
+
+  .btn-success {
+    @apply border-green-300 bg-green-50 text-green-700 hover:bg-green-100 focus-visible:ring-green-400;
+  }
+
+
+  .btn-secondary {
+    @apply border-slate-300 bg-white text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-400;
+  }
+
+
+  .form-input {
+    @apply w-full rounded-md border border-slate-300 px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400;
+  }
+
+
+  .form-label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+
+
+  .item-table {
+    @apply w-full border-collapse;
+  }
+
+
+  .item-table > thead > tr {
+    @apply bg-blue-700 text-white;
+  }
+
+
+  .item-table > thead > tr > th {
+    @apply border border-slate-400 px-5 py-4 text-left;
+  }
+
+
+  .item-table > tbody > tr > td {
+    @apply border border-slate-300 px-5 py-4;
+  }
+}
