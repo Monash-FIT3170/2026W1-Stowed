@@ -1,9 +1,31 @@
 import { Meteor } from 'meteor/meteor';
+import { check, Match } from 'meteor/check';
 import { Products } from './products';
 
-// Server RPC endpoints consumed by the React UI.
 Meteor.methods({
-  async 'products.create'({ name, description, totalQuantity }) {
+  /**
+   * Creates a new Product.
+   *
+   * A Product represents a type of inventory item tracked in the system.
+   * Once created, stock can be assigned to specific locations via ProductRecords.
+   *
+   * @param {Object} params
+   * @param {string} params.name - Name of the product.
+   * @param {string} [params.description=''] - Optional description of the product.
+   * @param {number} params.totalQuantity - Total quantity of stock received.
+   * @returns {string} The _id of the newly created product document.
+   *
+   * @throws {Meteor.Error} not-authorised - If the user is not logged in outside development.
+   */
+  async 'products.create'({ name, description = '', totalQuantity }) {
+    check(name, String);
+    check(description, String);
+    check(totalQuantity, Match.Integer);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
     const now = new Date();
     return await Products.insertAsync({
       name,
@@ -12,15 +34,5 @@ Meteor.methods({
       createdAt: now,
       updatedAt: now,
     });
-  },
-
-  async 'products.update'({ _id, name, description, totalQuantity }) {
-    await Products.updateAsync(_id, {
-      $set: { name, description, totalQuantity, updatedAt: new Date() },
-    });
-  },
-
-  async 'products.delete'({ _id }) {
-    await Products.removeAsync(_id);
   },
 });
