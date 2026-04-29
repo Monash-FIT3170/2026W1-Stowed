@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import {
@@ -9,6 +9,26 @@ import {
   StorageLocations,
 } from '/imports/api/locations/collections';
 
+// brief styling to be fixed later
+
+const inputStyle = {
+  padding: '6px 8px',
+  border: '1px solid #999',
+  borderRadius: '3px',
+  fontSize: '14px',
+  width: '100%',
+  boxSizing: 'border-box',
+};
+
+const buttonStyle = {
+  padding: '6px 14px',
+  border: '1px solid #333',
+  borderRadius: '3px',
+  cursor: 'pointer',
+  background: 'transparent',
+  fontSize: '14px',
+};
+
 const fieldStyle = {
   display: 'flex',
   flexDirection: 'column',
@@ -16,10 +36,10 @@ const fieldStyle = {
   marginBottom: '16px',
 };
 
-const dividerStyle = {
+const sectionStyle = {
   borderTop: '1px solid #ccc',
-  marginTop: '8px',
-  marginBottom: '16px',
+  marginTop: '24px',
+  paddingTop: '16px',
 };
 
 const assignmentRowStyle = {
@@ -40,16 +60,18 @@ function callMethod(methodName, params) {
 }
 
 // Builds a full readable path for a StorageLocation, e.g.:
-// "Warehouse A → Ground Floor → Shelf 1 → Box A"
+// "Main Warehouse → Ground Floor → Shelf A → Bay 1"
 function buildLocationLabel(location, storageUnits, floorMaps, sites) {
   const unit     = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit     ? floorMaps.find((f) => f._id === unit.floorMapId)  : null;
-  const site     = floorMap ? sites.find((s)     => s._id === floorMap.siteId)  : null;
+  const floorMap = unit     ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
+  const site     = floorMap ? sites.find((s) => s._id === floorMap.siteId)     : null;
 
   return [site?.name, floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
     .join(' → ');
 }
+
+// Component 
 
 export function CreateProductPage() {
   const navigate = useNavigate();
@@ -78,17 +100,16 @@ export function CreateProductPage() {
   }
 
   function updateAssignment(index, field, value) {
-    const updated = assignments.map((a, i) =>
+    setAssignments(assignments.map((a, i) =>
       i === index ? { ...a, [field]: value } : a
-    );
-    setAssignments(updated);
+    ));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
     try {
-      // Step 1: create the product, get back its new _id.
+      // Step 1: create the product and get back its new _id.
       const productId = await callMethod('products.create', {
         name,
         description,
@@ -113,98 +134,130 @@ export function CreateProductPage() {
     }
   }
 
-  function handleCancel() {
-    navigate('/');
-  }
+  const locationsExist = storageLocations.length > 0;
 
   return (
     <div style={{ padding: '24px', maxWidth: '560px' }}>
-      <h1>Create Product</h1>
+      <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '4px' }}>
+        Create Product
+      </h1>
+      <p style={{ marginBottom: '24px', color: '#555' }}>
+        Enter the product details below.
+      </p>
 
-      <form onSubmit={handleSubmit} style={{ marginTop: '16px' }}>
+      <form onSubmit={handleSubmit}>
 
-        {/* Product details */}
+        {/* ── Product details ── */}
         <div style={fieldStyle}>
-          <label htmlFor="name">Name</label>
+          <label htmlFor="name"><strong>Name</strong></label>
           <input
             id="name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            style={inputStyle}
           />
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="description">Description</label>
+          <label htmlFor="description"><strong>Description</strong></label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
           />
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="totalQuantity">Total Quantity</label>
+          <label htmlFor="totalQuantity"><strong>Total Quantity</strong></label>
           <input
             id="totalQuantity"
             type="number"
             min="0"
             value={totalQuantity}
             onChange={(e) => setTotalQuantity(e.target.value)}
+            style={{ ...inputStyle, maxWidth: '160px' }}
           />
         </div>
 
-        {/* Location assignments */}
-        <div style={dividerStyle} />
-        <h2>Assign to Locations</h2>
-        <p>Assign the received stock to one or more storage locations.</p>
+        {/* ── Location assignments ── */}
+        <div style={sectionStyle}>
+          <h2 style={{ fontSize: '17px', fontWeight: 'bold', marginBottom: '4px' }}>
+            Assign to Locations
+          </h2>
+          <p style={{ marginBottom: '16px', color: '#555' }}>
+            Assign the received stock to one or more storage locations.
+          </p>
 
-        {assignments.length === 0 && (
-          <p>No locations assigned yet.</p>
-        )}
+          {!locationsExist ? (
+            <p>
+              No storage locations have been set up yet.{' '}
+              <Link to="/locations">
+                <button type="button" style={buttonStyle}>
+                  Go to Locations
+                </button>
+              </Link>
+            </p>
+          ) : (
+            <>
+              {assignments.map((assignment, index) => (
+                <div key={index} style={assignmentRowStyle}>
+                  <select
+                    value={assignment.locationId}
+                    onChange={(e) => updateAssignment(index, 'locationId', e.target.value)}
+                    style={{ ...inputStyle, flex: 2 }}
+                  >
+                    <option value="">Select a location...</option>
+                    {storageLocations.map((location) => (
+                      <option key={location._id} value={location._id}>
+                        {buildLocationLabel(location, storageUnits, floorMaps, sites)}
+                      </option>
+                    ))}
+                  </select>
 
-        {assignments.map((assignment, index) => (
-          <div key={index} style={assignmentRowStyle}>
-            <select
-              value={assignment.locationId}
-              onChange={(e) => updateAssignment(index, 'locationId', e.target.value)}
-              style={{ flex: 2 }}
-            >
-              <option value="">Select a location...</option>
-              {storageLocations.map((location) => (
-                <option key={location._id} value={location._id}>
-                  {buildLocationLabel(location, storageUnits, floorMaps, sites)}
-                </option>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Qty"
+                    value={assignment.quantity}
+                    onChange={(e) => updateAssignment(index, 'quantity', e.target.value)}
+                    style={{ ...inputStyle, flex: 1, maxWidth: '80px' }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => removeAssignment(index)}
+                    style={buttonStyle}
+                  >
+                    Remove
+                  </button>
+                </div>
               ))}
-            </select>
 
-            <input
-              type="number"
-              min="0"
-              placeholder="Qty"
-              value={assignment.quantity}
-              onChange={(e) => updateAssignment(index, 'quantity', e.target.value)}
-              style={{ flex: 1 }}
-            />
+              <button
+                type="button"
+                onClick={addAssignment}
+                style={{ ...buttonStyle, marginTop: '4px' }}
+              >
+                + Add Location
+              </button>
+            </>
+          )}
+        </div>
 
-            <button type="button" onClick={() => removeAssignment(index)}>
-              Remove
-            </button>
-          </div>
-        ))}
-
-        {storageLocations.length === 0 ? (
-          <p>No storage locations have been set up yet. Add some in the Locations page first.</p>
-        ) : (
-          <button type="button" onClick={addAssignment} style={{ marginBottom: '16px' }}>
-            + Add Location
+        {/* ── Form actions ── */}
+        <div style={{ ...sectionStyle, display: 'flex', gap: '8px' }}>
+          <button type="submit" style={buttonStyle}>
+            Create
           </button>
-        )}
-
-        {/* Form actions */}
-        <div style={{ ...dividerStyle, display: 'flex', gap: '8px', paddingTop: '16px' }}>
-          <button type="submit">Create</button>
-          <button type="button" onClick={handleCancel}>Cancel</button>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            style={buttonStyle}
+          >
+            Cancel
+          </button>
         </div>
 
       </form>
