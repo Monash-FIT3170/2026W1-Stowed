@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { InventoryPage }  from './pages/InventoryPage';
-import { ItemDetailPage } from './pages/ItemDetailPage';
+import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ListsPage }      from './pages/ListsPage';
 import { StocktakePage }  from './pages/StocktakePage';
 import { QRCodesPage }    from './pages/QRCodesPage';
@@ -24,7 +24,7 @@ export function App() {
           <Suspense fallback={<div className="p-6 text-sm text-zinc-500">Loading…</div>}>
             <Routes>
               <Route path="/"                    element={<InventoryPage />} />
-              <Route path="/inventory/:itemId"   element={<ItemDetailPage />} />
+              <Route path="/inventory/:productId" element={<ProductDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
               <Route path="/locations"           element={<LocationsPage />} />
               <Route path="/lists"               element={<ListsPage />} />
