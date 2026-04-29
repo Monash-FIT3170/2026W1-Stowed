@@ -1,7 +1,11 @@
+import { Link } from 'react-router-dom';
+
 export function InventoryPage() {
   return (
     <div>
-      Inventory Page
+      <Link to="/inventory/new">
+        <button>New Product</button>
+      </Link>
     </div>
   );
 }
