@@ -12,6 +12,8 @@ async function addProduct({ name, description, totalQuantity }) {
 
 Meteor.startup(async () => {
 
+  //await Products.removeAsync({});  // TEMP: force reseed 
+
   const productCount = await Products.find().countAsync();
 
   if (productCount === 0) {
