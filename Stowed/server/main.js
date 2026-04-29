@@ -1,5 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import '/imports/api/productMethods';
+import '/imports/api/productRecordMethods';
 import { Products } from '/imports/api/products';
 import { ProductRecords } from '/imports/api/productRecords';
 import '/imports/api/locations/methods';
