@@ -31,7 +31,9 @@ export function InventoryPage() {
               <td style={{ padding: '8px 16px' }}>{product.description}</td>
               <td style={{ padding: '8px 16px' }}>{product.totalQuantity}</td>
               <td style={{ padding: '8px 16px' }}>
-                <button type="button">More</button>
+                <Link to={`/inventory/${product._id}`}>
+                  <button type="button">More</button>
+                </Link>
               </td>
             </tr>
           ))}

@@ -13,8 +13,10 @@ import {
 } from '/imports/api/locations/collections';
 
 //await Products.removeAsync({});  // TEMP: force reseed 
+//await ProductRecords.removeAsync({});
+//await Products.removeAsync({});
 
-// Both of these functions pre populate fields if empty, however can be removed later if needed 
+// These functions pre populate fields if empty, however can be removed later if needed 
 
 async function seedProducts() {
   const count = await Products.find().countAsync();
@@ -24,12 +26,28 @@ async function seedProducts() {
   const add = ({ name, description, totalQuantity }) =>
     Products.insertAsync({ name, description, totalQuantity, createdAt: now, updatedAt: now });
 
-  await add({ name: 'Cardboard Boxes', description: 'Medium-sized cardboard boxes used for general storage and shipping.', totalQuantity: 48  });
-  await add({ name: 'Hand Tools',      description: 'Assorted hand tools including hammers, screwdrivers, and wrenches.',   totalQuantity: 23  });
-  await add({ name: 'AA Batteries',    description: 'AA alkaline batteries, packed in sets of 4.',                          totalQuantity: 120 });
-  await add({ name: 'Safety Helmets',  description: 'Hard hats rated for construction site use.',                           totalQuantity: 15  });
-  await add({ name: 'Packing Tape',    description: 'Heavy-duty clear packing tape, 50mm wide.',                            totalQuantity: 60  });
-  await add({ name: 'Cable Ties',      description: 'Nylon cable ties in assorted sizes for bundling and organising.',      totalQuantity: 300 });
+  await add({ name: 'Cardboard Boxes', description: 'Medium-sized cardboard boxes used for general storage and shipping.', totalQuantity: 48 });
+  await add({ name: 'Cable Ties',      description: 'Nylon cable ties in assorted sizes for bundling and organising.',   totalQuantity: 23 });
+}
+
+async function seedProductRecords() {
+  const count = await ProductRecords.find().countAsync();
+  if (count > 0) return;
+
+  const cardboardBoxes = await Products.findOneAsync({ name: 'Cardboard Boxes' });
+  const handTools = await Products.findOneAsync({ name: 'Cable Ties' });
+  const sab1 = await StorageLocations.findOneAsync({ code: 'SA-B1' });
+  const sbb1 = await StorageLocations.findOneAsync({ code: 'SB-B1' });
+
+  if (!cardboardBoxes || !handTools || !sab1 || !sbb1) return;
+
+  const now = new Date();
+  // Cardboard Boxes: 30 at SA-B1, 18 at SB-B1 (total: 48)
+  await ProductRecords.insertAsync({ productId: cardboardBoxes._id, locationId: sab1._id, quantity: 30, createdAt: now, updatedAt: now });
+  await ProductRecords.insertAsync({ productId: cardboardBoxes._id, locationId: sbb1._id, quantity: 18, createdAt: now, updatedAt: now });
+  // Hand Tools: 15 at SA-B1, 8 at SB-B1 (total: 23)
+  await ProductRecords.insertAsync({ productId: handTools._id, locationId: sab1._id, quantity: 15, createdAt: now, updatedAt: now });
+  await ProductRecords.insertAsync({ productId: handTools._id, locationId: sbb1._id, quantity: 8,  createdAt: now, updatedAt: now });
 }
 
 async function seedLocations() {
@@ -82,6 +100,7 @@ async function seedLocations() {
 Meteor.startup(async () => {
   await seedProducts();
   await seedLocations();
+  await seedProductRecords();
 
   Meteor.publish('products', function () {
     return Products.find();
