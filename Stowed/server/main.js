@@ -11,12 +11,16 @@ async function addProduct({ name, description, totalQuantity }) {
 }
 
 Meteor.startup(async () => {
+
   const productCount = await Products.find().countAsync();
 
   if (productCount === 0) {
-    addProduct({ name: 'Boxes',     description: 'Standard cardboard boxes.', totalQuantity: 5  });
-    addProduct({ name: 'Tools',     description: 'General-purpose hand tools.', totalQuantity: 7  });
-    addProduct({ name: 'Batteries', description: 'AA alkaline batteries.',      totalQuantity: 12 });
+    addProduct({ name: 'Cardboard Boxes',   description: 'Medium-sized cardboard boxes used for general storage and shipping.',  totalQuantity: 48  });
+    addProduct({ name: 'Hand Tools',        description: 'Assorted hand tools including hammers, screwdrivers, and wrenches.',    totalQuantity: 23  });
+    addProduct({ name: 'AA Batteries',      description: 'AA alkaline batteries, packed in sets of 4.',                           totalQuantity: 120 });
+    addProduct({ name: 'Safety Helmets',    description: 'Hard hats rated for construction site use.',                            totalQuantity: 15  });
+    addProduct({ name: 'Packing Tape',      description: 'Heavy-duty clear packing tape, 50mm wide.',                             totalQuantity: 60  });
+    addProduct({ name: 'Cable Ties',        description: 'Nylon cable ties in assorted sizes for bundling and organising.',       totalQuantity: 300 });
   }
 
   Meteor.publish('products', function () {
