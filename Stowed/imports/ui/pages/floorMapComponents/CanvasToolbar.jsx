@@ -18,7 +18,15 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
       width: floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER,
       height: floorSize.height /  CANVAS_CONFIG.PIXELS_PER_METER,
     });
-    
+
+    // floor dimension validation
+    const updateDimension = (dimensionType, rawValue) => {
+      setInputMeters(prev => ({ ...prev, [dimensionType]: rawValue}));
+      const val = Number(rawValue);
+      if (rawValue === "" || Number.isNaN(val) || val <=0) return;
+      setFloorSize(prev => ({...prev, [dimensionType]: val*CANVAS_CONFIG.PIXELS_PER_METER}));      
+    }
+
     return (
       <div style={{
         display: "flex",
@@ -41,13 +49,7 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
           <input
             type="number"
             value={inputMeters.width}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              // update display value in meters
-              setInputMeters(prev => ({ ...prev, width: val }));
-              // store as pixels in floorSize
-              setFloorSize(prev => ({ ...prev, width: val *  CANVAS_CONFIG.PIXELS_PER_METER }));
-            }}
+            onChange={(e) => {updateDimension("width", e.target.value)}}
             placeholder="Width (m)"
             style={{ width: "55px" }}
           />
@@ -55,13 +57,7 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
           <input
             type="number"
             value={inputMeters.height}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              // update display value in meters
-              setInputMeters(prev => ({ ...prev, height: val }));
-              // store as pixels in floorSize
-              setFloorSize(prev => ({ ...prev, height: val *  CANVAS_CONFIG.PIXELS_PER_METER }));
-            }}
+            onChange={(e) => {updateDimension("height", e.target.value)}}
             placeholder="Height (m)"
             style={{ width: "55px" }}
           />
