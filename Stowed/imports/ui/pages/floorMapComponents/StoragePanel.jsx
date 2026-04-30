@@ -58,7 +58,7 @@ export function StoragePanel({ onSelectUnit }) {
           
           {/* storage unit creation form */}
           {showForm && (
-            <div style={styles.form}>
+            <div style={storagePanelStyles.form}>
               <label style={storagePanelStyles.label}>Name</label>
               <input style={storagePanelStyles.input} name="name" value={form.name} onChange={handleFormChange} placeholder="e.g. Rack A" />
     
