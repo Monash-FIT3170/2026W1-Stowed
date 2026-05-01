@@ -1,4 +1,4 @@
-export const mockItemDetails = [
+export const mockProductDetails = [
   {
     _id: "1",
     name: "AAA Battery Pack",
@@ -17,6 +17,6 @@ export const mockItemDetails = [
   },
 ];
 
-export function getMockItemDetailById(itemId) {
-  return mockItemDetails.find((item) => item._id === itemId);
+export function getMockProductDetailById(productId) {
+  return mockProductDetails.find((product) => product._id === productId);
 }
