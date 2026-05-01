@@ -92,8 +92,8 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const xMeters = xPx / CANVAS_CONFIG.PIXELS_PER_METER;
     const yMeters = yPx / CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const wMeters = template.width * gridInterval;
-    const hMeters = template.height * gridInterval;
+    const wMeters = template.width;
+    const hMeters = template.height;
 
     const rawXm = xMeters - wMeters / 2;
     const rawYm = yMeters - hMeters / 2;
@@ -136,8 +136,8 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const xMeters = xPx / CANVAS_CONFIG.PIXELS_PER_METER;
     const yMeters = yPx / CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const wMeters = template.width * gridInterval;
-    const hMeters = template.height * gridInterval;
+    const wMeters = template.width;
+    const hMeters = template.height;
 
     const rawXm = xMeters - wMeters / 2;
     const rawYm = yMeters - hMeters / 2;
