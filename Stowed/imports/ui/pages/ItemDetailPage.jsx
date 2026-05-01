@@ -14,7 +14,6 @@ export function ItemDetailView({ item }) {
 
   return (
     <div className="item-detail-container">
-      {/* Header Section */}
       <div className="item-detail-header">
         <div className="header-top">
           <button className="btn-secondary">Cancel</button>
@@ -27,29 +26,24 @@ export function ItemDetailView({ item }) {
           </div>
           <div className="header-info">
             {isLowStock && (
-              <div className="status-badge critical-badge">
-                ⚠ {item.status}
-              </div>
+              <div className="status-badge critical-badge">{item.status}</div>
             )}
             <h1 className="header-title">{item.name}</h1>
             <div className="header-meta">
               <span>{item.currentStock} in stock</span>
-              <span>•</span>
+              <span></span>
               <span>Reorder at {item.reorderAt}</span>
-              <span>•</span>
+              <span></span>
               <span className="sku">SKU: {item.sku}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="item-detail-grid">
-        {/* Left Column */}
         <div className="left-column">
-          {/* Core Identification Section */}
           <div className="detail-section">
-            <h2 className="section-title">ℹ Core identification</h2>
+            <h2 className="section-title"> Core identification</h2>
             <div className="section-content">
               <div className="form-group">
                 <label>Item name</label>
@@ -73,9 +67,8 @@ export function ItemDetailView({ item }) {
             </div>
           </div>
 
-          {/* Operational Details Section */}
           <div className="detail-section">
-            <h2 className="section-title">⊕ Operational details</h2>
+            <h2 className="section-title"> Operational details</h2>
             <div className="section-content">
               <div className="form-row">
                 <div className="form-group">
@@ -116,11 +109,9 @@ export function ItemDetailView({ item }) {
           </div>
         </div>
 
-        {/* Right Column */}
         <div className="right-column">
-          {/* Visual Catalogue Section */}
           <div className="detail-section">
-            <h2 className="section-title">📷 Visual catalogue</h2>
+            <h2 className="section-title"> Visual catalogue</h2>
             <div className="section-content">
               <div className="main-image-container">
                 <img
@@ -144,16 +135,15 @@ export function ItemDetailView({ item }) {
             </div>
           </div>
 
-          {/* QR & Label Section */}
           <div className="detail-section">
-            <h2 className="section-title">⬇ QR & label</h2>
+            <h2 className="section-title"> QR & label</h2>
             <div className="section-content qr-section">
               <div className="qr-container">
                 <img src={item.qrCode} alt="QR Code" className="qr-code" />
                 <p className="qr-label">SKU: {item.sku}</p>
                 <p className="qr-label">{item.location}</p>
               </div>
-              <button className="btn-print">🖨 Print label</button>
+              <button className="btn-print">Print label</button>
             </div>
           </div>
         </div>
