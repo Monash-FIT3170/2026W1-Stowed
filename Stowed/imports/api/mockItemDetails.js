@@ -22,12 +22,9 @@ export const mockItemDetails = [
 export function getMockItemDetailById(itemId) {
   return mockItemDetails.find((item) => item._id === itemId);
 }
-
+import Fuse from "fuse.js";
 
 export function searchForItemByNameOrDescription(inputString) {
-  import Fuse from "fuse.js";
-
-
   const fuse = new Fuse(mockItemDetails, {
     keys: ["name", "description"],
     threshold: 0.4,
@@ -41,4 +38,3 @@ export function searchForItemByNameOrDescription(inputString) {
   }
   return null;
 }
-
