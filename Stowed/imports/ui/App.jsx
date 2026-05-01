@@ -25,6 +25,7 @@ export function App() {
             <Route path="/forecast"            element={<ForecastPage />} />
             <Route path="/alerts"              element={<AlertsPage />} />
             <Route path="*"                    element={<Navigate to="/" replace />} />
+            <Route path="/storage-unit/:unitId" element={<StorageUnitDetailPage />} />
           </Routes>
         </main>
       </div>

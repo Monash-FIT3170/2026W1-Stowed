@@ -2,6 +2,7 @@ import {useRef, useState} from "react"
 import {Stage, Layer, Rect, Line, Text, Group} from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
 import { dragState } from "./DragState";
+import { useNavigate } from "react-router-dom";
 
 // TEMPORARY config, to be refactored and potentially replaced so it does not live here
 export const CANVAS_CONFIG = {
@@ -52,6 +53,7 @@ export function Canvas({ style, floorSize, activeTool }) {
   const gridSize = CANVAS_CONFIG.GRID_SIZE;
   const metersPerCell = CANVAS_CONFIG.METERS_PER_CELL;
   const stageRef = useRef(null);
+  const navigate = useNavigate();
   
   const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
@@ -136,8 +138,8 @@ export function Canvas({ style, floorSize, activeTool }) {
   }
 
   // --- STAGE HANDLERS ---
-  function handleUnitClick(e, unit) {
-    // Nothing here for now, to add selecting unit etc, fill in this method
+  function handleUnitClick(unit) {
+  navigate(`/storage-unit/${unit._id}`);
   }
 
   function handleDragEnd(e, unitId) {
