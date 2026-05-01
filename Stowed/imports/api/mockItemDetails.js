@@ -1,27 +1,40 @@
 export const mockItemDetails = [
   {
     _id: "1",
-    name: "Hex bolts M8 × 50mm",
-    sku: "BLT-M8-050",
-    category: "Fasteners",
-    brand: "Wurth Industrial",
+    name: "AAA Battery Pack",
+    description: "alkaline batteries",
     photoUrl:
-      "https://au.element14.com/productimages/standard/en_GB/4157080-40.jpg",
-    catalogImages: [
-      "https://au.element14.com/productimages/standard/en_GB/4157080-40.jpg",
-      "https://au.element14.com/productimages/standard/en_GB/4157080-40.jpg",
-      "https://au.element14.com/productimages/standard/en_GB/4157080-40.jpg",
-    ],
-    currentStock: 4,
-    reorderAt: 25,
-    unitCost: 0.42,
-    location: "Cabinet 2 · Drawer 3",
-    status: "CRITICAL - RUNNING LOW",
-    qrCode:
-      "https://au.element14.com/productimages/standard/en_GB/4157080-40.jpg",
+      "https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png",
+    quality: "Good",
+    location: "Aisle 4 - Section 1",
+  },
+  {
+    _id: "2",
+    name: "Safety Helmet",
+    description: "Helment for safety",
+    photoUrl:
+      "https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1",
+    quality: "Fair",
+    location: "Aisle 3 - Section 2",
   },
 ];
 
 export function getMockItemDetailById(itemId) {
   return mockItemDetails.find((item) => item._id === itemId);
+}
+import Fuse from "fuse.js";
+
+export function searchForItemByNameOrDescription(inputString) {
+  const fuse = new Fuse(mockItemDetails, {
+    keys: ["name", "description"],
+    threshold: 0.4,
+  });
+
+  const lower = inputString.toLowerCase();
+
+  const results = fuse.search(inputString);
+  if (results.length > 0) {
+    return results[0].item;
+  }
+  return null;
 }
