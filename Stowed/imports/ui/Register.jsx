@@ -129,7 +129,6 @@ const Register = () => {
             Standard
           </button>
         </div>
-
         <button type="submit" disabled={loading}
         className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50"
         >
