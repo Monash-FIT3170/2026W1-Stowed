@@ -1,6 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import '/imports/api/itemMethods';
 import { Items } from "/imports/api/items";
+import '/imports/api/userMethods';
 
 async function addItem({ name, quantity, location }) {
   await Items.insertAsync({ name, quantity, location });
