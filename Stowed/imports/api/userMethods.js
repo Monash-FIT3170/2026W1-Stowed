@@ -37,4 +37,16 @@ Meteor.methods({
 
     return { _id: userId, username, email };
   },
+  // checks whether user is admin or not and returns the result
+  async 'users.isAdmin'({ userId }) {
+    check(userId, String);
+
+    const user = await Users.findOneAsync(userId);
+
+    if (!user) {
+      throw new Meteor.Error('user-not-found', 'User does not exist.');
+    }
+
+    return user.isAdmin;
+  }
 });
