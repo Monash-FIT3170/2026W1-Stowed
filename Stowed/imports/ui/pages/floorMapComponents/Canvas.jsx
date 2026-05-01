@@ -1,6 +1,7 @@
 import {useRef, useState} from "react"
 import {Stage, Layer, Rect, Line, Text, Group} from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
+import { dragState } from "./DragState";
 
 // TEMPORARY config, to be refactored and potentially replaced so it does not live here
 export const CANVAS_CONFIG = {
@@ -33,10 +34,11 @@ function snapToGrid(value) {
  * Interactive canvas component built using react-konva
  * 
  * Features:
- *  - Grid rendering based on CANVIS_CONFIG
+ *  - Grid rendering based on CANVAS_CONFIG
  *  - Drag and drop unit placement
  *  - Grid snapping for position
  *  - Internal state management for placed units
+ *  - Ghost snap preview while dragging a unit over the canvas
  *  
  * @param {Object} style - Style config for canvas
  * @param {{ width: number, height: number}} floorSize - Dimension of canvas in pixels
@@ -53,6 +55,7 @@ export function Canvas({ style, floorSize, activeTool }) {
   
   const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
+  const [ghostUnit, setGhostUnit] = useState(null);
 
   // --- BUILD GRID ---
   const vLines = [];
@@ -71,15 +74,47 @@ export function Canvas({ style, floorSize, activeTool }) {
     hLines.push(<Text key={`hl-${y}`} x={4} y={y + 3} text={`${meters}m`} fontSize={10} fill={CANVAS_CONFIG.TEXT_COLOUR}/>);
   }
 
+  // --- GHOST HELPER ---
+  // Browser blocks dataTransfer.getData for security reason. As such we must
+  // build a "ghost" based on the template from dragState
+  function buildGhostFromEvent(e) {
+    const template = dragState.template;
+    if (!template) return null;
+
+    const stageBox = stageRef.current.container().getBoundingClientRect();
+    const x = e.clientX - stageBox.left;
+    const y = e.clientY - stageBox.top;
+
+    const wPixels = template.width  * CANVAS_CONFIG.GRID_SIZE;
+    const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
+
+    const snappedX = snapToGrid(x - wPixels / 2);
+    const snappedY = snapToGrid(y - hPixels / 2);
+
+    return { ...template, id: "ghost", x: snappedX, y: snappedY, width: wPixels, height: hPixels };
+  }
+
   // --- DROP HANDLERS ---
   function handleDragOver(e) {
-    // prevent page from reloading
+    // Prevent page from reloading on drop
     e.preventDefault();
+
+    // Update ghost preview position every time the cursor moves over the canvas
+    const ghost = buildGhostFromEvent(e);
+    if (ghost) setGhostUnit(ghost);
+  }
+
+  // Clear ghost when cursor leaves the canvas area
+  function handleDragLeave() {
+    setGhostUnit(null);
   }
 
   function handleDrop(e) {
     e.preventDefault();
     
+    // Clear ghost once the unit is placed
+    setGhostUnit(null);
+
     // extract data from unitcard and parse
     const unitData = e.dataTransfer.getData("unit");
     if (!unitData) return;
@@ -120,8 +155,7 @@ export function Canvas({ style, floorSize, activeTool }) {
   // --- HTML ELEMENT ---
   return (
     // Stage cannot catch drop events so wrap in div
-    <div onDrop={handleDrop} onDragOver={handleDragOver} style={{display:"inline-block"}}>
-
+    <div onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
       <Stage ref={stageRef} width={width} height={height} style={style}>
         
         {/* BASE CANVAS LAYER */}
@@ -146,7 +180,19 @@ export function Canvas({ style, floorSize, activeTool }) {
               onDragEnd={(e) => handleDragEnd(e, unit.id)}
               onTransformEnd={() => {}} // Add this method in when resizing objects, if we do that
             />
-          ))}
+            ))}
+        </Layer>
+
+        {/* GHOST PREVIEW LAYER */}
+        <Layer>
+          {ghostUnit && (
+            <Group x={ghostUnit.x} y={ghostUnit.y}>
+              {/* Actual ghost */}
+              <Rect width={ghostUnit.width} height={ghostUnit.height} fill={ghostUnit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
+              {/* Ghost label */}
+              <Text y={ghostUnit.height / 2 - 7} width={ghostUnit.width} align="center" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>
+            </Group>
+          )}
         </Layer>
 
       </Stage>
