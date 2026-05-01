@@ -10,11 +10,11 @@ export const CANVAS_CONFIG = {
 }
 
 // TEMPORARY storage unit for testing, replace with db fetch and simpleschema
-function StorageUnit({unit, isSelected, onSelect, onDragEnd, onTransformEnd}) {
+function StorageUnit({unit, isSelected, onSelect, onTransformEnd}) {
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
   return (
-    <Group id={unit.id} x={unit.x * px} y={unit.y * px} onClick={onSelect} onDragEnd={onDragEnd} onTransformEnd={onTransformEnd} draggable>
+    <Group id={unit.id} x={unit.x * px} y={unit.y * px} onClick={onSelect} onTransformEnd={onTransformEnd}>
       {/* MAIN BODY */}
       <Rect width={unit.width * px} height={unit.height * px} fill={unit.fill} stroke={isSelected ? "orange" : "transparent"} strokeWidth={2} cornerRadius={4} opacity={0.85}/>
 
@@ -153,21 +153,21 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     // Nothing here for now, to add selecting unit etc, fill in this method
   }
 
-  function handleDragEnd(e, unitId) {
-    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+  // function handleDragEnd(e, unitId) {
+  //   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const rawXm = e.target.x() / px;
-    const rawYm = e.target.y() / px;
+  //   const rawXm = e.target.x() / px;
+  //   const rawYm = e.target.y() / px;
 
-    const snappedXm = snapEnabled ? snapToGridMeters(rawXm, gridInterval) : rawXm;
-    const snappedYm = snapEnabled ? snapToGridMeters(rawYm, gridInterval) : rawYm;
+  //   const snappedXm = snapEnabled ? snapToGridMeters(rawXm, gridInterval) : rawXm;
+  //   const snappedYm = snapEnabled ? snapToGridMeters(rawYm, gridInterval) : rawYm;
 
-    e.target.x(snappedXm * px);
-    e.target.y(snappedYm * px);
+  //   e.target.x(snappedXm * px);
+  //   e.target.y(snappedYm * px);
 
-    // Update unit position in state
-    setUnits(prev => prev.map(unit =>   unit.id === unitId     ? { ...unit, x: snappedXm, y: snappedYm }     : unit ));
-  }
+  //   // Update unit position in state
+  //   setUnits(prev => prev.map(unit =>   unit.id === unitId     ? { ...unit, x: snappedXm, y: snappedYm }     : unit ));
+  // }
 
   return (
     <div
@@ -198,7 +198,6 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
               isSelected={selectedId === unit.id}
               activeTool={activeTool}
               onSelect={(e) => handleUnitClick(e, unit)}
-              onDragEnd={(e) => handleDragEnd(e, unit.id)}
               onTransformEnd={() => {}} // Add this method in when resizing objects, if we do that
             />
           ))}
