@@ -25,10 +25,10 @@ const DEFAULT_CANVAS_SETTINGS = {
 /**
  * Main container component for the floor map editor page.
  * Coordinates the overall map editor state and layout including:
- * - Managing tool bar aswell as active tool
- * - Floor dimensions
+ * - Managing tool bar and active tool
+ * - Floor dimensions and canvas config
  * - Storage unit placement
- * - General communication between toolbar, storage panel and canvas
+ * - General communication between toolbar, storage panel, canvas and canvas settings
  * 
  * @returns {JSX.Element} Floor map editor page layout 
  */

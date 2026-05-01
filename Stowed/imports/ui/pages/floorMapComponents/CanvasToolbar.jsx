@@ -8,6 +8,8 @@ import { CANVAS_CONFIG } from "./Canvas";
  * @param {string} activeTool - Currently selected tool
  * @param {(tool: string) => void} setActiveTool - State setter for updating the active tool
  * @param {{ width: number, height: number }} floorSize - Floor dimensions in pixels
+ * @param {(updater: Function) => void} setFloorSize - State setter for updating floor dimensions
+ * @param {() => void} onOpenCanvasSettings - Callback to open canvas settings modal
  *
  * @returns {JSX.Element} Toolbar UI element
  */

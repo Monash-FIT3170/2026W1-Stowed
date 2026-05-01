@@ -34,14 +34,14 @@ function snapToGrid(value, gridSize) {
  * Interactive canvas component built using react-konva
  * 
  * Features:
- *  - Grid rendering based on CANVAS_CONFIG
- *  - Grid snapping for position
- *  - Internal state management for placed units
- *  - Ghost snap preview while dragging a unit over the canvas
- *  
+ *  - Grid rendering based on canvasSettings
+ *  - Drag and drop unit placement with optional snap to grid  
+ *  - Ghost snap preview while dragging units over canvas
+ * 
  * @param {Object} style - Style config for canvas
  * @param {{ width: number, height: number}} floorSize - Dimension of canvas in pixels
  * @param {String} activeTool - Currently selected tool from FloorMapPage (e.g. "select", "move")
+ * @param {{ gridInterval: number, showGrid: boolean, snapToGrid: boolean }} canvasSettings - Current canvas settings
  * 
  * @returns {JSX.Element} - React Konva canvas element 
  */
