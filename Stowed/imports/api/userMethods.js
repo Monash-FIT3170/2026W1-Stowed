@@ -6,10 +6,11 @@ import { Users } from './users';
 const SALT_ROUNDS = 10;
 
 Meteor.methods({
-  async 'users.register'({ username, email, password }) {
+  async 'users.register'({ username, email, password, isAdmin }) {
     check(username, String);
     check(email, String);
     check(password, String);
+    check(isAdmin, Boolean);
 
     if (password.length < 6) {
       throw new Meteor.Error('password-too-short', 'Password must be at least 6 characters.');
@@ -31,6 +32,7 @@ Meteor.methods({
       password: hashedPassword, 
       createdAt: now,
       updatedAt: now,
+      isAdmin,
     });
 
     return { _id: userId, username, email };

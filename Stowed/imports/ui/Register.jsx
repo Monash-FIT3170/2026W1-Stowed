@@ -11,6 +11,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const { username, email, password, confirmPassword } = formData;
 
@@ -40,7 +41,7 @@ const Register = () => {
 
     try {
       // Call the method registered on the server
-      const result = await Meteor.callAsync('users.register', { username, email, password });
+      const result = await Meteor.callAsync('users.register', { username, email, password, isAdmin });
       setSuccess(`Account created for ${result.username}. You can now log in.`);
       setFormData({ username: '', email: '', password: '', confirmPassword: '' });
     } catch (err) {
@@ -104,6 +105,31 @@ const Register = () => {
             className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+{/* role selection for new account */}
+        <div>
+          <p>User Type</p>
+          <button
+            type="button"
+            onClick={() => setIsAdmin(true)}
+            style={{
+              backgroundColor: !isAdmin ? 'white' : '#A7C7E7',
+              marginRight: '10px'
+              
+            }}
+          >
+            Admin
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAdmin(false)}
+            style={{
+              backgroundColor: isAdmin ? 'white' : '#A7C7E7',
+            }}
+          >
+            Standard
+          </button>
+        </div>
+
         <button type="submit" disabled={loading}
         className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50"
         >
