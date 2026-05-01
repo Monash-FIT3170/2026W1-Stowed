@@ -11,26 +11,33 @@ export function ItemDetailView({ item }) {
     return <div className="p-8 text-center">Item not found.</div>;
   }
 
-  const isLowStock = item.status.includes("CRITICAL");
+  const isLowStock = item.status && item.status.includes("CRITICAL");
+  const statusLabel = isLowStock ? item.status : "In Stock";
+  const statusClass = isLowStock
+    ? "status-badge critical-badge"
+    : "status-badge available-badge";
 
   return (
     <div className="item-detail-container">
       <div className="item-detail-header">
         <div className="header-top">
-          <button className="btn-secondary" onClick={() => navigate(-1)}>
-            Back
-          </button>
-          <button className="btn-primary">Save changes</button>
+          <div className="breadcrumb">Inventory &nbsp;/&nbsp; {item.name}</div>
+          <div className="header-actions">
+            <button className="btn-secondary" onClick={() => navigate(-1)}>
+              Back
+            </button>
+            <button className="btn-primary">Save changes</button>
+          </div>
         </div>
 
-        <div className={`header-content ${isLowStock ? "critical" : ""}`}>
+        <div
+          className={`header-content ${isLowStock ? "critical" : "available"}`}
+        >
           <div className="header-icon-section">
             <img src={item.photoUrl} alt={item.name} className="header-icon" />
           </div>
           <div className="header-info">
-            {isLowStock && (
-              <div className="status-badge critical-badge">{item.status}</div>
-            )}
+            <div className={statusClass}>{statusLabel}</div>
             <h1 className="header-title">{item.name}</h1>
             <div className="header-meta">
               <span>{item.currentStock} in stock</span>
