@@ -19,15 +19,15 @@ function StorageUnit({unit, isSelected, onSelect, onDragEnd, onTransformEnd}) {
       <Rect width={unit.width} height={unit.height} fill={unit.fill} stroke={isSelected ? "orange" : "transparent"} strokeWidth={2} cornerRadius={4} opacity={0.85}/> 
 
       {/* UNIT NAME ON BODY */}
-      <Text y={unit.height / 2 - 7} width={unit.width} align="center"text= {unit.name} fontSize={12} fill="white"/>
+      <Text y={unit.height / 2 - 7} width={unit.width} align="center" text={unit.name} fontSize={12} fill="white"/>
 
     </Group>
   );
 }
 
 // HELPER METHOD
-function snapToGrid(value) {
-  return Math.round(value / CANVAS_CONFIG.GRID_SIZE) * CANVAS_CONFIG.GRID_SIZE;
+function snapToGrid(value, gridSize) {
+  return Math.round(value / gridSize) * gridSize;
 }
 
 /**
@@ -35,7 +35,6 @@ function snapToGrid(value) {
  * 
  * Features:
  *  - Grid rendering based on CANVAS_CONFIG
- *  - Drag and drop unit placement
  *  - Grid snapping for position
  *  - Internal state management for placed units
  *  - Ghost snap preview while dragging a unit over the canvas
@@ -46,12 +45,18 @@ function snapToGrid(value) {
  * 
  * @returns {JSX.Element} - React Konva canvas element 
  */
-export function Canvas({ style, floorSize, activeTool }) {
+export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const width = floorSize.width;
   const height = floorSize.height;
-  const gridSize = CANVAS_CONFIG.GRID_SIZE;
-  const metersPerCell = CANVAS_CONFIG.METERS_PER_CELL;
-  const stageRef = useRef(null);
+
+  // canvas settings may be undefined so fallback on CANVAS_CONFIG
+  const gridInterval  = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
+  const showGrid      = canvasSettings?.showGrid     ?? true;
+  const snapEnabled   = canvasSettings?.snapToGrid   ?? true;
+  const gridSizePx    = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
+
+  const stageRef  = useRef(null);
+  const wrapperRef = useRef(null);
   
   const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
@@ -59,19 +64,21 @@ export function Canvas({ style, floorSize, activeTool }) {
 
   // --- BUILD GRID ---
   const vLines = [];
-  for (let x = 0; x <= width; x += gridSize) {
-    if (x === 0) continue;
-    const meters = (x / gridSize) * metersPerCell;
-    vLines.push(<Line key={`v-${x}`} points={[x, 0, x, height]} stroke="#ccc" strokeWidth={1}/>);
-    vLines.push(<Text key={`vl-${x}`} x={x + 3} y={4} text={`${meters}m`} fontSize={10} fill={CANVAS_CONFIG.TEXT_COLOUR}/>);
-  }
+  const hLines = [];
 
-  const hLines=[]
-  for (let y = 0; y <= height; y += gridSize) {
-    if (y === 0) continue;
-    const meters = (y / gridSize) * metersPerCell;
-    hLines.push(<Line key={`h-${y}`} points={[0, y, width, y]} stroke="#ccc" strokeWidth={1}/>);
-    hLines.push(<Text key={`hl-${y}`} x={4} y={y + 3} text={`${meters}m`} fontSize={10} fill={CANVAS_CONFIG.TEXT_COLOUR}/>);
+  if (showGrid) {
+    for (let x = 0; x <= width; x += gridSizePx) {
+      if (x === 0) continue;
+      const meters = (x / CANVAS_CONFIG.PIXELS_PER_METER);
+      vLines.push(<Line key={`v-${x}`} points={[x, 0, x, height]} stroke="#ccc" strokeWidth={1}/>);
+      vLines.push(<Text key={`vl-${x}`} x={x + 3} y={4} text={`${meters}m`} fontSize={10} fill="#888"/>);
+    }
+    for (let y = 0; y <= height; y += gridSizePx) {
+      if (y === 0) continue;
+      const meters = (y / CANVAS_CONFIG.PIXELS_PER_METER);
+      hLines.push(<Line key={`h-${y}`} points={[0, y, width, y]} stroke="#ccc" strokeWidth={1}/>);
+      hLines.push(<Text key={`hl-${y}`} x={4} y={y + 3} text={`${meters}m`} fontSize={10} fill="#888"/>);
+    }
   }
 
   // --- GHOST HELPER ---
@@ -85,11 +92,14 @@ export function Canvas({ style, floorSize, activeTool }) {
     const x = e.clientX - stageBox.left;
     const y = e.clientY - stageBox.top;
 
-    const wPixels = template.width  * CANVAS_CONFIG.GRID_SIZE;
-    const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
+    const wPixels = template.width  * gridSizePx;
+    const hPixels = template.height * gridSizePx;
 
-    const snappedX = snapToGrid(x - wPixels / 2);
-    const snappedY = snapToGrid(y - hPixels / 2);
+    // Snap or free position depending on canvasSettings
+    const rawX = x - wPixels / 2;
+    const rawY = y - hPixels / 2;
+    const snappedX = snapEnabled ? snapToGrid(rawX, gridSizePx) : rawX;
+    const snappedY = snapEnabled ? snapToGrid(rawY, gridSizePx) : rawY;
 
     return { ...template, id: "ghost", x: snappedX, y: snappedY, width: wPixels, height: hPixels };
   }
@@ -104,8 +114,9 @@ export function Canvas({ style, floorSize, activeTool }) {
     if (ghost) setGhostUnit(ghost);
   }
 
-  // Clear ghost when cursor leaves the canvas area
-  function handleDragLeave() {
+  function handleDragLeave(e) {
+    // Check the cursor has actually left the wrapper div before clearing the ghost.
+    if (wrapperRef.current && wrapperRef.current.contains(e.relatedTarget)) return;
     setGhostUnit(null);
   }
 
@@ -125,11 +136,13 @@ export function Canvas({ style, floorSize, activeTool }) {
     const x = e.clientX - stageBox.left;
     const y = e.clientY - stageBox.top;
     
-    // convert m to px, snap position
-    const wPixels = template.width  * CANVAS_CONFIG.GRID_SIZE;
-    const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
-    const snappedX = snapToGrid(x - wPixels / 2, CANVAS_CONFIG.GRID_SIZE);
-    const snappedY = snapToGrid(y - hPixels / 2, CANVAS_CONFIG.GRID_SIZE);
+    // convert m to px, snap position if enabled
+    const wPixels = template.width  * gridSizePx;
+    const hPixels = template.height * gridSizePx;
+    const rawX = x - wPixels / 2;
+    const rawY = y - hPixels / 2;
+    const snappedX = snapEnabled ? snapToGrid(rawX, gridSizePx) : rawX;
+    const snappedY = snapEnabled ? snapToGrid(rawY, gridSizePx) : rawY;
     
     // add unit to canvas
     setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: snappedX, y: snappedY, width: wPixels, height: hPixels},]);
@@ -141,21 +154,30 @@ export function Canvas({ style, floorSize, activeTool }) {
   }
 
   function handleDragEnd(e, unitId) {
-    // place unit on snapped coord
-    const snappedX = snapToGrid(e.target.x(), gridSize);
-    const snappedY = snapToGrid(e.target.y(), gridSize);
+    // Place unit on snapped coord or free position if snap is off
+    const rawX = e.target.x();
+    const rawY = e.target.y();
+    const snappedX = snapEnabled ? snapToGrid(rawX, gridSizePx) : rawX;
+    const snappedY = snapEnabled ? snapToGrid(rawY, gridSizePx) : rawY;
     e.target.x(snappedX);
     e.target.y(snappedY);
 
-    // add unit to canvas
+    // Update unit position in state
     setUnits((prev) => prev.map((unit) => unit.id === unitId ? { ...unit, x: snappedX, y: snappedY } : unit));
   }
 
 
   // --- HTML ELEMENT ---
   return (
-    // Stage cannot catch drop events so wrap in div
-    <div onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
+    // Stage cannot catch drop events so wrap in div.
+    // wrapperRef is used by handleDragLeave to detect true canvas exits vs child-element transitions.
+    <div
+      ref={wrapperRef}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      style={{ display: "inline-block" }}
+    >
       <Stage ref={stageRef} width={width} height={height} style={style}>
         
         {/* BASE CANVAS LAYER */}
@@ -180,14 +202,14 @@ export function Canvas({ style, floorSize, activeTool }) {
               onDragEnd={(e) => handleDragEnd(e, unit.id)}
               onTransformEnd={() => {}} // Add this method in when resizing objects, if we do that
             />
-            ))}
+          ))}
         </Layer>
 
-        {/* GHOST PREVIEW LAYER */}
+        {/* GHOST PREVIEW LAYER*/}
         <Layer>
           {ghostUnit && (
             <Group x={ghostUnit.x} y={ghostUnit.y}>
-              {/* Actual ghost */}
+              {/* Actual Ghost */}
               <Rect width={ghostUnit.width} height={ghostUnit.height} fill={ghostUnit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
               {/* Ghost label */}
               <Text y={ghostUnit.height / 2 - 7} width={ghostUnit.width} align="center" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>

@@ -2,6 +2,8 @@ import { useState} from "react";
 import { Canvas } from "./floorMapComponents/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
+import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
+import { CANVAS_CONFIG } from "./floorMapComponents/Canvas";
 
 // --- TOOL OPTIONS ---
 const TOOLS = {
@@ -10,6 +12,15 @@ const TOOLS = {
   ADD : "add",
   DELETE : "delete"
 };
+
+// --- DEFAULT CANVAS CONFIG ---
+// DEFAULT_CANVAS_SETTINGS stored here as it is a mutable user state
+// CANVAS_CONFIG holds compile time constants
+const DEFAULT_CANVAS_SETTINGS = {
+  gridInterval: CANVAS_CONFIG.METERS_PER_CELL,
+  showGrid:     true,
+  snapToGrid:   true,
+}; 
 
 /**
  * Main container component for the floor map editor page.
@@ -23,12 +34,15 @@ const TOOLS = {
  */
 export function FloorMapPage() {
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
+
+  // --- CANVAS CONFIG STATE ---
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
-  
-  // units live here so both the panel and canvas can access
+  const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
+  const [isCanvasSettingsOpen, setCanvasSettingsOpen] = useState(false);
+
+  // --- UNIT STATE ---
   const [units, setUnits] = useState([]);
-  // unit template the user has selected from the library panel to place
-  const [pendingUnit, setPendingUnit] = useState({width: 500, height: 500})
+  const [pendingUnit, setPendingUnit] = useState(null);
 
   // --- PLACING ---
   function handlePlaceUnit(template) {
@@ -40,14 +54,26 @@ export function FloorMapPage() {
   function handleUnitPlaced() {
     // after placing, go back to select so user does not keep adding
     setPendingUnit(null);
-    setActiveTool(TOOLS.SELECT)
+    setActiveTool(TOOLS.SELECT);
+  }
+
+  // --- CANVAS SETTINGS ---
+  function handleCanvasSettingsSave({ floorSize: newFloorSize, gridInterval, showGrid, snapToGrid }) {
+    setFloorSize(newFloorSize);
+    setCanvasSettings({ gridInterval, showGrid, snapToGrid });
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       
       {/* CANVAS TOOLBAR - top side*/}
-      <CanvasToolbar activeTool={activeTool} setActiveTool={setActiveTool} floorSize={floorSize} setFloorSize={setFloorSize}/>
+      <CanvasToolbar
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        floorSize={floorSize}
+        setFloorSize={setFloorSize}
+        onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
+      />
 
       {/* MAIN ROW */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden"}}>
@@ -57,8 +83,25 @@ export function FloorMapPage() {
 
         {/* CANVAS AREA - takes remaining space and centers*/}
         <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", overflow: "auto" }}>
-          <Canvas floorSize={floorSize} style={{ display: "block", width: `${floorSize.width}px`, height: `${floorSize.height}px`, border: "2px solid #999"}}/>
+          <Canvas
+            floorSize={floorSize}
+            canvasSettings={canvasSettings}
+            style={{ display: "block", width: `${floorSize.width}px`, height: `${floorSize.height}px`, border: "2px solid #999" }}
+          />
         </div>
       </div>
+
+      {/* CANVAS SETTINGS MODAL */}
+      {isCanvasSettingsOpen && (
+        <CanvasSettingsModal
+          floorSize={floorSize}
+          gridInterval={canvasSettings.gridInterval}
+          showGrid={canvasSettings.showGrid}
+          snapToGrid={canvasSettings.snapToGrid}
+          onSave={handleCanvasSettingsSave}
+          onClose={() => setCanvasSettingsOpen(false)}
+        />
+      )}
     </div>
-  );}
+  );
+}
