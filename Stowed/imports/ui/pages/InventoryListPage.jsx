@@ -1,25 +1,15 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
-
-// Inline placeholder data — replace with import from imports/api/mockLowStockItems once cherry-picked
-const PLACEHOLDER_ITEMS = [
-  { _id: "1", name: "AAA Battery Pack", tag: "electrical",  quantity: 50,  lowStockThreshold: 10, location: "Aisle 4 - Section 1" },
-  { _id: "2", name: "Safety Helmet",    tag: "safety",      quantity: 5,   lowStockThreshold: 10, location: "Aisle 3 - Section 2" },
-  { _id: "3", name: "Hard Hat Liner",   tag: "safety",      quantity: 0,   lowStockThreshold: 5,  location: "Aisle 3 - Section 3" },
-  { _id: "4", name: "Work Gloves",      tag: "safety",      quantity: 25,  lowStockThreshold: 25, location: "Aisle 2 - Section 1" },
-  { _id: "5", name: "Steel Toe Boots",  tag: "safety",      quantity: 100, lowStockThreshold: 20, location: "Aisle 1 - Section 4" },
-  { _id: "6", name: "Hex bolts M8",     tag: "fasteners",   quantity: 4,   lowStockThreshold: 25, location: "Cabinet 2" },
-  { _id: "7", name: "Wood screws",      tag: "fasteners",   quantity: 0,   lowStockThreshold: 50, location: "Drawer 3" },
-  { _id: "8", name: "Cable ties 200mm", tag: "misc",        quantity: 3,   lowStockThreshold: 30, location: "Bin 2" },
-];
+import { mockItems } from "../../api/mockItems";
 
 function getLowStockPlaceholder(items) {
   return items.filter(
     (i) =>
       typeof i.quantity === "number" &&
       typeof i.lowStockThreshold === "number" &&
-      i.quantity <= i.lowStockThreshold
+      i.quantity <= i.lowStockThreshold,
   );
 }
 
@@ -28,7 +18,7 @@ export function InventoryListPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredItems = useMemo(() => {
-    let items = PLACEHOLDER_ITEMS;
+    let items = mockItems;
 
     if (activeFilter === "low-stock") {
       items = getLowStockPlaceholder(items);
@@ -40,17 +30,19 @@ export function InventoryListPage() {
         const name = (item.name || "").toLowerCase();
         const tag = (item.tag || "").toLowerCase();
         const id = (item._id || "").toLowerCase();
-        return name.includes(query) || tag.includes(query) || id.includes(query);
+        return (
+          name.includes(query) || tag.includes(query) || id.includes(query)
+        );
       });
     }
 
     return items;
   }, [activeFilter, searchQuery]);
 
-  const lowStockCount = getLowStockPlaceholder(PLACEHOLDER_ITEMS).length;
+  const lowStockCount = getLowStockPlaceholder(mockItems).length;
 
   const filters = [
-    { id: "all", label: "All", count: PLACEHOLDER_ITEMS.length },
+    { id: "all", label: "All", count: mockItems.length },
     { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
     { id: "tag", label: "Tag ▾" },
     { id: "location", label: "Location ▾" },
@@ -112,8 +104,9 @@ export function InventoryListPage() {
       />
 
       <div style={{ fontSize: "11px", color: "#998874", marginBottom: "8px" }}>
-        Showing {filteredItems.length} of {PLACEHOLDER_ITEMS.length}
-        {activeFilter !== "all" && ` · Filter: ${activeFilter.replace("-", " ")}`}
+        Showing {filteredItems.length} of {mockItems.length}
+        {activeFilter !== "all" &&
+          ` · Filter: ${activeFilter.replace("-", " ")}`}
       </div>
 
       <div
@@ -135,7 +128,14 @@ export function InventoryListPage() {
       </div>
 
       {filteredItems.length === 0 ? (
-        <div style={{ padding: "32px", textAlign: "center", color: "#998874", fontSize: "13px" }}>
+        <div
+          style={{
+            padding: "32px",
+            textAlign: "center",
+            color: "#998874",
+            fontSize: "13px",
+          }}
+        >
           No items match the current filters.
         </div>
       ) : (
@@ -151,7 +151,14 @@ export function InventoryListPage() {
               alignItems: "center",
             }}
           >
-            <span>{item.name}</span>
+            <span>
+              <Link
+                to={`/inventory/${item._id}`}
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                {item.name}
+              </Link>
+            </span>
             <span>
               <span
                 style={{

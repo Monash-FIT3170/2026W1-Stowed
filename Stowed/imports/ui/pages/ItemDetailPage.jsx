@@ -1,10 +1,11 @@
-import { useParams } from "react-router-dom";
-import { getMockItemDetailById } from "../../api/mockItemDetails";
+import { useParams, useNavigate } from "react-router-dom";
+import { getMockItemById } from "../../api/mockItems";
 import { useState } from "react";
 import "./ItemDetailPage.css";
 
 export function ItemDetailView({ item }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const navigate = useNavigate();
 
   if (!item) {
     return <div className="p-8 text-center">Item not found.</div>;
@@ -16,7 +17,9 @@ export function ItemDetailView({ item }) {
     <div className="item-detail-container">
       <div className="item-detail-header">
         <div className="header-top">
-          <button className="btn-secondary">Cancel</button>
+          <button className="btn-secondary" onClick={() => navigate(-1)}>
+            Back
+          </button>
           <button className="btn-primary">Save changes</button>
         </div>
 
@@ -154,7 +157,7 @@ export function ItemDetailView({ item }) {
 
 export function ItemDetailPage() {
   const { itemId } = useParams();
-  const item = getMockItemDetailById(itemId);
+  const item = getMockItemById(itemId);
 
   return <ItemDetailView item={item} />;
 }
