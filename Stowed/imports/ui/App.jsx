@@ -8,6 +8,7 @@ import { StocktakePage }  from './pages/StocktakePage';
 import { QRCodesPage }    from './pages/QRCodesPage';
 import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
+import { StorageUnitDetailPage } from './pages/StorageUnitDetailPage';
 
 export function App() {
   return (
