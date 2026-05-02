@@ -3,16 +3,16 @@
 export { isRectRectIntersecting };
 
 const isRangeIntersecting = (intervalA, intervalB) => !(
-    intervalA.get("upper") < intervalB.get("lower")
-    || intervalB.get("upper") < intervalA.get("lower")
+    intervalA.upper <= intervalB.lower
+    || intervalB.upper <= intervalA.lower
 );
 
 const isRectRectIntersecting = (rect1) => (rect2) => {
     // check intersecting domain
-    const domIntersect = isRangeIntersecting(rect1.get("domain"), rect2.get("domain"));
+    const domIntersect = isRangeIntersecting(rect1.dom, rect2.dom);
 
     // check intersecting range
-    const ranIntersect = isRangeIntersecting(rect1.get("range"), rect2.get("range"));
+    const ranIntersect = isRangeIntersecting(rect1.ran, rect2.ran);
 
     return domIntersect & ranIntersect;
 }
