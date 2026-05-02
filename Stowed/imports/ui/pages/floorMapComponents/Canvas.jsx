@@ -82,6 +82,7 @@ export function Canvas({ style, floorSize, activeTool }) {
     if (!template) return null;
 
     const stageBox = stageRef.current.container().getBoundingClientRect();
+    // get (x, y) as the coordinates of the mouse relative to the canvas/grid
     const x = e.clientX - stageBox.left;
     const y = e.clientY - stageBox.top;
 
@@ -93,9 +94,33 @@ export function Canvas({ style, floorSize, activeTool }) {
     const snappedX = snapToGrid(x - wPixels / 2);
     const snappedY = snapToGrid(y - hPixels / 2);
 
-    // TODO: check for collision with other objects
+    // define bounds for this unit
+    const thisBounds = { dom: { lower: snappedX, upper: snappedX + wPixels }, ran: { lower: snappedY, upper: snappedY + hPixels } };
+    // don't show ghost if there are collisions
+    if (hasCollisions(thisBounds)) {
+      setGhostUnit(null);
+      return;
+    }
 
     return { ...template, id: "ghost", x: snappedX, y: snappedY, width: wPixels, height: hPixels };
+  }
+
+  // --- COLLISION DETECT ---
+  // Centralise collision logic to be used in handleDrop and buildGhostFromEvent
+  function hasCollisions(newBounds) {
+    const intersectsThis = isRectRectIntersecting(newBounds);
+
+    // generate bounds for other units
+    const coordRanges = units.map(
+      ({ x, y, width, height }) => (
+        { dom: { lower: x, upper: x + width }, ran: { lower: y, upper: y + height } }
+      )
+    );
+    const anyIntersects = coordRanges
+      .map(otherBound => intersectsThis(otherBound)) // check for collision with other unit
+      .reduce((acc, i) => acc || i, false); // combine individual checks into single condition
+
+    return anyIntersects;
   }
 
   // --- DROP HANDLERS ---
@@ -137,19 +162,8 @@ export function Canvas({ style, floorSize, activeTool }) {
 
     // define bounds for this unit
     const thisBounds = { dom: { lower: snappedX, upper: snappedX + wPixels }, ran: { lower: snappedY, upper: snappedY + hPixels } };
-    const intersectsThis = isRectRectIntersecting(thisBounds);
-
-    // generate bounds for other units
-    const coordRanges = units.map(
-      ({ x, y, width, height }) => (
-        { dom: { lower: x, upper: x + width }, ran: { lower: y, upper: y + height } }
-      )
-    );
-    const anyIntersects = coordRanges
-      .map(otherBound => intersectsThis(otherBound)) // check for collision with other unit
-      .reduce((acc, i) => acc || i, false); // combine individual checks into single condition
-
-    if (anyIntersects) return;
+    // don't add if there are collisions
+    if (hasCollisions(thisBounds)) return;
 
     // add unit to canvas
     setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: snappedX, y: snappedY, width: wPixels, height: hPixels},]);
