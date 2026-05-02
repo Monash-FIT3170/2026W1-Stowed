@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Meteor } from 'meteor/meteor';
+import './Register.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,15 +24,15 @@ const Register = () => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError('Passwords do not match');
       return;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError('Password must be at least 6 characters');
       return;
     }
     if (!/^.+@.+\..+$/.test(email)) {
-      setError('Please enter a valid email.');
+      setError('Invalid email format');
       return;
     }
 
@@ -40,101 +41,60 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Call the method registered on the server
       const result = await Meteor.callAsync('users.register', { username, email, password, isAdmin });
-      setSuccess(`Account created for ${result.username}. You can now log in.`);
+      setSuccess(`Account created for ${result.username}`);
       setFormData({ username: '', email: '', password: '', confirmPassword: '' });
     } catch (err) {
-      setError(err.reason || 'Registration failed.');
+      setError(err.reason || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h2>Create Account</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {success && <p style={{ color: 'green' }}>{success}</p>}
-      <form onSubmit={onSubmit}>
-        <div>
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            type="text"
-            name="username"
-            value={username}
-            onChange={onChange}
-            required
-            className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            value={email}
-            onChange={onChange}
-            required
-            className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            value={password}
-            onChange={onChange}
-            required
-            className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="confirmPassword">Confirm Password</label>
-          <input
-            id="confirmPassword"
-            type="password"
-            name="confirmPassword"
-            value={confirmPassword}
-            onChange={onChange}
-            required
-            className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-{/* role selection for new account */}
-        <div>
-          <p>User Type</p>
-          <button
-            type="button"
-            onClick={() => setIsAdmin(true)}
-            style={{
-              backgroundColor: !isAdmin ? 'white' : '#A7C7E7',
-              marginRight: '10px'
-              
-            }}
-          >
-            Admin
+    <div className="page">
+      <div className="container">
+        <h2>Create Account</h2>
+
+        {error && <div className="status error">⚠ {error}</div>}
+        {success && <div className="status success">✓ {success}</div>}
+
+        <form onSubmit={onSubmit}>
+          <div>
+            <label>Username</label>
+            <input type="text" name="username" value={username} onChange={onChange} required />
+          </div>
+
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" value={email} onChange={onChange} required />
+          </div>
+
+          <div>
+            <label>Password</label>
+            <input type="password" name="password" value={password} onChange={onChange} required />
+          </div>
+
+          <div>
+            <label>Confirm Password</label>
+            <input type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} required />
+          </div>
+
+          <div>
+            <p>User Type</p>
+            <button type="button" onClick={() => setIsAdmin(true)} className={isAdmin ? 'active' : ''}>
+              Admin
+            </button>
+            <button type="button" onClick={() => setIsAdmin(false)} className={!isAdmin ? 'active' : ''}>
+              Standard
+            </button>
+          </div>
+
+          <button type="submit" disabled={loading}>
+            {loading ? 'Creating...' : 'Register'}
           </button>
-          <button
-            type="button"
-            onClick={() => setIsAdmin(false)}
-            style={{
-              backgroundColor: isAdmin ? 'white' : '#A7C7E7',
-            }}
-          >
-            Standard
-          </button>
-        </div>
-        <button type="submit" disabled={loading}
-        className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50"
-        >
-          {loading ? 'Creating account...' : 'Register'}
-        </button>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
