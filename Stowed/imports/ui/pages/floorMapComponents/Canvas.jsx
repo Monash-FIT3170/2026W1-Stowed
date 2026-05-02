@@ -86,10 +86,14 @@ export function Canvas({ style, floorSize, activeTool }) {
     const y = e.clientY - stageBox.top;
 
     const wPixels = template.width  * CANVAS_CONFIG.GRID_SIZE;
+    // get the width of the object
     const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
 
+    // snap object such that the mouse is in the middle of the object
     const snappedX = snapToGrid(x - wPixels / 2);
     const snappedY = snapToGrid(y - hPixels / 2);
+
+    // TODO: check for collision with other objects
 
     return { ...template, id: "ghost", x: snappedX, y: snappedY, width: wPixels, height: hPixels };
   }
@@ -130,7 +134,23 @@ export function Canvas({ style, floorSize, activeTool }) {
     const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
     const snappedX = snapToGrid(x - wPixels / 2, CANVAS_CONFIG.GRID_SIZE);
     const snappedY = snapToGrid(y - hPixels / 2, CANVAS_CONFIG.GRID_SIZE);
-    
+
+    // define bounds for this unit
+    const thisBounds = { dom: { lower: snappedX, upper: snappedX + wPixels }, ran: { lower: snappedY, upper: snappedY + hPixels } };
+    const intersectsThis = isRectRectIntersecting(thisBounds);
+
+    // generate bounds for other units
+    const coordRanges = units.map(
+      ({ x, y, width, height }) => (
+        { dom: { lower: x, upper: x + width }, ran: { lower: y, upper: y + height } }
+      )
+    );
+    const anyIntersects = coordRanges
+      .map(otherBound => intersectsThis(otherBound)) // check for collision with other unit
+      .reduce((acc, i) => acc || i, false); // combine individual checks into single condition
+
+    if (anyIntersects) return;
+
     // add unit to canvas
     setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: snappedX, y: snappedY, width: wPixels, height: hPixels},]);
   }
