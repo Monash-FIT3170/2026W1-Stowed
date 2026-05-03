@@ -13,6 +13,57 @@ function getLowStockPlaceholder(items) {
   );
 }
 
+function ItemThumbnail({photoUrl,name}) {
+  const [imgError, setImgError] = useState(false);
+
+  const initials = name
+    ? name
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
+  if (!photoUrl || imgError) {
+    return (
+      <div
+        style={{
+          width: "36px",
+          height: "36px",
+          borderRadius: "8px",
+          background: "#F5EFE6",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "11px",
+          fontWeight: 600,
+          color: "#B5532A",
+          flexShrink: 0,
+        }}
+      >
+        {initials}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={photoUrl}
+      alt={name}
+      onError={() => setImgError(true)}
+      style={{
+        width: "36px",
+        height: "36px",
+        borderRadius: "8px",
+        objectFit: "contain",
+        background: "#F5EFE6",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
 export function InventoryListPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -112,14 +163,16 @@ export function InventoryListPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr 1fr",
+          gridTemplateColumns: "44px 2fr 1fr 1fr 1fr 1fr",
           padding: "8px 0",
           borderBottom: "1px solid #D9CFC0",
           fontSize: "11px",
           color: "#998874",
           fontWeight: 500,
+          alignItems: "center",
         }}
       >
+        <span />
         <span>Item</span>
         <span>Tag</span>
         <span>Location</span>
@@ -144,13 +197,15 @@ export function InventoryListPage() {
             key={item._id}
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 1fr 1fr 1fr",
+              gridTemplateColumns: "44px 2fr 1fr 1fr 1fr 1fr",
               padding: "10px 0",
               borderBottom: "0.5px solid #EFE7DA",
               fontSize: "13px",
               alignItems: "center",
+              gap: "0 8px",
             }}
           >
+            <ItemThumbnail photoUrl={item.photoUrl} name={item.name} />
             <span>
               <Link
                 to={`/inventory/${item._id}`}
