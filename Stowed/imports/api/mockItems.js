@@ -162,3 +162,12 @@ export const mockItems = [
 export function getMockItemById(itemId) {
   return mockItems.find((item) => item._id === itemId);
 }
+
+export function getLowStockItems(items) {
+  return items.filter(
+    (i) =>
+      typeof i.quantity === "number" &&
+      typeof i.lowStockThreshold === "number" &&
+      i.quantity <= i.lowStockThreshold,
+  );
+}

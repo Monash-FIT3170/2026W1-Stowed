@@ -2,16 +2,8 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
-import { mockItems } from "../../api/mockItems";
+import { mockItems, getLowStockItems } from "../../api/mockItems";
 
-function getLowStockPlaceholder(items) {
-  return items.filter(
-    (i) =>
-      typeof i.quantity === "number" &&
-      typeof i.lowStockThreshold === "number" &&
-      i.quantity <= i.lowStockThreshold,
-  );
-}
 
 export function InventoryListPage() {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -21,7 +13,7 @@ export function InventoryListPage() {
     let items = mockItems;
 
     if (activeFilter === "low-stock") {
-      items = getLowStockPlaceholder(items);
+      items = getLowStockItems(items);
     }
 
     if (searchQuery.trim()) {
@@ -39,7 +31,7 @@ export function InventoryListPage() {
     return items;
   }, [activeFilter, searchQuery]);
 
-  const lowStockCount = getLowStockPlaceholder(mockItems).length;
+  const lowStockCount = getLowStockItems(mockItems).length;
 
   const filters = [
     { id: "all", label: "All", count: mockItems.length },
