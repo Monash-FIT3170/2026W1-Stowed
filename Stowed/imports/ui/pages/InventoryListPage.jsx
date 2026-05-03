@@ -13,7 +13,7 @@ function getLowStockPlaceholder(items) {
   );
 }
 
-function ItemThumbnail({photoUrl,name}) {
+export function ItemThumbnail({photoUrl,name}) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
