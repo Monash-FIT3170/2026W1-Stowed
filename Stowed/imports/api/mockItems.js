@@ -179,3 +179,9 @@ export function getTotalValue(items) {
     return total + (item.unitCost * item.quantity || 0);
   }, 0);
 }
+
+export function getRecentlyUpdatedItems(items, limit = 5) {
+  return [...items]
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    .slice(0, limit);
+}
