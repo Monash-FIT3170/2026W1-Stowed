@@ -105,6 +105,11 @@ export const StorageUnitSchema = new SimpleSchema({
   updatedAt: {
     type: Date,
   },
+  
+  photoUrl: {
+    type: String,
+    optional: true,
+  },
 });
 
 /**

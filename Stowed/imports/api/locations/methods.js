@@ -170,4 +170,38 @@ Meteor.methods({
       updatedAt: new Date(),
     });
   },
+
+  /**
+   * Updates the photo of an existing StorageUnit.
+   *
+   * Stores a base64-encoded image string against the storage unit document.
+   *
+   * @param {Object} params
+   * @param {string} params.unitId - ID of the StorageUnit to update.
+   * @param {string} params.photoUrl - Base64-encoded image string.
+   * @returns {number} Number of documents updated.
+   *
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
+   * @throws {Meteor.Error} invalid-storage-unit if the StorageUnit does not exist.
+   */
+  async 'storageUnits.updatePhoto'({ unitId, photoUrl }) {
+    check(unitId, String);
+    check(photoUrl, String);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
+    const unit = await StorageUnits.findOneAsync(unitId);
+    if (!unit) {
+      throw new Meteor.Error('invalid-storage-unit', 'Storage unit does not exist.');
+    }
+
+    return StorageUnits.updateAsync(unitId, {
+      $set: {
+        photoUrl,
+        updatedAt: new Date(),
+      },
+    });
+  },
 });
