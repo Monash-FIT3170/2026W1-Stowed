@@ -56,6 +56,7 @@ export function Canvas({ style, floorSize, activeTool }) {
   const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
   const [ghostUnit, setGhostUnit] = useState(null);
+  const [scale, setScale] = useState(1); // scale state, default 1
 
   // --- BUILD GRID ---
   const vLines = [];
@@ -151,12 +152,46 @@ export function Canvas({ style, floorSize, activeTool }) {
     setUnits((prev) => prev.map((unit) => unit.id === unitId ? { ...unit, x: snappedX, y: snappedY } : unit));
   }
 
+  // handler for wheeling, which causes the stage to zoom in or out
+  function handleWheel(e) {
+
+    e.evt.preventDefault();
+
+    const scaleFactor = 1.01;
+    const stage = stageRef.current;
+    const oldScale = stage.scaleX();
+
+    const mouse = stage.getPointerPosition();
+
+    // Get mouse location
+    const mouseLoc = {
+      x: (mouse.x - stage.x()) / oldScale,
+      y: (mouse.y - stage.y()) / oldScale
+    };
+
+    // if wheeling up then zoom in otherwise zoom out
+    const newScale = e.evt.deltaY > 0
+      ? oldScale / scaleFactor
+      : oldScale * scaleFactor;
+
+    // sets scale
+    setScale(newScale);
+
+    // gets new position of stage after zoom
+    const newPos = {
+      x: mouse.x - mouseLoc.x * newScale,
+      y: mouse.y - mouseLoc.y * newScale
+    }
+
+    stage.position(newPos);
+  }
+
 
   // --- HTML ELEMENT ---
   return (
     // Stage cannot catch drop events so wrap in div
     <div onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
-      <Stage ref={stageRef} width={width} height={height} style={style}>
+      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style}>
         
         {/* BASE CANVAS LAYER */}
         <Layer>
