@@ -83,9 +83,16 @@ export function Canvas({ style, floorSize, activeTool }) {
     const template = dragState.template;
     if (!template) return null;
 
-    const stageBox = stageRef.current.container().getBoundingClientRect();
-    const x = e.clientX - stageBox.left;
-    const y = e.clientY - stageBox.top;
+    const stage = stageRef.current;
+    const stageBox = stage.container().getBoundingClientRect();
+
+    const pointer = {
+      x: e.clientX - stageBox.left,
+      y: e.clientY - stageBox.top
+    }
+
+    const x = (pointer.x - stage.x()) / stage.scaleX();
+    const y = (pointer.y - stage.y()) / stage.scaleY();
 
     const wPixels = template.width  * CANVAS_CONFIG.GRID_SIZE;
     const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
@@ -123,9 +130,17 @@ export function Canvas({ style, floorSize, activeTool }) {
     const template = JSON.parse(unitData);
     
     // get canvas position, obtain canvas relative coords
-    const stageBox = stageRef.current.container().getBoundingClientRect();
-    const x = e.clientX - stageBox.left;
-    const y = e.clientY - stageBox.top;
+
+    const stage = stageRef.current;
+    const stageBox = stage.container().getBoundingClientRect();
+
+    const pointer = {
+      x: e.clientX - stageBox.left,
+      y: e.clientY - stageBox.top
+    }
+
+    const x = (pointer.x - stage.x()) / stage.scaleX();
+    const y = (pointer.y - stage.y()) / stage.scaleY();
     
     // convert m to px, snap position
     const wPixels = template.width  * CANVAS_CONFIG.GRID_SIZE;
