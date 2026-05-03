@@ -57,6 +57,7 @@ export function Canvas({ style, floorSize, activeTool }) {
   const [selectedId, setSelectedId] = useState(null); // Not implemented
   const [ghostUnit, setGhostUnit] = useState(null);
   const [scale, setScale] = useState(1); // scale state, default 1
+  const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
 
   // --- BUILD GRID ---
   const vLines = [];
@@ -152,6 +153,11 @@ export function Canvas({ style, floorSize, activeTool }) {
     setUnits((prev) => prev.map((unit) => unit.id === unitId ? { ...unit, x: snappedX, y: snappedY } : unit));
   }
 
+  function handleDragEndGrid(e) {
+    const stage = e.target.getStage();
+    setStagePos({x: stage.x(), y: stage.y()});
+  }
+
   // handler for wheeling, which causes the stage to zoom in or out
   function handleWheel(e) {
 
@@ -191,7 +197,8 @@ export function Canvas({ style, floorSize, activeTool }) {
   return (
     // Stage cannot catch drop events so wrap in div
     <div onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
-      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style}>
+      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style}
+      draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid}>
         
         {/* BASE CANVAS LAYER */}
         <Layer>
