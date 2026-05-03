@@ -28,24 +28,41 @@ function SidebarLink({ to, label, end }) {
   );
 }
 
+function SectionLabel({ label }) {
+  return (
+    <p className="text-xs text-gray-400 font-medium uppercase tracking-wide px-3 mb-1">
+      {label}
+    </p>
+  );
+}
+
 export function Sidebar() {
   return (
-    <aside className="w-64 border-r border-black bg-white p-4">
-      <div className="mb-8 text-2xl font-bold">Stowed</div>
+    <aside className="w-48 border-r border-gray-200 bg-white p-4 flex flex-col gap-6">
+      <div style={{ marginBottom: "8px" }}>
+        <div style={{ fontSize: "24px", fontWeight: 500, fontFamily: "Georgia, serif" }}>
+          <em>Stowed</em><em style={{ color: "#B5532A" }}>.</em>
+        </div>
+        <div style={{ fontSize: "12px", color: "#998874" }}>a place for everything</div>
+      </div>
 
-      <nav className="space-y-6">
+      <nav className="flex flex-col gap-4">
         <section>
-          <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Workspace</p>
-          {WORKSPACE_LINKS.map(link => (
-            <SidebarLink key={link.to} {...link} end={link.to === '/'} />
-          ))}
+          <SectionLabel label="Workspace" />
+          <div className="flex flex-col gap-0.5">
+            {WORKSPACE_LINKS.map(link => (
+              <SidebarLink key={link.to} {...link} end={link.to === '/'} />
+            ))}
+          </div>
         </section>
 
         <section>
-          <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Tools</p>
-          {TOOL_LINKS.map(link => (
-            <SidebarLink key={link.to} {...link} />
-          ))}
+          <SectionLabel label="Tools" />
+          <div className="flex flex-col gap-0.5">
+            {TOOL_LINKS.map(link => (
+              <SidebarLink key={link.to} {...link} />
+            ))}
+          </div>
         </section>
       </nav>
     </aside>
