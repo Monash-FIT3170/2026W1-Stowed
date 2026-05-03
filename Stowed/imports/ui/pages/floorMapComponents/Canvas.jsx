@@ -3,6 +3,7 @@ import {Stage, Layer, Rect, Line, Text, Group} from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
 import { dragState } from "./DragState";
 import { useNavigate } from "react-router-dom";
+import { mockCanvasUnits } from "../../../api/mockLocations";
 
 // TEMPORARY config, to be refactored and potentially replaced so it does not live here
 export const CANVAS_CONFIG = {
@@ -55,7 +56,7 @@ export function Canvas({ style, floorSize, activeTool }) {
   const stageRef = useRef(null);
   const navigate = useNavigate();
   
-  const [units, setUnits] = useState([]);
+  const [units, setUnits] = useState(mockCanvasUnits);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
   const [ghostUnit, setGhostUnit] = useState(null);
 
@@ -139,7 +140,7 @@ export function Canvas({ style, floorSize, activeTool }) {
 
   // --- STAGE HANDLERS ---
   function handleUnitClick(unit) {
-  navigate(`/storage-unit/${unit._id}`);
+    navigate(`/storage-unit/${unit._id || unit.id}`);
   }
 
   function handleDragEnd(e, unitId) {
@@ -178,7 +179,7 @@ export function Canvas({ style, floorSize, activeTool }) {
               unit={unit}
               isSelected={selectedId === unit.id}
               activeTool={activeTool}
-              onSelect={(e) => handleUnitClick(e, unit)}
+              onSelect={() => handleUnitClick(unit)}
               onDragEnd={(e) => handleDragEnd(e, unit.id)}
               onTransformEnd={() => {}} // Add this method in when resizing objects, if we do that
             />

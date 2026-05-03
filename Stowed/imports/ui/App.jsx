@@ -23,10 +23,12 @@ export function App() {
       <div className="flex h-screen overflow-hidden bg-white">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
+          <Suspense fallback={null}>
             <Routes>
-               <Route path="/"                    element={<InventoryPage />} />
+              <Route path="/"                    element={<InventoryPage />} />
               <Route path="/inventory/:itemId"   element={<ItemDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
+              <Route path="/locations"           element={<LocationsPage />} />
               <Route path="/lists"               element={<ListsPage />} />
               <Route path="/stocktake"           element={<StocktakePage />} />
               <Route path="/qr-codes"            element={<QRCodesPage />} />

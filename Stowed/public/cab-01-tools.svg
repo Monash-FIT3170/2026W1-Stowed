@@ -1,0 +1,92 @@
+<svg width="100%" viewBox="0 0 680 480" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>CAB-01 tools cabinet</title>
+  <style>
+    .tag { font-family: sans-serif; font-size: 11px; fill: #a89880; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="480" fill="#f5ede2"/>
+  <ellipse cx="340" cy="455" rx="200" ry="12" fill="#e0cdb8" opacity="0.6"/>
+
+  <rect x="160" y="60" width="360" height="380" rx="6" fill="#c9a97a"/>
+  <line x1="160" y1="110" x2="520" y2="110" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
+  <line x1="160" y1="200" x2="520" y2="200" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
+  <line x1="160" y1="290" x2="520" y2="290" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
+  <line x1="160" y1="380" x2="520" y2="380" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
+
+  <rect x="175" y="75" width="330" height="352" rx="3" fill="#e8d8c0"/>
+
+  <rect x="175" y="183" width="330" height="10" rx="2" fill="#c9a97a"/>
+  <rect x="175" y="278" width="330" height="10" rx="2" fill="#c9a97a"/>
+
+  <rect x="195" y="110" width="28" height="65" rx="4" fill="#6CBEAA"/>
+  <rect x="195" y="104" width="28" height="12" rx="3" fill="#4a9e8a"/>
+  <rect x="201" y="120" width="16" height="8" rx="1" fill="white" opacity="0.6"/>
+  <rect x="205" y="100" width="8" height="6" rx="1" fill="#3a8e7a"/>
+
+  <rect x="240" y="125" width="50" height="50" rx="3" fill="#e8c87a"/>
+  <rect x="248" y="133" width="34" height="20" rx="2" fill="#d4a845"/>
+  <text x="265" y="148" text-anchor="middle" class="tag">M8</text>
+
+  <rect x="305" y="115" width="65" height="60" rx="3" fill="#8ab0d0"/>
+  <rect x="312" y="122" width="50" height="18" rx="2" fill="#6a90b0"/>
+  <line x1="318" y1="148" x2="318" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
+  <line x1="328" y1="148" x2="328" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
+  <line x1="338" y1="148" x2="338" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
+  <line x1="348" y1="148" x2="348" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
+
+  <rect x="385" y="130" width="35" height="45" rx="5" fill="#d4e8c8"/>
+  <rect x="385" y="125" width="35" height="12" rx="3" fill="#a8c890"/>
+  <circle cx="397" cy="158" r="3" fill="#88a870"/>
+  <circle cx="407" cy="153" r="3" fill="#88a870"/>
+  <circle cx="402" cy="163" r="3" fill="#88a870"/>
+
+  <circle cx="465" cy="148" r="22" fill="#f0d080"/>
+  <circle cx="465" cy="148" r="10" fill="#e8d8c0"/>
+
+  <rect x="192" y="215" width="55" height="55" rx="4" fill="#d8c8e8"/>
+  <rect x="198" y="222" width="42" height="28" rx="2" fill="#c0a8d8"/>
+  <text x="219" y="240" text-anchor="middle" class="tag" fill="#8060a0">100pk</text>
+
+  <rect x="262" y="210" width="45" height="60" rx="4" fill="#e87a7a"/>
+  <rect x="262" y="208" width="45" height="10" rx="3" fill="#c05a5a"/>
+  <ellipse cx="284" cy="208" rx="22" ry="4" fill="#d06060"/>
+  <path d="M270 208 Q284 198 298 208" fill="none" stroke="#c05a5a" stroke-width="2.5"/>
+
+  <rect x="322" y="218" width="70" height="48" rx="3" fill="#f0e0b0"/>
+  <rect x="330" y="225" width="54" height="20" rx="2" fill="#e0c880"/>
+  <text x="357" y="239" text-anchor="middle" class="tag" fill="#806030">HEX M8</text>
+  <circle cx="378" cy="220" r="7" fill="#e87a6a"/>
+  <text x="378" y="224" text-anchor="middle" style="font-family:sans-serif;font-size:10px;fill:white;font-weight:600">!</text>
+
+  <rect x="408" y="215" width="18" height="58" rx="4" fill="#b0b8c8"/>
+  <ellipse cx="417" cy="220" rx="10" ry="8" fill="#9098a8"/>
+  <ellipse cx="417" cy="220" rx="5" ry="4" fill="#b0b8c8"/>
+  <ellipse cx="417" cy="268" rx="10" ry="8" fill="#9098a8"/>
+  <ellipse cx="417" cy="268" rx="5" ry="4" fill="#b0b8c8"/>
+
+  <rect x="440" y="225" width="22" height="45" rx="4" fill="#c8e8d0"/>
+  <rect x="440" y="220" width="22" height="10" rx="3" fill="#a0c8a8"/>
+  <rect x="468" y="225" width="22" height="45" rx="4" fill="#c8d8e8"/>
+  <rect x="468" y="220" width="22" height="10" rx="3" fill="#a0b8c8"/>
+
+  <rect x="190" y="306" width="90" height="60" rx="4" fill="#d8c0a0"/>
+  <rect x="198" y="313" width="74" height="25" rx="2" fill="#c8a880"/>
+  <text x="235" y="329" text-anchor="middle" class="tag" fill="#806040">TOOLS</text>
+  <rect x="225" y="303" width="20" height="8" rx="4" fill="#b89870"/>
+
+  <rect x="294" y="312" width="40" height="52" rx="2" fill="#e8f0f8" opacity="0.9"/>
+  <rect x="294" y="310" width="40" height="8" rx="2" fill="#a0b8d0"/>
+
+  <ellipse cx="375" cy="335" rx="22" ry="14" fill="#d0e8f8"/>
+  <ellipse cx="375" cy="335" rx="16" ry="10" fill="#e8f4fc"/>
+
+  <circle cx="455" cy="340" r="24" fill="#e8c870"/>
+  <circle cx="455" cy="340" r="12" fill="#e8d8c0"/>
+
+  <rect x="160" y="60" width="360" height="380" rx="6" fill="none" stroke="#a07840" stroke-width="3"/>
+
+  <rect x="285" y="38" width="110" height="28" rx="4" fill="#6CBEAA"/>
+  <text x="340" y="57" text-anchor="middle" style="font-family:sans-serif;font-size:13px;fill:white;font-weight:500">CAB-01 · tools</text>
+
+  <line x1="100" y1="445" x2="580" y2="445" stroke="#d4c0a8" stroke-width="1.5"/>
+</svg>
