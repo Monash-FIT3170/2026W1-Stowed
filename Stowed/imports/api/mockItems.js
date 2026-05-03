@@ -171,3 +171,9 @@ export function getLowStockItems(items) {
       i.quantity <= i.lowStockThreshold,
   );
 }
+
+export function getTotalValue(items) {
+  return items.reduce((total, item) => {
+    return total + (item.unitCost * item.quantity || 0);
+  }, 0);
+}
