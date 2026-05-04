@@ -100,9 +100,20 @@ export function Canvas({ style, floorSize, activeTool }) {
     const snappedX = snapToGrid(x - wPixels / 2);
     const snappedY = snapToGrid(y - hPixels / 2);
 
-    // ensures unit placed where grid is
+
+    const pointInGrid =
+      x >= 0 &&
+      y >= 0 &&
+      x <= width &&
+      y <= height;
+
+    // keeps unit in grid
     const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
+    
+
+
+    if (!pointInGrid) return null;
 
     return { ...template, id: "ghost", x: clampedX, y: clampedY, width: wPixels, height: hPixels };
   }
@@ -114,7 +125,11 @@ export function Canvas({ style, floorSize, activeTool }) {
 
     // Update ghost preview position every time the cursor moves over the canvas
     const ghost = buildGhostFromEvent(e);
-    if (ghost) setGhostUnit(ghost);
+    if (ghost) {
+      setGhostUnit(ghost);}
+    else {
+      setGhostUnit(null);
+    }
   }
 
   // Clear ghost when cursor leaves the canvas area
@@ -151,11 +166,21 @@ export function Canvas({ style, floorSize, activeTool }) {
     const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
     const snappedX = snapToGrid(x - wPixels / 2, CANVAS_CONFIG.GRID_SIZE);
     const snappedY = snapToGrid(y - hPixels / 2, CANVAS_CONFIG.GRID_SIZE);
+    
+        const pointInGrid =
+      x >= 0 &&
+      y >= 0 &&
+      x <= width &&
+      y <= height;
 
     // keeps unit in grid
     const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
     
+
+
+    if (!pointInGrid) return null;
+
     // add unit to canvas
     setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: clampedX, y: clampedY, width: wPixels, height: hPixels},]);
   }
