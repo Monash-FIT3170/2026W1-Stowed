@@ -13,7 +13,7 @@ import { CANVAS_CONFIG } from "./Canvas";
  *
  * @returns {JSX.Element} Toolbar UI element
  */
-export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSize, onOpenCanvasSettings }) {
+export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSize, onOpenCanvasSettings, onSaveLayout, onLoadLayout}) {
     // store input seperately from pixels to avoid crash
     const [inputMeters, setInputMeters] = useState({
       width: floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER,
@@ -42,6 +42,8 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
         <button onClick={() => setActiveTool("move")}>Move</button>
         <button onClick={() => setActiveTool("add")}>Add</button>
         <button onClick={() => setActiveTool("delete")}>Delete</button>
+        <button onClick={onSaveLayout}>Save Layout</button>
+        <button onClick={onLoadLayout}>Load Layout</button>
   
         <div style={{ marginLeft: "20px" }}>Active Tool: <b>{activeTool}</b></div>
   

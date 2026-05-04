@@ -13,11 +13,19 @@ export const CANVAS_CONFIG = {
 }
 
 // TEMPORARY storage unit for testing, replace with db fetch and simpleschema
-function StorageUnit({unit, isSelected, onSelect, onTransformEnd}) {
+function StorageUnit({unit, isSelected, activeTool, onSelect, onDragEnd, onTransformEnd}) {
+  const canMove = activeTool === "move";
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
-
   return (
-    <Group id={unit.id} x={unit.x * px} y={unit.y * px} onClick={onSelect} onTransformEnd={onTransformEnd}>
+    <Group
+      id={unit.id}
+      x={unit.x * px}
+      y={unit.y * px}
+      draggable={canMove}
+      onClick={onSelect}
+      onDragEnd={onDragEnd}
+      onTransformEnd={onTransformEnd}
+    >
       {/* MAIN BODY */}
       <Rect width={unit.width * px} height={unit.height * px} fill={unit.fill} stroke={isSelected ? "orange" : "transparent"} strokeWidth={2} cornerRadius={4} opacity={0.85}/>
 
@@ -61,7 +69,6 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const wrapperRef = useRef(null);
   const navigate = useNavigate();
   
-  const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
   const [ghostUnit, setGhostUnit] = useState(null);
   const [scale, setScale] = useState(1); // scale state, default 1

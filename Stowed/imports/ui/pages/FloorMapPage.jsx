@@ -44,6 +44,30 @@ export function FloorMapPage() {
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
 
+    function handleSaveLayout() {
+      const layout = {
+        floorSize,
+        units,
+      };
+
+      localStorage.setItem("floorMapLayout", JSON.stringify(layout));
+      alert("Layout saved successfully!");
+    }
+
+    function handleLoadLayout() {
+      const savedLayout = localStorage.getItem("floorMapLayout");
+
+      if (!savedLayout) {
+        alert("No saved layout found.");
+        return;
+      }
+
+      const layout = JSON.parse(savedLayout);
+
+      setFloorSize(layout.floorSize);
+      setUnits(layout.units);
+      alert("Layout loaded successfully!");
+    }
   // --- PLACING ---
   function handlePlaceUnit(template) {
     // clicking a panel arms the add tool with that template
@@ -72,6 +96,8 @@ export function FloorMapPage() {
         setActiveTool={setActiveTool}
         floorSize={floorSize}
         setFloorSize={setFloorSize}
+        onSaveLayout={handleSaveLayout}
+        onLoadLayout={handleLoadLayout}
         onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
       />
 
@@ -85,6 +111,17 @@ export function FloorMapPage() {
         <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", overflow: "auto" }}>
           <Canvas
             floorSize={floorSize}
+            activeTool={activeTool}
+            units={units}
+            setUnits={setUnits}
+            pendingUnit={pendingUnit}
+            onUnitPlaced={handleUnitPlaced}
+            style={{
+              display: "block",
+              width: `${floorSize.width}px`,
+              height: `${floorSize.height}px`,
+              border: "2px solid #999"
+            }}
             canvasSettings={canvasSettings}
             style={{ display: "block", width: `${floorSize.width}px`, height: `${floorSize.height}px`, border: "2px solid #999" }}
           />
