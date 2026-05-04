@@ -3,6 +3,7 @@ import {Stage, Layer, Rect, Line, Text, Group} from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
 import { dragState } from "./DragState";
 import { useNavigate } from "react-router-dom";
+import { isRectRectIntersecting } from "./UnitCollisions";
 
 // TEMPORARY config, to be refactored and potentially replaced so it does not live here
 export const CANVAS_CONFIG = {
