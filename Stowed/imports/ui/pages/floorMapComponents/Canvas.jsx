@@ -202,6 +202,14 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     
     const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : (x - wPixels / 2);
     const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : (y - hPixels / 2);
+    
+    const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
+
+    if (!pointInGrid) return null;
+
+    // keeps unit in grid
+    const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
+    const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
 
     const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
     if (!pointInGrid) return;
@@ -212,14 +220,8 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const thisBounds = { dom: { lower: clampedX, upper: clampedX + wPixels }, ran: { lower: clampedY, upper: clampedY + hPixels } };
     if (hasCollisions(thisBounds)) return;
 
-    setUnits((prev) => [...prev, {
-      ...template,
-      id: `unit-${Date.now()}`,
-      x: clampedX / CANVAS_CONFIG.PIXELS_PER_METER,
-      y: clampedY / CANVAS_CONFIG.PIXELS_PER_METER,
-      width: template.width,
-      height: template.height,
-    }]);
+     // add unit to canvas
+     setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: clampedX, y: clampedY, width: wPixels, height: hPixels},]);
   }
 
   // --- STAGE HANDLERS ---
@@ -272,26 +274,10 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
 
   return (
-    <div
-      ref={wrapperRef}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      style={{ display: "inline-block" }}
-    >
-      <Stage
-        ref={stageRef}
-        width={width}
-        height={height}
-        scaleX={scale}
-        scaleY={scale}
-        onWheel={handleWheel}
-        style={style}
-        draggable
-        x={stagePos.x}
-        y={stagePos.y}
-        onDragEnd={handleDragEndGrid}
-      >
+    // Stage cannot catch drop events so wrap in div
+    <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
+      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style}
+      draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid}>
         {/* BASE CANVAS LAYER */}
         <Layer>
           {/* BACKGROUND */}
