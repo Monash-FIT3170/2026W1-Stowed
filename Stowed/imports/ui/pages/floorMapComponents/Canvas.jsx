@@ -73,6 +73,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const [ghostUnit, setGhostUnit] = useState(null);
   const [scale, setScale] = useState(1); // scale state, default 1
   const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
+  const [units, setUnits] = useState([]);
 
   // --- BUILD GRID ---
   const vLines = [];
@@ -227,7 +228,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
       height: template.height,
     }]);
   }
-  
+
   // --- STAGE HANDLERS ---
   function handleUnitClick(unit) {
     navigate(`/storage-unit/${unit._id}`);
