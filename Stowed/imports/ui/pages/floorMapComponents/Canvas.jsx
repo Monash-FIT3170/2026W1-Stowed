@@ -100,7 +100,11 @@ export function Canvas({ style, floorSize, activeTool }) {
     const snappedX = snapToGrid(x - wPixels / 2);
     const snappedY = snapToGrid(y - hPixels / 2);
 
-    return { ...template, id: "ghost", x: snappedX, y: snappedY, width: wPixels, height: hPixels };
+    // ensures unit placed where grid is
+    const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
+    const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
+
+    return { ...template, id: "ghost", x: clampedX, y: clampedY, width: wPixels, height: hPixels };
   }
 
   // --- DROP HANDLERS ---
@@ -147,9 +151,13 @@ export function Canvas({ style, floorSize, activeTool }) {
     const hPixels = template.height * CANVAS_CONFIG.GRID_SIZE;
     const snappedX = snapToGrid(x - wPixels / 2, CANVAS_CONFIG.GRID_SIZE);
     const snappedY = snapToGrid(y - hPixels / 2, CANVAS_CONFIG.GRID_SIZE);
+
+    // keeps unit in grid
+    const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
+    const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
     
     // add unit to canvas
-    setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: snappedX, y: snappedY, width: wPixels, height: hPixels},]);
+    setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: clampedX, y: clampedY, width: wPixels, height: hPixels},]);
   }
 
   // --- STAGE HANDLERS ---
