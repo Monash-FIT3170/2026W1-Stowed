@@ -2,6 +2,9 @@ import {useRef, useState} from "react"
 import {Stage, Layer, Rect, Line, Text, Group} from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
 import { dragState } from "./DragState";
+import { useNavigate } from "react-router-dom";
+import { isRectRectIntersecting } from "./UnitCollisions";
+
 // TEMPORARY config, to be refactored and potentially replaced so it does not live here
 export const CANVAS_CONFIG = {
   METERS_PER_CELL : 1,
@@ -86,6 +89,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     if (!template) return null;
 
     const stageBox = stageRef.current.container().getBoundingClientRect();
+    
     const xPx = e.clientX - stageBox.left;
     const yPx = e.clientY - stageBox.top;
 
@@ -100,11 +104,44 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
     const snappedXm = snapEnabled ? snapToGridMeters(rawXm, gridInterval) : rawXm;
     const snappedYm = snapEnabled ? snapToGridMeters(rawYm, gridInterval) : rawYm;
+    
+    // --- DROP HANDLERS ---
+    // convert bounds to pixels for collision detection
+    const wPx = wMeters * CANVAS_CONFIG.PIXELS_PER_METER;
+    const hPX = hMeters * CANVAS_CONFIG.PIXELS_PER_METER;
+    const snappedXPx = snappedXm * CANVAS_CONFIG.PIXELS_PER_METER;
+    const snappedyPx = snappedYm * CANVAS_CONFIG.PIXELS_PER_METER;
 
-    return { ...template, id: "ghost", x: snappedXm, y: snappedYm, width: wMeters, height: hMeters};
+    // define bounds for this unit
+    const thisBounds = { dom: { lower: snappedXPx, upper: snappedXPx +wPx }, ran: { lower: snappedYPx, upper: snappedYPx + hPx} };
+    // don't show ghost if there are collisions
+    if (hasCollisions(thisBounds)) {
+      setGhostUnit(null);
+      return;
+    }
+
+    return { ...template, id: "ghost", x: snappedX, y: snappedY, width: wPixels, height: hPixels };
   }
 
-   // --- DROP HANDLERS ---
+  // --- COLLISION DETECT ---
+  // Centralise collision logic to be used in handleDrop and buildGhostFromEvent
+  function hasCollisions(newBounds) {
+    const intersectsThis = isRectRectIntersecting(newBounds);
+
+    // generate bounds for other units
+    const coordRanges = units.map(
+      ({ x, y, width, height }) => (
+        { dom: { lower: x, upper: x + width }, ran: { lower: y, upper: y + height } }
+      )
+    );
+    const anyIntersects = coordRanges
+      .map(otherBound => intersectsThis(otherBound)) // check for collision with other unit
+      .reduce((acc, i) => acc || i, false); // combine individual checks into single condition
+
+    return anyIntersects;
+  }
+
+  // --- DROP HANDLERS ---
   function handleDragOver(e) {
     // Prevent page from reloading on drop
     e.preventDefault();
@@ -144,13 +181,24 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
     const snappedXm = snapEnabled ? snapToGridMeters(rawXm, gridInterval) : rawXm;
     const snappedYm = snapEnabled ? snapToGridMeters(rawYm, gridInterval) : rawYm;
+   
+    // convert m to px, snap position
+    const wPx = wMeters * CANVAS_CONFIG.PIXELS_PER_METER;
+    const hPx = hMeters * CANVAS_CONFIG.PIXELS_PER_METER;
+    const snappedXPx = snappedXm * CANVAS_CONFIG.PIXELS_PER_METER;
+    const snappedYPx = snappedYm * CANVAS_CONFIG.PIXELS_PER_METER;
 
-    setUnits(prev => [...prev,{  ...template,  id: `unit-${Date.now()}`,  x: snappedXm,  y: snappedYm,  width: wMeters,  height: hMeters}]);
+    // define bounds for this unit
+    const thisBounds = { dom: { lower: snappedXPx, upper: snappedXPx + wPx }, ran: { lower: snappedYPx, upper: snappedYPx + hPx }};
+    if (hasCollisions(thisBounds)) return;
+
+    // add unit to canvas
+    setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: snappedX, y: snappedY, width: wPixels, height: hPixels},]);
   }
 
   // --- STAGE HANDLERS ---
-  function handleUnitClick(e, unit) {
-    // Nothing here for now, to add selecting unit etc, fill in this method
+  function handleUnitClick(unit) {
+  navigate(`/storage-unit/${unit._id}`);
   }
 
   // function handleDragEnd(e, unitId) {
