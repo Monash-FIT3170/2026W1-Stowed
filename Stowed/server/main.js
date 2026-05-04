@@ -1,20 +1,13 @@
 import { Meteor } from 'meteor/meteor';
-import '/imports/api/productMethods';
-import '/imports/api/productRecordMethods';
-import { Products } from '/imports/api/products';
-import { ProductRecords } from '/imports/api/productRecords';
+import '/imports/api/products/methods';
 import '/imports/api/locations/methods';
-import '/imports/api/locations/publications';
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from '/imports/api/locations/collections';
+import '/imports/api/publications';
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
+import { Products, ProductRecords } from '/imports/api/products/collections';
 
-//await Products.removeAsync({});  // TEMP: force reseed 
-//await ProductRecords.removeAsync({});
-//await Products.removeAsync({});
+// await Products.removeAsync({});  // TEMP: force reseed 
+// await ProductRecords.removeAsync({});
+// await Products.removeAsync({});
 
 // These functions pre populate fields if empty, however can be removed later if needed 
 
@@ -101,12 +94,4 @@ Meteor.startup(async () => {
   await seedProducts();
   await seedLocations();
   await seedProductRecords();
-
-  Meteor.publish('products', function () {
-    return Products.find();
-  });
-
-  Meteor.publish('productRecords', function () {
-    return ProductRecords.find();
-  });
 });

@@ -1,14 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { Products } from '/imports/api/products';
-import { ProductRecords } from '/imports/api/productRecords';
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from '/imports/api/locations/collections';
+import { Products, ProductRecords } from '/imports/api/products/collections';
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
 
 // brief styling to be fixed later
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { Products } from '/imports/api/products';
+import { Products } from '/imports/api/products/collections';
 
 export function InventoryPage() {
   const products = useTracker(() => {

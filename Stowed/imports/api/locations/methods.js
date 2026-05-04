@@ -3,12 +3,7 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from './collections';
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from './collections';
 
 Meteor.methods({
   /**

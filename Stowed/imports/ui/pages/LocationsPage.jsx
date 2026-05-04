@@ -2,12 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 
-import {
-  FloorMaps,
-  Sites,
-  StorageLocations,
-  StorageUnits,
-} from '/imports/api/locations/collections';
+import { FloorMaps, Sites, StorageLocations, StorageUnits } from '/imports/api/locations/collections';
 
 const STORAGE_UNIT_TYPES = ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other'];
 

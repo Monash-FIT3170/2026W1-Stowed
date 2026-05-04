@@ -1,14 +1,5 @@
-import { Mongo } from 'meteor/mongo';
+// imports/api/locations/schemas.js
 import SimpleSchema from 'simpl-schema';
-import 'meteor/aldeed:collection2/static';
-
-/**
- * A Product represents a type of inventory item tracked in the system.
- * It holds the core identity and total stock count across all locations.
- *
- * The breakdown of stock per location is stored separately in ProductRecords.
- */
-export const Products = new Mongo.Collection('products');
 
 export const ProductSchema = new SimpleSchema({
   name: {
@@ -36,5 +27,30 @@ export const ProductSchema = new SimpleSchema({
     type: Date,
   },
 });
+
+export const ProductRecordSchema = new SimpleSchema({
+  productId: {
+    type: String,
+  },
+
+  locationId: {
+    type: String,
+  },
+
+  quantity: {
+    type: SimpleSchema.Integer,
+    min: 0,
+  },
+
+  createdAt: {
+    type: Date,
+  },
+
+  updatedAt: {
+    type: Date,
+  },
+});
+
+ProductRecords.attachSchema(ProductRecordSchema);
 
 Products.attachSchema(ProductSchema);
