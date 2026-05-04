@@ -30,6 +30,30 @@ export function FloorMapPage() {
   // unit template the user has selected from the library panel to place
   const [pendingUnit, setPendingUnit] = useState({width: 500, height: 500})
 
+    function handleSaveLayout() {
+      const layout = {
+        floorSize,
+        units,
+      };
+
+      localStorage.setItem("floorMapLayout", JSON.stringify(layout));
+      alert("Layout saved successfully!");
+    }
+
+    function handleLoadLayout() {
+      const savedLayout = localStorage.getItem("floorMapLayout");
+
+      if (!savedLayout) {
+        alert("No saved layout found.");
+        return;
+      }
+
+      const layout = JSON.parse(savedLayout);
+
+      setFloorSize(layout.floorSize);
+      setUnits(layout.units);
+      alert("Layout loaded successfully!");
+    }
   // --- PLACING ---
   function handlePlaceUnit(template) {
     // clicking a panel arms the add tool with that template
@@ -47,8 +71,15 @@ export function FloorMapPage() {
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       
       {/* CANVAS TOOLBAR - top side*/}
-      <CanvasToolbar activeTool={activeTool} setActiveTool={setActiveTool} floorSize={floorSize} setFloorSize={setFloorSize}/>
-
+      <CanvasToolbar
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        floorSize={floorSize}
+        setFloorSize={setFloorSize}
+        onSaveLayout={handleSaveLayout}
+        onLoadLayout={handleLoadLayout}
+      />
+      
       {/* MAIN ROW */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden"}}>
 

@@ -54,14 +54,13 @@ function snapToGrid(value) {
  * 
  * @returns {JSX.Element} - React Konva canvas element 
  */
-export function Canvas({ style, floorSize, activeTool }) {
+export function Canvas({ style, floorSize, activeTool, units, setUnits }) {
   const width = floorSize.width;
   const height = floorSize.height;
   const gridSize = CANVAS_CONFIG.GRID_SIZE;
   const metersPerCell = CANVAS_CONFIG.METERS_PER_CELL;
   const stageRef = useRef(null);
   
-  const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
   const [ghostUnit, setGhostUnit] = useState(null);
 
