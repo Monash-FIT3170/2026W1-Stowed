@@ -117,7 +117,6 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
       return;
     }
 
-
     const pointInGrid =
       x >= 0 &&
       y >= 0 &&
@@ -128,8 +127,6 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
     
-
-
     if (!pointInGrid) return null;
 
     return { ...template, id: "ghost", x: clampedX, y: clampedY, width: wPixels, height: hPixels };
@@ -204,26 +201,26 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : (y - hPixels / 2);
     
     const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
-
-    if (!pointInGrid) return null;
-
-    // keeps unit in grid
-    const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
-    const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
-
-    const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
     if (!pointInGrid) return;
 
+    // keeps unit in grid
     const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
 
     const thisBounds = { dom: { lower: clampedX, upper: clampedX + wPixels }, ran: { lower: clampedY, upper: clampedY + hPixels } };
     if (hasCollisions(thisBounds)) return;
 
-     // add unit to canvas
-     setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: clampedX, y: clampedY, width: wPixels, height: hPixels},]);
+    // add unit to canvas
+    setUnits((prev) => [...prev, {
+      ...template,
+      id: `unit-${Date.now()}`,
+      x: clampedX / CANVAS_CONFIG.PIXELS_PER_METER,
+      y: clampedY / CANVAS_CONFIG.PIXELS_PER_METER,
+      width: template.width,
+      height: template.height,
+    }]);
   }
-
+  
   // --- STAGE HANDLERS ---
   function handleUnitClick(unit) {
     navigate(`/storage-unit/${unit._id}`);
@@ -231,6 +228,18 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
   function handleDragEnd(e, unitId) {
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
+
+    const rawXm = e.target.x() / px;
+    const rawYm = e.target.y() / px;
+
+    const snappedXm = snapEnabled ? snapToGrid(rawXm, gridInterval) : rawXm;
+    const snappedYm = snapEnabled ? snapToGrid(rawYm, gridInterval) : rawYm;
+
+    e.target.x(snappedXm * px);
+    e.target.y(snappedYm * px);
+
+    // Update unit position in state
+    setUnits(prev => prev.map(unit => unit.id === unitId ? { ...unit, x: snappedXm, y: snappedYm } : unit));
   }
 
   function handleDragEndGrid(e) {
