@@ -28,8 +28,8 @@ function StorageUnit({unit, isSelected, onSelect, onTransformEnd}) {
 }
 
 // HELPER METHOD
-function snapToGridMeters(value, gridInterval) {
-  return Math.round(value / gridInterval) * gridInterval;
+function snapToGrid(value, snapInterval) {
+  return Math.round(value / snapInterval) * snapInterval;
 }
 
 /**
@@ -51,7 +51,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const width = floorSize.width;
   const height = floorSize.height;
 
-    // canvas settings may be undefined so fallback on CANVAS_CONFIG
+  // canvas settings may be undefined so fallback on CANVAS_CONFIG
   const gridInterval  = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
   const showGrid      = canvasSettings?.showGrid     ?? true;
   const snapEnabled   = canvasSettings?.snapToGrid   ?? true;
@@ -59,6 +59,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
   const stageRef  = useRef(null);
   const wrapperRef = useRef(null);
+  const navigate = useNavigate();
   
   const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
@@ -89,31 +90,20 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     if (!template) return null;
 
     const stageBox = stageRef.current.container().getBoundingClientRect();
-    
-    const xPx = e.clientX - stageBox.left;
-    const yPx = e.clientY - stageBox.top;
 
-    const xMeters = xPx / CANVAS_CONFIG.PIXELS_PER_METER;
-    const yMeters = yPx / CANVAS_CONFIG.PIXELS_PER_METER;
+    // get (x, y) as the coordinates of the mouse relative to the canvas/grid
+    const x = e.clientX - stageBox.left;
+    const y = e.clientY - stageBox.top;
 
-    const wMeters = template.width;
-    const hMeters = template.height;
+    const wPixels = template.width  * CANVAS_CONFIG.PIXELS_PER_METER;
+    const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const rawXm = xMeters - wMeters / 2;
-    const rawYm = yMeters - hMeters / 2;
-
-    const snappedXm = snapEnabled ? snapToGridMeters(rawXm, gridInterval) : rawXm;
-    const snappedYm = snapEnabled ? snapToGridMeters(rawYm, gridInterval) : rawYm;
-    
-    // --- DROP HANDLERS ---
-    // convert bounds to pixels for collision detection
-    const wPx = wMeters * CANVAS_CONFIG.PIXELS_PER_METER;
-    const hPX = hMeters * CANVAS_CONFIG.PIXELS_PER_METER;
-    const snappedXPx = snappedXm * CANVAS_CONFIG.PIXELS_PER_METER;
-    const snappedyPx = snappedYm * CANVAS_CONFIG.PIXELS_PER_METER;
+    // snap object such that the mouse is in the middle of the object
+    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : (x - wPixels / 2); 
+    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : (y - hPixels / 2);
 
     // define bounds for this unit
-    const thisBounds = { dom: { lower: snappedXPx, upper: snappedXPx +wPx }, ran: { lower: snappedYPx, upper: snappedYPx + hPx} };
+    const thisBounds = { dom: { lower: snappedX, upper: snappedX + wPixels }, ran: { lower: snappedY, upper: snappedY + hPixels } };
     // don't show ghost if there are collisions
     if (hasCollisions(thisBounds)) {
       setGhostUnit(null);
@@ -128,10 +118,10 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   function hasCollisions(newBounds) {
     const intersectsThis = isRectRectIntersecting(newBounds);
 
-    // generate bounds for other units
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
     const coordRanges = units.map(
       ({ x, y, width, height }) => (
-        { dom: { lower: x, upper: x + width }, ran: { lower: y, upper: y + height } }
+        { dom: { lower: x * px, upper: (x + width) * px }, ran: { lower: y * px, upper: (y + height) * px } }
       )
     );
     const anyIntersects = coordRanges
@@ -146,7 +136,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     // Prevent page from reloading on drop
     e.preventDefault();
 
-        // Update ghost preview position every time the cursor moves over the canvas
+    // Update ghost preview position every time the cursor moves over the canvas
     const ghost = buildGhostFromEvent(e);
     if (ghost) setGhostUnit(ghost);
   }
@@ -162,60 +152,58 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     // Clear ghost once the unit is placed
     setGhostUnit(null);
 
+    // extract data from unitcard and parse
     const unitData = e.dataTransfer.getData("unit");
     if (!unitData) return;
     const template = JSON.parse(unitData);
-
+    
+    // get canvas position, obtain canvas relative coords
     const stageBox = stageRef.current.container().getBoundingClientRect();
-    const xPx = e.clientX - stageBox.left;
-    const yPx = e.clientY - stageBox.top;
-
-    const xMeters = xPx / CANVAS_CONFIG.PIXELS_PER_METER;
-    const yMeters = yPx / CANVAS_CONFIG.PIXELS_PER_METER;
-
-    const wMeters = template.width;
-    const hMeters = template.height;
-
-    const rawXm = xMeters - wMeters / 2;
-    const rawYm = yMeters - hMeters / 2;
-
-    const snappedXm = snapEnabled ? snapToGridMeters(rawXm, gridInterval) : rawXm;
-    const snappedYm = snapEnabled ? snapToGridMeters(rawYm, gridInterval) : rawYm;
-   
+    const x = e.clientX - stageBox.left;
+    const y = e.clientY - stageBox.top;
+    
     // convert m to px, snap position
-    const wPx = wMeters * CANVAS_CONFIG.PIXELS_PER_METER;
-    const hPx = hMeters * CANVAS_CONFIG.PIXELS_PER_METER;
-    const snappedXPx = snappedXm * CANVAS_CONFIG.PIXELS_PER_METER;
-    const snappedYPx = snappedYm * CANVAS_CONFIG.PIXELS_PER_METER;
+    const wPixels = template.width  * CANVAS_CONFIG.PIXELS_PER_METER;
+    const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
+    
+    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : (x - wPixels / 2);
+    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : (y - hPixels / 2);
 
     // define bounds for this unit
-    const thisBounds = { dom: { lower: snappedXPx, upper: snappedXPx + wPx }, ran: { lower: snappedYPx, upper: snappedYPx + hPx }};
+    const thisBounds = { dom: { lower: snappedX, upper: snappedX + wPixels }, ran: { lower: snappedY, upper: snappedY + hPixels } };
+    // don't add if there are collisions
     if (hasCollisions(thisBounds)) return;
 
-    // add unit to canvas
-    setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: snappedX, y: snappedY, width: wPixels, height: hPixels},]);
+    setUnits((prev) => [ ...prev, {
+      ...template,
+      id: `unit-${Date.now()}`,
+      x: snappedX / CANVAS_CONFIG.PIXELS_PER_METER,
+      y: snappedY / CANVAS_CONFIG.PIXELS_PER_METER,
+      width: template.width,
+      height: template.height,
+    }]);
   }
 
   // --- STAGE HANDLERS ---
   function handleUnitClick(unit) {
-  navigate(`/storage-unit/${unit._id}`);
+    navigate(`/storage-unit/${unit._id}`);
   }
 
-  // function handleDragEnd(e, unitId) {
-  //   const px = CANVAS_CONFIG.PIXELS_PER_METER;
+  function handleDragEnd(e, unitId) {
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
-  //   const rawXm = e.target.x() / px;
-  //   const rawYm = e.target.y() / px;
+    const rawXm = e.target.x() / px;
+    const rawYm = e.target.y() / px;
 
-  //   const snappedXm = snapEnabled ? snapToGridMeters(rawXm, gridInterval) : rawXm;
-  //   const snappedYm = snapEnabled ? snapToGridMeters(rawYm, gridInterval) : rawYm;
+    const snappedXm = snapEnabled ? snapToGrid(rawXm, gridInterval) : rawXm;
+    const snappedYm = snapEnabled ? snapToGrid(rawYm, gridInterval) : rawYm;
 
-  //   e.target.x(snappedXm * px);
-  //   e.target.y(snappedYm * px);
+    e.target.x(snappedXm * px);
+    e.target.y(snappedYm * px);
 
-  //   // Update unit position in state
-  //   setUnits(prev => prev.map(unit =>   unit.id === unitId     ? { ...unit, x: snappedXm, y: snappedYm }     : unit ));
-  // }
+    // Update unit position in state
+    setUnits(prev => prev.map(unit => unit.id === unitId ? { ...unit, x: snappedXm, y: snappedYm } : unit));
+  }
 
   return (
     <div
@@ -245,7 +233,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
               unit={unit}
               isSelected={selectedId === unit.id}
               activeTool={activeTool}
-              onSelect={(e) => handleUnitClick(e, unit)}
+              onSelect={() => handleUnitClick(unit)}
               onTransformEnd={() => {}} // Add this method in when resizing objects, if we do that
             />
           ))}
@@ -254,11 +242,11 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
         {/* GHOST PREVIEW LAYER*/}
         <Layer>
           {ghostUnit && (
-            <Group x={ghostUnit.x * CANVAS_CONFIG.PIXELS_PER_METER} y={ghostUnit.y * CANVAS_CONFIG.PIXELS_PER_METER}>
+            <Group x={ghostUnit.x} y={ghostUnit.y}>
               {/* Actual Ghost */}
-              <Rect width={ghostUnit.width * CANVAS_CONFIG.PIXELS_PER_METER} height={ghostUnit.height * CANVAS_CONFIG.PIXELS_PER_METER} fill={ghostUnit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
+              <Rect width={ghostUnit.width} height={ghostUnit.height} fill={ghostUnit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
               {/* Ghost label */}
-              <Text width={ghostUnit.width * CANVAS_CONFIG.PIXELS_PER_METER} height={ghostUnit.height * CANVAS_CONFIG.PIXELS_PER_METER} align="center" verticalAlign="middle" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>
+              <Text width={ghostUnit.width} height={ghostUnit.height} align="center" verticalAlign="middle" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>
             </Group>
           )}
         </Layer>
