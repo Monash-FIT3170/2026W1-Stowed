@@ -64,6 +64,8 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const [units, setUnits] = useState([]);
   const [selectedId, setSelectedId] = useState(null); // Not implemented
   const [ghostUnit, setGhostUnit] = useState(null);
+  const [scale, setScale] = useState(1); // scale state, default 1
+  const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
 
   // --- BUILD GRID ---
   const vLines = [];
@@ -89,11 +91,16 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const template = dragState.template;
     if (!template) return null;
 
-    const stageBox = stageRef.current.container().getBoundingClientRect();
+    const stage = stageRef.current;
+    const stageBox = stage.container().getBoundingClientRect();
 
-    // get (x, y) as the coordinates of the mouse relative to the canvas/grid
-    const x = e.clientX - stageBox.left;
-    const y = e.clientY - stageBox.top;
+    const pointer = {
+      x: e.clientX - stageBox.left,
+      y: e.clientY - stageBox.top
+    }
+
+    const x = (pointer.x - stage.x()) / stage.scaleX();
+    const y = (pointer.y - stage.y()) / stage.scaleY();
 
     const wPixels = template.width  * CANVAS_CONFIG.PIXELS_PER_METER;
     const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
@@ -110,7 +117,22 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
       return;
     }
 
-    return { ...template, id: "ghost", x: snappedX, y: snappedY, width: wPixels, height: hPixels };
+
+    const pointInGrid =
+      x >= 0 &&
+      y >= 0 &&
+      x <= width &&
+      y <= height;
+
+    // keeps unit in grid
+    const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
+    const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
+    
+
+
+    if (!pointInGrid) return null;
+
+    return { ...template, id: "ghost", x: clampedX, y: clampedY, width: wPixels, height: hPixels };
   }
 
   // --- COLLISION DETECT ---
@@ -138,7 +160,11 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
     // Update ghost preview position every time the cursor moves over the canvas
     const ghost = buildGhostFromEvent(e);
-    if (ghost) setGhostUnit(ghost);
+    if (ghost) {
+      setGhostUnit(ghost);}
+    else {
+      setGhostUnit(null);
+    }
   }
 
   function handleDragLeave(e) {
@@ -158,9 +184,17 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const template = JSON.parse(unitData);
     
     // get canvas position, obtain canvas relative coords
-    const stageBox = stageRef.current.container().getBoundingClientRect();
-    const x = e.clientX - stageBox.left;
-    const y = e.clientY - stageBox.top;
+
+    const stage = stageRef.current;
+    const stageBox = stage.container().getBoundingClientRect();
+
+    const pointer = {
+      x: e.clientX - stageBox.left,
+      y: e.clientY - stageBox.top
+    }
+
+    const x = (pointer.x - stage.x()) / stage.scaleX();
+    const y = (pointer.y - stage.y()) / stage.scaleY();
     
     // convert m to px, snap position
     const wPixels = template.width  * CANVAS_CONFIG.PIXELS_PER_METER;
@@ -168,20 +202,22 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     
     const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : (x - wPixels / 2);
     const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : (y - hPixels / 2);
+    
+    const pointInGrid = x >= 0 && y >= 0 && x <= width &&y <= height;
+
+    if (!pointInGrid) return null;
+
+    // keeps unit in grid
+    const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
+    const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
 
     // define bounds for this unit
     const thisBounds = { dom: { lower: snappedX, upper: snappedX + wPixels }, ran: { lower: snappedY, upper: snappedY + hPixels } };
     // don't add if there are collisions
     if (hasCollisions(thisBounds)) return;
 
-    setUnits((prev) => [ ...prev, {
-      ...template,
-      id: `unit-${Date.now()}`,
-      x: snappedX / CANVAS_CONFIG.PIXELS_PER_METER,
-      y: snappedY / CANVAS_CONFIG.PIXELS_PER_METER,
-      width: template.width,
-      height: template.height,
-    }]);
+     // add unit to canvas
+     setUnits((prev) => [ ...prev, { ...template, id: `unit-${Date.now()}`, x: clampedX, y: clampedY, width: wPixels, height: hPixels},]);
   }
 
   // --- STAGE HANDLERS ---
@@ -189,31 +225,55 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     navigate(`/storage-unit/${unit._id}`);
   }
 
+
   function handleDragEnd(e, unitId) {
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const rawXm = e.target.x() / px;
-    const rawYm = e.target.y() / px;
-
-    const snappedXm = snapEnabled ? snapToGrid(rawXm, gridInterval) : rawXm;
-    const snappedYm = snapEnabled ? snapToGrid(rawYm, gridInterval) : rawYm;
-
-    e.target.x(snappedXm * px);
-    e.target.y(snappedYm * px);
-
-    // Update unit position in state
-    setUnits(prev => prev.map(unit => unit.id === unitId ? { ...unit, x: snappedXm, y: snappedYm } : unit));
+  function handleDragEndGrid(e) {
+    const stage = e.target.getStage();
+    setStagePos({x: stage.x(), y: stage.y()});
   }
 
+  // handler for wheeling, which causes the stage to zoom in or out
+  function handleWheel(e) {
+
+    e.evt.preventDefault();
+
+    const scaleFactor = 1.01;
+    const stage = stageRef.current;
+    const oldScale = stage.scaleX();
+
+    const mouse = stage.getPointerPosition();
+
+    // Get mouse location
+    const mouseLoc = {
+      x: (mouse.x - stage.x()) / oldScale,
+      y: (mouse.y - stage.y()) / oldScale
+    };
+
+    // if wheeling up then zoom in otherwise zoom out
+    const newScale = e.evt.deltaY > 0
+      ? oldScale / scaleFactor
+      : oldScale * scaleFactor;
+
+    // sets scale
+    setScale(newScale);
+
+    // gets new position of stage after zoom
+    const newPos = {
+      x: mouse.x - mouseLoc.x * newScale,
+      y: mouse.y - mouseLoc.y * newScale
+    }
+
+    stage.position(newPos);
+  }
+
+
   return (
-    <div
-      ref={wrapperRef}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      style={{ display: "inline-block" }}
-    >
-      <Stage ref={stageRef} width={width} height={height} style={style}>
+    // Stage cannot catch drop events so wrap in div
+    <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
+      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style}
+      draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid}>
         
         {/* BASE CANVAS LAYER */}
         <Layer>
