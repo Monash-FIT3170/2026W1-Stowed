@@ -11,10 +11,18 @@ export const CANVAS_CONFIG = {
 }
 
 // TEMPORARY storage unit for testing, replace with db fetch and simpleschema
-function StorageUnit({unit, isSelected, onSelect, onDragEnd, onTransformEnd}) {
+function StorageUnit({unit, isSelected, activeTool, onSelect, onDragEnd, onTransformEnd}) {
+  const canMove = activeTool === "move";
   return (
-    <Group id={unit.id} x={unit.x} y={unit.y} onClick={onSelect} onDragEnd={onDragEnd} onTransformEnd={onTransformEnd}>
-
+    <Group
+      id={unit.id}
+      x={unit.x}
+      y={unit.y}
+      draggable={canMove}
+      onClick={onSelect}
+      onDragEnd={onDragEnd}
+      onTransformEnd={onTransformEnd}
+    >
       {/* MAIN BODY */}
       <Rect width={unit.width} height={unit.height} fill={unit.fill} stroke={isSelected ? "orange" : "transparent"} strokeWidth={2} cornerRadius={4} opacity={0.85}/> 
 

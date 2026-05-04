@@ -57,7 +57,20 @@ export function FloorMapPage() {
 
         {/* CANVAS AREA - takes remaining space and centers*/}
         <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", overflow: "auto" }}>
-          <Canvas floorSize={floorSize} style={{ display: "block", width: `${floorSize.width}px`, height: `${floorSize.height}px`, border: "2px solid #999"}}/>
+          <Canvas
+            floorSize={floorSize}
+            activeTool={activeTool}
+            units={units}
+            setUnits={setUnits}
+            pendingUnit={pendingUnit}
+            onUnitPlaced={handleUnitPlaced}
+            style={{
+              display: "block",
+              width: `${floorSize.width}px`,
+              height: `${floorSize.height}px`,
+              border: "2px solid #999"
+            }}
+          />
         </div>
       </div>
     </div>
