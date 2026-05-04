@@ -66,7 +66,7 @@ export function UnitCard({ unit, onClick }) {
             draggable 
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-            style={{...storagePanelStyles.card, background: hovered ? COLOURS.UNIT_CARD_HOVER : "black", cursor: "grab"}}
+            style={{...storagePanelStyles.card, background: hovered ? COLOURS.UNIT_CARD_HOVER : "white", cursor: "grab"}}
             onClick={onClick}
             onMouseEnter={()=>setHovered(true)}
             onMouseLeave={()=>setHovered(false)}
