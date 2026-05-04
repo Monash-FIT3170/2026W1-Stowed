@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockItems, getLowStockItems } from "../../api/mockItems";
+import "./InventoryListPage.css";
 
-
-export function ItemThumbnail({photoUrl,name}) {
+export function ItemThumbnail({ photoUrl, name }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
@@ -18,25 +18,7 @@ export function ItemThumbnail({photoUrl,name}) {
     : "?";
 
   if (!photoUrl || imgError) {
-    return (
-      <div
-        style={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "8px",
-          background: "#F5EFE6",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "11px",
-          fontWeight: 600,
-          color: "#B5532A",
-          flexShrink: 0,
-        }}
-      >
-        {initials}
-      </div>
-    );
+    return <div className="item-thumbnail">{initials}</div>;
   }
 
   return (
@@ -44,14 +26,7 @@ export function ItemThumbnail({photoUrl,name}) {
       src={photoUrl}
       alt={name}
       onError={() => setImgError(true)}
-      style={{
-        width: "36px",
-        height: "36px",
-        borderRadius: "8px",
-        objectFit: "contain",
-        background: "#F5EFE6",
-        flexShrink: 0,
-      }}
+      className="item-thumbnail"
     />
   );
 }
@@ -92,52 +67,22 @@ export function InventoryListPage() {
   ];
 
   return (
-    <div style={{ padding: "24px", maxWidth: "900px" }}>
-      <div style={{ fontSize: "12px", color: "#998874", marginBottom: "8px" }}>
-        Inventory / All items
-      </div>
+    <div className="inventory-list-container">
+      <div className="breadcrumb">Inventory / All items</div>
 
-      <h1
-        style={{
-          fontSize: "24px",
-          fontWeight: 500,
-          fontFamily: "Georgia, serif",
-          margin: "8px 0 16px",
-        }}
-      >
-        All <em style={{ color: "#B5532A" }}>items</em>
+      <h1 className="page-title">
+        All <em>items</em>
       </h1>
 
-      <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+      <div className="search-bar-container">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by ID, name, or tag"
-          style={{
-            flex: 1,
-            background: "#F5EFE6",
-            borderRadius: "16px",
-            padding: "8px 14px",
-            fontSize: "12px",
-            border: "none",
-            outline: "none",
-          }}
+          className="search-input"
         />
-        <button
-          style={{
-            background: "#E89B6F",
-            color: "#FFFFFF",
-            padding: "6px 14px",
-            borderRadius: "16px",
-            border: "none",
-            fontSize: "12px",
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-        >
-          + Add item
-        </button>
+        <button className="btn-add-item">+ Add item</button>
       </div>
 
       <FilterChips
@@ -146,24 +91,13 @@ export function InventoryListPage() {
         onFilterChange={setActiveFilter}
       />
 
-      <div style={{ fontSize: "11px", color: "#998874", marginBottom: "8px" }}>
+      <div className="filter-count">
         Showing {filteredItems.length} of {mockItems.length}
         {activeFilter !== "all" &&
           ` · Filter: ${activeFilter.replace("-", " ")}`}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "44px 2fr 1fr 1fr 1fr 1fr",
-          padding: "8px 0",
-          borderBottom: "1px solid #D9CFC0",
-          fontSize: "11px",
-          color: "#998874",
-          fontWeight: 500,
-          alignItems: "center",
-        }}
-      >
+      <div className="table-header">
         <span />
         <span>Item</span>
         <span>Tag</span>
@@ -173,54 +107,20 @@ export function InventoryListPage() {
       </div>
 
       {filteredItems.length === 0 ? (
-        <div
-          style={{
-            padding: "32px",
-            textAlign: "center",
-            color: "#998874",
-            fontSize: "13px",
-          }}
-        >
-          No items match the current filters.
-        </div>
+        <div className="empty-state">No items match the current filters.</div>
       ) : (
         filteredItems.map((item) => (
-          <div
-            key={item._id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "44px 2fr 1fr 1fr 1fr 1fr",
-              padding: "10px 0",
-              borderBottom: "0.5px solid #EFE7DA",
-              fontSize: "13px",
-              alignItems: "center",
-              gap: "0 8px",
-            }}
-          >
+          <div key={item._id} className="table-row">
             <ItemThumbnail photoUrl={item.photoUrl} name={item.name} />
             <span>
-              <Link
-                to={`/inventory/${item._id}`}
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
+              <Link to={`/inventory/${item._id}`} className="item-name-link">
                 {item.name}
               </Link>
             </span>
             <span>
-              <span
-                style={{
-                  background: "#F5EFE6",
-                  color: "#5C4F3F",
-                  padding: "2px 8px",
-                  borderRadius: "10px",
-                  fontSize: "10px",
-                  fontWeight: 500,
-                }}
-              >
-                {item.tag || "—"}
-              </span>
+              <span className="item-tag">{item.tag || "—"}</span>
             </span>
-            <span style={{ color: "#998874" }}>{item.location}</span>
+            <span className="item-location">{item.location}</span>
             <span>
               {item.quantity}/{item.lowStockThreshold}
             </span>
