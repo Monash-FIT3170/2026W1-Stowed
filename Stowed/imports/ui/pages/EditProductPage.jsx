@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -9,6 +9,16 @@ import {
   StorageUnits,
   StorageLocations,
 } from '/imports/api/locations/collections';
+
+// Wraps Meteor.call in a Promise so we can use async/await.
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
 
 // brief styling to be fixed later
 
@@ -56,6 +66,42 @@ const warningStyle = {
   fontSize: '13px',
 };
 
+const overlayStyle = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.4)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 100,
+};
+
+const modalStyle = {
+  background: '#fff',
+  border: '1px solid #ccc',
+  borderRadius: '6px',
+  padding: '28px',
+  maxWidth: '440px',
+  width: '100%',
+};
+
+const changeRowStyle = {
+  marginBottom: '10px',
+  fontSize: '14px',
+};
+
+const thStyle = {
+  padding: '6px 12px',
+  textAlign: 'left',
+  borderBottom: '1px solid #ccc',
+  fontSize: '13px',
+};
+
+const tdStyle = {
+  padding: '6px 12px',
+  fontSize: '13px',
+};
+
 function buildLocationLabel(location, storageUnits, floorMaps, sites) {
   const unit     = storageUnits.find((u) => u._id === location.storageUnitId);
   const floorMap = unit     ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
@@ -72,6 +118,8 @@ export function EditProductPage() {
   const [totalQuantity, setTotalQuantity] = useState('');
   const [assignments, setAssignments]     = useState([]);
   const [initialised, setInitialised]     = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [isSaving, setIsSaving]           = useState(false);
 
   const { loading, product, originalRecords, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -120,6 +168,43 @@ export function EditProductPage() {
 
   const canSave = nameIsValid && totalQuantityIsValid && isBalanced;
 
+  // Compute which fields have changed from the original saved values.
+  // Assignments are compared order-independently by sorting on locationId.
+  const changes = useMemo(() => {
+    if (!initialised || !product) return {};
+
+    const result = {};
+
+    if (name.trim() !== product.name)
+      result.name = { from: product.name, to: name.trim() };
+
+    if (description !== (product.description || ''))
+      result.description = { from: product.description || '', to: description };
+
+    if (parsedTotal !== product.totalQuantity)
+      result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
+
+    const normalise = (arr) =>
+      [...arr].sort((a, b) => a.locationId.localeCompare(b.locationId));
+
+    const currentNorm  = normalise(
+      validAssignments.map((a) => ({ locationId: a.locationId, quantity: parseInt(a.quantity, 10) }))
+    );
+    const originalNorm = normalise(
+      originalRecords.map((r) => ({ locationId: r.locationId, quantity: r.quantity }))
+    );
+
+    const assignmentsChanged =
+      currentNorm.length !== originalNorm.length ||
+      currentNorm.some(
+        (a, i) => a.locationId !== originalNorm[i].locationId || a.quantity !== originalNorm[i].quantity
+      );
+
+    if (assignmentsChanged) result.assignments = true;
+
+    return result;
+  }, [initialised, product, name, description, parsedTotal, validAssignments, originalRecords]);
+
   // Assignment handlers
 
   function addAssignment() {
@@ -134,11 +219,33 @@ export function EditProductPage() {
     setAssignments(assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)));
   }
 
-  // Save modal and DB logic to be added later
   function handleSave() {
-    // TODO: compare against original values, show confirmation modal if changed,
-    // or navigate straight back if nothing has changed.
-    navigate(`/inventory/${productId}`);
+    if (Object.keys(changes).length === 0) {
+      // Nothing changed — skip the modal and go straight back.
+      navigate(`/inventory/${productId}`);
+      return;
+    }
+    setShowSaveModal(true);
+  }
+
+  async function confirmSave() {
+    setIsSaving(true);
+    try {
+      await callMethod('products.update', {
+        productId,
+        name: name.trim(),
+        description,
+        totalQuantity: parsedTotal,
+        assignments: validAssignments.map((a) => ({
+          locationId: a.locationId,
+          quantity:   parseInt(a.quantity, 10),
+        })),
+      });
+      navigate(`/inventory/${productId}`);
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      setIsSaving(false);
+    }
   }
 
   if (loading || !initialised) return <div style={{ padding: '24px' }}>Loading…</div>;
@@ -271,6 +378,96 @@ export function EditProductPage() {
         </div>
 
       </form>
+
+      {/* ── Save confirmation modal ── */}
+      {showSaveModal && (
+        <div style={overlayStyle}>
+          <div style={modalStyle}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>
+              Save changes?
+            </h2>
+            <p style={{ marginBottom: '16px', color: '#555', fontSize: '14px' }}>
+              The following fields will be updated:
+            </p>
+
+            {changes.name && (
+              <div style={changeRowStyle}>
+                <strong>Name</strong>
+                <div style={{ color: '#555' }}>
+                  {changes.name.from} → {changes.name.to}
+                </div>
+              </div>
+            )}
+
+            {changes.description !== undefined && (
+              <div style={changeRowStyle}>
+                <strong>Description</strong>
+                <div style={{ color: '#555' }}>
+                  {changes.description.from || '(none)'} → {changes.description.to || '(none)'}
+                </div>
+              </div>
+            )}
+
+            {changes.totalQuantity && (
+              <div style={changeRowStyle}>
+                <strong>Total Quantity</strong>
+                <div style={{ color: '#555' }}>
+                  {changes.totalQuantity.from} → {changes.totalQuantity.to}
+                </div>
+              </div>
+            )}
+
+            {changes.assignments && (
+              <div style={changeRowStyle}>
+                <strong>Storage Locations</strong>
+                <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: '6px' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Location</th>
+                      <th style={{ ...thStyle, textAlign: 'right' }}>Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {validAssignments.map((a, i) => {
+                      const loc = storageLocations.find((l) => l._id === a.locationId);
+                      const label = loc
+                        ? buildLocationLabel(loc, storageUnits, floorMaps, sites)
+                        : a.locationId;
+                      return (
+                        <tr key={i}>
+                          <td style={tdStyle}>{label}</td>
+                          <td style={{ ...tdStyle, textAlign: 'right' }}>{a.quantity}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+              <button
+                style={{
+                  ...buttonStyle,
+                  opacity: isSaving ? 0.4 : 1,
+                  cursor:  isSaving ? 'not-allowed' : 'pointer',
+                }}
+                disabled={isSaving}
+                onClick={confirmSave}
+              >
+                {isSaving ? 'Saving…' : 'Confirm Save'}
+              </button>
+              <button
+                style={buttonStyle}
+                disabled={isSaving}
+                onClick={() => setShowSaveModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
