@@ -155,7 +155,7 @@ export function ProductDetailPage() {
 
       {}
       <div style={{ ...sectionStyle, display: 'flex', gap: '8px' }}>
-        <button style={buttonStyle} disabled>
+        <button style={buttonStyle} onClick={() => navigate(`/inventory/${productId}/edit`)}>
           Edit
         </button>
         <button style={dangerButtonStyle} onClick={() => setShowDeleteModal(true)}>

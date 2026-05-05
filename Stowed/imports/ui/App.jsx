@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { InventoryPage }  from './pages/InventoryPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
+import { EditProductPage } from './pages/EditProductPage';
 import { CreateProductPage } from './pages/CreateProductPage';
 import { ListsPage }      from './pages/ListsPage';
 import { StocktakePage }  from './pages/StocktakePage';
@@ -25,8 +26,9 @@ export function App() {
           <Suspense fallback={<div className="p-6 text-sm text-zinc-500">Loading…</div>}>
             <Routes>
               <Route path="/"                    element={<InventoryPage />} />
-              <Route path="/inventory/new"        element={<CreateProductPage />} />
-              <Route path="/inventory/:productId" element={<ProductDetailPage />} />
+              <Route path="/inventory/new"              element={<CreateProductPage />} />
+              <Route path="/inventory/:productId/edit" element={<EditProductPage />} />
+              <Route path="/inventory/:productId"      element={<ProductDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
               <Route path="/locations"           element={<LocationsPage />} />
               <Route path="/lists"               element={<ListsPage />} />
