@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -13,6 +14,31 @@ const buttonStyle = {
   cursor: 'pointer',
   background: 'transparent',
   fontSize: '14px',
+};
+
+const dangerButtonStyle = {
+  ...buttonStyle,
+  border: '1px solid #c00',
+  color: '#c00',
+};
+
+const overlayStyle = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.4)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 100,
+};
+
+const modalStyle = {
+  background: '#fff',
+  border: '1px solid #ccc',
+  borderRadius: '6px',
+  padding: '28px',
+  maxWidth: '400px',
+  width: '100%',
 };
 
 const sectionStyle = {
@@ -43,6 +69,7 @@ function buildLocationLabel(locationId, storageLocations, storageUnits, floorMap
 export function ProductDetailPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { loading, product, records, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -114,6 +141,43 @@ export function ProductDetailPage() {
           </table>
         )}
       </div>
+
+      {}
+      <div style={{ ...sectionStyle, display: 'flex', gap: '8px' }}>
+        <button style={buttonStyle} disabled>
+          Edit
+        </button>
+        <button style={dangerButtonStyle} onClick={() => setShowDeleteModal(true)}>
+          Delete
+        </button>
+      </div>
+
+      {}
+      {showDeleteModal && (
+        <div style={overlayStyle}>
+          <div style={modalStyle}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>
+              Delete "{product.name}"?
+            </h2>
+            <p style={{ marginBottom: '8px' }}>
+              This will permanently delete the product and remove it from all{' '}
+              <strong>{records.length} storage location{records.length !== 1 ? 's' : ''}</strong>{' '}
+              it is currently assigned to.
+            </p>
+            <p style={{ marginBottom: '20px', fontStyle: 'italic', fontSize: '13px', color: '#555' }}>
+              This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button style={dangerButtonStyle} disabled>
+                Confirm Delete
+              </button>
+              <button style={buttonStyle} onClick={() => setShowDeleteModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
