@@ -73,6 +73,34 @@ Meteor.methods({
   },
 
   /**
+   * Deletes a Product and all of its associated ProductRecords.
+   *
+   * Records are removed first so there is no window where the product exists
+   * without its records being cleaned up.
+   *
+   * @param {Object} params
+   * @param {string} params.productId - The _id of the product to delete.
+   *
+   * @throws {Meteor.Error} not-authorised  - Not logged in outside development.
+   * @throws {Meteor.Error} product-not-found - No product with this _id exists.
+   */
+  async 'products.delete'({ productId }) {
+    check(productId, String);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
+    const product = await Products.findOneAsync(productId);
+    if (!product) {
+      throw new Meteor.Error('product-not-found', 'No product found with that ID.');
+    }
+
+    await ProductRecords.removeAsync({ productId });
+    await Products.removeAsync(productId);
+  },
+
+  /**
    * Creates a new ProductRecord, assigning a quantity of a product to a location.
    *
    * @param {Object} params

@@ -5,6 +5,16 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Products, ProductRecords } from '/imports/api/products/collections';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
 
+// Wraps Meteor.call in a Promise so we can use async/await.
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
+
 // brief styling to be fixed later
 
 const buttonStyle = {
@@ -70,6 +80,7 @@ export function ProductDetailPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting]           = useState(false);
 
   const { loading, product, records, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -168,10 +179,27 @@ export function ProductDetailPage() {
               This action cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button style={dangerButtonStyle} disabled>
-                Confirm Delete
+              <button
+                style={{ ...dangerButtonStyle, opacity: isDeleting ? 0.4 : 1, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    await callMethod('products.delete', { productId });
+                    navigate('/');
+                  } catch (error) {
+                    console.error('Failed to delete product:', error);
+                    setIsDeleting(false);
+                  }
+                }}
+              >
+                {isDeleting ? 'Deleting…' : 'Confirm Delete'}
               </button>
-              <button style={buttonStyle} onClick={() => setShowDeleteModal(false)}>
+              <button
+                style={buttonStyle}
+                disabled={isDeleting}
+                onClick={() => setShowDeleteModal(false)}
+              >
                 Cancel
               </button>
             </div>
