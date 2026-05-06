@@ -1,23 +1,24 @@
-import {useRef, useState} from "react"
-import {Stage, Layer, Rect, Line, Text, Group} from "react-konva";
+import { useRef, useState } from "react";
+import { Stage, Layer, Rect, Line, Text, Group, Transformer } from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
 import { dragState } from "./DragState";
 import { useNavigate } from "react-router-dom";
 import { isRectRectIntersecting } from "./UnitCollisions";
 
-// TEMPORARY config, to be refactored and potentially replaced so it does not live here
 export const CANVAS_CONFIG = {
   METERS_PER_CELL : 1,
   PIXELS_PER_METER : 50,
-  GRID_SIZE : 50 * 1
-}
+  GRID_SIZE : 50 * 1,
+};
 
 // TEMPORARY storage unit for testing, replace with db fetch and simpleschema
-function StorageUnit({unit, isSelected, activeTool, onSelect, onDragEnd, onTransformEnd}) {
+function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragEnd, onTransformEnd, groupRef }) {
   const canMove = activeTool === "move";
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
+
   return (
     <Group
+      ref={groupRef}
       id={unit.id}
       x={unit.x * px}
       y={unit.y * px}
@@ -28,14 +29,36 @@ function StorageUnit({unit, isSelected, activeTool, onSelect, onDragEnd, onTrans
     >
       {/* MAIN BODY */}
       <Rect width={unit.width * px} height={unit.height * px} fill={unit.fill} stroke={isSelected ? "orange" : "transparent"} strokeWidth={2} cornerRadius={4} opacity={0.85}/>
-
+      
       {/* UNIT NAME ON BODY */}
       <Text width={unit.width * px} height={unit.height * px} align="center" verticalAlign="middle" text={unit.name} fontSize={12} fill="white"/>
     </Group>
   );
 }
 
-// HELPER METHOD
+// Controlled transformer that lives beside a selected unit.
+function UnitTransformer({ nodeRef }) {
+  const trRef = useRef(null);
+
+  // Attach transformer to the Group node once both refs are ready.
+  useState(() => {});
+
+  return (
+    <Transformer
+      ref={trRef}
+      nodes={nodeRef.current ? [nodeRef.current] : []}
+      rotateEnabled={false}
+      keepRatio={false}
+      boundBoxFunc={(oldBox, newBox) => {
+        // Enforce minimum size of 0.5 m × 0.5 m (in pixels)
+        const minPx = 0.5 * CANVAS_CONFIG.PIXELS_PER_METER;
+        if (newBox.width < minPx || newBox.height < minPx) return oldBox;
+        return newBox;
+      }}
+    />
+  );
+}
+
 function snapToGrid(value, snapInterval) {
   return Math.round(value / snapInterval) * snapInterval;
 }
@@ -59,7 +82,6 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const width = floorSize.width;
   const height = floorSize.height;
 
-  // canvas settings may be undefined so fallback on CANVAS_CONFIG
   const gridInterval  = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
   const showGrid      = canvasSettings?.showGrid     ?? true;
   const snapEnabled   = canvasSettings?.snapToGrid   ?? true;
@@ -68,8 +90,9 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const stageRef  = useRef(null);
   const wrapperRef = useRef(null);
   const navigate = useNavigate();
-  
-  const [selectedId, setSelectedId] = useState(null); // Not implemented
+  const groupRefs = useRef({});
+
+  const [selectedId, setSelectedId] = useState(null);
   const [ghostUnit, setGhostUnit] = useState(null);
   const [scale, setScale] = useState(1); // scale state, default 1
   const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
@@ -94,70 +117,65 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     }
   }
 
+
+  // Returns (or creates) a stable ref for a given unit id.
+  function getGroupRef(id) {
+    if (!groupRefs.current[id]) groupRefs.current[id] = { current: null };
+    return groupRefs.current[id];
+  }
+  
   // --- GHOST HELPER ---
   function buildGhostFromEvent(e) {
     const template = dragState.template;
     if (!template) return null;
-
-    const stage = stageRef.current;
+    
+    const stage    = stageRef.current;
     const stageBox = stage.container().getBoundingClientRect();
-
-    const pointer = {
-      x: e.clientX - stageBox.left,
-      y: e.clientY - stageBox.top
-    }
-
+    const pointer  = { x: e.clientX - stageBox.left, y: e.clientY - stageBox.top };
+    
     const x = (pointer.x - stage.x()) / stage.scaleX();
     const y = (pointer.y - stage.y()) / stage.scaleY();
-
+    
     const wPixels = template.width  * CANVAS_CONFIG.PIXELS_PER_METER;
     const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
-
-    // snap object such that the mouse is in the middle of the object
-    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : (x - wPixels / 2); 
-    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : (y - hPixels / 2);
-
-    // define bounds for this unit
-    const thisBounds = { dom: { lower: snappedX, upper: snappedX + wPixels }, ran: { lower: snappedY, upper: snappedY + hPixels } };
-    // don't show ghost if there are collisions
-    if (hasCollisions(thisBounds)) {
-      setGhostUnit(null);
-      return;
-    }
-
-    const pointInGrid =
-      x >= 0 &&
-      y >= 0 &&
-      x <= width &&
-      y <= height;
-
-    // keeps unit in grid
-    const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
+    
+    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : x - wPixels / 2;
+    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : y - hPixels / 2;
+    
+    const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
+    if (!pointInGrid) return null;
+    
+    const clampedX = Math.max(0, Math.min(snappedX, width  - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
     
-    if (!pointInGrid) return null;
-
+    const thisBounds = {
+      dom: { lower: clampedX,           upper: clampedX + wPixels },
+      ran: { lower: clampedY,           upper: clampedY + hPixels },
+    };
+    
+    if (hasCollisions(thisBounds)) return null;
+    
     return { ...template, id: "ghost", x: clampedX, y: clampedY, width: wPixels, height: hPixels };
   }
+  
+    // --- COLLISION DETECT ---
+    // Centralise collision logic to be used in handleDrop and buildGhostFromEvent
+    function hasCollisions(newBounds, excludeId = null) {
+        const intersectsThis = isRectRectIntersecting(newBounds);
 
-  // --- COLLISION DETECT ---
-  // Centralise collision logic to be used in handleDrop and buildGhostFromEvent
-  function hasCollisions(newBounds) {
-    const intersectsThis = isRectRectIntersecting(newBounds);
+        const px = CANVAS_CONFIG.PIXELS_PER_METER;
+        const anyIntersects = getOtherUnitBounds(excludeId).map((other) => intersectsThis(other)).reduce((acc, i) => acc || i, false);
+        return anyIntersects;  
+      }
 
-    const px = CANVAS_CONFIG.PIXELS_PER_METER;
-    const coordRanges = units.map(
-      ({ x, y, width, height }) => (
-        { dom: { lower: x * px, upper: (x + width) * px }, ran: { lower: y * px, upper: (y + height) * px } }
-      )
-    );
-    const anyIntersects = coordRanges
-      .map(otherBound => intersectsThis(otherBound)) // check for collision with other unit
-      .reduce((acc, i) => acc || i, false); // combine individual checks into single condition
-
-    return anyIntersects;
-  }
-
+    // Converts the units array to pixel space bounds
+    function getOtherUnitBounds(excludeId) {
+      const px = CANVAS_CONFIG.PIXELS_PER_METER;
+      return units.filter((u) => u.id !== excludeId).map(({ x, y, width: w, height: h }) => ({
+          dom: { lower: x * px, upper: (x + w) * px },
+          ran: { lower: y * px, upper: (y + h) * px },
+        }));
+    }
   // --- DROP HANDLERS ---
   function handleDragOver(e) {
     // Prevent page from reloading on drop
@@ -165,16 +183,12 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
     // Update ghost preview position every time the cursor moves over the canvas
     const ghost = buildGhostFromEvent(e);
-    if (ghost) {
-      setGhostUnit(ghost);}
-    else {
-      setGhostUnit(null);
-    }
+    setGhostUnit(ghost ?? null);
   }
 
   function handleDragLeave(e) {
     // Check the cursor has actually left the wrapper div before clearing the ghost.
-    if (wrapperRef.current && wrapperRef.current.contains(e.relatedTarget)) return;
+    if (wrapperRef.current?.contains(e.relatedTarget)) return;
     setGhostUnit(null);
   }
 
@@ -182,17 +196,13 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     e.preventDefault();
     // Clear ghost once the unit is placed
     setGhostUnit(null);
-
-    // extract data from unitcard and parse
+    // extract data from unitcard and parse    
     const unitData = e.dataTransfer.getData("unit");
     if (!unitData) return;
     const template = JSON.parse(unitData);
-    
-    // get canvas position, obtain canvas relative coords
 
     const stage = stageRef.current;
     const stageBox = stage.container().getBoundingClientRect();
-
     const pointer = {
       x: e.clientX - stageBox.left,
       y: e.clientY - stageBox.top
@@ -200,43 +210,49 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
     const x = (pointer.x - stage.x()) / stage.scaleX();
     const y = (pointer.y - stage.y()) / stage.scaleY();
-    
     // convert m to px, snap position
     const wPixels = template.width  * CANVAS_CONFIG.PIXELS_PER_METER;
     const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
-    
+
     const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : (x - wPixels / 2);
     const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : (y - hPixels / 2);
-    
+
     const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
     if (!pointInGrid) return;
 
-    // keeps unit in grid
     const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
 
     const thisBounds = { dom: { lower: clampedX, upper: clampedX + wPixels }, ran: { lower: clampedY, upper: clampedY + hPixels } };
     if (hasCollisions(thisBounds)) return;
-
     // add unit to canvas
     setUnits((prev) => [...prev, {
-      ...template,
-      id: `unit-${Date.now()}`,
-      x: clampedX / CANVAS_CONFIG.PIXELS_PER_METER,
-      y: clampedY / CANVAS_CONFIG.PIXELS_PER_METER,
-      width: template.width,
-      height: template.height,
-    }]);
+        ...template,
+        id: `unit-${Date.now()}`,
+        x: clampedX / CANVAS_CONFIG.PIXELS_PER_METER,
+        y: clampedY / CANVAS_CONFIG.PIXELS_PER_METER,
+        width: template.width,
+        height: template.height,
+      }]);
   }
 
   // --- STAGE HANDLERS ---
   function handleUnitClick(unit) {
+    if (activeTool === "select") {
+      // Toggle selection; clicking background deselects (see handleStageClick).
+      setSelectedId((prev) => (prev === unit.id ? null : unit.id));
+      return;
+    }
     navigate(`/storage-unit/${unit._id}`);
+  }
+
+  // Deselect when clicking the background.
+  function handleStageClick(e) {
+    if (e.target === e.target.getStage()) setSelectedId(null);
   }
 
   function handleDragEnd(e, unitId) {
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
-
     const rawXm = e.target.x() / px;
     const rawYm = e.target.y() / px;
 
@@ -255,7 +271,65 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     setStagePos({x: stage.x(), y: stage.y()});
   }
 
-  // handler for wheeling, which causes the stage to zoom in or out
+  // --- TRANSFORMERS ---
+  // Apply scaling to group when the Tranformer handle is dragged.
+  // Read scales, compute pixel dimensions, convert to meters and check for collisions.
+  // If collisions reset unit state to original otherwise update.
+  function handleTransformEnd(e, unit) {
+    const node = e.target;
+    const px   = CANVAS_CONFIG.PIXELS_PER_METER;
+
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+
+    // Compute proposed new dimensions in pixels, then snap to grid
+    const rawWPx = unit.width  * px * scaleX;
+    const rawHPx = unit.height * px * scaleY;
+    const snappedWPx = snapEnabled ? snapToGrid(rawWPx, gridSizePx) : rawWPx;
+    const snappedHPx = snapEnabled ? snapToGrid(rawHPx, gridSizePx) : rawHPx;
+
+    // Enforce minimum size (0.5 m).
+    const minPx = 0.5 * px;
+    const finalWPx = Math.max(minPx, snappedWPx);
+    const finalHPx = Math.max(minPx, snappedHPx);
+
+    const newXPx = node.x();
+    const newYPx = node.y();
+
+    // Clamp position so the unit stays within canvas bounds.
+    const clampedXPx = Math.max(0, Math.min(newXPx, width  - finalWPx));
+    const clampedYPx = Math.max(0, Math.min(newYPx, height - finalHPx));
+
+    const proposedBounds = {dom: { lower: clampedXPx, upper: clampedXPx + finalWPx },ran: { lower: clampedYPx, upper: clampedYPx + finalHPx }};
+
+    // Reset scale
+    node.scaleX(1);
+    node.scaleY(1);
+
+    if (hasCollisions(proposedBounds, unit.id)) {
+      // Snap the node back to its original position and leave state unchanged.
+      node.x(unit.x * px);
+      node.y(unit.y * px);
+      return;
+    }
+
+    // Otherwise commit new dimensions and position to state.
+    setUnits((prev) => prev.map((u) => u.id === unit.id ? {
+              ...u,
+              x:      clampedXPx / px,
+              y:      clampedYPx / px,
+              width:  finalWPx   / px,
+              height: finalHPx   / px,
+            }
+          : u
+      )
+    );
+
+    // Sync the node's position to the clamped value.
+    node.x(clampedXPx);
+    node.y(clampedYPx);
+  }
+
   function handleWheel(e) {
 
     e.evt.preventDefault();
@@ -265,7 +339,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
     const oldScale = stage.scaleX();
 
     const mouse = stage.getPointerPosition();
-
+    
     // Get mouse location
     const mouseLoc = {
       x: (mouse.x - stage.x()) / oldScale,
@@ -293,13 +367,12 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   return (
     // Stage cannot catch drop events so wrap in div
     <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
-      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style}
-      draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid}>
+      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style} draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid} onClick={handleStageClick}>
         {/* BASE CANVAS LAYER */}
         <Layer>
           {/* BACKGROUND */}
           <Rect x={0} y={0} width={width} height={height} fill={COLOURS.CANVAS_FILL}/>
-          
+
           {/* GRID LINES */}
           {vLines}
           {hLines}
@@ -307,19 +380,31 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
 
         {/* STORAGE UNIT LAYER */}
         <Layer>
-          {units.map((unit) => (
-            <StorageUnit
-              key={unit.id}
-              unit={unit}
-              isSelected={selectedId === unit.id}
-              activeTool={activeTool}
-              onSelect={() => handleUnitClick(unit)}
-              onTransformEnd={() => {}} // Add this method in when resizing objects, if we do that
-            />
-          ))}
+          {units.map((unit) => {
+            const ref = getGroupRef(unit.id);
+            return (
+              <StorageUnit key={unit.id} unit={unit} isSelected={selectedId === unit.id} activeTool={activeTool} onSelect={() => handleUnitClick(unit)} onDragEnd={(e) => handleDragEnd(e, unit.id)} onTransformEnd={(e) => handleTransformEnd(e, unit)} groupRef={(node) => { ref.current = node; }}/>
+            );})}
+
+          {/* TRANSFORMER */}
+          {activeTool === "select" && selectedId && (() => {
+            const ref = getGroupRef(selectedId);
+            return ref.current ? (
+              <Transformer
+                nodes={[ref.current]}
+                rotateEnabled={false}
+                keepRatio={false}
+                boundBoxFunc={(oldBox, newBox) => {
+                  const minPx = 0.5 * CANVAS_CONFIG.PIXELS_PER_METER;
+                  if (newBox.width < minPx || newBox.height < minPx) return oldBox;
+                  return newBox;
+                }}
+              />
+            ) : null;
+          })()}
         </Layer>
 
-        {/* GHOST PREVIEW LAYER*/}
+        {/* GHOST PREVIEW LAYER */}
         <Layer>
           {ghostUnit && (
             <Group x={ghostUnit.x} y={ghostUnit.y}>
