@@ -30,6 +30,7 @@ export function App() {
               <Route path="/inventory/:productId/edit" element={<EditProductPage />} />
               <Route path="/inventory/:productId"      element={<ProductDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
+              <Route path="/floor-map/:floorMapId" element={<FloorMapPage />} />
               <Route path="/locations"           element={<LocationsPage />} />
               <Route path="/lists"               element={<ListsPage />} />
               <Route path="/stocktake"           element={<StocktakePage />} />
