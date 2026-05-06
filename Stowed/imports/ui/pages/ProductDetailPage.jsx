@@ -106,7 +106,7 @@ export function ProductDetailPage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '560px' }}>
-      <button onClick={() => navigate(-1)} style={buttonStyle}>← Back</button>
+      <button onClick={() => navigate('/')} style={buttonStyle}>← Back</button>
 
       <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginTop: '16px', marginBottom: '4px' }}>
         {product.name}
