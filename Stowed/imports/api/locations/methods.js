@@ -4,6 +4,7 @@ import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from './collections';
+import { ProductRecords } from '../products/collections';
 
 Meteor.methods({
   /**
@@ -71,6 +72,36 @@ Meteor.methods({
         updatedAt: new Date(),
       },
     });
+  },
+
+  /**
+   * Deletes an existing Site when it has no child FloorMaps.
+   *
+   * @param {Object} params
+   * @param {string} params.siteId - ID of the site to delete.
+   *
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
+   * @throws {Meteor.Error} site-not-found if no site exists for the provided ID.
+   * @throws {Meteor.Error} site-not-empty if the site still contains floor maps.
+   */
+  async 'sites.delete'({ siteId }) {
+    check(siteId, String);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
+    const site = await Sites.findOneAsync(siteId);
+    if (!site) {
+      throw new Meteor.Error('site-not-found', 'No site found with that ID.');
+    }
+
+    const floorMap = await FloorMaps.findOneAsync({ siteId });
+    if (floorMap) {
+      throw new Meteor.Error('site-not-empty', 'Delete the site floor maps before deleting this site.');
+    }
+
+    await Sites.removeAsync(siteId);
   },
 
   /**
@@ -154,6 +185,39 @@ Meteor.methods({
         updatedAt: new Date(),
       },
     });
+  },
+
+  /**
+   * Deletes an existing FloorMap when it has no child StorageUnits.
+   *
+   * @param {Object} params
+   * @param {string} params.floorMapId - ID of the floor map to delete.
+   *
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
+   * @throws {Meteor.Error} floor-map-not-found if no floor map exists for the provided ID.
+   * @throws {Meteor.Error} floor-map-not-empty if the floor map still contains storage units.
+   */
+  async 'floorMaps.delete'({ floorMapId }) {
+    check(floorMapId, String);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
+    const floorMap = await FloorMaps.findOneAsync(floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error('floor-map-not-found', 'No floor map found with that ID.');
+    }
+
+    const storageUnit = await StorageUnits.findOneAsync({ floorMapId });
+    if (storageUnit) {
+      throw new Meteor.Error(
+        'floor-map-not-empty',
+        'Delete the floor map storage units before deleting this floor map.'
+      );
+    }
+
+    await FloorMaps.removeAsync(floorMapId);
   },
 
   /**
@@ -250,6 +314,39 @@ Meteor.methods({
   },
 
   /**
+   * Deletes an existing StorageUnit when it has no child StorageLocations.
+   *
+   * @param {Object} params
+   * @param {string} params.storageUnitId - ID of the storage unit to delete.
+   *
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
+   * @throws {Meteor.Error} storage-unit-not-found if no storage unit exists for the provided ID.
+   * @throws {Meteor.Error} storage-unit-not-empty if the storage unit still contains storage locations.
+   */
+  async 'storageUnits.delete'({ storageUnitId }) {
+    check(storageUnitId, String);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
+    const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
+    if (!storageUnit) {
+      throw new Meteor.Error('storage-unit-not-found', 'No storage unit found with that ID.');
+    }
+
+    const storageLocation = await StorageLocations.findOneAsync({ storageUnitId });
+    if (storageLocation) {
+      throw new Meteor.Error(
+        'storage-unit-not-empty',
+        'Delete the storage locations before deleting this storage unit.'
+      );
+    }
+
+    await StorageUnits.removeAsync(storageUnitId);
+  },
+
+  /**
    * Creates a new StorageLocation under an existing StorageUnit.
    *
    * A StorageLocation is the lowest-level fixed physical location where products
@@ -330,5 +427,38 @@ Meteor.methods({
         updatedAt: new Date(),
       },
     });
+  },
+
+  /**
+   * Deletes an existing StorageLocation when no ProductRecords still reference it.
+   *
+   * @param {Object} params
+   * @param {string} params.storageLocationId - ID of the storage location to delete.
+   *
+   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
+   * @throws {Meteor.Error} storage-location-not-found if no storage location exists for the provided ID.
+   * @throws {Meteor.Error} storage-location-in-use if products are still assigned to the storage location.
+   */
+  async 'storageLocations.delete'({ storageLocationId }) {
+    check(storageLocationId, String);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
+    const storageLocation = await StorageLocations.findOneAsync(storageLocationId);
+    if (!storageLocation) {
+      throw new Meteor.Error('storage-location-not-found', 'No storage location found with that ID.');
+    }
+
+    const productRecord = await ProductRecords.findOneAsync({ locationId: storageLocationId });
+    if (productRecord) {
+      throw new Meteor.Error(
+        'storage-location-in-use',
+        'Move or remove the products in this location before deleting it.'
+      );
+    }
+
+    await StorageLocations.removeAsync(storageLocationId);
   },
 });
