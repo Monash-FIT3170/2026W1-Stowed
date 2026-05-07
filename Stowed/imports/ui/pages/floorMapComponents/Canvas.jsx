@@ -78,7 +78,7 @@ function snapToGrid(value, snapInterval) {
  * 
  * @returns {JSX.Element} - React Konva canvas element 
  */
-export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
+export function Canvas({ style, floorSize, activeTool, canvasSettings, units, setUnits, pendingUnit, onUnitPlaced }) {
   const width = floorSize.width;
   const height = floorSize.height;
 
@@ -96,7 +96,6 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings }) {
   const [ghostUnit, setGhostUnit] = useState(null);
   const [scale, setScale] = useState(1); // scale state, default 1
   const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
-  const [units, setUnits] = useState([]);
 
   // --- BUILD GRID ---
   const vLines = [];
