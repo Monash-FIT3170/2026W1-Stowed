@@ -10,10 +10,14 @@ import { CANVAS_CONFIG } from "./Canvas";
  * @param {{ width: number, height: number }} floorSize - Floor dimensions in pixels
  * @param {(updater: Function) => void} setFloorSize - State setter for updating floor dimensions
  * @param {() => void} onOpenCanvasSettings - Callback to open canvas settings modal
+ * @param {() => void} onUndo - Callback to undo last action
+ * @param {() => void} onRedo - Callback to redo last undone action
+ * @param {boolean} canUndo - Whether there are actions to undo
+ * @param {boolean} canRedo - Whether there are actions to redo
  *
  * @returns {JSX.Element} Toolbar UI element
  */
-export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSize, onOpenCanvasSettings, onSaveLayout, onLoadLayout}) {
+export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSize, onOpenCanvasSettings, onSaveLayout, onLoadLayout, onUndo, onRedo, canUndo, canRedo }) {
     // store input seperately from pixels to avoid crash
     const [inputMeters, setInputMeters] = useState({
       width: floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER,
@@ -44,6 +48,8 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
         <button onClick={() => setActiveTool("delete")}>Delete</button>
         <button onClick={onSaveLayout}>Save Layout</button>
         <button onClick={onLoadLayout}>Load Layout</button>
+        <button onClick={onUndo} disabled={!canUndo}>Undo</button>
+        <button onClick={onRedo} disabled={!canRedo}>Redo</button>
   
         <div style={{ marginLeft: "20px" }}>Active Tool: <b>{activeTool}</b></div>
   

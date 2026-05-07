@@ -1,4 +1,4 @@
-import { useState} from "react";
+import { useState, useRef } from "react";
 import { Canvas } from "./floorMapComponents/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
@@ -44,6 +44,41 @@ export function FloorMapPage() {
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
 
+  // --- UNIT HISTORY ---
+  const [_, forceRender] = useState(0);
+  const historyRef = useRef({ stack: [[]], index: 0 });
+  const canUndo = historyRef.current.index > 0;
+  const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
+
+  // --- HISTORY BASED UNIT SETTER ---
+  // Replaces setUnits to accurately update with undo-redo functionality
+  function commitUnits(updater) {
+    const next = typeof updater === "function" ? updater(units) : updater;
+    const { stack, index } = historyRef.current;
+    const trimmed = stack.slice(0, index + 1);
+    historyRef.current = { stack: [...trimmed, next], index: index + 1 };
+    setUnits(next);
+  }
+
+  // --- UNDO REDO ---
+  function handleUndo() {
+    const { stack, index } = historyRef.current;
+    if (index === 0) return;
+    const newIndex = index - 1;
+    historyRef.current = { stack, index: newIndex };
+    setUnits(stack[newIndex]);
+    forceRender(n => n + 1);
+  }
+
+  function handleRedo() {
+    const { stack, index } = historyRef.current;
+    if (index >= stack.length - 1) return;
+    const newIndex = index + 1;
+    historyRef.current = { stack, index: newIndex };
+    setUnits(stack[newIndex]);
+    forceRender(n => n + 1);
+  }
+
     function handleSaveLayout() {
       const layout = {
         floorSize,
@@ -65,7 +100,7 @@ export function FloorMapPage() {
       const layout = JSON.parse(savedLayout);
 
       setFloorSize(layout.floorSize);
-      setUnits(layout.units);
+      commitUnits(layout.units);
       alert("Layout loaded successfully!");
     }
   // --- PLACING ---
@@ -99,6 +134,10 @@ export function FloorMapPage() {
         onSaveLayout={handleSaveLayout}
         onLoadLayout={handleLoadLayout}
         onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
 
       {/* MAIN ROW */}
@@ -113,7 +152,7 @@ export function FloorMapPage() {
             floorSize={floorSize}
             activeTool={activeTool}
             units={units}
-            setUnits={setUnits}
+            setUnits={commitUnits}
             pendingUnit={pendingUnit}
             onUnitPlaced={handleUnitPlaced}
             style={{
