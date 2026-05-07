@@ -157,12 +157,10 @@ export function FloorMapPage() {
             onUnitPlaced={handleUnitPlaced}
             style={{
               display: "block",
-              width: `${floorSize.width}px`,
-              height: `${floorSize.height}px`,
-              border: "2px solid #999"
+              width: `100%`,
+              height:`100%`,
             }}
             canvasSettings={canvasSettings}
-            style={{ display: "block", width: `${floorSize.width}px`, height: `${floorSize.height}px`, border: "2px solid #999" }}
           />
         </div>
       </div>

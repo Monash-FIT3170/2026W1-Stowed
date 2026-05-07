@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Stage, Layer, Rect, Line, Text, Group, Transformer } from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
 import { dragState } from "./DragState";
@@ -91,31 +91,39 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
   const wrapperRef = useRef(null);
   const navigate = useNavigate();
   const groupRefs = useRef({});
+  const containerRef = useRef(null);
 
   const [selectedId, setSelectedId] = useState(null);
   const [ghostUnit, setGhostUnit] = useState(null);
   const [scale, setScale] = useState(1); // scale state, default 1
   const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
-
+  const [displaySize, setDisplaySize] = useState({width: 0, height: 0});
+  
   // --- BUILD GRID ---
   const vLines = [];
   const hLines = [];
-
+  
   if (showGrid) {
     for (let x = 0; x <= width; x += gridSizePx) {
       if (x === 0) continue;
       const meters = (x / CANVAS_CONFIG.PIXELS_PER_METER);
       vLines.push(<Line key={`v-${x}`} points={[x, 0, x, height]} stroke="#ccc" strokeWidth={1}/>);
-      vLines.push(<Text key={`vl-${x}`} x={x + 3} y={4} text={`${meters}m`} fontSize={10} fill="black"/>);
+      vLines.push(<Text key={`vl-${x}`} x={x - 23} y={4} text={`${meters}m`} fontSize={10} fill="black"/>);
     }
     for (let y = 0; y <= height; y += gridSizePx) {
       if (y === 0) continue;
       const meters = (y / CANVAS_CONFIG.PIXELS_PER_METER);
       hLines.push(<Line key={`h-${y}`} points={[0, y, width, y]} stroke="#ccc" strokeWidth={1}/>);
-      hLines.push(<Text key={`hl-${y}`} x={4} y={y + 3} text={`${meters}m`} fontSize={10} fill="black"/>);
+      hLines.push(<Text key={`hl-${y}`} x={4} y={y - 12} text={`${meters}m`} fontSize={10} fill="black"/>);
     }
   }
-
+  
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    setDisplaySize({ width, height });
+  }, []);
 
   // Returns (or creates) a stable ref for a given unit id.
   function getGroupRef(id) {
@@ -365,57 +373,59 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
 
   return (
     // Stage cannot catch drop events so wrap in div
-    <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{display:"inline-block"}}>
-      <Stage ref={stageRef} width={width} height={height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style} draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid} onClick={handleStageClick}>
-        {/* BASE CANVAS LAYER */}
-        <Layer>
-          {/* BACKGROUND */}
-          <Rect x={0} y={0} width={width} height={height} fill={COLOURS.CANVAS_FILL}/>
+    <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{ width: "100%", height: "100%" }}>
+      <div ref={containerRef} style={{width: "100%", height: "100%"}}>
+        <Stage ref={stageRef} width={displaySize.width} height={displaySize.height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style} draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid} onClick={handleStageClick}>
+          {/* BASE CANVAS LAYER */}
+          <Layer>
+            {/* BACKGROUND */}
+            <Rect x={0} y={0} width={width} height={height} fill={COLOURS.CANVAS_FILL}/>
 
-          {/* GRID LINES */}
-          {vLines}
-          {hLines}
-        </Layer>
+            {/* GRID LINES */}
+            {vLines}
+            {hLines}
+          </Layer>
 
-        {/* STORAGE UNIT LAYER */}
-        <Layer>
-          {units.map((unit) => {
-            const ref = getGroupRef(unit.id);
-            return (
-              <StorageUnit key={unit.id} unit={unit} isSelected={selectedId === unit.id} activeTool={activeTool} onSelect={() => handleUnitClick(unit)} onDragEnd={(e) => handleDragEnd(e, unit.id)} onTransformEnd={(e) => handleTransformEnd(e, unit)} groupRef={(node) => { ref.current = node; }}/>
-            );})}
+          {/* STORAGE UNIT LAYER */}
+          <Layer>
+            {units.map((unit) => {
+              const ref = getGroupRef(unit.id);
+              return (
+                <StorageUnit key={unit.id} unit={unit} isSelected={selectedId === unit.id} activeTool={activeTool} onSelect={() => handleUnitClick(unit)} onDragEnd={(e) => handleDragEnd(e, unit.id)} onTransformEnd={(e) => handleTransformEnd(e, unit)} groupRef={(node) => { ref.current = node; }}/>
+              );})}
 
-          {/* TRANSFORMER */}
-          {activeTool === "select" && selectedId && (() => {
-            const ref = getGroupRef(selectedId);
-            return ref.current ? (
-              <Transformer
-                nodes={[ref.current]}
-                rotateEnabled={false}
-                keepRatio={false}
-                boundBoxFunc={(oldBox, newBox) => {
-                  const minPx = 0.5 * CANVAS_CONFIG.PIXELS_PER_METER;
-                  if (newBox.width < minPx || newBox.height < minPx) return oldBox;
-                  return newBox;
-                }}
-              />
-            ) : null;
-          })()}
-        </Layer>
+            {/* TRANSFORMER */}
+            {activeTool === "select" && selectedId && (() => {
+              const ref = getGroupRef(selectedId);
+              return ref.current ? (
+                <Transformer
+                  nodes={[ref.current]}
+                  rotateEnabled={false}
+                  keepRatio={false}
+                  boundBoxFunc={(oldBox, newBox) => {
+                    const minPx = 0.5 * CANVAS_CONFIG.PIXELS_PER_METER;
+                    if (newBox.width < minPx || newBox.height < minPx) return oldBox;
+                    return newBox;
+                  }}
+                />
+              ) : null;
+            })()}
+          </Layer>
 
-        {/* GHOST PREVIEW LAYER */}
-        <Layer>
-          {ghostUnit && (
-            <Group x={ghostUnit.x} y={ghostUnit.y}>
-              {/* Actual Ghost */}
-              <Rect width={ghostUnit.width} height={ghostUnit.height} fill={ghostUnit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
-              {/* Ghost label */}
-              <Text width={ghostUnit.width} height={ghostUnit.height} align="center" verticalAlign="middle" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>
-            </Group>
-          )}
-        </Layer>
+          {/* GHOST PREVIEW LAYER */}
+          <Layer>
+            {ghostUnit && (
+              <Group x={ghostUnit.x} y={ghostUnit.y}>
+                {/* Actual Ghost */}
+                <Rect width={ghostUnit.width} height={ghostUnit.height} fill={ghostUnit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
+                {/* Ghost label */}
+                <Text width={ghostUnit.width} height={ghostUnit.height} align="center" verticalAlign="middle" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>
+              </Group>
+            )}
+          </Layer>
 
-      </Stage>
+        </Stage>
     </div>
+  </div>
   );
 }

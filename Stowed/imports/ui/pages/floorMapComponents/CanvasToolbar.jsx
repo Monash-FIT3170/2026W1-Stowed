@@ -44,17 +44,18 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
         {/* TOOLS */}
         <button onClick={() => setActiveTool("select")}>Select</button>
         <button onClick={() => setActiveTool("move")}>Move</button>
-        <button onClick={() => setActiveTool("add")}>Add</button>
         <button onClick={() => setActiveTool("delete")}>Delete</button>
         <button onClick={onSaveLayout}>Save Layout</button>
         <button onClick={onLoadLayout}>Load Layout</button>
-        <button onClick={onUndo} disabled={!canUndo}>Undo</button>
-        <button onClick={onRedo} disabled={!canRedo}>Redo</button>
   
         <div style={{ marginLeft: "20px" }}>Active Tool: <b>{activeTool}</b></div>
   
         {/* FLOOR SIZE CONTROLS */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px" }}>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{gap: "10px"}}>
+          <button onClick={onUndo} disabled={!canUndo}>Undo</button>
+          <button onClick={onRedo} disabled={!canRedo}>Redo</button>
+          </div>
           <button onClick={onOpenCanvasSettings}>Canvas Settings</button>
         </div>
   
