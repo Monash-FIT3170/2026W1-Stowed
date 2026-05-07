@@ -12,7 +12,7 @@ export const CANVAS_CONFIG = {
 };
 
 // TEMPORARY storage unit for testing, replace with db fetch and simpleschema
-function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragEnd, onTransformEnd, groupRef }) {
+function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragMove, onDragEnd, onTransformEnd, groupRef }) {
   const canMove = activeTool === "move";
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
@@ -24,6 +24,7 @@ function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragEnd, onTran
       y={unit.y * px}
       draggable={canMove}
       onClick={onSelect}
+      onDragMove={onDragMove}
       onDragEnd={onDragEnd}
       onTransformEnd={onTransformEnd}
     >
@@ -95,6 +96,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
 
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [ghostUnit, setGhostUnit] = useState(null);
+  const [dragOffsets, setDragOffsets] = useState({ deltaX: 0, deltaY: 0, unitId: null });
   const [scale, setScale] = useState(1); // scale state, default 1
   const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
   const [displaySize, setDisplaySize] = useState({width: 0, height: 0});
@@ -281,9 +283,85 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
     e.target.x(snappedXm * px);
     e.target.y(snappedYm * px);
 
+    // HANDLE MULTIPLE UNITS
+
+    // Clear ghost offsets on drag end.
+    setDragOffsets({ deltaX: 0, deltaY: 0, unitId: null });
+
+    // If multiple units selected, move all selected units by the same offset
+    if (selectedIds.size > 1 && selectedIds.has(unitId)) {
+      const draggedUnit = units.find((u) => u.id === unitId);
+      const deltaX = snappedXm - draggedUnit.x;
+      const deltaY = snappedYm - draggedUnit.y;
+      
+      // Check collisions for every selected unit
+      const wouldCollide = [...selectedIds].some((id) => {
+        const unit = units.find((u) => u.id === id);
+        if (!unit) return false;
+        const newXPx = (unit.x + deltaX) * px;
+        const newYPx = (unit.y + deltaY) * px;
+        const bounds = { dom: { lower: newXPx, upper: newXPx + unit.width * px }, ran: { lower: newYPx, upper: newYPx + unit.height * px } };
+        return hasCollisions(bounds, id);
+      });
+
+      // If any unit would collide, snap all nodes back
+      if (wouldCollide) {
+        [...selectedIds].forEach((id) => {
+          const ref = getGroupRef(id);
+          if (!ref.current) return;
+          const unit = units.find((u) => u.id === id);
+          ref.current.x(unit.x * px);
+          ref.current.y(unit.y * px);
+        });
+        return;
+      }
+
+      // Sync non-dragged selected nodes to their new positions
+      [...selectedIds].forEach((id) => {
+        if (id === unitId) return;
+        const ref = getGroupRef(id);
+        if (!ref.current) return;
+        const unit = units.find((u) => u.id === id);
+        ref.current.x((unit.x + deltaX) * px);
+        ref.current.y((unit.y + deltaY) * px);
+      });
+
+      setUnits((prev) => prev.map((u) => selectedIds.has(u.id)
+        ? { ...u, x: u.x + deltaX, y: u.y + deltaY }
+        : u
+      ));
+      return;
+    }
+
     // Update unit position in state
     setUnits(prev => prev.map(unit => unit.id === unitId ? { ...unit, x: snappedXm, y: snappedYm } : unit));
   }
+
+
+  function handleDragMove(e, unitId) {
+    // Only mirror movement when multiple units are selected.
+    if (selectedIds.size <= 1 || !selectedIds.has(unitId)) return;
+
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+    const draggedUnit = units.find((u) => u.id === unitId);
+
+    const deltaX = (e.target.x() / px) - draggedUnit.x;
+    const deltaY = (e.target.y() / px) - draggedUnit.y;
+
+    // Track delta in state so ghost layer can read it.
+    setDragOffsets({ deltaX, deltaY, unitId });
+
+    // Move all other selected nodes visually without updating state.
+    [...selectedIds].forEach((id) => {
+      if (id === unitId) return;
+      const ref = getGroupRef(id);
+      if (!ref.current) return;
+      const unit = units.find((u) => u.id === id);
+      ref.current.x((unit.x + deltaX) * px);
+      ref.current.y((unit.y + deltaY) * px);
+    });
+  }
+
 
   function handleDragEndGrid(e) {
     const stage = e.target.getStage();
@@ -403,8 +481,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
             {units.map((unit) => {
               const ref = getGroupRef(unit.id);
               return (
-                <StorageUnit key={unit.id} unit={unit} isSelected={selectedIds.has(unit.id)} activeTool={activeTool} onSelect={(e) => handleUnitClick(unit, e)} onDragEnd={(e) => handleDragEnd(e, unit.id)} onTransformEnd={(e) => handleTransformEnd(e, unit)} groupRef={(node) => { ref.current = node; }}/>
-              );})}
+                <StorageUnit key={unit.id} unit={unit} isSelected={selectedIds.has(unit.id)} activeTool={activeTool} onSelect={(e) => handleUnitClick(unit, e)} onDragMove={(e) => handleDragMove(e, unit.id)} onDragEnd={(e) => handleDragEnd(e, unit.id)} onTransformEnd={(e) => handleTransformEnd(e, unit)} groupRef={(node) => { ref.current = node; }}/>              );})}
 
             {/* TRANSFORMER */}
             {selectedIds.size > 0 && selectedIds.size < 2 && (() => {
@@ -434,6 +511,31 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
                 <Text width={ghostUnit.width} height={ghostUnit.height} align="center" verticalAlign="middle" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>
               </Group>
             )}
+
+            {/* MULTI-DRAG GHOSTS  rendered for all selected units except the one being dragged */}
+            {dragOffsets.unitId && [...selectedIds]
+
+              .map((id) => {
+                const unit = units.find((u) => u.id === id);
+                if (!unit) return null;
+                const px = CANVAS_CONFIG.PIXELS_PER_METER;
+                let ghostX = (unit.x + dragOffsets.deltaX) * px;
+                let ghostY = (unit.y + dragOffsets.deltaY) * px;
+                if (snapEnabled) {
+                  ghostX = snapToGrid(ghostX, gridSizePx);
+                  ghostY = snapToGrid(ghostY, gridSizePx);
+                }
+
+                return (
+                  <Group key={`ghost-${id}`} x={ghostX} y={ghostY}>
+                    {/* Multi-drag ghost body */}
+                    <Rect width={unit.width * px} height={unit.height * px} fill={unit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
+                    {/* Multi-drag ghost label */}
+                    <Text width={unit.width * px} height={unit.height * px} align="center" verticalAlign="middle" text={unit.name} fontSize={12} fill="white" opacity={0.7}/>
+                  </Group>
+                );
+              })
+            }
           </Layer>
 
         </Stage>
