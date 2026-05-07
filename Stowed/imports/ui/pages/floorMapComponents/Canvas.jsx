@@ -108,13 +108,13 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
       if (x === 0) continue;
       const meters = (x / CANVAS_CONFIG.PIXELS_PER_METER);
       vLines.push(<Line key={`v-${x}`} points={[x, 0, x, height]} stroke="#ccc" strokeWidth={1}/>);
-      vLines.push(<Text key={`vl-${x}`} x={x + 3} y={4} text={`${meters}m`} fontSize={10} fill="black"/>);
+      vLines.push(<Text key={`vl-${x}`} x={x - 23} y={4} text={`${meters}m`} fontSize={10} fill="black"/>);
     }
     for (let y = 0; y <= height; y += gridSizePx) {
       if (y === 0) continue;
       const meters = (y / CANVAS_CONFIG.PIXELS_PER_METER);
       hLines.push(<Line key={`h-${y}`} points={[0, y, width, y]} stroke="#ccc" strokeWidth={1}/>);
-      hLines.push(<Text key={`hl-${y}`} x={4} y={y + 3} text={`${meters}m`} fontSize={10} fill="black"/>);
+      hLines.push(<Text key={`hl-${y}`} x={4} y={y - 12} text={`${meters}m`} fontSize={10} fill="black"/>);
     }
   }
   
