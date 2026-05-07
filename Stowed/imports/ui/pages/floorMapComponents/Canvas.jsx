@@ -93,7 +93,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
   const groupRefs = useRef({});
   const containerRef = useRef(null);
 
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [ghostUnit, setGhostUnit] = useState(null);
   const [scale, setScale] = useState(1); // scale state, default 1
   const [stagePos, setStagePos] = useState({ x:0, y:0}); //position of grid, default 0,0
@@ -244,18 +244,30 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
   }
 
   // --- STAGE HANDLERS ---
-  function handleUnitClick(unit) {
-    if (activeTool === "select") {
-      // Toggle selection; clicking background deselects (see handleStageClick).
-      setSelectedId((prev) => (prev === unit.id ? null : unit.id));
+  function handleUnitClick(unit, e) {
+    if (activeTool === "inspect") {
+      navigate(`/storage-unit/${unit._id}`);
       return;
     }
-    navigate(`/storage-unit/${unit._id}`);
+
+    // Toggle selection; clicking background deselects (see handleStageClick).
+    if (!e.evt.shiftKey) {
+      setSelectedIds(new Set([unit.id]));
+      return;
+    }
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(unit.id) ? next.delete(unit.id) : next.add(unit.id);
+      return next;
+    });
+    return;
   }
+  
 
   // Deselect when clicking the background.
   function handleStageClick(e) {
-    if (e.target === e.target.getStage()) setSelectedId(null);
+    if (e.target === e.target.getStage()) setSelectedIds(new Set());
   }
 
   function handleDragEnd(e, unitId) {
@@ -391,15 +403,15 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
             {units.map((unit) => {
               const ref = getGroupRef(unit.id);
               return (
-                <StorageUnit key={unit.id} unit={unit} isSelected={selectedId === unit.id} activeTool={activeTool} onSelect={() => handleUnitClick(unit)} onDragEnd={(e) => handleDragEnd(e, unit.id)} onTransformEnd={(e) => handleTransformEnd(e, unit)} groupRef={(node) => { ref.current = node; }}/>
+                <StorageUnit key={unit.id} unit={unit} isSelected={selectedIds.has(unit.id)} activeTool={activeTool} onSelect={(e) => handleUnitClick(unit, e)} onDragEnd={(e) => handleDragEnd(e, unit.id)} onTransformEnd={(e) => handleTransformEnd(e, unit)} groupRef={(node) => { ref.current = node; }}/>
               );})}
 
             {/* TRANSFORMER */}
-            {activeTool === "select" && selectedId && (() => {
-              const ref = getGroupRef(selectedId);
-              return ref.current ? (
+            {selectedIds.size > 0 && (() => {
+              const nodes = [...selectedIds].map((id) => getGroupRef(id).current).filter(Boolean);
+              return nodes.length > 0 ? (
                 <Transformer
-                  nodes={[ref.current]}
+                  nodes={nodes}
                   rotateEnabled={false}
                   keepRatio={false}
                   boundBoxFunc={(oldBox, newBox) => {
