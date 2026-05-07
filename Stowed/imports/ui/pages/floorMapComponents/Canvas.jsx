@@ -407,7 +407,7 @@ export function Canvas({ style, floorSize, activeTool, canvasSettings, units, se
               );})}
 
             {/* TRANSFORMER */}
-            {selectedIds.size > 0 && (() => {
+            {selectedIds.size > 0 && selectedIds.size < 2 && (() => {
               const nodes = [...selectedIds].map((id) => getGroupRef(id).current).filter(Boolean);
               return nodes.length > 0 ? (
                 <Transformer
