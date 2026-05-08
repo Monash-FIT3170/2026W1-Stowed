@@ -1,5 +1,4 @@
 // File to check for collisions between different objects on the floor map designer page
-
 export { isRectRectIntersecting };
 
 const isRangeIntersecting = (intervalA, intervalB) => !(

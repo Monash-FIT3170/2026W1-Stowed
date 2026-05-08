@@ -1,7 +1,7 @@
 import {useState} from "react";
 import { storagePanelStyles, COLOURS } from "./FloorMapStyles";
-import { CANVAS_CONFIG } from "./Canvas";
-import { dragState } from "./DragState";
+import { CANVAS_CONFIG } from "./canvas/components/Canvas";
+import { dragState } from "./canvas/editor/DragState";
 
 /**
  * Draggable card representing a storage unit

@@ -1,41 +1,15 @@
 import { useRef, useState, useEffect } from "react";
 import { Stage, Layer, Rect, Line, Text, Group, Transformer } from "react-konva";
 import { COLOURS } from "./FloorMapStyles";
-import { dragState } from "./DragState";
+import { dragState } from "./canvas/editor/DragState";
 import { useNavigate } from "react-router-dom";
-import { isRectRectIntersecting } from "./UnitCollisions";
+import { isRectRectIntersecting } from "./canvas/editor/utils/UnitCollisions";
 
 export const CANVAS_CONFIG = {
   METERS_PER_CELL : 1,
   PIXELS_PER_METER : 50,
   GRID_SIZE : 50 * 1,
 };
-
-// TEMPORARY storage unit for testing, replace with db fetch and simpleschema
-function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragMove, onDragEnd, onTransformEnd, groupRef }) {
-  const canMove = activeTool === "move";
-  const px = CANVAS_CONFIG.PIXELS_PER_METER;
-
-  return (
-    <Group
-      ref={groupRef}
-      id={unit.id}
-      x={unit.x * px}
-      y={unit.y * px}
-      draggable={canMove}
-      onClick={onSelect}
-      onDragMove={onDragMove}
-      onDragEnd={onDragEnd}
-      onTransformEnd={onTransformEnd}
-    >
-      {/* MAIN BODY */}
-      <Rect width={unit.width * px} height={unit.height * px} fill={unit.fill} stroke={isSelected ? "orange" : "transparent"} strokeWidth={2} cornerRadius={4} opacity={0.85}/>
-      
-      {/* UNIT NAME ON BODY */}
-      <Text width={unit.width * px} height={unit.height * px} align="center" verticalAlign="middle" text={unit.name} fontSize={12} fill="white"/>
-    </Group>
-  );
-}
 
 // Controlled transformer that lives beside a selected unit.
 function UnitTransformer({ nodeRef }) {
