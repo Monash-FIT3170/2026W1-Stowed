@@ -1,6 +1,6 @@
 import { useState } from "react"; 
 import { COLOURS } from "./FloorMapStyles";
-import { CANVAS_CONFIG } from "./Canvas";
+import { CANVAS_CONFIG } from "./canvas/components/Canvas";
 
 /**
  * Toolbar component for selecting tools and adjusting floor dimensions.
