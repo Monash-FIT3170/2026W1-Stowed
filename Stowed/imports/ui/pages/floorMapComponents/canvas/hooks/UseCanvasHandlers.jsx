@@ -1,30 +1,37 @@
-import { useNavigate } from "react-router-dom";
-import { CANVAS_ACTIONS } from "../Actions";
-import { snapToGrid } from "../utils/Snapping";
-import { hasCollisions } from "../utils/Collisions";
-import { dragState } from "../DragState";
-import { CANVAS_CONFIG } from "../../components/Canvas";
+import { useNavigate }    from "react-router-dom";
+import { CANVAS_ACTIONS } from "../editor/Actions";
+import { snapToGrid }     from "../editor/utils/Snapping";
+import { hasCollisions }  from "../editor/utils/Collisions";
+import { dragState }      from "../editor/DragState";
+import { CANVAS_CONFIG }  from "../components/Canvas";
 
 
-export function useCanvasHandlers({
-  dispatch,
-  units,
-  setUnits,
-  selectedIds,
-  stageRef,
-  groupRefs,
-  snapEnabled,
-  gridSizePx,
-  gridInterval,
-  width,
-  height,
-  activeTool,
-  wrapperRef,
-}) {
+/**
+ * Custom hook that provides all event handlers for the canvas.
+ * Handlers are grouped into four concerns: drop, unit interaction, transform, and viewport.
+ *
+ * @param {Function}    dispatch
+ * @param {Object[]}    units
+ * @param {Function}    setUnits        - Persists unit changes to EditorContext
+ * @param {Set<string>} selectedIds
+ * @param {React.Ref}   stageRef
+ * @param {React.Ref}   groupRefs       - Mutable map of unit id -> Konva Group ref
+ * @param {boolean}     snapEnabled
+ * @param {number}      gridSizePx
+ * @param {number}      gridInterval    - Snap interval in metres
+ * @param {number}      width           - Floor width in pixels
+ * @param {number}      height          - Floor height in pixel.
+ * @param {string}      activeTool
+ * @param {React.Ref}   wrapperRef
+ *
+ * @returns {{ getGroupRef, handleDragOver, handleDragLeave, handleDrop,
+*             handleUnitClick, handleStageClick, handleDragMove, handleDragEnd,
+*             handleDragEndGrid, handleTransformEnd, handleWheel }}
+*/
+export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef }) {
   const navigate = useNavigate();
 
   // INTERNAL HELPERS 
-
   function getGroupRef(id) {
     if (!groupRefs.current[id]) groupRefs.current[id] = { current: null };
     return groupRefs.current[id];
@@ -158,6 +165,7 @@ export function useCanvasHandlers({
       payload: { deltaX, deltaY, unitId },
     });
 
+    // Do not use dispatch for ref.current for performance
     [...selectedIds].forEach((id) => {
       if (id === unitId) return;
       const ref  = getGroupRef(id);
@@ -198,6 +206,8 @@ export function useCanvasHandlers({
         return checkCollisions(bounds, id);
       });
 
+
+      // Do not use dispatch for ref.current due to performance
       if (wouldCollide) {
         [...selectedIds].forEach((id) => {
           const ref  = getGroupRef(id);

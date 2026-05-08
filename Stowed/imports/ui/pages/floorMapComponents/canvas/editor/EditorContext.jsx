@@ -18,13 +18,20 @@ const DEFAULT_CANVAS_SETTINGS = {
 
 const EditorContext = createContext(null);
 
+/**
+ * Top level context provider for the floor plan editor.
+ * Owns all shared editor state: active tool, floor dimensions, canvas settings,
+ * placed units, undo/redo history, and save/load.
+ *
+ * @param {{ children: React.ReactNode }} props
+ */
 export function EditorProvider({ children }) {
-  const [activeTool, setActiveTool]           = useState(TOOLS.SELECT);
-  const [floorSize, setFloorSize]             = useState({ width: 500, height: 500 });
-  const [canvasSettings, setCanvasSettings]   = useState(DEFAULT_CANVAS_SETTINGS);
+  const [activeTool, setActiveTool]                   = useState(TOOLS.SELECT);
+  const [floorSize, setFloorSize]                     = useState({ width: 500, height: 500 });
+  const [canvasSettings, setCanvasSettings]           = useState(DEFAULT_CANVAS_SETTINGS);
   const [isCanvasSettingsOpen, setCanvasSettingsOpen] = useState(false);
-  const [units, setUnits]                     = useState([]);
-  const [pendingUnit, setPendingUnit]         = useState(null);
+  const [units, setUnits]                             = useState([]);
+  const [pendingUnit, setPendingUnit]                 = useState(null);
 
   // --- UNDO / REDO HISTORY ---
   const [_, forceRender]  = useState(0);
@@ -98,9 +105,7 @@ export function EditorProvider({ children }) {
     floorSize, setFloorSize,
 
     // Canvas settings
-    canvasSettings,
-    isCanvasSettingsOpen, setCanvasSettingsOpen,
-    handleCanvasSettingsSave,
+    canvasSettings, isCanvasSettingsOpen, setCanvasSettingsOpen, handleCanvasSettingsSave,
 
     // Units
     units, commitUnits,

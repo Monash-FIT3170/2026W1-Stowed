@@ -5,7 +5,7 @@ import { StoragePanel }         from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal }  from "./floorMapComponents/CanvasSettingsModal";
 
 /**
- * Inner layout component. Consumes EditorContext — no local state.
+ * Inner layout component. Consumes EditorContext - no local state.
  */
 function FloorMapPageInner() {
   const {

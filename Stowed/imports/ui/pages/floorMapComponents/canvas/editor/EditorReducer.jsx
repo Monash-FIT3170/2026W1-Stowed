@@ -9,6 +9,25 @@ export const initialCanvasState = {
   displaySize:  { width: 0, height: 0 },
 };
 
+/**
+ * Reducer for transient canvas UI state. Does not touch persistent unit data
+ * that lives in EditorContext and is updated via commitUnits.
+ *
+ * @param {typeof initialCanvasState} state
+ * @param {{ type: string, payload?: any }} action
+ * 
+ * @returns {typeof initialCanvasState}
+ *
+ * @example
+ * // SELECT_UNIT         - sets selection to [id], or toggles id when shiftKey is true.
+ * // DESELECT_ALL        - clears the selection set.
+ * // SET_GHOST           - stores a ghost unit descriptor during a palette drag-over.
+ * // SET_DRAG_OFFSETS    - records live deltaX/deltaY during a multi-unit drag.
+ * // CLEAR_DRAG_OFFSETS  - resets drag offsets on drag end.
+ * // SET_SCALE           - updates the stage zoom level.
+ * // SET_STAGE_POS       - persists the stage pan position after a stage drag ends.
+ * // SET_DISPLAY_SIZE    - stores the measured pixel size of the canvas container.
+ */
 export function canvasReducer(state, action) {
   switch (action.type) {
 
