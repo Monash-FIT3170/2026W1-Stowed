@@ -1,5 +1,5 @@
 import { Layer, Group, Rect, Text } from "react-konva";
-import { CANVAS_CONFIG }            from "../Canvas";
+import { CANVAS_CONFIG }            from "../../CanvasConfig";
 import { snapToGrid }               from "../../editor/utils/Snapping";
 
 /**

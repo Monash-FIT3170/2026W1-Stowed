@@ -1,5 +1,5 @@
 import { Layer, Transformer } from "react-konva";
-import { CANVAS_CONFIG }      from "../Canvas";
+import { CANVAS_CONFIG }      from "../../CanvasConfig";
 
 /**
  * Transformer layer that allows for dynamic resizing of storage units

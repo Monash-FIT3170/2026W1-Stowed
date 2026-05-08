@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { modalStyles } from "./FloorMapStyles";
-import { CANVAS_CONFIG } from "./canvas/components/Canvas";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 
 
 /**

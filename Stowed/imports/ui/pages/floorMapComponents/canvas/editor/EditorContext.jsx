@@ -1,5 +1,5 @@
 import { createContext, useContext, useRef, useState } from "react";
-import { CANVAS_CONFIG } from "../components/Canvas";
+import { CANVAS_CONFIG } from "../CanvasConfig";
 
 // --- TOOL OPTIONS ---
 export const TOOLS = {
@@ -10,7 +10,7 @@ export const TOOLS = {
 };
 
 // --- DEFAULT CANVAS SETTINGS ---
-const DEFAULT_CANVAS_SETTINGS = {
+export const DEFAULT_CANVAS_SETTINGS = {
   gridInterval: CANVAS_CONFIG.METERS_PER_CELL,
   showGrid:     true,
   snapToGrid:   true,

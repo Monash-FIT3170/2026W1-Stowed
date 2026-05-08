@@ -1,9 +1,10 @@
 import { useNavigate }    from "react-router-dom";
+import { useCallback }    from "react";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { snapToGrid }     from "../editor/utils/Snapping";
 import { hasCollisions }  from "../editor/utils/Collisions";
 import { dragState }      from "../editor/DragState";
-import { CANVAS_CONFIG }  from "../components/Canvas";
+import { CANVAS_CONFIG }  from "../CanvasConfig";
 
 
 /**
@@ -28,7 +29,7 @@ import { CANVAS_CONFIG }  from "../components/Canvas";
 *             handleUnitClick, handleStageClick, handleDragMove, handleDragEnd,
 *             handleDragEndGrid, handleTransformEnd, handleWheel }}
 */
-export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef }) {
+export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef, clipboard }) {
   const navigate = useNavigate();
 
   // INTERNAL HELPERS 
@@ -323,7 +324,54 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     });
   }
 
+  // COPY / PASTE
+
+  const handleCopy = useCallback(() => {
+    const copied = units.filter((u) => selectedIds.has(u.id));
+    dispatch({ type: CANVAS_ACTIONS.COPY_UNITS, payload: { units: copied } });
+  }, [units, selectedIds]);
+
+  const handlePaste = useCallback(() => {
+    const OFFSET = 1;
+    const MAX_SEARCH = 100;
+  
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+    const placedUnits = [];
+  
+    clipboard.forEach((unit) => {
+      let found = false;
+  
+      for (let step = 1; step <= MAX_SEARCH; step++) {
+        const testX = unit.x + OFFSET * step;
+        const testY = unit.y + OFFSET * step;
+  
+        const bounds = {
+          dom: { lower: testX * px, upper: (testX + unit.width) * px},
+          ran: { lower: testY * px, upper: (testY + unit.height) * px}
+        };
+        
+        // Make sure to check against newly placed units from paste
+        const collides = hasCollisions(bounds, [...units, ...placedUnits]);
+  
+        if (!collides) {
+          placedUnits.push({ ...unit, id: `unit-${Date.now()}-${Math.random()}`, x: testX, y: testY});
+          found = true;
+          break;
+        }
+      };
+    });
+      
+  
+    if (placedUnits.length === 0) return;
+  
+    setUnits((prev) => [ ...prev, ...placedUnits,]);
+  
+    dispatch({ type: CANVAS_ACTIONS.PASTE_UNITS, payload: { ids: placedUnits.map((u) => u.id)}});
+    }, [clipboard, units]);
+  
+
   // RETURN 
+
 
   return {
     getGroupRef,
@@ -337,5 +385,7 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     handleDragEndGrid,
     handleTransformEnd,
     handleWheel,
+    handleCopy,
+    handlePaste,
   };
 }

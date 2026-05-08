@@ -1,5 +1,5 @@
 import { Group, Rect, Text } from "react-konva";
-import { CANVAS_CONFIG }     from "../Canvas";
+import { CANVAS_CONFIG }     from "../../CanvasConfig";
 
 /**
  * Individual storage unit rendered as a labelled rectangle on the canvas.

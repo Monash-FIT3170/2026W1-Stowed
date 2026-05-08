@@ -1,5 +1,5 @@
 import { isRectRectIntersecting } from "./UnitCollisions";
-import { CANVAS_CONFIG }          from "../../components/Canvas";
+import { CANVAS_CONFIG }          from "../../CanvasConfig";
 
 /**
  * Converts all units (except excludeId) to pixel-space bounds objects

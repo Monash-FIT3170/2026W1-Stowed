@@ -7,6 +7,7 @@ export const initialCanvasState = {
   scale:        1,
   stagePos:     { x: 0, y: 0 },
   displaySize:  { width: 0, height: 0 },
+  clipboard: [],
 };
 
 /**
@@ -59,6 +60,12 @@ export function canvasReducer(state, action) {
 
     case CANVAS_ACTIONS.SET_DISPLAY_SIZE:
       return { ...state, displaySize: action.payload };
+
+    case CANVAS_ACTIONS.COPY_UNITS:
+      return { ...state, clipboard: action.payload.units };
+    
+    case CANVAS_ACTIONS.PASTE_UNITS:
+      return { ...state, selectedIds: new Set(action.payload.ids) };
 
     default:
       return state;
