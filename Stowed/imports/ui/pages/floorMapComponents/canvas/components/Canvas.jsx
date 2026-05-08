@@ -5,20 +5,12 @@ import { useEditor }                         from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS }                    from "../editor/Actions";
 import { useCanvasHandlers }                 from "../hooks/UseCanvasHandlers";
+import { CANVAS_CONFIG }                     from "../CanvasConfig"
 
 import { GridLayer }                         from "./layers/GridLayer";
 import { UnitLayer }                         from "./layers/UnitLayer";
 import { TransformerLayer }                  from "./layers/TransformerLayer";
 import { GhostLayer }                        from "./layers/GhostLayer";
-
-/**
- * Global canvas configuration constants
- */
-export const CANVAS_CONFIG = {
-  METERS_PER_CELL:  1,
-  PIXELS_PER_METER: 50,
-  GRID_SIZE:        50 * 1,
-};
 
 /**
  * Root canvas comonent. Owns the Konva Stage and composes all layers.
@@ -46,16 +38,9 @@ export function Canvas({ style }) {
 
   // REDUCER 
   const [state, dispatch] = useReducer(canvasReducer, initialCanvasState);
-  const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize } = state;
+  const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize, clipboard } = state;
 
-  // MEASURE CONTAINER TO FILL SCREEN FULLY
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const { width, height } = el.getBoundingClientRect();
-    dispatch({ type: CANVAS_ACTIONS.SET_DISPLAY_SIZE, payload: { width, height } });
-  }, []);
-
+  
   // HANDLERS - centralised in UseCanvasHandlers to keep this file focused on composition
   const {
     getGroupRef,
@@ -69,6 +54,8 @@ export function Canvas({ style }) {
     handleDragEndGrid,
     handleTransformEnd,
     handleWheel,
+    handleCopy,
+    handlePaste,
   } = useCanvasHandlers({
     dispatch,
     units,
@@ -83,7 +70,26 @@ export function Canvas({ style }) {
     height,
     activeTool,
     wrapperRef,
+    clipboard,
   });
+  
+  useEffect(() => {
+    // MEASURE CONTAINER TO FILL SCREEN FULLY
+    const el = containerRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    dispatch({ type: CANVAS_ACTIONS.SET_DISPLAY_SIZE, payload: { width, height } });
+    
+    // MANAGE KEY BINDINGS
+    function onKeyDown(e) {
+      if (e.key === "c" && (e.ctrlKey || e.metaKey)) handleCopy();
+      if (e.key === "v" && (e.ctrlKey || e.metaKey)) handlePaste();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleCopy, handlePaste]);
+
 
   // RENDER 
   return (

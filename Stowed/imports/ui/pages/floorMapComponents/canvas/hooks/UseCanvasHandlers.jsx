@@ -1,9 +1,10 @@
 import { useNavigate }    from "react-router-dom";
+import { useCallback }    from "react";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { snapToGrid }     from "../editor/utils/Snapping";
 import { hasCollisions }  from "../editor/utils/Collisions";
 import { dragState }      from "../editor/DragState";
-import { CANVAS_CONFIG }  from "../components/Canvas";
+import { CANVAS_CONFIG }  from "../CanvasConfig";
 
 
 /**
@@ -28,7 +29,7 @@ import { CANVAS_CONFIG }  from "../components/Canvas";
 *             handleUnitClick, handleStageClick, handleDragMove, handleDragEnd,
 *             handleDragEndGrid, handleTransformEnd, handleWheel }}
 */
-export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef }) {
+export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef, clipboard }) {
   const navigate = useNavigate();
 
   // INTERNAL HELPERS 
@@ -323,6 +324,37 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     });
   }
 
+  // COPY / PASTE
+
+  const handleCopy = useCallback(() => {
+    const copied = units.filter((u) => selectedIds.has(u.id));
+    dispatch({ type: CANVAS_ACTIONS.COPY_UNITS, payload: { units: copied } });
+  }, [units, selectedIds]);
+
+  const handlePaste = useCallback(() => {
+    const OFFSET = 1;
+    const newUnits = clipboard.map((u) => ({
+      ...u,
+      id: `unit-${Date.now()}-${Math.random()}`,
+      x:  u.x + OFFSET,
+      y:  u.y + OFFSET,
+    }));
+
+    const safe = newUnits.filter((u) => {
+      const px = CANVAS_CONFIG.PIXELS_PER_METER;
+      const bounds = {
+        dom: { lower: u.x * px, upper: (u.x + u.width)  * px },
+        ran: { lower: u.y * px, upper: (u.y + u.height) * px },
+      };
+      return !checkCollisions(bounds);
+    });
+
+    if (safe.length === 0) return;
+    setUnits((prev) => [...prev, ...safe]);
+    dispatch({ type: CANVAS_ACTIONS.PASTE_UNITS, payload: { ids: safe.map((u) => u.id) } });
+  }, [clipboard, units]);
+  
+
   // RETURN 
 
   return {
@@ -337,5 +369,7 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     handleDragEndGrid,
     handleTransformEnd,
     handleWheel,
+    handleCopy,
+    handlePaste,
   };
 }

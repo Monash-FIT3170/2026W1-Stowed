@@ -1,6 +1,6 @@
 import { Layer, Rect, Line, Text } from "react-konva";
 import { COLOURS }                 from "../../../floorMapStyles";
-import { CANVAS_CONFIG }           from "../Canvas";
+import { CANVAS_CONFIG }           from "../../CanvasConfig";
 
 /**
  * Renders a grid onto the Konva canvas

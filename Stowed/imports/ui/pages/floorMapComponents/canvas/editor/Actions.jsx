@@ -15,4 +15,8 @@ export const CANVAS_ACTIONS = {
     SET_SCALE:        "SET_SCALE",
     SET_STAGE_POS:    "SET_STAGE_POS",
     SET_DISPLAY_SIZE: "SET_DISPLAY_SIZE",
+
+    // Copy/Paste
+    COPY_UNITS: "COPY_UNITS",
+    PASTE_UNITS: "PASTE_UNITS"
   };
