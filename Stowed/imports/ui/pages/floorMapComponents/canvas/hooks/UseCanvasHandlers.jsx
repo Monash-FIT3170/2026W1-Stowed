@@ -333,29 +333,45 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
 
   const handlePaste = useCallback(() => {
     const OFFSET = 1;
-    const newUnits = clipboard.map((u) => ({
-      ...u,
-      id: `unit-${Date.now()}-${Math.random()}`,
-      x:  u.x + OFFSET,
-      y:  u.y + OFFSET,
-    }));
-
-    const safe = newUnits.filter((u) => {
-      const px = CANVAS_CONFIG.PIXELS_PER_METER;
-      const bounds = {
-        dom: { lower: u.x * px, upper: (u.x + u.width)  * px },
-        ran: { lower: u.y * px, upper: (u.y + u.height) * px },
+    const MAX_SEARCH = 100;
+  
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+    const placedUnits = [];
+  
+    clipboard.forEach((unit) => {
+      let found = false;
+  
+      for (let step = 1; step <= MAX_SEARCH; step++) {
+        const testX = unit.x + OFFSET * step;
+        const testY = unit.y + OFFSET * step;
+  
+        const bounds = {
+          dom: { lower: testX * px, upper: (testX + unit.width) * px},
+          ran: { lower: testY * px, upper: (testY + unit.height) * px}
+        };
+        
+        // Make sure to check against newly placed units from paste
+        const collides = hasCollisions(bounds, [...units, ...placedUnits]);
+  
+        if (!collides) {
+          placedUnits.push({ ...unit, id: `unit-${Date.now()}-${Math.random()}`, x: testX, y: testY});
+          found = true;
+          break;
+        }
       };
-      return !checkCollisions(bounds);
     });
-
-    if (safe.length === 0) return;
-    setUnits((prev) => [...prev, ...safe]);
-    dispatch({ type: CANVAS_ACTIONS.PASTE_UNITS, payload: { ids: safe.map((u) => u.id) } });
-  }, [clipboard, units]);
+      
+  
+    if (placedUnits.length === 0) return;
+  
+    setUnits((prev) => [ ...prev, ...placedUnits,]);
+  
+    dispatch({ type: CANVAS_ACTIONS.PASTE_UNITS, payload: { ids: placedUnits.map((u) => u.id)}});
+    }, [clipboard, units]);
   
 
   // RETURN 
+
 
   return {
     getGroupRef,
