@@ -11,6 +11,7 @@ import { QRCodesPage }    from './pages/QRCodesPage';
 import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
 import { FloorMapPage }  from './pages/FloorMapPage';
+import { InventoryListPage } from './pages/InventoryListPage';
 
 const LocationsPage = lazy(() =>
   import('./pages/LocationsPage').then((module) => ({ default: module.LocationsPage })),
@@ -38,6 +39,7 @@ export function App() {
               <Route path="/forecast"            element={<ForecastPage />} />
               <Route path="/alerts"              element={<AlertsPage />} />
               <Route path="*"                    element={<Navigate to="/" replace />} />
+              <Route path="/inventory/list"      element={<InventoryListPage />} />
             </Routes>
           </Suspense>
         </main>
