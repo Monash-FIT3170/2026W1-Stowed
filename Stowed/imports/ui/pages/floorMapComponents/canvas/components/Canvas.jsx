@@ -19,14 +19,14 @@ import { GhostLayer }                        from "./layers/GhostLayer";
  * 
  * @param {React.CSSProperties} style - Forwarded to the Konva Stage element. 
  */
-export function Canvas({ style }) {
+export function Canvas({ style, isCanvasEditMode }) {
   const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
 
   const width  = floorSize.width;
   const height = floorSize.height;
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
-  const showGrid     = canvasSettings?.showGrid     ?? true;
+  const showGrid     =  isCanvasEditMode ?  (canvasSettings?.showGrid ?? true) : false ;
   const snapEnabled  = canvasSettings?.snapToGrid   ?? true;
   const gridSizePx   = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
 

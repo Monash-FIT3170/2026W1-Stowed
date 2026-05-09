@@ -13,6 +13,7 @@ function FloorMapPageInner() {
     floorSize,
     canvasSettings,
     isCanvasSettingsOpen, setCanvasSettingsOpen,
+    isCanvasEditMode, setCanvasEditMode,
     units, commitUnits,
     canUndo, canRedo,
     handleUndo, handleRedo,
@@ -25,6 +26,7 @@ function FloorMapPageInner() {
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
 
       {/* CANVAS TOOLBAR */}
+      {isCanvasEditMode && (
       <CanvasToolbar
         activeTool={activeTool}
         setActiveTool={setActiveTool}
@@ -37,12 +39,15 @@ function FloorMapPageInner() {
         canUndo={canUndo}
         canRedo={canRedo}
       />
+      )}
 
       {/* MAIN ROW */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
         {/* STORAGE PANEL */}
-        <StoragePanel onSelectUnit={handlePlaceUnit} />
+        {isCanvasEditMode && 
+         ( <StoragePanel onSelectUnit={handlePlaceUnit} />
+        )};
 
         {/* CANVAS AREA */}
         <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", overflow: "auto" }}>
@@ -52,6 +57,8 @@ function FloorMapPageInner() {
               width:   "100%",
               height:  "100%",
             }}
+
+            isCanvasEditMode = {isCanvasEditMode}
           />
         </div>
       </div>
@@ -69,6 +76,7 @@ function FloorMapPageInner() {
       )}
 
       <button
+        onClick={() =>setCanvasEditMode(!isCanvasEditMode)}
         style = {{
           position : "fixed",
           bottom : 20,
@@ -80,7 +88,7 @@ function FloorMapPageInner() {
           zIndex: 1000
         }}
         >
-          Toggle Edit
+        { isCanvasEditMode ? "Toggle View" : "Toggle Edit" }
       </button>
     </div>
 
