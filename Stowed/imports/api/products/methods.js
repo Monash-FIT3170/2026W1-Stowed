@@ -23,9 +23,30 @@ Meteor.methods({
    * @throws {Meteor.Error} duplicate-name    - A product with this name already exists.
    * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
    */
-  async 'products.createWithAssignments'({ name, description = '', totalQuantity, assignments }) {
+  async "products.createWithAssignments"({
+    name,
+    description = "",
+    tag = "",
+    category = "",
+    sku = "",
+    brand = "",
+    unitCost = 0,
+    photoUrl = "",
+    catalogImages = [],
+    qrCode = "",
+    totalQuantity,
+    assignments,
+  }) {
     check(name, String);
     check(description, String);
+    check(tag, String);
+    check(category, String);
+    check(sku, String);
+    check(brand, String);
+    check(unitCost, Number);
+    check(photoUrl, String);
+    check(catalogImages, [String]);
+    check(qrCode, String);
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
 
@@ -54,6 +75,14 @@ Meteor.methods({
     const productId = await Products.insertAsync({
       name,
       description,
+      tag,
+      category,
+      sku,
+      brand,
+      unitCost,
+      photoUrl,
+      catalogImages,
+      qrCode,
       totalQuantity,
       createdAt: now,
       updatedAt: now,
@@ -97,10 +126,32 @@ Meteor.methods({
    * @throws {Meteor.Error} duplicate-name    - Another product already has this name.
    * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
    */
-  async 'products.update'({ productId, name, description = '', totalQuantity, assignments }) {
+  async "products.update"({
+    productId,
+    name,
+    description = "",
+    tag = "",
+    category = "",
+    sku = "",
+    brand = "",
+    unitCost = 0,
+    photoUrl = "",
+    catalogImages = [],
+    qrCode = "",
+    totalQuantity,
+    assignments,
+  }) {
     check(productId, String);
     check(name, String);
     check(description, String);
+    check(tag, String);
+    check(category, String);
+    check(sku, String);
+    check(brand, String);
+    check(unitCost, Number);
+    check(photoUrl, String);
+    check(catalogImages, [String]);
+    check(qrCode, String);
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
 
