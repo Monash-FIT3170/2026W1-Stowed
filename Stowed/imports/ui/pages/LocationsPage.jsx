@@ -375,50 +375,51 @@ export function LocationsPage() {
               subtitle="Create and select the top-level physical area."
             >
               <form className="form-grid" onSubmit={handleCreateSite}>
-                <TextInput
-                  value={siteForm.name}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  placeholder="Warehouse"
-                />
-              </Field>
-              <Field label="Description">
-                <TextArea
-                  value={siteForm.description}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({
-                      ...current,
-                      description: event.target.value,
-                    }))
-                  }
-                  placeholder="Optional note"
-                />
-              </Field>
+                <Field label="Name">
+                  <TextInput
+                    value={siteForm.name}
+                    onChange={(event) =>
+                      setSiteForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Warehouse"
+                  />
+                </Field>
+                <Field label="Description">
+                  <TextArea
+                    value={siteForm.description}
+                    onChange={(event) =>
+                      setSiteForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    placeholder="Optional note"
+                  />
+                </Field>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={submitting || !siteForm.name.trim()}
-                  className="form-button form-button-full-width"
-                >
-                  {editingSiteId ? 'Save Site' : 'Add Site'}
-                </button>
-                {editingSiteId ? (
+                <div className="flex flex-wrap gap-2">
                   <button
-                    type="button"
-                    onClick={resetSiteForm}
-                    disabled={submitting}
-                    className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    type="submit"
+                    disabled={submitting || !siteForm.name.trim()}
+                    className="form-button form-button-full-width"
                   >
-                    Cancel
+                    {editingSiteId ? "Save Site" : "Add Site"}
                   </button>
-                ) : null}
-              </div>
-            </form>
+                  {editingSiteId ? (
+                    <button
+                      type="button"
+                      onClick={resetSiteForm}
+                      disabled={submitting}
+                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
+              </form>
 
               {sites.length ? (
                 <div className="selection-list">
@@ -465,52 +466,53 @@ export function LocationsPage() {
                 className="form-grid form-grid-cols-2"
                 onSubmit={handleCreateFloorMap}
               >
-                <TextInput
-                  value={floorMapForm.name}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  placeholder="Ground Floor"
-                />
-              </Field>
-              <Field label="Image URL">
-                <TextInput
-                  value={floorMapForm.imageUrl}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({
-                      ...current,
-                      imageUrl: event.target.value,
-                    }))
-                  }
-                  placeholder="https://example.com/floor-map.png"
-                />
-              </Field>
+                <Field label="Name">
+                  <TextInput
+                    value={floorMapForm.name}
+                    onChange={(event) =>
+                      setFloorMapForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Ground Floor"
+                  />
+                </Field>
+                <Field label="Image URL">
+                  <TextInput
+                    value={floorMapForm.imageUrl}
+                    onChange={(event) =>
+                      setFloorMapForm((current) => ({
+                        ...current,
+                        imageUrl: event.target.value,
+                      }))
+                    }
+                    placeholder="https://example.com/floor-map.png"
+                  />
+                </Field>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={
-                    submitting || !selectedSiteId || !floorMapForm.name.trim()
-                  }
-                  className="form-button form-button-full-width"
-                >
-                  {editingFloorMapId ? 'Save Floor Map' : 'Add Floor Map'}
-                </button>
-                {editingFloorMapId ? (
+                <div className="flex flex-wrap gap-2">
                   <button
-                    type="button"
-                    onClick={resetFloorMapForm}
-                    disabled={submitting}
-                    className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    type="submit"
+                    disabled={
+                      submitting || !selectedSiteId || !floorMapForm.name.trim()
+                    }
+                    className="form-button form-button-full-width"
                   >
-                    Cancel
+                    {editingFloorMapId ? "Save Floor Map" : "Add Floor Map"}
                   </button>
-                ) : null}
-              </div>
-            </form>
+                  {editingFloorMapId ? (
+                    <button
+                      type="button"
+                      onClick={resetFloorMapForm}
+                      disabled={submitting}
+                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
+              </form>
 
               {floorMapsForSite.length ? (
                 <div className="selection-list">
@@ -823,8 +825,8 @@ export function LocationsPage() {
                   ) : null}
                 </div>
               </div>
-            ) : null}
-          </Panel>
+            </Panel>
+          </div>
         </div>
       </div>
     </div>
