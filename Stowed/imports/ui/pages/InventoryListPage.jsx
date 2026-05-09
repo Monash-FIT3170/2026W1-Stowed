@@ -7,6 +7,15 @@ import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
 
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
+
 export function ItemThumbnail({ photoUrl, name }) {
   const [imgError, setImgError] = useState(false);
 
@@ -36,6 +45,10 @@ export function ItemThumbnail({ photoUrl, name }) {
 export function InventoryListPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const { items, loading } = useTracker(() => {
     const sub = Meteor.subscribe("products");
@@ -73,6 +86,51 @@ export function InventoryListPage() {
 
   const lowStockCount = items.filter((item) => item.totalQuantity <= 10).length;
 
+  const selectedItems = useMemo(
+    () => items.filter((item) => selectedProductIds.includes(item._id)),
+    [items, selectedProductIds]
+  );
+
+  const toggleSelectedProduct = (productId) => {
+    setSelectedProductIds((current) =>
+      current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId]
+    );
+  };
+
+  const openDeleteModal = () => {
+    if (selectedProductIds.length === 0) return;
+    setShowDeleteModal(true);
+    setDeleteError("");
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeleting) return;
+    setShowDeleteModal(false);
+    setDeleteError("");
+  };
+
+  const handleDeleteSelectedProducts = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      for (const productId of selectedProductIds) {
+        await callMethod("products.delete", { productId });
+      }
+      setSelectedProductIds([]);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error("Failed to delete selected products:", error);
+      setDeleteError(error.reason || error.message || "Could not delete selected items.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filters = [
     { id: "all", label: "All", count: items.length },
     { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
@@ -100,7 +158,7 @@ export function InventoryListPage() {
           placeholder="Search by ID, name, tag, or SKU"
           className="search-input"
         />
-        <Link to="/products/create">
+        <Link to="/inventory/new">
           <button className="btn-add-item">+ Add item</button>
         </Link>
       </div>
@@ -117,6 +175,29 @@ export function InventoryListPage() {
           ` · Filter: ${activeFilter.replace("-", " ")}`}
       </div>
 
+      <div className="selected-actions">
+        <span>{selectedProductIds.length} selected</span>
+        <button
+          type="button"
+          className="btn-selected-delete"
+          onClick={openDeleteModal}
+          disabled={selectedProductIds.length === 0}
+          aria-label="Delete selected items"
+          title="Delete selected items"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="delete-icon"
+          >
+            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+            <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+          </svg>
+          <span className="sr-only">Delete selected items</span>
+        </button>
+        <span className="selected-count">{selectedProductIds.length}</span>
+      </div>
+
       <div className="table-header">
         <span />
         <span>Item</span>
@@ -124,6 +205,7 @@ export function InventoryListPage() {
         <span>Location</span>
         <span>Stock</span>
         <span>Status</span>
+        <span />
       </div>
 
       {filteredItems.length === 0 ? (
@@ -143,8 +225,55 @@ export function InventoryListPage() {
             <span className="item-location">{item.location || "—"}</span>
             <span>{item.totalQuantity}</span>
             <StatusBadge quantity={item.totalQuantity} threshold={10} />
+            <label className="row-select">
+              <input
+                type="checkbox"
+                checked={selectedProductIds.includes(item._id)}
+                onChange={() => toggleSelectedProduct(item._id)}
+                aria-label={`Select ${item.name}`}
+              />
+            </label>
           </div>
         ))
+      )}
+
+      {showDeleteModal && (
+        <div className="delete-modal-overlay" role="presentation">
+          <div
+            className="delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-product-title"
+          >
+            <h2 id="delete-product-title">
+              Delete {selectedItems.length} selected item{selectedItems.length !== 1 ? "s" : ""}?
+            </h2>
+            <p>
+              This will permanently delete the selected product
+              {selectedItems.length !== 1 ? "s" : ""} and remove all related
+              location stock records.
+            </p>
+            {deleteError && <div className="delete-error">{deleteError}</div>}
+            <div className="delete-modal-actions">
+              <button
+                type="button"
+                className="btn-cancel-delete"
+                onClick={closeDeleteModal}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-confirm-delete"
+                onClick={handleDeleteSelectedProducts}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete selected"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
