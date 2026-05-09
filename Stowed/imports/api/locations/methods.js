@@ -134,13 +134,14 @@ Meteor.methods({
   /**
    * Creates a new StorageLocation under an existing StorageUnit.
    *
-   * A StorageLocation is the lowest-level fixed physical location where products
-   * can later be assigned. For example, "Shelf A - Rack 1" or "Drawer 3".
+   * A StorageLocation is the lowest-level fixed physical location where
+   * products can later be assigned. For example, "Shelf A - Rack 1",
+   * "Drawer 3", or "Bin 4".
    *
    * @param {Object} params
    * @param {string} params.storageUnitId - ID of the parent StorageUnit.
    * @param {string} params.name - Display name of the storage location.
-   * @param {string} params.code - Short unique/code-style label for the location.
+   * @param {string} params.code - Short code for the storage location.
    * @returns {string} The ID of the created storage location document.
    *
    * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
@@ -166,6 +167,7 @@ Meteor.methods({
       storageUnitId,
       name,
       code,
+      storedItems: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     });

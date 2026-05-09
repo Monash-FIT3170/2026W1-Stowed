@@ -41,6 +41,10 @@ export function StorageUnitDetailPage() {
 
   const unitCode = unit.name.toUpperCase();
   const locationCount = locations.length;
+  const storedItemCount = locations.reduce(
+    (total, location) => total + (location.storedItems?.length || 0),
+    0,
+  );
   const widthMeters = unit.position.width / 50;
   const heightMeters = unit.position.height / 50;
 
@@ -97,8 +101,9 @@ export function StorageUnitDetailPage() {
             <div className="storage-status-pill">Selected storage unit</div>
             <h1>{unit.name}</h1>
             <div className="storage-meta">
-              <span>{unit.type}</span>
-              <span>{locationCount} locations</span>
+              <span>{unit.type} storage unit</span>
+              <span>{locationCount} storage locations</span>
+              <span>{storedItemCount} stored item types</span>
               <span>{widthMeters}m x {heightMeters}m footprint</span>
             </div>
           </div>
@@ -106,38 +111,15 @@ export function StorageUnitDetailPage() {
       </header>
 
       <main className="storage-detail-grid">
-        <section className="storage-panel storage-panel-large">
+        <section className="storage-panel storage-panel-wide storage-photo-panel">
           <div className="storage-section-title">
-            <span className="storage-section-icon">ID</span>
-            Core identification
-          </div>
-          <div className="storage-section-body">
-            <label className="storage-field">
-              <span>Unit name</span>
-              <input value={unit.name} readOnly />
-            </label>
-            <div className="storage-two-col">
-              <label className="storage-field">
-                <span>Type</span>
-                <div className="storage-tag">{unit.type}</div>
-              </label>
-              <label className="storage-field">
-                <span>Floor map</span>
-                <div className="storage-tag">Ground Floor</div>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <section className="storage-panel">
-          <div className="storage-section-title">
-            <span className="storage-section-icon">IM</span>
-            Unit photo
+            <span className="storage-section-icon">PH</span>
+            Storage unit photo
           </div>
           <div className="storage-section-body">
             {photoPreview ? (
               <div className="storage-photo-frame">
-                <img src={photoPreview} alt={unit.name} />
+                <img src={photoPreview} alt={`${unit.name} storage unit`} />
               </div>
             ) : (
               <div className="storage-photo-empty">
@@ -170,31 +152,25 @@ export function StorageUnitDetailPage() {
           </div>
         </section>
 
-        <section className="storage-panel storage-panel-large">
+        <section className="storage-panel">
           <div className="storage-section-title">
-            <span className="storage-section-icon">OP</span>
-            Operational details
+            <span className="storage-section-icon">ST</span>
+            Stored summary
           </div>
           <div className="storage-section-body">
-            <div className="storage-two-col">
-              <label className="storage-field">
-                <span>X position</span>
-                <input value={`${unit.position.x}px`} readOnly />
-              </label>
-              <label className="storage-field">
-                <span>Y position</span>
-                <input value={`${unit.position.y}px`} readOnly />
-              </label>
-            </div>
-            <div className="storage-two-col">
-              <label className="storage-field">
-                <span>Width</span>
-                <input value={`${unit.position.width}px`} readOnly />
-              </label>
-              <label className="storage-field">
-                <span>Height</span>
-                <input value={`${unit.position.height}px`} readOnly />
-              </label>
+            <div className="storage-summary-list">
+              <div>
+                <span>Storage unit</span>
+                <strong>{unitCode}</strong>
+              </div>
+              <div>
+                <span>Storage locations inside</span>
+                <strong>{locationCount}</strong>
+              </div>
+              <div>
+                <span>Stored item types</span>
+                <strong>{storedItemCount}</strong>
+              </div>
             </div>
           </div>
         </section>
@@ -217,21 +193,38 @@ export function StorageUnitDetailPage() {
         <section className="storage-panel storage-panel-wide">
           <div className="storage-section-title">
             <span className="storage-section-icon">SL</span>
-            Storage locations
+            What is stored in this unit
           </div>
           <div className="storage-location-list">
             {locations.length > 0 ? (
               locations.map((location) => (
                 <div className="storage-location-row" key={location._id}>
-                  <div>
+                  <div className="storage-location-heading">
                     <strong>{location.name}</strong>
                     <span>{location.code}</span>
                   </div>
-                  <span className="storage-location-pill">Ready</span>
+                  <div className="storage-stored-items">
+                    {location.storedItems?.length ? (
+                      location.storedItems.map((item) => (
+                        <div className="storage-stored-item" key={item.itemId || item.sku}>
+                          <span>
+                            {item.name}
+                            <small>
+                              _id: {item.itemId || "n/a"}
+                              {item.status ? ` · ${item.status}` : ""}
+                            </small>
+                          </span>
+                          <strong>qty {item.quantity}</strong>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="storage-no-items">Empty/available space</span>
+                    )}
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="storage-location-empty">No shelf or drawer locations yet.</div>
+              <div className="storage-location-empty">No storage locations inside this unit yet.</div>
             )}
           </div>
         </section>

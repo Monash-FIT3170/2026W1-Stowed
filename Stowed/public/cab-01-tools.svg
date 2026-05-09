@@ -1,92 +1,131 @@
-<svg width="100%" viewBox="0 0 680 480" role="img" xmlns="http://www.w3.org/2000/svg">
-  <title>CAB-01 tools cabinet</title>
-  <style>
-    .tag { font-family: sans-serif; font-size: 11px; fill: #a89880; }
-  </style>
+<svg width="100%" viewBox="0 0 690 530" role="img" xmlns="http://www.w3.org/2000/svg" style="">
+  <title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">CAB-01 tools cabinet with mock items</title>
+  <desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Storage cabinet illustration showing AAA Battery Pack, Safety Helmet, Hard Hat Liner, Work Gloves, Steel Toe Boots placed on shelves.</desc>
+  
 
-  <rect x="0" y="0" width="680" height="480" fill="#f5ede2"/>
-  <ellipse cx="340" cy="455" rx="200" ry="12" fill="#e0cdb8" opacity="0.6"/>
+  <!-- WALL -->
+  <rect x="0" y="0" width="680" height="520" fill="#f5ede2" style="fill:rgb(245, 237, 226);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <ellipse cx="340" cy="495" rx="210" ry="13" fill="#e0cdb8" opacity="0.5" style="fill:rgb(224, 205, 184);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.5;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 
-  <rect x="160" y="60" width="360" height="380" rx="6" fill="#c9a97a"/>
-  <line x1="160" y1="110" x2="520" y2="110" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
-  <line x1="160" y1="200" x2="520" y2="200" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
-  <line x1="160" y1="290" x2="520" y2="290" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
-  <line x1="160" y1="380" x2="520" y2="380" stroke="#b8955f" stroke-width="1" opacity="0.4"/>
+  <!-- CABINET BODY -->
+  <rect x="120" y="55" width="440" height="415" rx="6" fill="#c9a97a" style="fill:rgb(201, 169, 122);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- wood grain -->
+  <line x1="120" y1="108" x2="560" y2="108" stroke="#b8955f" stroke-width="1" opacity="0.35" style="fill:rgb(0, 0, 0);stroke:rgb(184, 149, 95);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.35;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="120" y1="205" x2="560" y2="205" stroke="#b8955f" stroke-width="1" opacity="0.35" style="fill:rgb(0, 0, 0);stroke:rgb(184, 149, 95);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.35;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="120" y1="302" x2="560" y2="302" stroke="#b8955f" stroke-width="1" opacity="0.35" style="fill:rgb(0, 0, 0);stroke:rgb(184, 149, 95);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.35;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="120" y1="395" x2="560" y2="395" stroke="#b8955f" stroke-width="1" opacity="0.35" style="fill:rgb(0, 0, 0);stroke:rgb(184, 149, 95);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.35;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 
-  <rect x="175" y="75" width="330" height="352" rx="3" fill="#e8d8c0"/>
+  <!-- INNER BACK -->
+  <rect x="135" y="68" width="410" height="390" rx="3" fill="#ecddc5" style="fill:rgb(236, 221, 197);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 
-  <rect x="175" y="183" width="330" height="10" rx="2" fill="#c9a97a"/>
-  <rect x="175" y="278" width="330" height="10" rx="2" fill="#c9a97a"/>
+  <!-- SHELF 1 -->
+  <rect x="135" y="188" width="410" height="11" rx="2" fill="#c9a97a" style="fill:rgb(201, 169, 122);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- SHELF 2 -->
+  <rect x="135" y="285" width="410" height="11" rx="2" fill="#c9a97a" style="fill:rgb(201, 169, 122);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- SHELF 3 -->
+  <rect x="135" y="382" width="410" height="11" rx="2" fill="#c9a97a" style="fill:rgb(201, 169, 122);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 
-  <rect x="195" y="110" width="28" height="65" rx="4" fill="#6CBEAA"/>
-  <rect x="195" y="104" width="28" height="12" rx="3" fill="#4a9e8a"/>
-  <rect x="201" y="120" width="16" height="8" rx="1" fill="white" opacity="0.6"/>
-  <rect x="205" y="100" width="8" height="6" rx="1" fill="#3a8e7a"/>
+  <!-- ===== SHELF 1: AAA Battery Pack + Safety Helmet ===== -->
 
-  <rect x="240" y="125" width="50" height="50" rx="3" fill="#e8c87a"/>
-  <rect x="248" y="133" width="34" height="20" rx="2" fill="#d4a845"/>
-  <text x="265" y="148" text-anchor="middle" class="tag">M8</text>
+  <!-- AAA Battery Pack (_id:1) -->
+  <rect x="152" y="110" width="72" height="68" rx="4" fill="#1a3a6b" style="fill:rgb(26, 58, 107);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="158" y="116" width="60" height="38" rx="2" fill="#2a5299" style="fill:rgb(42, 82, 153);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="188" y="133" fill="#f0c040" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">DURACELL</text>
+  <text x="188" y="145" fill="white" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">AAA x4</text>
+  <!-- battery terminals on top -->
+  <rect x="163" y="107" width="10" height="6" rx="1" fill="#c0c0c0" style="fill:rgb(192, 192, 192);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="177" y="107" width="10" height="6" rx="1" fill="#c0c0c0" style="fill:rgb(192, 192, 192);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="191" y="107" width="10" height="6" rx="1" fill="#c0c0c0" style="fill:rgb(192, 192, 192);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="205" y="107" width="10" height="6" rx="1" fill="#c0c0c0" style="fill:rgb(192, 192, 192);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- status OK -->
+  <rect x="158" y="158" width="60" height="14" rx="3" fill="#6CBEAA" style="fill:rgb(108, 190, 170);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="188" y="169" fill="white" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">OK · qty 50</text>
+  <!-- label -->
+  <text x="188" y="185" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Battery Pack</text>
 
-  <rect x="305" y="115" width="65" height="60" rx="3" fill="#8ab0d0"/>
-  <rect x="312" y="122" width="50" height="18" rx="2" fill="#6a90b0"/>
-  <line x1="318" y1="148" x2="318" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
-  <line x1="328" y1="148" x2="328" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
-  <line x1="338" y1="148" x2="338" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
-  <line x1="348" y1="148" x2="348" y2="170" stroke="#4a7090" stroke-width="3" stroke-linecap="round"/>
+  <!-- Safety Helmet (_id:2) -->
+  <!-- helmet dome -->
+  <ellipse cx="310" cy="140" rx="55" ry="38" fill="#f5a623" style="fill:rgb(245, 166, 35);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <ellipse cx="310" cy="155" rx="62" ry="12" fill="#e09010" style="fill:rgb(224, 144, 16);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- brim -->
+  <rect x="248" y="152" width="124" height="8" rx="4" fill="#e09010" style="fill:rgb(224, 144, 16);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- inner liner suggestion -->
+  <ellipse cx="310" cy="148" rx="42" ry="28" fill="#f0b840" opacity="0.5" style="fill:rgb(240, 184, 64);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.5;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- chin strap dots -->
+  <circle cx="260" cy="164" r="4" fill="#c07808" style="fill:rgb(192, 120, 8);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="360" cy="164" r="4" fill="#c07808" style="fill:rgb(192, 120, 8);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- status CRITICAL -->
+  <rect x="280" y="168" width="60" height="14" rx="3" fill="#e87a6a" style="fill:rgb(232, 122, 106);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="310" y="179" style="fill:rgb(255, 255, 255);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto">CRITICAL·5</text>
+  <text x="310" y="185" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Safety Helmet</text>
 
-  <rect x="385" y="130" width="35" height="45" rx="5" fill="#d4e8c8"/>
-  <rect x="385" y="125" width="35" height="12" rx="3" fill="#a8c890"/>
-  <circle cx="397" cy="158" r="3" fill="#88a870"/>
-  <circle cx="407" cy="153" r="3" fill="#88a870"/>
-  <circle cx="402" cy="163" r="3" fill="#88a870"/>
+  <!-- Hard Hat Liner (_id:3) -->
+  <!-- folded fabric look -->
+  <rect x="402" y="118" width="120" height="62" rx="6" fill="#e8e0d0" style="fill:rgb(232, 224, 208);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="408" y="124" width="108" height="50" rx="4" fill="#d8d0c0" style="fill:rgb(216, 208, 192);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- fold lines -->
+  <line x1="408" y1="138" x2="516" y2="138" stroke="#c0b8a8" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(192, 184, 168);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="408" y1="152" x2="516" y2="152" stroke="#c0b8a8" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(192, 184, 168);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- label tag -->
+  <rect x="448" y="113" width="44" height="16" rx="3" fill="#6b5744" style="fill:rgb(107, 87, 68);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="470" y="125" fill="white" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">LINER</text>
+  <!-- status CRITICAL -->
+  <rect x="422" y="162" width="76" height="14" rx="3" fill="#e87a6a" style="fill:rgb(232, 122, 106);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="460" y="173" style="fill:rgb(255, 255, 255);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto">CRITICAL·0</text>
+  <text x="460" y="184" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Hard Hat Liner</text>
 
-  <circle cx="465" cy="148" r="22" fill="#f0d080"/>
-  <circle cx="465" cy="148" r="10" fill="#e8d8c0"/>
+  <!-- ===== SHELF 2: Work Gloves + Steel Toe Boots ===== -->
 
-  <rect x="192" y="215" width="55" height="55" rx="4" fill="#d8c8e8"/>
-  <rect x="198" y="222" width="42" height="28" rx="2" fill="#c0a8d8"/>
-  <text x="219" y="240" text-anchor="middle" class="tag" fill="#8060a0">100pk</text>
+  <!-- Work Gloves (_id:4) - pair of gloves -->
+  <!-- left glove -->
+  <path d="M165 220 Q158 218 155 228 Q152 238 155 250 Q158 262 165 265 Q172 268 178 262 L182 250 L186 258 L190 252 L192 244 L195 248 L198 242 L196 232 Q194 222 188 218 Q180 215 175 218 Z" fill="#c8a060" style="fill:rgb(200, 160, 96);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <path d="M178 218 L178 240 M182 218 L182 242 M186 220 L186 244" stroke="#b89050" stroke-width="1" fill="none" style="fill:none;stroke:rgb(184, 144, 80);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- right glove -->
+  <path d="M215 220 Q222 218 225 228 Q228 238 225 250 Q222 262 215 265 Q208 268 202 262 L198 250 L194 258 L190 252 L188 244 L185 248 L182 242 L184 232 Q186 222 192 218 Q200 215 205 218 Z" fill="#c8a060" style="fill:rgb(200, 160, 96);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <path d="M202 218 L202 240 M198 218 L198 242 M194 220 L194 244" stroke="#b89050" stroke-width="1" fill="none" style="fill:none;stroke:rgb(184, 144, 80);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- glove cuff -->
+  <rect x="155" y="263" width="72" height="12" rx="3" fill="#a08040" style="fill:rgb(160, 128, 64);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- status OK -->
+  <rect x="158" y="268" width="66" height="14" rx="3" fill="#6CBEAA" style="fill:rgb(108, 190, 170);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="191" y="279" fill="white" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">OK · qty 25</text>
+  <text x="191" y="291" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Work Gloves</text>
 
-  <rect x="262" y="210" width="45" height="60" rx="4" fill="#e87a7a"/>
-  <rect x="262" y="208" width="45" height="10" rx="3" fill="#c05a5a"/>
-  <ellipse cx="284" cy="208" rx="22" ry="4" fill="#d06060"/>
-  <path d="M270 208 Q284 198 298 208" fill="none" stroke="#c05a5a" stroke-width="2.5"/>
+  <!-- Steel Toe Boots (_id:5) - pair of boots -->
+  <!-- left boot -->
+  <path d="M300 230 Q296 228 293 235 L292 270 Q292 278 298 280 L330 280 Q340 280 345 272 Q348 265 342 260 L330 258 L328 235 Q326 228 320 227 Z" fill="#5a4030" style="fill:rgb(90, 64, 48);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- steel toe cap -->
+  <ellipse cx="340" cy="268" rx="12" ry="10" fill="#808890" style="fill:rgb(128, 136, 144);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- boot sole -->
+  <rect x="292" y="278" width="56" height="6" rx="3" fill="#3a2818" style="fill:rgb(58, 40, 24);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- laces -->
+  <line x1="308" y1="240" x2="322" y2="240" stroke="#c8b890" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(200, 184, 144);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="307" y1="248" x2="323" y2="248" stroke="#c8b890" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(200, 184, 144);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="306" y1="256" x2="324" y2="256" stroke="#c8b890" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(200, 184, 144);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 
-  <rect x="322" y="218" width="70" height="48" rx="3" fill="#f0e0b0"/>
-  <rect x="330" y="225" width="54" height="20" rx="2" fill="#e0c880"/>
-  <text x="357" y="239" text-anchor="middle" class="tag" fill="#806030">HEX M8</text>
-  <circle cx="378" cy="220" r="7" fill="#e87a6a"/>
-  <text x="378" y="224" text-anchor="middle" style="font-family:sans-serif;font-size:10px;fill:white;font-weight:600">!</text>
+  <!-- right boot -->
+  <path d="M370 230 Q374 228 377 235 L378 270 Q378 278 372 280 L340 280 Q330 280 325 272 Q322 265 328 260 L340 258 L342 235 Q344 228 350 227 Z" fill="#5a4030" style="fill:rgb(90, 64, 48);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <ellipse cx="328" cy="268" rx="12" ry="10" fill="#808890" style="fill:rgb(128, 136, 144);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="322" y="278" width="56" height="6" rx="3" fill="#3a2818" style="fill:rgb(58, 40, 24);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="348" y1="240" x2="362" y2="240" stroke="#c8b890" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(200, 184, 144);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="347" y1="248" x2="363" y2="248" stroke="#c8b890" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(200, 184, 144);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line x1="346" y1="256" x2="364" y2="256" stroke="#c8b890" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(200, 184, 144);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 
-  <rect x="408" y="215" width="18" height="58" rx="4" fill="#b0b8c8"/>
-  <ellipse cx="417" cy="220" rx="10" ry="8" fill="#9098a8"/>
-  <ellipse cx="417" cy="220" rx="5" ry="4" fill="#b0b8c8"/>
-  <ellipse cx="417" cy="268" rx="10" ry="8" fill="#9098a8"/>
-  <ellipse cx="417" cy="268" rx="5" ry="4" fill="#b0b8c8"/>
+  <!-- status OK -->
+  <rect x="308" y="270" width="54" height="13" rx="3" fill="#6CBEAA" style="fill:rgb(108, 190, 170);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="335" y="280" fill="white" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">OK·100</text>
+  <text x="335" y="292" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Steel Toe Boots</text>
 
-  <rect x="440" y="225" width="22" height="45" rx="4" fill="#c8e8d0"/>
-  <rect x="440" y="220" width="22" height="10" rx="3" fill="#a0c8a8"/>
-  <rect x="468" y="225" width="22" height="45" rx="4" fill="#c8d8e8"/>
-  <rect x="468" y="220" width="22" height="10" rx="3" fill="#a0b8c8"/>
+  <!-- ===== SHELF 3: EMPTY / reserved ===== -->
+  <rect x="155" y="320" width="390" height="52" rx="4" fill="#e8ddd0" opacity="0.5" style="fill:rgb(232, 221, 208);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.5;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="350" y="350" fill="#b0a090" style="fill:rgb(122, 106, 88);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto">— Available shelf space —</text>
 
-  <rect x="190" y="306" width="90" height="60" rx="4" fill="#d8c0a0"/>
-  <rect x="198" y="313" width="74" height="25" rx="2" fill="#c8a880"/>
-  <text x="235" y="329" text-anchor="middle" class="tag" fill="#806040">TOOLS</text>
-  <rect x="225" y="303" width="20" height="8" rx="4" fill="#b89870"/>
+  <!-- CABINET FRAME -->
+  <rect x="120" y="55" width="440" height="415" rx="6" fill="none" stroke="#a07840" stroke-width="3" style="fill:none;stroke:rgb(160, 120, 64);color:rgb(255, 255, 255);stroke-width:3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 
-  <rect x="294" y="312" width="40" height="52" rx="2" fill="#e8f0f8" opacity="0.9"/>
-  <rect x="294" y="310" width="40" height="8" rx="2" fill="#a0b8d0"/>
+  <!-- LABEL TAG -->
+  <rect x="275" y="32" width="130" height="28" rx="4" fill="#6CBEAA" style="fill:rgb(108, 190, 170);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <text x="340" y="51" text-anchor="middle" style="font-family:sans-serif;font-size:13px;fill:white;font-weight:600;fill:rgb(255, 255, 255);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:sans-serif;font-size:13px;font-weight:600;text-anchor:middle;dominant-baseline:auto">CAB-01 · tools</text>
 
-  <ellipse cx="375" cy="335" rx="22" ry="14" fill="#d0e8f8"/>
-  <ellipse cx="375" cy="335" rx="16" ry="10" fill="#e8f4fc"/>
-
-  <circle cx="455" cy="340" r="24" fill="#e8c870"/>
-  <circle cx="455" cy="340" r="12" fill="#e8d8c0"/>
-
-  <rect x="160" y="60" width="360" height="380" rx="6" fill="none" stroke="#a07840" stroke-width="3"/>
-
-  <rect x="285" y="38" width="110" height="28" rx="4" fill="#6CBEAA"/>
-  <text x="340" y="57" text-anchor="middle" style="font-family:sans-serif;font-size:13px;fill:white;font-weight:500">CAB-01 · tools</text>
-
-  <line x1="100" y1="445" x2="580" y2="445" stroke="#d4c0a8" stroke-width="1.5"/>
+  <!-- FLOOR LINE -->
+  <line x1="80" y1="476" x2="600" y2="476" stroke="#d4c0a8" stroke-width="1.5" style="fill:rgb(0, 0, 0);stroke:rgb(212, 192, 168);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
 </svg>
