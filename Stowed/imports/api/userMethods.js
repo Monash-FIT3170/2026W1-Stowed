@@ -19,25 +19,62 @@ Meteor.methods({
       throw new Meteor.Error('invalid-email', 'Please enter a valid email address.');
     }
 
-    const existing = await Users.findOneAsync({ $or: [{ email }, { username }] });
+    // Check for duplicate using the actual stored fields
+    const existing = await Users.findOneAsync({
+      $or: [
+        { 'emails.address': email.toLowerCase() },
+        { username },
+      ],
+    });
     if (existing) {
       throw new Meteor.Error('user-exists', 'A user with that email or username already exists.');
     }
+
     const hashedPassword = bcrypt.hashSync(password, SALT_ROUNDS);
 
     const now = new Date();
     const userId = await Users.insertAsync({
       username,
-      email,
-      password: hashedPassword, 
+      emails: [{ address: email, verified: false }],
+      password: hashedPassword,
       createdAt: now,
       updatedAt: now,
       isAdmin,
     });
 
+    // Return a safe object (still include the plain email for the client)
     return { _id: userId, username, email };
   },
-  // checks whether user is admin or not and returns the result
+
+  async 'users.login'({ login, password }) {
+    check(login, String);
+    check(password, String);
+
+    // Look up by emails.address or username
+    const user = await Users.findOneAsync({
+      $or: [
+        { 'emails.address': login.toLowerCase() },
+        { username: login },
+      ],
+    });
+
+    if (!user) {
+      throw new Meteor.Error('user-not-found', 'No account found.');
+    }
+
+    const isMatch = bcrypt.compareSync(password, user.password);
+    if (!isMatch) {
+      throw new Meteor.Error('wrong-password', 'Incorrect password.');
+    }
+
+    // Log the user in (creates a persistent session)
+    this.setUserId(user._id);
+
+    // Return safe data – grab the first email address if present
+    const email = user.emails?.[0]?.address || '';
+    return { _id: user._id, username: user.username, email };
+  },
+
   async 'users.isAdmin'({ userId }) {
     check(userId, String);
 
@@ -47,6 +84,6 @@ Meteor.methods({
       throw new Meteor.Error('user-not-found', 'User does not exist.');
     }
 
-    return user.isAdmin;
-  }
+    return user.isAdmin ?? false;
+  },
 });

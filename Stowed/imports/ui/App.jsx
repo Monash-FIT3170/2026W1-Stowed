@@ -9,6 +9,7 @@ import { QRCodesPage }    from './pages/QRCodesPage';
 import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
 import { Register }       from './Register';
+import { Login }          from './Login';
 
 export function App() {
   return (
@@ -26,6 +27,7 @@ export function App() {
             <Route path="/forecast"            element={<ForecastPage />} />
             <Route path="/alerts"              element={<AlertsPage />} />
             <Route path="/register"            element={<Register />} />
+            <Route path="/login"               element={<Login />} />
             <Route path="*"                    element={<Navigate to="/" replace />} />
           </Routes>
         </main>
