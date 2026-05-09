@@ -67,7 +67,24 @@ function FloorMapPageInner() {
           onClose={() => setCanvasSettingsOpen(false)}
         />
       )}
+
+      <button
+        style = {{
+          position : "fixed",
+          bottom : 20,
+          right: 20,
+          borderRadius: "8px",
+          background: "black",
+          color: "white",
+          padding: "12px",
+          zIndex: 1000
+        }}
+        >
+          Toggle Edit
+      </button>
     </div>
+
+
   );
 }
 
