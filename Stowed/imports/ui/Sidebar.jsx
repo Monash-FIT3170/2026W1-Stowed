@@ -14,10 +14,6 @@ const TOOL_LINKS = [
   { to: '/alerts', label: 'Alerts'},
 ];
 
-const ACCOUNT_LINKS = [
-  { to: '/register', label: 'Create Account' },
-]
-
 function SidebarLink({ to, label, end }) {
   return (
       <NavLink
@@ -47,14 +43,6 @@ export function Sidebar() {
             {TOOL_LINKS.map(link => (
               <SidebarLink key={link.to} {...link} />
             ))}
-        </section>
-        <section>
-          <h3 className= "text-sm font-semibold uppercase tracking-wider text-gray-500">
-            Account
-          </h3>
-          {ACCOUNT_LINKS.map(link => (
-            <SidebarLink key={link.to} {...link} />
-          ))}
         </section>
       </nav>
     </aside>

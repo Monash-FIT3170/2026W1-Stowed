@@ -11,11 +11,11 @@ import { QRCodesPage }    from './pages/QRCodesPage';
 import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
 import { FloorMapPage }  from './pages/FloorMapPage';
-import { Register }       from './Register';
 
 const LocationsPage = lazy(() =>
   import('./pages/LocationsPage').then((module) => ({ default: module.LocationsPage })),
 );
+
 
 export function App() {
   return (
@@ -37,7 +37,6 @@ export function App() {
               <Route path="/qr-codes"            element={<QRCodesPage />} />
               <Route path="/forecast"            element={<ForecastPage />} />
               <Route path="/alerts"              element={<AlertsPage />} />
-              <Route path="/register"            element={<Register />} />
               <Route path="*"                    element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
