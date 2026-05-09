@@ -15,6 +15,7 @@ const TOOL_LINKS = [
 
 const ACCOUNT_LINKS = [
   { to: '/register', label: 'Create Account' },
+  { to: '/login', label: 'Login'},
 ]
 
 function SidebarLink({ to, label, end }) {
