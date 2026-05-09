@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { InventoryPage }  from './pages/InventoryPage';
-import { ProductDetailPage } from './pages/ProductDetailPage';
+import { ItemDetailPage } from './pages/ItemDetailPage';
 import { EditProductPage } from './pages/EditProductPage';
 import { CreateProductPage } from './pages/CreateProductPage';
 import { ListsPage }      from './pages/ListsPage';
@@ -29,7 +29,7 @@ export function App() {
               <Route path="/"                    element={<InventoryPage />} />
               <Route path="/inventory/new"              element={<CreateProductPage />} />
               <Route path="/inventory/:productId/edit" element={<EditProductPage />} />
-              <Route path="/inventory/:productId"      element={<ProductDetailPage />} />
+              <Route path="/inventory/:productId"      element={<ItemDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
               <Route path="/floor-map/:floorMapId" element={<FloorMapPage />} />
               <Route path="/locations"           element={<LocationsPage />} />

@@ -287,3 +287,13 @@
   background: linear-gradient(90deg, rgba(237,250,245,0.95), rgba(249,255,250,0.9));
   border: 2px solid rgba(47,158,99,0.9) !important; /* harsher green outline */
 }
+
+.btn-danger {
+  padding: 10px 22px;
+  background-color: transparent;
+  color: #c00;
+  border: 1px solid #c00;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}

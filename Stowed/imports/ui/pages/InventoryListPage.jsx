@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
+import { Products } from "../../api/products/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
-import { mockItems, getLowStockItems } from "../../api/mockItems";
 import "./InventoryListPage.css";
 
 export function ItemThumbnail({ photoUrl, name }) {
@@ -35,36 +37,52 @@ export function InventoryListPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { items, loading } = useTracker(() => {
+    const sub = Meteor.subscribe("products");
+    return {
+      items: Products.find().fetch(),
+      loading: !sub.ready(),
+    };
+  }, []);
+
   const filteredItems = useMemo(() => {
-    let items = mockItems;
+    let result = items;
 
     if (activeFilter === "low-stock") {
-      items = getLowStockItems(items);
+      result = result.filter((item) => item.totalQuantity <= 10);
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      items = items.filter((item) => {
+      result = result.filter((item) => {
         const name = (item.name || "").toLowerCase();
         const tag = (item.tag || "").toLowerCase();
+        const sku = (item.sku || "").toLowerCase();
         const id = (item._id || "").toLowerCase();
         return (
-          name.includes(query) || tag.includes(query) || id.includes(query)
+          name.includes(query) ||
+          tag.includes(query) ||
+          sku.includes(query) ||
+          id.includes(query)
         );
       });
     }
 
-    return items;
-  }, [activeFilter, searchQuery]);
+    return result;
+  }, [items, activeFilter, searchQuery]);
 
-  const lowStockCount = getLowStockItems(mockItems).length;
+  const lowStockCount = items.filter((item) => item.totalQuantity <= 10).length;
 
   const filters = [
-    { id: "all", label: "All", count: mockItems.length },
+    { id: "all", label: "All", count: items.length },
     { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
     { id: "tag", label: "Tag ▾" },
     { id: "location", label: "Location ▾" },
   ];
+
+  if (loading) {
+    return <div className="inventory-list-container">Loading...</div>;
+  }
 
   return (
     <div className="inventory-list-container">
@@ -79,10 +97,12 @@ export function InventoryListPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by ID, name, or tag"
+          placeholder="Search by ID, name, tag, or SKU"
           className="search-input"
         />
-        <button className="btn-add-item">+ Add item</button>
+        <Link to="/products/create">
+          <button className="btn-add-item">+ Add item</button>
+        </Link>
       </div>
 
       <FilterChips
@@ -92,7 +112,7 @@ export function InventoryListPage() {
       />
 
       <div className="filter-count">
-        Showing {filteredItems.length} of {mockItems.length}
+        Showing {filteredItems.length} of {items.length}
         {activeFilter !== "all" &&
           ` · Filter: ${activeFilter.replace("-", " ")}`}
       </div>
@@ -120,14 +140,9 @@ export function InventoryListPage() {
             <span>
               <span className="item-tag">{item.tag || "—"}</span>
             </span>
-            <span className="item-location">{item.location}</span>
-            <span>
-              {item.quantity}/{item.lowStockThreshold}
-            </span>
-            <StatusBadge
-              quantity={item.quantity}
-              threshold={item.lowStockThreshold}
-            />
+            <span className="item-location">{item.location || "—"}</span>
+            <span>{item.totalQuantity}</span>
+            <StatusBadge quantity={item.totalQuantity} threshold={10} />
           </div>
         ))
       )}
