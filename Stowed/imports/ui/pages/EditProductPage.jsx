@@ -9,6 +9,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from '/imports/api/locations/collections';
+import './ItemDetailPage.css';
 
 // Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
@@ -248,136 +249,140 @@ export function EditProductPage() {
     }
   }
 
-  if (loading || !initialised) return <div style={{ padding: '24px' }}>Loading…</div>;
-  if (!product) return <div style={{ padding: '24px' }}>Product not found.</div>;
+  if (loading || !initialised) return <div className="p-8 text-center">Loading…</div>;
+  if (!product) return <div className="p-8 text-center">Product not found.</div>;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '560px' }}>
-      <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '4px' }}>Edit Product</h1>
-      <p style={{ marginBottom: '24px', color: '#555' }}>
-        Update the product details below.
-      </p>
-
-      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-
-        {/* ── Product details ── */}
-        <div style={fieldStyle}>
-          <label htmlFor="name"><strong>Name</strong></label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={inputStyle}
-          />
+    <div className="item-detail-container">
+      <div className="item-detail-header">
+        <div className="header-top">
+          <div className="breadcrumb">Inventory &nbsp;/&nbsp; Edit &nbsp;/&nbsp; {name}</div>
+          <div className="header-actions">
+            <button className="btn-secondary" onClick={() => navigate(-1)}>
+              Cancel
+            </button>
+            <button className="btn-primary" onClick={handleSave} disabled={!canSave}>
+              {isSaving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div style={fieldStyle}>
-          <label htmlFor="description"><strong>Description</strong></label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
-          />
-        </div>
+      <div className="item-detail-grid">
+        <div className="left-column">
+          <div className="detail-section">
+            <h2 className="section-title">Core identification</h2>
+            <div className="section-content">
+              <div className="form-group">
+                <label>Item name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+            </div>
+          </div>
 
-        <div style={fieldStyle}>
-          <label htmlFor="totalQuantity"><strong>Total Quantity</strong></label>
-          <input
-            id="totalQuantity"
-            type="number"
-            min="0"
-            value={totalQuantity}
-            onChange={(e) => setTotalQuantity(e.target.value)}
-            style={{ ...inputStyle, maxWidth: '160px' }}
-          />
-        </div>
+          <div className="detail-section">
+            <h2 className="section-title">Operational details</h2>
+            <div className="section-content">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Total stock</label>
+                  <input
+                    type="number"
+                    value={totalQuantity}
+                    onChange={(e) => setTotalQuantity(e.target.value)}
+                    className="form-input"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
-        {}
-        <div style={sectionStyle}>
-          <h2 style={{ fontSize: '17px', fontWeight: 'bold', marginBottom: '4px' }}>
-            Storage Locations
-          </h2>
-          <p style={{ marginBottom: '16px', color: '#555' }}>
-            All stock must be assigned before saving.
-          </p>
+          <div className="detail-section">
+            <h2 className="section-title">Additional details</h2>
+            <div className="section-content">
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="form-input"
+                  rows="4"
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+            </div>
+          </div>
 
-          {assignments.map((assignment, index) => (
-            <div key={index} style={assignmentRowStyle}>
-              <select
-                value={assignment.locationId}
-                onChange={(e) => updateAssignment(index, 'locationId', e.target.value)}
-                style={{ ...inputStyle, flex: 2 }}
-              >
-                <option value="">Select a location…</option>
-                {storageLocations.map((location) => (
-                  <option key={location._id} value={location._id}>
-                    {buildLocationLabel(location, storageUnits, floorMaps, sites)}
-                  </option>
-                ))}
-              </select>
+          <div className="detail-section">
+            <h2 className="section-title">Storage Locations</h2>
+            <div className="section-content">
+              <p style={{ marginBottom: '16px', color: '#555' }}>
+                All stock must be assigned before saving.
+              </p>
 
-              <input
-                type="number"
-                min="0"
-                placeholder="Qty"
-                value={assignment.quantity}
-                onChange={(e) => updateAssignment(index, 'quantity', e.target.value)}
-                style={{ ...inputStyle, flex: 1, maxWidth: '80px' }}
-              />
+              {assignments.map((assignment, index) => (
+                <div key={index} style={assignmentRowStyle}>
+                  <select
+                    value={assignment.locationId}
+                    onChange={(e) => updateAssignment(index, 'locationId', e.target.value)}
+                    className="form-input"
+                    style={{ flex: 2 }}
+                  >
+                    <option value="">Select a location…</option>
+                    {storageLocations.map((location) => (
+                      <option key={location._id} value={location._id}>
+                        {buildLocationLabel(location, storageUnits, floorMaps, sites)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Qty"
+                    value={assignment.quantity}
+                    onChange={(e) => updateAssignment(index, 'quantity', e.target.value)}
+                    className="form-input"
+                    style={{ flex: 1, maxWidth: '80px' }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => removeAssignment(index)}
+                    className="btn-secondary"
+                    style={{ padding: '6px 12px', fontSize: '14px' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
 
               <button
                 type="button"
-                onClick={() => removeAssignment(index)}
-                style={buttonStyle}
+                onClick={addAssignment}
+                className="btn-secondary"
+                style={{ marginTop: '12px', padding: '8px 16px' }}
               >
-                Remove
+                + Add Location
               </button>
+
+              {remaining !== null && (
+                <p style={{ marginTop: '12px', fontStyle: 'italic', fontSize: '13px', color: '#666' }}>
+                  {remaining === 0 && `All ${parsedTotal} units assigned.`}
+                  {remaining > 0 && `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
+                  {remaining < 0 && `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? 's' : ''}.`}
+                </p>
+              )}
             </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={addAssignment}
-            style={{ ...buttonStyle, marginTop: '4px' }}
-          >
-            + Add Location
-          </button>
-
-          {}
-          {remaining !== null && (
-            <p style={{ ...warningStyle, marginTop: '12px' }}>
-              {remaining === 0 && `All ${parsedTotal} units assigned.`}
-              {remaining  > 0 && `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
-              {remaining  < 0 && `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? 's' : ''}.`}
-            </p>
-          )}
+          </div>
         </div>
-
-        {}
-        <div style={{ ...sectionStyle, display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button
-            type="submit"
-            disabled={!canSave}
-            style={{
-              ...buttonStyle,
-              opacity: canSave ? 1 : 0.4,
-              cursor:  canSave ? 'pointer' : 'not-allowed',
-            }}
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/inventory/${productId}`)}
-            style={buttonStyle}
-          >
-            Cancel
-          </button>
-        </div>
-
-      </form>
+      </div>
 
       {/* ── Save confirmation modal ── */}
       {showSaveModal && (
@@ -450,7 +455,7 @@ export function EditProductPage() {
                 style={{
                   ...buttonStyle,
                   opacity: isSaving ? 0.4 : 1,
-                  cursor:  isSaving ? 'not-allowed' : 'pointer',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
                 }}
                 disabled={isSaving}
                 onClick={confirmSave}
