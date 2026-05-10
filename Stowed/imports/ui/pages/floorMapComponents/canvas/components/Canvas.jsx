@@ -80,7 +80,12 @@ export function Canvas({ style, isCanvasEditMode }) {
     if (!el) return;
     const { width, height } = el.getBoundingClientRect();
     dispatch({ type: CANVAS_ACTIONS.SET_DISPLAY_SIZE, payload: { width, height } });
-    
+
+    // CENTER CANVAS ON SCREEN
+    const centeredX = (width - floorSize.width * scale) / 2;
+    const centeredY = (height - floorSize.height * scale) / 2;
+    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: { x: centeredX, y: centeredY }})
+
     // MANAGE KEY BINDINGS
     function onKeyDown(e) {
       if (e.key === "c" && (e.ctrlKey || e.metaKey)) handleCopy();
