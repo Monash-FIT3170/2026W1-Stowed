@@ -172,149 +172,242 @@ export function CreateProductPage() {
 
   // Render
 
-  return (
-    <div style={{ padding: '24px', maxWidth: '560px' }}>
-      <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '4px' }}>
-        Create Product
-      </h1>
-      <p style={{ marginBottom: '24px', color: '#555' }}>
-        Enter the product details below.
-      </p>
-
-      <form onSubmit={handleSubmit}>
-
-        {/* ── Product details ── */}
-        <div style={fieldStyle}>
-          <label htmlFor="name"><strong>Name</strong></label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={inputStyle}
-          />
-          {isDuplicate && (
-            <p style={warningStyle}>A product with this name already exists.</p>
-          )}
+return (
+    <>
+      <div className="item-detail-container">
+        <div className="item-detail-header">
+          <div className="header-top">
+            <div className="breadcrumb">
+              Inventory &nbsp;/&nbsp; Create item
+            </div>
+          </div>
+          <h1 className="header-title">Create <em>Product</em></h1>
         </div>
 
-        <div style={fieldStyle}>
-          <label htmlFor="description"><strong>Description</strong></label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
-          />
-        </div>
+        <div className="item-detail-grid">
+          <div className="left-column">
 
-        <div style={fieldStyle}>
-          <label htmlFor="totalQuantity"><strong>Total Quantity</strong></label>
-          <input
-            id="totalQuantity"
-            type="number"
-            min="0"
-            value={totalQuantity}
-            onChange={(e) => setTotalQuantity(e.target.value)}
-            style={{ ...inputStyle, maxWidth: '160px' }}
-          />
-        </div>
-
-        {/* ── Location assignments ── */}
-        <div style={sectionStyle}>
-          <h2 style={{ fontSize: '17px', fontWeight: 'bold', marginBottom: '4px' }}>
-            Assign to Locations
-          </h2>
-          <p style={{ marginBottom: '16px', color: '#555' }}>
-            All stock must be assigned before the product can be created.
-          </p>
-
-          {!locationsExist ? (
-            <p>
-              No storage locations have been set up yet.{' '}
-              <Link to="/locations">
-                <button type="button" style={buttonStyle}>Go to Locations</button>
-              </Link>
-            </p>
-          ) : (
-            <>
-              {assignments.map((assignment, index) => (
-                <div key={index} style={assignmentRowStyle}>
-                  <select
-                    value={assignment.locationId}
-                    onChange={(e) => updateAssignment(index, 'locationId', e.target.value)}
-                    style={{ ...inputStyle, flex: 2 }}
-                  >
-                    <option value="">Select a location...</option>
-                    {storageLocations.map((location) => (
-                      <option key={location._id} value={location._id}>
-                        {buildLocationLabel(location, storageUnits, floorMaps, sites)}
-                      </option>
-                    ))}
-                  </select>
-
+            {/* Core identification */}
+            <div className="detail-section">
+              <div className="section-title">
+                <span className="section-badge" style={{ background: '#d6ede8', color: '#4a8c78' }}>ID</span>
+                Core identification
+              </div>
+              <div className="section-content">
+                <div className="form-group">
+                  <label>Item name</label>
                   <input
-                    type="number"
-                    min="0"
-                    placeholder="Qty"
-                    value={assignment.quantity}
-                    onChange={(e) => updateAssignment(index, 'quantity', e.target.value)}
-                    style={{ ...inputStyle, flex: 1, maxWidth: '80px' }}
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="form-input"
+                    placeholder="e.g. AAA Battery Pack"
                   />
-
-                  <button
-                    type="button"
-                    onClick={() => removeAssignment(index)}
-                    style={buttonStyle}
-                  >
-                    Remove
-                  </button>
+                  {isDuplicate && (
+                    <span className="warning-text">A product with this name already exists.</span>
+                  )}
                 </div>
-              ))}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Category</label>
+                    <input
+                      type="text"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="form-input"
+                      placeholder="e.g. electrical"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Brand</label>
+                    <input
+                      type="text"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      className="form-input"
+                      placeholder="e.g. Duracell"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={addAssignment}
-                style={{ ...buttonStyle, marginTop: '4px' }}
-              >
-                + Add Location
-              </button>
+            {/* Operational details */}
+            <div className="detail-section">
+              <div className="section-title">
+                <span className="section-badge" style={{ background: '#fde8d8', color: '#b5532a' }}>OP</span>
+                Operational details
+              </div>
+              <div className="section-content">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Unit cost</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={unitCost}
+                      onChange={(e) => setUnitCost(e.target.value)}
+                      className="form-input"
+                      placeholder="$0.00"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Current stock</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={totalQuantity}
+                      onChange={(e) => setTotalQuantity(e.target.value)}
+                      className="form-input"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Reorder at</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={reorderAt}
+                      onChange={(e) => setReorderAt(e.target.value)}
+                      className="form-input"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Location</label>
+                    <input
+                      type="text"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className="form-input"
+                      placeholder="e.g. Aisle 4 - Section 1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              {/* Stock balance indicator */}
-              {remaining !== null && (
-                <p style={{ ...warningStyle, marginTop: '12px' }}>
-                  {remaining === 0 && `All ${parsedTotal} units assigned.`}
-                  {remaining  > 0 && `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
-                  {remaining  < 0 && `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? 's' : ''}.`}
-                </p>
-              )}
-            </>
-          )}
+            {/* Assign to locations */}
+            <div className="detail-section">
+              <div className="section-title">
+                <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>LC</span>
+                Assign to locations
+              </div>
+              <div className="section-content">
+                {!locationsExist ? (
+                  <p>
+                    No storage locations set up yet.{' '}
+                    <Link to="/locations">Go to Locations</Link>
+                  </p>
+                ) : (
+                  <>
+                    {assignments.map((assignment, index) => (
+                      <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                        <select
+                          value={assignment.locationId}
+                          onChange={(e) => updateAssignment(index, 'locationId', e.target.value)}
+                          className="form-input"
+                          style={{ flex: 2 }}
+                        >
+                          <option value="">Select a location...</option>
+                          {storageLocations.map((loc) => (
+                            <option key={loc._id} value={loc._id}>
+                              {buildLocationLabel(loc, storageUnits, floorMaps, sites)}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Qty"
+                          value={assignment.quantity}
+                          onChange={(e) => updateAssignment(index, 'quantity', e.target.value)}
+                          className="form-input"
+                          style={{ maxWidth: '80px' }}
+                        />
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => removeAssignment(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={addAssignment}
+                    >
+                      + Add Location
+                    </button>
+                    {remaining !== null && (
+                      <p className="warning-text" style={{ marginTop: '12px' }}>
+                        {remaining === 0 && `All ${parsedTotal} units assigned.`}
+                        {remaining  > 0 && `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
+                        {remaining  < 0 && `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? 's' : ''}.`}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right column */}
+          <div className="right-column">
+
+            {/* Visual catalogue */}
+            <div className="detail-section">
+              <div className="section-title">
+                <span className="section-badge" style={{ background: '#d6ede8', color: '#4a8c78' }}>IM</span>
+                Visual catalogue
+              </div>
+              <div className="section-content">
+                <div className="main-image-container">
+                  <span style={{ fontSize: '13px', color: '#998874' }}>No image uploaded</span>
+                </div>
+                <div className="thumbnail-gallery">
+                  <button className="thumbnail add-btn">+</button>
+                </div>
+              </div>
+            </div>
+
+            {/* QR & label */}
+            <div className="detail-section">
+              <div className="section-title">
+                <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>QR</span>
+                QR & label
+              </div>
+              <div className="section-content qr-section">
+                <div className="qr-container">
+                  <div className="qr-code" />
+                  <p className="qr-label">QR Code</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        {/* Form actions */}
-        <div style={{ ...sectionStyle, display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            style={{
-              ...buttonStyle,
-              opacity: canSubmit ? 1 : 0.4,
-              cursor:  canSubmit ? 'pointer' : 'not-allowed',
-            }}
-          >
-            Create
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={buttonStyle}
-          >
+        <div className="create-product-footer">
+          <button className="btn-secondary" onClick={() => navigate(-1)}>
             Cancel
           </button>
+          <button
+            className="btn-primary"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+          >
+            Create Product
+          </button>
         </div>
 
-      </form>
-    </div>
+      </div>
+    </>
   );
 }
