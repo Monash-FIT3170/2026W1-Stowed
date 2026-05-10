@@ -4,8 +4,7 @@ import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Products } from '/imports/api/products/collections';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
-
-// brief styling to be fixed later
+import './CreateProductPage.css';
 
 const inputStyle = {
   padding: '6px 8px',
@@ -82,7 +81,12 @@ export function CreateProductPage() {
 
   const [name, setName]                   = useState('');
   const [description, setDescription]     = useState('');
+  const [category, setCategory]           = useState('');
+  const [brand, setBrand]                 = useState('');
+  const [unitCost, setUnitCost]           = useState('');
   const [totalQuantity, setTotalQuantity] = useState('');
+  const [reorderAt, setReorderAt]         = useState('');
+  const [location, setLocation]           = useState('');
   const [assignments, setAssignments]     = useState([]);
 
   const { products, sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
@@ -146,14 +150,19 @@ export function CreateProductPage() {
       await callMethod('products.createWithAssignments', {
         name,
         description,
+        category,
+        brand,
+        unitCost:      unitCost  ? parseFloat(unitCost)    : undefined,
         totalQuantity: parsedTotal,
+        reorderAt:     reorderAt ? parseInt(reorderAt, 10) : undefined,
+        location,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity:   parseInt(a.quantity, 10),
         })),
       });
 
-      navigate('/');
+      navigate('/inventory/list');
     } catch (error) {
       console.error('Failed to create product:', error);
     }
