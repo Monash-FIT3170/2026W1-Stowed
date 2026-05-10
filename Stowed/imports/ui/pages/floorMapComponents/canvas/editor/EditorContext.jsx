@@ -30,6 +30,7 @@ export function EditorProvider({ children }) {
   const [floorSize, setFloorSize]                     = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings]           = useState(DEFAULT_CANVAS_SETTINGS);
   const [isCanvasSettingsOpen, setCanvasSettingsOpen] = useState(false);
+  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
   const [units, setUnits]                             = useState([]);
   const [pendingUnit, setPendingUnit]                 = useState(null);
 
@@ -106,6 +107,10 @@ export function EditorProvider({ children }) {
 
     // Canvas settings
     canvasSettings, isCanvasSettingsOpen, setCanvasSettingsOpen, handleCanvasSettingsSave,
+
+    //Mode Toggling
+    isCanvasEditMode, setCanvasEditMode,
+
 
     // Units
     units, commitUnits,

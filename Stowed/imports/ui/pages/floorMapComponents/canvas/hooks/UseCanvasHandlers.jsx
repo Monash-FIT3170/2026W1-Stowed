@@ -29,7 +29,7 @@ import { CANVAS_CONFIG }  from "../CanvasConfig";
 *             handleUnitClick, handleStageClick, handleDragMove, handleDragEnd,
 *             handleDragEndGrid, handleTransformEnd, handleWheel }}
 */
-export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef, clipboard }) {
+export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef, clipboard, isCanvasEditMode }) {
   const navigate = useNavigate();
 
   // INTERNAL HELPERS 
@@ -137,7 +137,7 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
   // STAGE / UNIT HANDLERS 
 
   function handleUnitClick(unit, e) {
-    if (activeTool === "inspect") {
+    if (!isCanvasEditMode) {
       navigate(`/storage-unit/${unit._id}`);
       return;
     }
