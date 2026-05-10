@@ -100,7 +100,7 @@ export function InventoryListPage() {
           placeholder="Search by ID, name, tag, or SKU"
           className="search-input"
         />
-        <Link to="/products/create">
+        <Link to="/inventory/new">
           <button className="btn-add-item">+ Add item</button>
         </Link>
       </div>
