@@ -141,10 +141,21 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
       navigate(`/storage-unit/${unit._id}`);
       return;
     }
-    dispatch({
-      type:    CANVAS_ACTIONS.SELECT_UNIT,
-      payload: { id: unit.id, shiftKey: e.evt.shiftKey },
-    });
+
+    // Unit clicks should either:
+    // select only that unit if multiple units are selected
+    // deselect a unit if it is the only unit selected
+    // select a unit if nothing is selected
+    if (selectedIds.size > 1) {
+      dispatch( {type: CANVAS_ACTIONS.SELECT_UNIT, payload: { id: unit.id, shiftKey: e.evt.shiftKey }});
+      return;
+    }
+    if (selectedIds.has(unit.id)) {
+      dispatch({type: CANVAS_ACTIONS.DESELECT_ALL});
+      return;
+    }
+
+    dispatch({type: CANVAS_ACTIONS.SELECT_UNIT, payload: { id: unit.id, shiftKey: e.evt.shiftKey }});
   }
 
   function handleStageClick(e) {
