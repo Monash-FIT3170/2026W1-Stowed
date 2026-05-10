@@ -15,7 +15,7 @@ import { CANVAS_CONFIG }     from "../../CanvasConfig";
  * 
  * @returns {JSX.Element}
  */
-export function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragMove, onDragEnd, onTransformEnd, groupRef }) {
+export function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragMove, onDragEnd, onTransformEnd, groupRef}) {
   const canMove = activeTool === "move";
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 

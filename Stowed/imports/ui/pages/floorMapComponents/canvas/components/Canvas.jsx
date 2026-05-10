@@ -71,6 +71,7 @@ export function Canvas({ style, isCanvasEditMode }) {
     activeTool,
     wrapperRef,
     clipboard,
+    isCanvasEditMode
   });
   
   useEffect(() => {
