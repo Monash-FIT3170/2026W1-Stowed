@@ -302,7 +302,7 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
   function handleWheel(e) {
     e.evt.preventDefault();
 
-    const scaleFactor = 1.01;
+    const scaleFactor = 1.03;
     const stage       = stageRef.current;
     const oldScale    = stage.scaleX();
     const mouse       = stage.getPointerPosition();
@@ -361,7 +361,6 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
       };
     });
       
-  
     if (placedUnits.length === 0) return;
   
     setUnits((prev) => [ ...prev, ...placedUnits,]);
