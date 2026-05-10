@@ -281,7 +281,7 @@ return (
                     <select
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className="form-input"
+                      className={`form-input ${location ? 'selected' : ''}`}
                     >
                       <option value="">Select a location...</option>
                       {storageLocations.map((loc) => (
