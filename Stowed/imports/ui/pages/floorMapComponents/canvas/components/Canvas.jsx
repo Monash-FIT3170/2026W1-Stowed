@@ -74,6 +74,7 @@ export function Canvas({ style, isCanvasEditMode }) {
     isCanvasEditMode
   });
   
+  // ON MOUNT USE EFFECT
   useEffect(() => {
     // MEASURE CONTAINER TO FILL SCREEN FULLY
     const el = containerRef.current;
@@ -85,7 +86,10 @@ export function Canvas({ style, isCanvasEditMode }) {
     const centeredX = (width - floorSize.width * scale) / 2;
     const centeredY = (height - floorSize.height * scale) / 2;
     dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: { x: centeredX, y: centeredY }})
+  }, []);
 
+  // EVERY CHANGE USE EFFECT
+  useEffect(() => {
     // MANAGE KEY BINDINGS
     function onKeyDown(e) {
       if (e.key === "c" && (e.ctrlKey || e.metaKey)) handleCopy();
