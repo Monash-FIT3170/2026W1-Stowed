@@ -278,13 +278,18 @@ return (
                   </div>
                   <div className="form-group">
                     <label>Location</label>
-                    <input
-                      type="text"
+                    <select
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       className="form-input"
-                      placeholder="e.g. Aisle 4 - Section 1"
-                    />
+                    >
+                      <option value="">Select a location...</option>
+                      {storageLocations.map((loc) => (
+                        <option key={loc._id} value={loc._id}>
+                          {buildLocationLabel(loc, storageUnits, floorMaps, sites)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
