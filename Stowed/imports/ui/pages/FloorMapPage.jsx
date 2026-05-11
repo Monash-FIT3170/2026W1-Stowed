@@ -752,5 +752,4 @@ export function FloorMapPage() {
         </Modal>
       ) : null}
     </div>
-  );
-}
+  );}

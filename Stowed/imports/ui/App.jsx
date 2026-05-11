@@ -12,6 +12,7 @@ import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
 import { FloorMapPage }  from './pages/FloorMapPage';
 import { InventoryListPage } from './pages/InventoryListPage';
+import { StorageUnitDetailPage } from './pages/StorageUnitDetailPage';
 
 const LocationsPage = lazy(() =>
   import('./pages/LocationsPage').then((module) => ({ default: module.LocationsPage })),
@@ -24,7 +25,7 @@ export function App() {
       <div className="flex h-screen overflow-hidden bg-white">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
-          <Suspense fallback={<div className="p-6 text-sm text-zinc-500">Loading…</div>}>
+          <Suspense fallback={null}>
             <Routes>
               <Route path="/"                    element={<InventoryPage />} />
               <Route path="/inventory/new"              element={<CreateProductPage />} />
@@ -40,6 +41,7 @@ export function App() {
               <Route path="/alerts"              element={<AlertsPage />} />
               <Route path="*"                    element={<Navigate to="/" replace />} />
               <Route path="/inventory/list"      element={<InventoryListPage />} />
+              <Route path="/storage-unit/:unitId" element={<StorageUnitDetailPage />} />
             </Routes>
           </Suspense>
         </main>
