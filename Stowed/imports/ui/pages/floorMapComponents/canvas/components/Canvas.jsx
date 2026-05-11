@@ -56,6 +56,7 @@ export function Canvas({ style, isCanvasEditMode }) {
     handleWheel,
     handleCopy,
     handlePaste,
+    handleDelete,
   } = useCanvasHandlers({
     dispatch,
     units,
@@ -85,11 +86,12 @@ export function Canvas({ style, isCanvasEditMode }) {
     function onKeyDown(e) {
       if (e.key === "c" && (e.ctrlKey || e.metaKey)) handleCopy();
       if (e.key === "v" && (e.ctrlKey || e.metaKey)) handlePaste();
+      if (e.key.toLowerCase() === "delete" || e.key.toLowerCase() === "backspace") handleDelete();
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleCopy, handlePaste]);
+  }, [handleCopy, handlePaste, handleDelete]);
 
 
   // RENDER 

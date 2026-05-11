@@ -6,7 +6,6 @@ export const TOOLS = {
   SELECT: "select",
   MOVE:   "move",
   ADD:    "add",
-  DELETE: "delete",
 };
 
 // --- DEFAULT CANVAS SETTINGS ---

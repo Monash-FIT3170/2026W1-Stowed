@@ -27,7 +27,7 @@ import { CANVAS_CONFIG }  from "../CanvasConfig";
  *
  * @returns {{ getGroupRef, handleDragOver, handleDragLeave, handleDrop,
 *             handleUnitClick, handleStageClick, handleDragMove, handleDragEnd,
-*             handleDragEndGrid, handleTransformEnd, handleWheel }}
+*             handleDragEndGrid, handleTransformEnd, handleWheel, handleCopy, handlePaste, handleDelete }}
 */
 export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef, clipboard, isCanvasEditMode }) {
   const navigate = useNavigate();
@@ -370,9 +370,25 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     }, [clipboard, units]);
   
 
+  function handleDelete(e) {
+    const idsToDelete = selectedIds;
+    const currUnits = units;
+
+    let unitsAsString = "";
+    idsToDelete.forEach((id) => unitsAsString += units.find((u) => u.id === id).name + " (" + id + ")\n");
+    unitsAsString = unitsAsString.slice(0, -1);
+
+    const proceed = confirm("Are you sure you want to delete the selected units: \n" + unitsAsString);
+
+    // stop if the user cancels
+    if (!proceed) { return; }
+
+    // filter units to only those that don't match the selected ID values
+    setUnits((prev) => prev.filter((u) => !idsToDelete.has(u.id)));
+    dispatch({ type: CANVAS_ACTIONS.DELETE_UNIT });
+  }
+
   // RETURN 
-
-
   return {
     getGroupRef,
     handleDragOver,
@@ -387,5 +403,6 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     handleWheel,
     handleCopy,
     handlePaste,
+    handleDelete
   };
 }
