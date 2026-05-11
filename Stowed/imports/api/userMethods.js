@@ -6,11 +6,11 @@ import { Users } from './users';
 const SALT_ROUNDS = 10;
 
 Meteor.methods({
-  async 'users.register'({ username, email, password, isAdmin }) {
+  async 'users.register'({ username, email, password, role }) {
     check(username, String);
     check(email, String);
     check(password, String);
-    check(isAdmin, Boolean);
+    check(role, String);
 
     if (password.length < 6) {
       throw new Meteor.Error('password-too-short', 'Password must be at least 6 characters.');
@@ -39,7 +39,7 @@ Meteor.methods({
       password: hashedPassword,
       createdAt: now,
       updatedAt: now,
-      isAdmin,
+      role,
     });
 
     // Return a safe object (still include the plain email for the client)

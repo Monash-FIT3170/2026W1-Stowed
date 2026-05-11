@@ -12,7 +12,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState('user');
 
   const { username, email, password, confirmPassword } = formData;
 
@@ -41,7 +41,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const result = await Meteor.callAsync('users.register', { username, email, password, isAdmin });
+      const result = await Meteor.callAsync('users.register', { username, email, password, role });
       setSuccess(`Account created for ${result.username}`);
       setFormData({ username: '', email: '', password: '', confirmPassword: '' });
     } catch (err) {
@@ -79,17 +79,19 @@ const Register = () => {
             <label>Confirm Password</label>
             <input type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} required />
           </div>
-
           <div>
             <p>User Type</p>
-            <button type="button" onClick={() => setIsAdmin(true)} className={isAdmin ? 'active' : ''}>
+            <button
+              type="button" onClick={() => setRole('admin')} className={role === 'admin' ? 'active' : ''}
+            >
               Admin
             </button>
-            <button type="button" onClick={() => setIsAdmin(false)} className={!isAdmin ? 'active' : ''}>
+            <button
+              type="button" onClick={() => setRole('user')} className={role === 'user' ? 'active' : ''}
+            >
               Standard
             </button>
           </div>
-
           <button type="submit" disabled={loading}>
             {loading ? 'Creating...' : 'Register'}
           </button>
