@@ -1,11 +1,8 @@
 import { Meteor } from 'meteor/meteor';
 
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from './collections';
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from './locations/collections';
+
+import { Products, ProductRecords } from './products/collections';
 
 /**
  * Publishes all location-management data required by the client.
@@ -29,4 +26,19 @@ Meteor.publish('locations.all', function () {
     StorageUnits.find(),
     StorageLocations.find(),
   ];
+});
+
+Meteor.publish('products', function () {
+  if (!this.userId && !Meteor.isDevelopment) {
+    return this.ready();
+  }
+
+  return Products.find();
+});
+
+Meteor.publish('productRecords', function () {
+  if (!this.userId && !Meteor.isDevelopment) {
+    return this.ready();
+  }
+  return ProductRecords.find();
 });

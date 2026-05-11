@@ -1,43 +1,51 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Meteor } from 'meteor/meteor';
-import { useTracker } from 'meteor/react-meteor-data';
+import { useEffect, useMemo, useState } from "react";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
 
 import {
   FloorMaps,
   Sites,
   StorageLocations,
   StorageUnits,
-} from '/imports/api/locations/collections';
+} from "/imports/api/locations/collections";
+import "./LocationsPage.css";
 
-const STORAGE_UNIT_TYPES = ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other'];
+const STORAGE_UNIT_TYPES = [
+  "shelf",
+  "cabinet",
+  "rack",
+  "drawer",
+  "fridge",
+  "other",
+];
 
 const DEFAULT_UNIT_FORM = {
-  name: '',
-  type: 'shelf',
-  x: '24',
-  y: '24',
-  width: '120',
-  height: '72',
+  name: "",
+  type: "shelf",
+  x: "24",
+  y: "24",
+  width: "120",
+  height: "72",
 };
 
 const DEFAULT_LOCATION_FORM = {
-  name: '',
-  code: '',
+  name: "",
+  code: "",
 };
 
 function hasValidUnitPosition(unitForm) {
-  return ['x', 'y', 'width', 'height'].every((key) => {
+  return ["x", "y", "width", "height"].every((key) => {
     const value = Number(unitForm[key]);
     return Number.isFinite(value) && value >= 0;
   });
 }
 
-function Panel({ title, subtitle, children }) {
+function Panel({ title, subtitle, children, actions }) {
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-zinc-900">{title}</h2>
-        {subtitle ? <p className="text-sm text-zinc-500">{subtitle}</p> : null}
+    <section className="panel">
+      <div className="panel-header">
+        <h2 className="panel-title">{title}</h2>
+        {subtitle ? <p className="panel-subtitle">{subtitle}</p> : null}
       </div>
       {children}
     </section>
@@ -45,19 +53,15 @@ function Panel({ title, subtitle, children }) {
 }
 
 function EmptyState({ children }) {
-  return (
-    <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-500">
-      {children}
-    </div>
-  );
+  return <div className="empty-state">{children}</div>;
 }
 
 function TextInput({ label, value, onChange, placeholder }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-zinc-700">{label}</span>
+    <label className="form-input-wrapper">
+      <span className="form-input-label">{label}</span>
       <input
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
+        className="form-input-field"
         value={value}
         onChange={onChange}
         placeholder={placeholder}
@@ -66,12 +70,21 @@ function TextInput({ label, value, onChange, placeholder }) {
   );
 }
 
-function TextArea({ label, value, onChange, placeholder }) {
+function TextInput(props) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-zinc-700">{label}</span>
+    <input
+      {...props}
+      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
+    />
+  );
+}
+
+function TextArea(props) {
+  return (
+    <label className="form-input-wrapper">
+      <span className="form-input-label">{label}</span>
       <textarea
-        className="min-h-24 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
+        className="form-input-field form-textarea"
         value={value}
         onChange={onChange}
         placeholder={placeholder}
@@ -80,12 +93,12 @@ function TextArea({ label, value, onChange, placeholder }) {
   );
 }
 
-function SelectInput({ label, value, onChange, options }) {
+function SectionButton({ active, children, ...props }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-zinc-700">{label}</span>
+    <label className="form-input-wrapper">
+      <span className="form-input-label">{label}</span>
       <select
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
+        className="form-input-field form-select"
         value={value}
         onChange={onChange}
       >
@@ -99,14 +112,14 @@ function SelectInput({ label, value, onChange, options }) {
   );
 }
 
-function NumberInput({ label, value, onChange }) {
+function EmptyState({ children }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-zinc-700">{label}</span>
+    <label className="form-input-wrapper">
+      <span className="form-input-label">{label}</span>
       <input
         type="number"
         min="0"
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
+        className="form-input-field form-number-input"
         value={value}
         onChange={onChange}
       />
@@ -128,27 +141,31 @@ function submitMeteorMethod(methodName, params) {
 }
 
 export function LocationsPage() {
-  const [selectedSiteId, setSelectedSiteId] = useState('');
-  const [selectedFloorMapId, setSelectedFloorMapId] = useState('');
-  const [selectedStorageUnitId, setSelectedStorageUnitId] = useState('');
-  const [siteForm, setSiteForm] = useState({ name: '', description: '' });
-  const [floorMapForm, setFloorMapForm] = useState({ name: '', imageUrl: '' });
+  const [selectedSiteId, setSelectedSiteId] = useState("");
+  const [selectedFloorMapId, setSelectedFloorMapId] = useState("");
+  const [selectedStorageUnitId, setSelectedStorageUnitId] = useState("");
+  const [siteForm, setSiteForm] = useState({ name: "", description: "" });
+  const [floorMapForm, setFloorMapForm] = useState({ name: "", imageUrl: "" });
   const [unitForm, setUnitForm] = useState(DEFAULT_UNIT_FORM);
   const [locationForm, setLocationForm] = useState(DEFAULT_LOCATION_FORM);
-  const [status, setStatus] = useState({ type: '', message: '' });
+  const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
 
-  const { isLoading, sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
-    const handle = Meteor.subscribe('locations.all');
+  const { isLoading, sites, floorMaps, storageUnits, storageLocations } =
+    useTracker(() => {
+      const handle = Meteor.subscribe("locations.all");
 
-    return {
-      isLoading: !handle.ready(),
-      sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
-      floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
-      storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
-      storageLocations: StorageLocations.find({}, { sort: { createdAt: 1 } }).fetch(),
-    };
-  }, []);
+      return {
+        isLoading: !handle.ready(),
+        sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
+        floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+        storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
+        storageLocations: StorageLocations.find(
+          {},
+          { sort: { createdAt: 1 } },
+        ).fetch(),
+      };
+    }, []);
 
   const selectedSite = useMemo(
     () => sites.find((site) => site._id === selectedSiteId) ?? null,
@@ -161,7 +178,8 @@ export function LocationsPage() {
   );
 
   const selectedFloorMap = useMemo(
-    () => floorMaps.find((floorMap) => floorMap._id === selectedFloorMapId) ?? null,
+    () =>
+      floorMaps.find((floorMap) => floorMap._id === selectedFloorMapId) ?? null,
     [floorMaps, selectedFloorMapId],
   );
 
@@ -171,107 +189,124 @@ export function LocationsPage() {
   );
 
   const selectedStorageUnit = useMemo(
-    () => storageUnits.find((unit) => unit._id === selectedStorageUnitId) ?? null,
+    () =>
+      storageUnits.find((unit) => unit._id === selectedStorageUnitId) ?? null,
     [storageUnits, selectedStorageUnitId],
   );
 
   const locationsForStorageUnit = useMemo(
-    () => storageLocations.filter((location) => location.storageUnitId === selectedStorageUnitId),
+    () =>
+      storageLocations.filter(
+        (location) => location.storageUnitId === selectedStorageUnitId,
+      ),
     [storageLocations, selectedStorageUnitId],
   );
 
   useEffect(() => {
     if (!sites.length) {
-      setSelectedSiteId('');
+      setSelectedSiteId("");
       return;
     }
 
     if (!sites.some((site) => site._id === selectedSiteId)) {
       setSelectedSiteId(sites[0]._id);
     }
-  }, [sites, selectedSiteId]);
+  }, [selectedSiteId, sites]);
 
   useEffect(() => {
     if (!floorMapsForSite.length) {
-      setSelectedFloorMapId('');
+      setSelectedFloorMapId("");
       return;
     }
 
-    if (!floorMapsForSite.some((floorMap) => floorMap._id === selectedFloorMapId)) {
+    if (
+      !floorMapsForSite.some((floorMap) => floorMap._id === selectedFloorMapId)
+    ) {
       setSelectedFloorMapId(floorMapsForSite[0]._id);
     }
   }, [floorMapsForSite, selectedFloorMapId]);
 
   useEffect(() => {
     if (!storageUnitsForFloorMap.length) {
-      setSelectedStorageUnitId('');
+      setSelectedStorageUnitId("");
       return;
     }
 
-    if (!storageUnitsForFloorMap.some((unit) => unit._id === selectedStorageUnitId)) {
+    if (
+      !storageUnitsForFloorMap.some(
+        (unit) => unit._id === selectedStorageUnitId,
+      )
+    ) {
       setSelectedStorageUnitId(storageUnitsForFloorMap[0]._id);
     }
   }, [storageUnitsForFloorMap, selectedStorageUnitId]);
 
-  async function runSubmit(action) {
+  async function runAction(action, successMessage) {
     setSubmitting(true);
-    setStatus({ type: '', message: '' });
+    setStatus({ type: "", message: "" });
 
     try {
       await action();
-      setStatus({ type: 'success', message: 'Saved.' });
+      setStatus({ type: "success", message: "Saved." });
     } catch (error) {
       setStatus({
-        type: 'error',
-        message: error.reason || error.message || 'Something went wrong.',
+        type: "error",
+        message: error.reason || error.message || "Something went wrong.",
       });
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleCreateSite(event) {
+  async function handleSiteSubmit(event) {
     event.preventDefault();
 
     await runSubmit(async () => {
-      await submitMeteorMethod('sites.create', {
+      await submitMeteorMethod("sites.create", {
         name: siteForm.name.trim(),
         description: siteForm.description.trim(),
       });
-      setSiteForm({ name: '', description: '' });
+      setSiteForm({ name: "", description: "" });
     });
   }
 
-  async function handleCreateFloorMap(event) {
+  async function handleFloorMapSubmit(event) {
     event.preventDefault();
+
     if (!selectedSiteId) {
-      setStatus({ type: 'error', message: 'Create a site first.' });
+      setStatus({ type: "error", message: "Create a site first." });
       return;
     }
 
     await runSubmit(async () => {
-      await submitMeteorMethod('floorMaps.create', {
+      await submitMeteorMethod("floorMaps.create", {
         siteId: selectedSiteId,
         name: floorMapForm.name.trim(),
         imageUrl: floorMapForm.imageUrl.trim(),
       });
-      setFloorMapForm({ name: '', imageUrl: '' });
+      setFloorMapForm({ name: "", imageUrl: "" });
     });
   }
 
   async function handleCreateStorageUnit(event) {
     event.preventDefault();
     if (!selectedFloorMapId) {
-      setStatus({ type: 'error', message: 'Create a floor map first.' });
+      setStatus({ type: "error", message: "Create a floor map first." });
       return;
     }
 
     await runSubmit(async () => {
-      if (!hasValidUnitPosition(unitForm) || Number(unitForm.width) < 1 || Number(unitForm.height) < 1) {
-        throw new Error('Position values must be numbers, and width/height must be at least 1.');
+      if (
+        !hasValidUnitPosition(unitForm) ||
+        Number(unitForm.width) < 1 ||
+        Number(unitForm.height) < 1
+      ) {
+        throw new Error(
+          "Position values must be numbers, and width/height must be at least 1.",
+        );
       }
 
-      await submitMeteorMethod('storageUnits.create', {
+      await submitMeteorMethod("storageUnits.create", {
         floorMapId: selectedFloorMapId,
         name: unitForm.name.trim(),
         type: unitForm.type,
@@ -289,12 +324,12 @@ export function LocationsPage() {
   async function handleCreateStorageLocation(event) {
     event.preventDefault();
     if (!selectedStorageUnitId) {
-      setStatus({ type: 'error', message: 'Create a storage unit first.' });
+      setStatus({ type: "error", message: "Create a storage unit first." });
       return;
     }
 
     await runSubmit(async () => {
-      await submitMeteorMethod('storageLocations.create', {
+      await submitMeteorMethod("storageLocations.create", {
         storageUnitId: selectedStorageUnitId,
         name: locationForm.name.trim(),
         code: locationForm.code.trim(),
@@ -304,143 +339,203 @@ export function LocationsPage() {
   }
 
   return (
-    <div className="min-h-full bg-zinc-100">
-      <div className="mx-auto max-w-7xl p-6">
-        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div className="locations-page-container">
+      <div className="locations-page-wrapper">
+        <div className="locations-page-header">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">Locations</h1>
-            <p className="text-sm text-zinc-600">
-              Minimal management UI for testing the Site → Floor Map → Storage Unit → Storage
-              Location object chain.
+            <h1 className="locations-page-title">Locations</h1>
+            <p className="locations-page-subtitle">
+              Minimal management UI for testing the Site → Floor Map → Storage
+              Unit → Storage Location object chain.
             </p>
           </div>
-          <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500 shadow-sm">
-            {isLoading ? 'Loading location data…' : `${sites.length} sites loaded`}
+          <div className="locations-page-status-indicator">
+            {isLoading
+              ? "Loading location data…"
+              : `${sites.length} sites loaded`}
           </div>
         </div>
 
         {status.message ? (
           <div
-            className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
-              status.type === 'error'
-                ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            className={`status-message ${
+              status.type === "error"
+                ? "status-message-error"
+                : "status-message-success"
             }`}
           >
             {status.message}
           </div>
         ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-6">
-            <Panel title="Site" subtitle="Create and select the top-level physical area.">
-              <form className="mb-4 grid gap-3" onSubmit={handleCreateSite}>
-                <TextInput
-                  label="Name"
-                  value={siteForm.name}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({ ...current, name: event.target.value }))
-                  }
-                  placeholder="Warehouse"
-                />
-                <TextArea
-                  label="Description"
-                  value={siteForm.description}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({ ...current, description: event.target.value }))
-                  }
-                  placeholder="Optional note about this site"
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || !siteForm.name.trim()}
-                  className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
-                >
-                  Add Site
-                </button>
+        <div className="locations-page-content">
+          <div className="locations-page-left-column">
+            <Panel
+              title="Site"
+              subtitle="Create and select the top-level physical area."
+            >
+              <form className="form-grid" onSubmit={handleCreateSite}>
+                <Field label="Name">
+                  <TextInput
+                    value={siteForm.name}
+                    onChange={(event) =>
+                      setSiteForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Warehouse"
+                  />
+                </Field>
+                <Field label="Description">
+                  <TextArea
+                    value={siteForm.description}
+                    onChange={(event) =>
+                      setSiteForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    placeholder="Optional note"
+                  />
+                </Field>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    disabled={submitting || !siteForm.name.trim()}
+                    className="form-button form-button-full-width"
+                  >
+                    {editingSiteId ? "Save Site" : "Add Site"}
+                  </button>
+                  {editingSiteId ? (
+                    <button
+                      type="button"
+                      onClick={resetSiteForm}
+                      disabled={submitting}
+                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </form>
 
               {sites.length ? (
-                <div className="grid gap-2">
+                <div className="selection-list">
                   {sites.map((site) => (
                     <button
                       key={site._id}
                       type="button"
                       onClick={() => setSelectedSiteId(site._id)}
-                      className={`rounded-lg border px-4 py-3 text-left transition ${
+                      className={`selection-item ${
                         site._id === selectedSiteId
-                          ? 'border-zinc-950 bg-zinc-950 text-white'
-                          : 'border-zinc-200 bg-zinc-50 text-zinc-900 hover:border-zinc-400'
+                          ? "selection-item-selected"
+                          : "selection-item-unselected"
                       }`}
                     >
-                      <div className="font-medium">{site.name}</div>
+                      <div className="selection-item-name">{site.name}</div>
                       <div
-                        className={`text-sm ${
-                          site._id === selectedSiteId ? 'text-zinc-300' : 'text-zinc-500'
+                        className={`selection-item-description ${
+                          site._id === selectedSiteId
+                            ? "selection-item-description-selected"
+                            : "selection-item-description-unselected"
                         }`}
                       >
-                        {site.description || 'No description'}
+                        {site.description || "No description"}
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <EmptyState>No sites yet. Create one to unlock the rest of the chain.</EmptyState>
+                <EmptyState>
+                  No sites yet. Create one to unlock the rest of the chain.
+                </EmptyState>
               )}
             </Panel>
 
             <Panel
               title="Floor Maps"
               subtitle={
-                selectedSite ? `Attached to ${selectedSite.name}.` : 'Select a site first.'
+                selectedSite
+                  ? `Attached to ${selectedSite.name}.`
+                  : "Select a site first."
               }
             >
-              <form className="mb-4 grid gap-3 md:grid-cols-2" onSubmit={handleCreateFloorMap}>
-                <TextInput
-                  label="Name"
-                  value={floorMapForm.name}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({ ...current, name: event.target.value }))
-                  }
-                  placeholder="Ground Floor"
-                />
-                <TextInput
-                  label="Image URL"
-                  value={floorMapForm.imageUrl}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({ ...current, imageUrl: event.target.value }))
-                  }
-                  placeholder="https://example.com/floor.png"
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()}
-                  className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400 md:col-span-2"
-                >
-                  Add Floor Map
-                </button>
+              <form
+                className="form-grid form-grid-cols-2"
+                onSubmit={handleCreateFloorMap}
+              >
+                <Field label="Name">
+                  <TextInput
+                    value={floorMapForm.name}
+                    onChange={(event) =>
+                      setFloorMapForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Ground Floor"
+                  />
+                </Field>
+                <Field label="Image URL">
+                  <TextInput
+                    value={floorMapForm.imageUrl}
+                    onChange={(event) =>
+                      setFloorMapForm((current) => ({
+                        ...current,
+                        imageUrl: event.target.value,
+                      }))
+                    }
+                    placeholder="https://example.com/floor-map.png"
+                  />
+                </Field>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    disabled={
+                      submitting || !selectedSiteId || !floorMapForm.name.trim()
+                    }
+                    className="form-button form-button-full-width"
+                  >
+                    {editingFloorMapId ? "Save Floor Map" : "Add Floor Map"}
+                  </button>
+                  {editingFloorMapId ? (
+                    <button
+                      type="button"
+                      onClick={resetFloorMapForm}
+                      disabled={submitting}
+                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </form>
 
               {floorMapsForSite.length ? (
-                <div className="grid gap-2">
+                <div className="selection-list">
                   {floorMapsForSite.map((floorMap) => (
                     <button
                       key={floorMap._id}
                       type="button"
                       onClick={() => setSelectedFloorMapId(floorMap._id)}
-                      className={`rounded-lg border px-4 py-3 text-left transition ${
+                      className={`selection-item ${
                         floorMap._id === selectedFloorMapId
-                          ? 'border-zinc-950 bg-zinc-950 text-white'
-                          : 'border-zinc-200 bg-zinc-50 text-zinc-900 hover:border-zinc-400'
+                          ? "selection-item-selected"
+                          : "selection-item-unselected"
                       }`}
                     >
-                      <div className="font-medium">{floorMap.name}</div>
+                      <div className="selection-item-name">{floorMap.name}</div>
                       <div
-                        className={`text-sm ${
-                          floorMap._id === selectedFloorMapId ? 'text-zinc-300' : 'text-zinc-500'
+                        className={`selection-item-description ${
+                          floorMap._id === selectedFloorMapId
+                            ? "selection-item-description-selected"
+                            : "selection-item-description-unselected"
                         }`}
                       >
-                        {floorMap.imageUrl || 'No image URL'}
+                        {floorMap.imageUrl || "No image URL"}
                       </div>
                     </button>
                   ))}
@@ -455,15 +550,21 @@ export function LocationsPage() {
               subtitle={
                 selectedFloorMap
                   ? `Placed on ${selectedFloorMap.name}.`
-                  : 'Select a floor map first.'
+                  : "Select a floor map first."
               }
             >
-              <form className="mb-4 grid gap-3 md:grid-cols-2" onSubmit={handleCreateStorageUnit}>
+              <form
+                className="form-grid form-grid-cols-2"
+                onSubmit={handleCreateStorageUnit}
+              >
                 <TextInput
                   label="Name"
                   value={unitForm.name}
                   onChange={(event) =>
-                    setUnitForm((current) => ({ ...current, name: event.target.value }))
+                    setUnitForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
                   }
                   placeholder="Shelf A"
                 />
@@ -471,36 +572,54 @@ export function LocationsPage() {
                   label="Type"
                   value={unitForm.type}
                   onChange={(event) =>
-                    setUnitForm((current) => ({ ...current, type: event.target.value }))
+                    setUnitForm((current) => ({
+                      ...current,
+                      type: event.target.value,
+                    }))
                   }
-                  options={STORAGE_UNIT_TYPES.map((type) => ({ value: type, label: type }))}
+                  options={STORAGE_UNIT_TYPES.map((type) => ({
+                    value: type,
+                    label: type,
+                  }))}
                 />
                 <NumberInput
                   label="X"
                   value={unitForm.x}
                   onChange={(event) =>
-                    setUnitForm((current) => ({ ...current, x: event.target.value }))
+                    setUnitForm((current) => ({
+                      ...current,
+                      x: event.target.value,
+                    }))
                   }
                 />
                 <NumberInput
                   label="Y"
                   value={unitForm.y}
                   onChange={(event) =>
-                    setUnitForm((current) => ({ ...current, y: event.target.value }))
+                    setUnitForm((current) => ({
+                      ...current,
+                      y: event.target.value,
+                    }))
                   }
                 />
                 <NumberInput
                   label="Width"
                   value={unitForm.width}
                   onChange={(event) =>
-                    setUnitForm((current) => ({ ...current, width: event.target.value }))
+                    setUnitForm((current) => ({
+                      ...current,
+                      width: event.target.value,
+                    }))
                   }
                 />
                 <NumberInput
                   label="Height"
                   value={unitForm.height}
                   onChange={(event) =>
-                    setUnitForm((current) => ({ ...current, height: event.target.value }))
+                    setUnitForm((current) => ({
+                      ...current,
+                      height: event.target.value,
+                    }))
                   }
                 />
                 <button
@@ -513,40 +632,42 @@ export function LocationsPage() {
                     Number(unitForm.width) < 1 ||
                     Number(unitForm.height) < 1
                   }
-                  className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400 md:col-span-2"
+                  className="form-button form-button-full-width"
                 >
-                  Add Storage Unit
+                  Edit Selected Floor Map
                 </button>
               </form>
 
               {storageUnitsForFloorMap.length ? (
-                <div className="grid gap-2">
+                <div className="selection-list">
                   {storageUnitsForFloorMap.map((unit) => (
                     <button
                       key={unit._id}
                       type="button"
                       onClick={() => setSelectedStorageUnitId(unit._id)}
-                      className={`rounded-lg border px-4 py-3 text-left transition ${
+                      className={`selection-item ${
                         unit._id === selectedStorageUnitId
-                          ? 'border-zinc-950 bg-zinc-950 text-white'
-                          : 'border-zinc-200 bg-zinc-50 text-zinc-900 hover:border-zinc-400'
+                          ? "selection-item-selected"
+                          : "selection-item-unselected"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium">{unit.name}</span>
+                      <div className="unit-list-item-flex">
+                        <span className="selection-item-name">{unit.name}</span>
                         <span
-                          className={`rounded-full px-2 py-1 text-xs uppercase ${
+                          className={`unit-type-badge ${
                             unit._id === selectedStorageUnitId
-                              ? 'bg-zinc-700 text-zinc-100'
-                              : 'bg-zinc-200 text-zinc-700'
+                              ? "unit-type-badge-selected"
+                              : "unit-type-badge-unselected"
                           }`}
                         >
                           {unit.type}
                         </span>
                       </div>
                       <div
-                        className={`mt-1 text-sm ${
-                          unit._id === selectedStorageUnitId ? 'text-zinc-300' : 'text-zinc-500'
+                        className={`unit-list-item-meta ${
+                          unit._id === selectedStorageUnitId
+                            ? "unit-list-item-meta-selected"
+                            : "unit-list-item-meta-unselected"
                         }`}
                       >
                         {`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}
@@ -564,18 +685,21 @@ export function LocationsPage() {
               subtitle={
                 selectedStorageUnit
                   ? `Attached to ${selectedStorageUnit.name}.`
-                  : 'Select a storage unit first.'
+                  : "Select a storage unit first."
               }
             >
               <form
-                className="mb-4 grid gap-3 md:grid-cols-2"
+                className="form-grid form-grid-cols-2"
                 onSubmit={handleCreateStorageLocation}
               >
                 <TextInput
                   label="Name"
                   value={locationForm.name}
                   onChange={(event) =>
-                    setLocationForm((current) => ({ ...current, name: event.target.value }))
+                    setLocationForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
                   }
                   placeholder="Top Shelf"
                 />
@@ -583,7 +707,10 @@ export function LocationsPage() {
                   label="Code"
                   value={locationForm.code}
                   onChange={(event) =>
-                    setLocationForm((current) => ({ ...current, code: event.target.value }))
+                    setLocationForm((current) => ({
+                      ...current,
+                      code: event.target.value,
+                    }))
                   }
                   placeholder="SH-A-01"
                 />
@@ -595,21 +722,22 @@ export function LocationsPage() {
                     !locationForm.name.trim() ||
                     !locationForm.code.trim()
                   }
-                  className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400 md:col-span-2"
+                  className="form-button form-button-full-width"
                 >
-                  Add Storage Location
+                  Manage Units
                 </button>
               </form>
 
               {locationsForStorageUnit.length ? (
-                <div className="grid gap-2">
+                <div className="selection-list">
                   {locationsForStorageUnit.map((location) => (
-                    <div
-                      key={location._id}
-                      className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3"
-                    >
-                      <div className="font-medium text-zinc-900">{location.name}</div>
-                      <div className="text-sm text-zinc-500">{location.code}</div>
+                    <div key={location._id} className="location-list-item">
+                      <div className="location-list-item-name">
+                        {location.name}
+                      </div>
+                      <div className="location-list-item-code">
+                        {location.code}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -619,29 +747,37 @@ export function LocationsPage() {
             </Panel>
           </div>
 
-          <div className="space-y-6">
+          <div className="locations-page-right-column">
             <Panel
               title="Relationship Summary"
               subtitle="Quick sanity check of what is currently selected."
             >
-              <dl className="grid gap-3 text-sm">
-                <div className="rounded-lg bg-zinc-50 px-4 py-3">
-                  <dt className="font-medium text-zinc-500">Site</dt>
-                  <dd className="text-zinc-950">{selectedSite?.name || 'None selected'}</dd>
-                </div>
-                <div className="rounded-lg bg-zinc-50 px-4 py-3">
-                  <dt className="font-medium text-zinc-500">Floor Map</dt>
-                  <dd className="text-zinc-950">{selectedFloorMap?.name || 'None selected'}</dd>
-                </div>
-                <div className="rounded-lg bg-zinc-50 px-4 py-3">
-                  <dt className="font-medium text-zinc-500">Storage Unit</dt>
-                  <dd className="text-zinc-950">
-                    {selectedStorageUnit?.name || 'None selected'}
+              <dl className="relationship-summary-list">
+                <div className="relationship-summary-item">
+                  <dt className="relationship-summary-label">Site</dt>
+                  <dd className="relationship-summary-value">
+                    {selectedSite?.name || "None selected"}
                   </dd>
                 </div>
-                <div className="rounded-lg bg-zinc-50 px-4 py-3">
-                  <dt className="font-medium text-zinc-500">Storage Locations</dt>
-                  <dd className="text-zinc-950">{locationsForStorageUnit.length}</dd>
+                <div className="relationship-summary-item">
+                  <dt className="relationship-summary-label">Floor Map</dt>
+                  <dd className="relationship-summary-value">
+                    {selectedFloorMap?.name || "None selected"}
+                  </dd>
+                </div>
+                <div className="relationship-summary-item">
+                  <dt className="relationship-summary-label">Storage Unit</dt>
+                  <dd className="relationship-summary-value">
+                    {selectedStorageUnit?.name || "None selected"}
+                  </dd>
+                </div>
+                <div className="relationship-summary-item">
+                  <dt className="relationship-summary-label">
+                    Storage Locations
+                  </dt>
+                  <dd className="relationship-summary-value">
+                    {locationsForStorageUnit.length}
+                  </dd>
                 </div>
               </dl>
             </Panel>
@@ -650,17 +786,17 @@ export function LocationsPage() {
               title="Floor Map Preview"
               subtitle="Simple visual check for storage-unit position values."
             >
-              <div className="rounded-xl border border-dashed border-zinc-300 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:24px_24px] p-4">
-                <div className="relative h-[420px] overflow-hidden rounded-lg bg-white">
+              <div className="floor-map-preview-container">
+                <div className="floor-map-preview-canvas">
                   {storageUnitsForFloorMap.map((unit) => (
                     <button
                       key={unit._id}
                       type="button"
                       onClick={() => setSelectedStorageUnitId(unit._id)}
-                      className={`absolute overflow-hidden rounded-lg border px-2 py-1 text-left text-xs shadow-sm ${
+                      className={`floor-map-unit-button ${
                         unit._id === selectedStorageUnitId
-                          ? 'border-zinc-950 bg-zinc-950 text-white'
-                          : 'border-zinc-300 bg-amber-100 text-zinc-800'
+                          ? "floor-map-unit-selected"
+                          : "floor-map-unit-unselected"
                       }`}
                       style={{
                         left: `${unit.position.x}px`,
@@ -669,15 +805,21 @@ export function LocationsPage() {
                         height: `${unit.position.height}px`,
                       }}
                     >
-                      <div className="font-semibold">{unit.name}</div>
-                      <div className={unit._id === selectedStorageUnitId ? 'text-zinc-300' : 'text-zinc-600'}>
+                      <div className="floor-map-unit-name">{unit.name}</div>
+                      <div
+                        className={
+                          unit._id === selectedStorageUnitId
+                            ? "floor-map-unit-type-selected"
+                            : "floor-map-unit-type-unselected"
+                        }
+                      >
                         {unit.type}
                       </div>
                     </button>
                   ))}
 
                   {!storageUnitsForFloorMap.length ? (
-                    <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+                    <div className="floor-map-empty-state">
                       Add a storage unit to see it plotted here.
                     </div>
                   ) : null}

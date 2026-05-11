@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { InventoryPage }  from './pages/InventoryPage';
 import { ItemDetailPage } from './pages/ItemDetailPage';
+import { EditProductPage } from './pages/EditProductPage';
+import { CreateProductPage } from './pages/CreateProductPage';
 import { ListsPage }      from './pages/ListsPage';
 import { StocktakePage }  from './pages/StocktakePage';
 import { QRCodesPage }    from './pages/QRCodesPage';
@@ -26,8 +28,11 @@ export function App() {
           <Suspense fallback={null}>
             <Routes>
               <Route path="/"                    element={<InventoryPage />} />
-              <Route path="/inventory/:itemId"   element={<ItemDetailPage />} />
+              <Route path="/inventory/new"              element={<CreateProductPage />} />
+              <Route path="/inventory/:productId/edit" element={<EditProductPage />} />
+              <Route path="/inventory/:productId"      element={<ItemDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
+              <Route path="/floor-map/:floorMapId" element={<FloorMapPage />} />
               <Route path="/locations"           element={<LocationsPage />} />
               <Route path="/lists"               element={<ListsPage />} />
               <Route path="/stocktake"           element={<StocktakePage />} />
