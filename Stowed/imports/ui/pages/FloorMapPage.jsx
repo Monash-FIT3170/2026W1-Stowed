@@ -47,7 +47,7 @@ function FloorMapPageInner() {
         {/* STORAGE PANEL */}
         {isCanvasEditMode && 
          ( <StoragePanel onSelectUnit={handlePlaceUnit} />
-          )}
+        )}
 
         {/* CANVAS AREA */}
         <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", overflow: "auto" }}>
