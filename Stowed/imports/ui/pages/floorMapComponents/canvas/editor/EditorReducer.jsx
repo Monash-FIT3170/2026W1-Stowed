@@ -67,6 +67,9 @@ export function canvasReducer(state, action) {
     case CANVAS_ACTIONS.PASTE_UNITS:
       return { ...state, selectedIds: new Set(action.payload.ids) };
 
+    case CANVAS_ACTIONS.DELETE_UNIT:
+      return { ...state, selectedIds: new Set() }
+
     default:
       return state;
   }

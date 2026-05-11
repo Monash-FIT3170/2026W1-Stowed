@@ -18,5 +18,8 @@ export const CANVAS_ACTIONS = {
 
     // Copy/Paste
     COPY_UNITS: "COPY_UNITS",
-    PASTE_UNITS: "PASTE_UNITS"
-  };
+  PASTE_UNITS: "PASTE_UNITS",
+
+  // Delete units
+  DELETE_UNIT: "DELETE_UNIT"
+};
