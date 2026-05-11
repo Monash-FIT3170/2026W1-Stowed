@@ -44,7 +44,6 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
         {/* TOOLS */}
         <button onClick={() => setActiveTool("select")}>Select</button>
         <button onClick={() => setActiveTool("move")}>Move</button>
-        <button onClick={() => setActiveTool("delete")}>Delete</button>
         <button onClick={onSaveLayout}>Save Layout</button>
         <button onClick={onLoadLayout}>Load Layout</button>
   
