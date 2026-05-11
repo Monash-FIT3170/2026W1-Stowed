@@ -10,6 +10,7 @@ import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
 import { Register }       from './Register';
 import { Login }          from './Login';
+import { RegisterOwner }  from './RegisterOwner';
 
 export function App() {
   return (
@@ -28,6 +29,7 @@ export function App() {
             <Route path="/alerts"              element={<AlertsPage />} />
             <Route path="/register"            element={<Register />} />
             <Route path="/login"               element={<Login />} />
+            <Route path="/register-owner"      element={<RegisterOwner />} />
             <Route path="*"                    element={<Navigate to="/" replace />} />
           </Routes>
         </main>
