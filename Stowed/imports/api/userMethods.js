@@ -75,15 +75,23 @@ Meteor.methods({
     return { _id: user._id, username: user.username, email };
   },
 
-  async 'users.isAdmin'({ userId }) {
-    check(userId, String);
+    // checks whether a role can perform a specific action
+  async 'users.hasAccess'({ role, method }) {
+    check(role, String);
+    check(method, String);
 
-    const user = await Users.findOneAsync(userId);
+    const permissions = {
+      owner: [
+        'view-registration-page',
+      ],
 
-    if (!user) {
-      throw new Meteor.Error('user-not-found', 'User does not exist.');
-    }
+      admin: [
+      ],
 
-    return user.isAdmin ?? false;
+      user: [
+      ],
+    };
+
+    return permissions[role]?.includes(method) ?? false;
   },
 });
