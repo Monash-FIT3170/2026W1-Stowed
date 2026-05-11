@@ -26,6 +26,14 @@ export const ProductSchema = new SimpleSchema({
   updatedAt: {
     type: Date,
   },
+
+  images: {
+    type: Array,
+  },
+  "images.$": {
+    type: String, 
+  },
+
 });
 
 export const ProductRecordSchema = new SimpleSchema({
@@ -50,3 +58,7 @@ export const ProductRecordSchema = new SimpleSchema({
     type: Date,
   },
 });
+
+ProductRecords.attachSchema(ProductRecordSchema);
+
+Products.attachSchema(ProductSchema);

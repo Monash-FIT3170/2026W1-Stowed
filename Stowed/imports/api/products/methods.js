@@ -73,105 +73,6 @@ Meteor.methods({
   },
 
   /**
-   * Updates a Product's details and replaces its location assignments.
-   *
-   * All existing ProductRecords for the product are removed and recreated
-   * from the new assignments array, keeping the data model consistent.
-   *
-   * Validates that:
-   *  - The product exists.
-   *  - No other product shares the new name (case-insensitive).
-   *  - The sum of all assignment quantities equals totalQuantity.
-   *
-   * @param {Object}   params
-   * @param {string}   params.productId
-   * @param {string}   params.name
-   * @param {string}   [params.description='']
-   * @param {number}   params.totalQuantity
-   * @param {Object[]} params.assignments
-   * @param {string}   params.assignments[].locationId
-   * @param {number}   params.assignments[].quantity
-   *
-   * @throws {Meteor.Error} not-authorised    - Not logged in outside development.
-   * @throws {Meteor.Error} product-not-found - No product with this _id exists.
-   * @throws {Meteor.Error} duplicate-name    - Another product already has this name.
-   * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
-   */
-  async 'products.update'({ productId, name, description = '', totalQuantity, assignments }) {
-    check(productId, String);
-    check(name, String);
-    check(description, String);
-    check(totalQuantity, Match.Integer);
-    check(assignments, [{ locationId: String, quantity: Match.Integer }]);
-
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error('not-authorised', 'You must be logged in.');
-    }
-
-    const product = await Products.findOneAsync(productId);
-    if (!product) {
-      throw new Meteor.Error('product-not-found', 'No product found with that ID.');
-    }
-
-    // Duplicate name check excluding this product.
-    const existing = await Products.findOneAsync({
-      _id: { $ne: productId },
-      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
-    });
-    if (existing) {
-      throw new Meteor.Error('duplicate-name', `A product named "${name}" already exists.`);
-    }
-
-    const assignedTotal = assignments.reduce((sum, a) => sum + a.quantity, 0);
-    if (assignedTotal !== totalQuantity) {
-      throw new Meteor.Error(
-        'quantity-mismatch',
-        `Assigned quantity (${assignedTotal}) must equal total quantity (${totalQuantity}).`
-      );
-    }
-
-    const now = new Date();
-
-    await Products.updateAsync(productId, {
-      $set: { name, description, totalQuantity, updatedAt: now },
-    });
-
-    // Replace all records for this product with the new assignments.
-    await ProductRecords.removeAsync({ productId });
-    for (const { locationId, quantity } of assignments) {
-      await ProductRecords.insertAsync({ productId, locationId, quantity, createdAt: now, updatedAt: now });
-    }
-  },
-
-  /**
-   * Deletes a Product and all of its associated ProductRecords.
-   *
-   * Records are removed first so there is no window where the product exists
-   * without its records being cleaned up.
-   *
-   * @param {Object} params
-   * @param {string} params.productId - The _id of the product to delete.
-   *
-   * @throws {Meteor.Error} not-authorised  - Not logged in outside development.
-   * @throws {Meteor.Error} product-not-found - No product with this _id exists.
-   */
-  async 'products.delete'({ productId }) {
-    check(productId, String);
-
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error('not-authorised', 'You must be logged in.');
-    }
-
-    const product = await Products.findOneAsync(productId);
-    if (!product) {
-      throw new Meteor.Error('product-not-found', 'No product found with that ID.');
-    }
-
-    await ProductRecords.removeAsync({ productId });
-    await Products.removeAsync(productId);
-  },
-
-  /**
    * Creates a new ProductRecord, assigning a quantity of a product to a location.
    *
    * @param {Object} params
@@ -200,4 +101,22 @@ Meteor.methods({
       updatedAt: now,
     });
   },
+
+  async 'products.uploadImage'({productId , imagePath}) {
+    check(productId, String);
+    check(imagePath, String);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+    const now = new Date();
+
+    await Products.updateAsync(
+      { _id: productId },
+      {
+        $push: { images: imagePath },
+        $set: { updatedAt: new Date() }
+      })
+  },
+
 });
