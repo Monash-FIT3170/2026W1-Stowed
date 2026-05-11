@@ -50,7 +50,3 @@ export const ProductRecordSchema = new SimpleSchema({
     type: Date,
   },
 });
-
-ProductRecords.attachSchema(ProductRecordSchema);
-
-Products.attachSchema(ProductSchema);

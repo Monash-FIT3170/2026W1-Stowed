@@ -18,3 +18,6 @@ export const Products = new Mongo.Collection('products');
  * the Product's totalQuantity.
  */
 export const ProductRecords = new Mongo.Collection('productRecords');
+
+ProductRecords.attachSchema(ProductRecordSchema);
+Products.attachSchema(ProductSchema);
