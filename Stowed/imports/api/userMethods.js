@@ -94,4 +94,17 @@ Meteor.methods({
 
     return permissions[role]?.includes(method) ?? false;
   },
+
+  // returns the role of the user
+  async 'users.getRole'({ userId }) {
+    check(userId, String);
+
+    const user = await Users.findOneAsync(userId);
+
+    if (!user) {
+      throw new Meteor.Error('user-not-found', 'User does not exist.');
+    }
+
+    return user.role;
+  }
 });
