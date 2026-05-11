@@ -42,6 +42,21 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     return hasCollisions(newBounds, units, excludeId);
   }
 
+  // Helper: get clamped bounds for any unit at an offset position
+  function getMovedBounds(unit, deltaX, deltaY) {
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+    const newX = Math.max(0, Math.min(unit.x + deltaX, width  / px - unit.width));
+    const newY = Math.max(0, Math.min(unit.y + deltaY, height / px - unit.height));
+    return {
+      bounds: {
+        dom: { lower: newX * px, upper: (newX + unit.width)  * px },
+        ran: { lower: newY * px, upper: (newY + unit.height) * px },
+      },
+      x: newX,
+      y: newY,
+    };
+  }
+
   function buildGhostFromEvent(e) {
     const template = dragState.template;
     if (!template) return null;
@@ -194,63 +209,60 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
     const rawYm   = e.target.y() / px;
     const snappedXm = snapEnabled ? snapToGrid(rawXm, gridInterval) : rawXm;
     const snappedYm = snapEnabled ? snapToGrid(rawYm, gridInterval) : rawYm;
-
-    e.target.x(snappedXm * px);
-    e.target.y(snappedYm * px);
-
+  
     dispatch({ type: CANVAS_ACTIONS.CLEAR_DRAG_OFFSETS });
+  
+    const draggedUnit = units.find((u) => u.id === unitId);
+    if (!draggedUnit) return;
 
-    // Multi-select move
-    if (selectedIds.size > 1 && selectedIds.has(unitId)) {
-      const draggedUnit = units.find((u) => u.id === unitId);
-      const deltaX = snappedXm - draggedUnit.x;
-      const deltaY = snappedYm - draggedUnit.y;
-
-      const wouldCollide = [...selectedIds].some((id) => {
+    const clampedXm = Math.max(0, Math.min(snappedXm, width  / px - draggedUnit.width));
+    const clampedYm = Math.max(0, Math.min(snappedYm, height / px - draggedUnit.height));
+  
+    const deltaX = clampedXm - draggedUnit.x;
+    const deltaY = clampedYm - draggedUnit.y;
+  
+    const movedIds = selectedIds.size > 1 && selectedIds.has(unitId)
+      ? [...selectedIds]
+      : [unitId];
+  
+    // Check all units that will move for collisions
+    const wouldCollide = movedIds.some((id) => {
+      const unit = units.find((u) => u.id === id);
+      if (!unit) return false;
+      const { bounds } = getMovedBounds(unit, deltaX, deltaY);
+      return checkCollisions(bounds, id);
+    });
+  
+    // Reset all units
+    if (wouldCollide) {
+      movedIds.forEach((id) => {
         const unit = units.find((u) => u.id === id);
-        if (!unit) return false;
-        const newXPx = (unit.x + deltaX) * px;
-        const newYPx = (unit.y + deltaY) * px;
-        const bounds = {
-          dom: { lower: newXPx, upper: newXPx + unit.width  * px },
-          ran: { lower: newYPx, upper: newYPx + unit.height * px },
-        };
-        return checkCollisions(bounds, id);
+        if (!unit) return;
+        const ref = id === unitId ? { current: e.target } : getGroupRef(id);
+        if (ref.current) { ref.current.x(unit.x * px); ref.current.y(unit.y * px); }
       });
-
-
-      // Do not use dispatch for ref.current due to performance
-      if (wouldCollide) {
-        [...selectedIds].forEach((id) => {
-          const ref  = getGroupRef(id);
-          const unit = units.find((u) => u.id === id);
-          if (!ref.current || !unit) return;
-          ref.current.x(unit.x * px);
-          ref.current.y(unit.y * px);
-        });
-        return;
-      }
-
-      [...selectedIds].forEach((id) => {
-        if (id === unitId) return;
-        const ref  = getGroupRef(id);
-        const unit = units.find((u) => u.id === id);
-        if (!ref.current || !unit) return;
-        ref.current.x((unit.x + deltaX) * px);
-        ref.current.y((unit.y + deltaY) * px);
-      });
-
-      setUnits((prev) =>
-        prev.map((u) =>
-          selectedIds.has(u.id) ? { ...u, x: u.x + deltaX, y: u.y + deltaY } : u
-        )
-      );
       return;
     }
-
-    // Single unit move
+  
+    movedIds.forEach((id) => {
+      if (id === unitId) return;
+      const unit = units.find((u) => u.id === id);
+      const ref  = getGroupRef(id);
+      if (!unit || !ref.current) return;
+      const { x, y } = getMovedBounds(unit, deltaX, deltaY);
+      ref.current.x(x * px);
+      ref.current.y(y * px);
+    });
+  
+    e.target.x(clampedXm * px);
+    e.target.y(clampedYm * px);
+  
     setUnits((prev) =>
-      prev.map((u) => u.id === unitId ? { ...u, x: snappedXm, y: snappedYm } : u)
+      prev.map((u) => {
+        if (!movedIds.includes(u.id)) return u;
+        const { x, y } = getMovedBounds(u, deltaX, deltaY);
+        return { ...u, x, y };
+      })
     );
   }
 
