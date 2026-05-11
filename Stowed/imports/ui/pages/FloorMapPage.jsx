@@ -4,6 +4,19 @@ import { CanvasToolbar }        from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel }         from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal }  from "./floorMapComponents/CanvasSettingsModal";
 
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(result);
+    });
+  });
+}
+
 /**
  * Inner layout component. Consumes EditorContext - no local state.
  */
