@@ -490,6 +490,7 @@ export function FloorMapPage() {
                   onClick={() => {
                     setSelectedStorageUnitId(unit._id);
                     setShowLocationForm(false);
+                    navigate(`/storage-unit/${unit._id}`);
                   }}
                   className={`absolute overflow-hidden rounded-lg border px-2 py-1 text-left text-xs shadow-sm ${
                     unit._id === selectedStorageUnitId

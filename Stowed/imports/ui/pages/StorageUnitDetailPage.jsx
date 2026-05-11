@@ -1,5 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
+import {
+  FloorMaps,
+  Sites,
+  StorageLocations,
+  StorageUnits,
+} from "/imports/api/locations/collections";
 import {
   getMockStorageLocationsByUnitId,
   getMockStorageUnitById,
@@ -30,11 +38,36 @@ export function StorageUnitDetailPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const unit = getMockStorageUnitById(unitId);
-  const locations = getMockStorageLocationsByUnitId(unitId);
+  const { loading, liveUnit, liveLocations, floorMap, site } = useTracker(() => {
+    const handle = Meteor.subscribe("locations.all");
+    const liveUnit = StorageUnits.findOne(unitId);
+    const floorMap = liveUnit ? FloorMaps.findOne(liveUnit.floorMapId) : null;
+    const site = floorMap ? Sites.findOne(floorMap.siteId) : null;
+
+    return {
+      loading: !handle.ready(),
+      liveUnit,
+      liveLocations: StorageLocations.find(
+        { storageUnitId: unitId },
+        { sort: { createdAt: 1 } },
+      ).fetch(),
+      floorMap,
+      site,
+    };
+  }, [unitId]);
+
+  const mockUnit = getMockStorageUnitById(unitId);
+  const unit = liveUnit || mockUnit;
+  const locations = liveUnit ? liveLocations : getMockStorageLocationsByUnitId(unitId);
   const [photoPreview, setPhotoPreview] = useState(() => getSavedPhotoForUnit(unitId, unit?.photoUrl));
   const [saveMessage, setSaveMessage] = useState("");
-  const loading = false;
+
+  useEffect(() => {
+    if (unit) {
+      setPhotoPreview(getSavedPhotoForUnit(unitId, unit.photoUrl));
+      setSaveMessage("");
+    }
+  }, [unitId, unit?.photoUrl]);
 
   if (loading) return <p className="storage-page-message">Loading...</p>;
   if (!unit) return <p className="storage-page-message">Storage unit not found.</p>;
@@ -80,11 +113,16 @@ export function StorageUnitDetailPage() {
       <header className="storage-detail-header">
         <div className="storage-header-top">
           <div>
-            <p className="storage-breadcrumb">Mornington Hardware / Floor map / {unitCode}</p>
+            <p className="storage-breadcrumb">
+              {site?.name || "Mornington Hardware"} / {floorMap?.name || "Floor map"} / {unitCode}
+            </p>
             <p className="storage-live-dot">Live floor map</p>
           </div>
           <div className="storage-actions">
-            <button className="storage-btn storage-btn-secondary" onClick={() => navigate("/floor-map")}>
+            <button
+              className="storage-btn storage-btn-secondary"
+              onClick={() => navigate(floorMap?._id ? `/floor-map/${floorMap._id}` : "/floor-map")}
+            >
               Back
             </button>
             <button className="storage-btn storage-btn-primary" onClick={handleSaveChanges}>
