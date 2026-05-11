@@ -1,5 +1,6 @@
 import { Mongo } from 'meteor/mongo';
 import 'meteor/aldeed:collection2/static';
+import { ProductSchema, ProductRecordSchema } from './schemas';
 
 /**
  * A Product represents a type of inventory item tracked in the system.
