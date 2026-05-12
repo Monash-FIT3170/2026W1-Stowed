@@ -1,110 +1,62 @@
-import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
-import bcrypt from 'bcrypt';
-import { Users } from './users';
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { ROLES } from "./roles";
+import { Accounts } from 'meteor/accounts-base';
 
-const SALT_ROUNDS = 10;
-
+/**
+ * User Methods
+ */
 Meteor.methods({
-  async 'users.register'({ username, email, password, role }) {
+  // user creation method, only to be accessed by admins and owners
+  "users.create"({ username, email, password, role }) {
     check(username, String);
     check(email, String);
     check(password, String);
-    check(role, String);
+    check(role, Number);
 
-    if (password.length < 6) {
-      throw new Meteor.Error('password-too-short', 'Password must be at least 6 characters.');
+    // ensure user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorized", "You must be logged in");
     }
-    if (!/^.+@.+\..+$/.test(email)) {
-      throw new Meteor.Error('invalid-email', 'Please enter a valid email address.');
-    }
-
-    // Check for duplicate using the actual stored fields
-    const existing = await Users.findOneAsync({
-      $or: [
-        { 'emails.address': email.toLowerCase() },
-        { username },
-      ],
-    });
-    if (existing) {
-      throw new Meteor.Error('user-exists', 'A user with that email or username already exists.');
+    const currentUser = Meteor.users.findOneAsync(this.userId);
+    // ensure user is admin or higher
+    if (!currentUser || currentUser.profile?.role < ROLES.ADMIN) {
+      throw new Meteor.Error("forbidden", "Only admins can create users");
     }
 
-    const hashedPassword = bcrypt.hashSync(password, SALT_ROUNDS);
-
-    const now = new Date();
-    const userId = await Users.insertAsync({
+    const userId = Accounts.createUser({ // create user
+      email,
       username,
-      emails: [{ address: email, verified: false }],
-      password: hashedPassword,
-      createdAt: now,
-      updatedAt: now,
-      role,
+      password,
+      profile: {
+        role,
+      },
     });
 
-    // Return a safe object (still include the plain email for the client)
-    return { _id: userId, username, email };
+    return userId;
   },
 
-  async 'users.login'({ login, password }) {
-    check(login, String);
+  // user registration method, first user becomes owner (can be modified in the future to facilitate org id)
+  "users.register": async function ({ username, email, password }) {
+    check(username, String);
+    check(email, String);
     check(password, String);
 
-    // Look up by emails.address or username
-    const user = await Users.findOneAsync({
-      $or: [
-        { 'emails.address': login.toLowerCase() },
-        { username: login },
-      ],
+    // determine role based on existing users
+    const userCount = await Meteor.users.find().countAsync();
+    const role = userCount === 0
+      ? ROLES.OWNER
+      : ROLES.STANDARD;
+
+    const userId = Accounts.createUser({ // create user 
+      username,
+      email,
+      password,
+      profile: {
+        role,
+      },
     });
 
-    if (!user) {
-      throw new Meteor.Error('user-not-found', 'No account found.');
-    }
-
-    const isMatch = bcrypt.compareSync(password, user.password);
-    if (!isMatch) {
-      throw new Meteor.Error('wrong-password', 'Incorrect password.');
-    }
-
-    // Log the user in (creates a persistent session)
-    this.setUserId(user._id);
-
-    // Return safe data – grab the first email address if present
-    const email = user.emails?.[0]?.address || '';
-    return { _id: user._id, username: user.username, email };
-  },
-
-    // checks whether a role can perform a specific action
-  async 'users.hasAccess'({ role, method }) {
-    check(role, String);
-    check(method, String);
-
-    const permissions = {
-      owner: [
-        'view-registration-page',
-      ],
-
-      admin: [
-      ],
-
-      user: [
-      ],
-    };
-
-    return permissions[role]?.includes(method) ?? false;
-  },
-
-  // returns the role of the user
-  async 'users.getRole'({ userId }) {
-    check(userId, String);
-
-    const user = await Users.findOneAsync(userId);
-
-    if (!user) {
-      throw new Meteor.Error('user-not-found', 'User does not exist.');
-    }
-
-    return user.role;
+    return userId;
   }
 });

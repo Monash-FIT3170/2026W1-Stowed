@@ -15,7 +15,6 @@ const TOOL_LINKS = [
 
 const ACCOUNT_LINKS = [
   { to: '/register', label: 'Create Account' },
-  { to: '/register-owner', label: 'Create Owner Account' },
   { to: '/login', label: 'Login'},
 ]
 

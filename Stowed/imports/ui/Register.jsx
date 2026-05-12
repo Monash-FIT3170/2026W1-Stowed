@@ -1,18 +1,30 @@
-import React, { useState } from 'react';
 import { Meteor } from 'meteor/meteor';
 import './Register.css';
+import { ROLES } from 'imports/api/roles';
+import React, { useState } from 'react';
+import { useTracker } from 'meteor/react-meteor-data';
 
+/**
+ * Registration Page
+ */
 const Register = () => {
+
+  const currentUser = useTracker(() => Meteor.user());
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState(ROLES.STANDARD);
+
+  const isLoggedIn = !!currentUser;
+  const isPrivileged = currentUser?.profile?.role >= ROLES.ADMIN;
 
   const { username, email, password, confirmPassword } = formData;
 
@@ -27,10 +39,12 @@ const Register = () => {
       setError('Passwords do not match');
       return;
     }
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
+
     if (!/^.+@.+\..+$/.test(email)) {
       setError('Invalid email format');
       return;
@@ -41,11 +55,47 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const result = await Meteor.callAsync('users.register', { username, email, password, role });
-      setSuccess(`Account created for ${result.username}`);
-      setFormData({ username: '', email: '', password: '', confirmPassword: '' });
+
+      // self registration
+      if (!isLoggedIn) {
+
+        await Meteor.callAsync('users.register', {
+          username,
+          email,
+          password,
+        });
+
+        setSuccess(`Account created for ${username}`);
+      }
+
+      // admin/owner creates user
+      else if (isPrivileged) {
+
+        await Meteor.callAsync('users.create', {
+          username,
+          email,
+          password,
+          role,
+        });
+
+        setSuccess(`User created: ${username}`);
+      }
+
+      // no allowed
+      else {
+        setError('You are not allowed to create users.');
+        return;
+      }
+
+      setFormData({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+
     } catch (err) {
-      setError(err.reason || 'Registration failed');
+      setError(err.reason || err.message || 'Operation failed');
     } finally {
       setLoading(false);
     }
@@ -62,12 +112,12 @@ const Register = () => {
         <form onSubmit={onSubmit}>
           <div>
             <label>Username</label>
-            <input type="text" name="username" value={username} onChange={onChange} required />
+            <input name="username" value={username} onChange={onChange} required />
           </div>
 
           <div>
             <label>Email</label>
-            <input type="email" name="email" value={email} onChange={onChange} required />
+            <input name="email" value={email} onChange={onChange} required />
           </div>
 
           <div>
@@ -79,19 +129,23 @@ const Register = () => {
             <label>Confirm Password</label>
             <input type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} required />
           </div>
-          <div>
-            <p>User Type</p>
-            <button
-              type="button" onClick={() => setRole('admin')} className={role === 'admin' ? 'active' : ''}
-            >
-              Admin
-            </button>
-            <button
-              type="button" onClick={() => setRole('user')} className={role === 'user' ? 'active' : ''}
-            >
-              Standard
-            </button>
-          </div>
+
+          {isLoggedIn && isPrivileged && (
+            <div>
+              <p>User Type</p>
+
+              <button type="button" onClick={() => setRole(ROLES.ADMIN)}
+                className={role === ROLES.ADMIN ? 'active' : ''}>
+                Admin
+              </button>
+
+              <button type="button" onClick={() => setRole(ROLES.STANDARD)}
+                className={role === ROLES.STANDARD ? 'active' : ''}>
+                Standard
+              </button>
+            </div>
+          )}
+
           <button type="submit" disabled={loading}>
             {loading ? 'Creating...' : 'Register'}
           </button>
