@@ -200,7 +200,18 @@ Meteor.methods({
       updatedAt: now,
     });
   },
-
+  
+  /**
+   * Adds an image path/URL to a Product document.
+   *
+   * @param {Object} params
+   * @param {string} params.productId  - ID of the Product to update.
+   * @param {string} params.imagePath  - Path or URL of the uploaded image.
+   *
+   * @returns {void}
+   *
+   * @throws {Meteor.Error} not-authorised - If the user is not logged in outside development.
+   */
   async 'products.uploadImage'({productId , imagePath}) {
     check(productId, String);
     check(imagePath, String);
