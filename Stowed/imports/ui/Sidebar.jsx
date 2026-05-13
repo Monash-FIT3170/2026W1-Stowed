@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from "/imports/api/useAuth";
-
+import { logoutUser } from "/imports/api/userMethods";
 
 const WORKSPACE_LINKS = [
   { to: '/floor-map', label: 'Floor Map' },
@@ -55,12 +55,15 @@ export function Sidebar() {
             ))}
         </section>
         <section>
-          <h3 className= "text-sm font-semibold uppercase tracking-wider text-gray-500">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             Account
           </h3>
-          {ACCOUNT_LINKS.map(link => (
-            <SidebarLink key={link.to} {...link} />
-          ))}
+          {ACCOUNT_LINKS.map(link => ( <SidebarLink key={link.to} {...link} /> ))}
+          {isLoggedIn && (
+            <button onClick={logoutUser} className="text-left text-base text-black" >
+              Logout
+            </button>
+          )}
         </section>
       </nav>
     </aside>

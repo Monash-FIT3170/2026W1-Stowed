@@ -40,6 +40,11 @@ export async function requirePermission( userId, permission ) {
   }
 }
 
+// logout helper function
+export function logoutUser() {
+  Meteor.logout();
+}
+
 /**
  * User Methods
  */
