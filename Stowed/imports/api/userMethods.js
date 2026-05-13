@@ -21,7 +21,6 @@ const PERMISSIONS = {
   "route:/qr-codes": ROLES.ADMIN,
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
-  "route:/register": ROLES.ADMIN,
 };
 
 // returns the role of the user

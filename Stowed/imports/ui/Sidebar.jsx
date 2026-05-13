@@ -69,12 +69,9 @@ export function Sidebar() {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             Account
           </h3>
-          {ACCOUNT_LINKS .filter(link => {
-              // always show login
-              if (link.to === "/login") return true;
-              // check permissions for protected account routes
-              return hasClientPermission(role, `route:${link.to}`); })
-            .map(link => ( <SidebarLink key={link.to} {...link} />))}
+          {ACCOUNT_LINKS.map(link => (
+  <SidebarLink key={link.to} {...link} />
+))}
           {/* logout button */}
           {isLoggedIn && (
             <button onClick={logoutUser} className="text-left text-base text-black" >

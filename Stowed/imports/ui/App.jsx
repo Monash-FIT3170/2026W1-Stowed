@@ -32,13 +32,12 @@ export function App() {
           <Routes>
             {/* public routes */}
             <Route path="/login"               element={<Login />} />
+            <Route path="/register"            element={<Register />} />
             {/* protected routes:
                 - unauthenticated users are redirected to login
                 - authenticated users must also pass route permission checks
                 - unauthorised users are redirected back to login page
             */}
-            <Route path="/register" element={ isLoggedIn ? hasClientPermission(role, "route:/register") ? <Register />
-            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
             <Route path="/"                    element={isLoggedIn ? <InventoryPage /> : <Navigate to="/login" replace />} />
             <Route path="/inventory/:itemId"   element={isLoggedIn ? <ItemDetailPage /> : <Navigate to="/login" replace />} />
             <Route path="/floor-map" element={ isLoggedIn ? hasClientPermission(role, "route:/floor-map") ? <FloorMapPage />
