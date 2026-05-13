@@ -1,19 +1,26 @@
 import React from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { hasClientPermission } from "/imports/api/userMethods";
 
 import { Sidebar } from './Sidebar';
 import { InventoryPage }  from './pages/InventoryPage';
-import { ItemDetailPage } from './pages/ItemDetailPage';
-import { FloorMapPage }   from './pages/FloorMapPage';
+import { ProductDetailPage } from './pages/ProductDetailPage';
+import { EditProductPage } from './pages/EditProductPage';
+import { CreateProductPage } from './pages/CreateProductPage';
 import { ListsPage }      from './pages/ListsPage';
 import { StocktakePage }  from './pages/StocktakePage';
 import { QRCodesPage }    from './pages/QRCodesPage';
 import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
+import { FloorMapPage }  from './pages/FloorMapPage';
 import { Register }       from './Register';
 import { Login }          from './Login';
+
+const LocationsPage = lazy(() =>
+  import('./pages/LocationsPage').then((module) => ({ default: module.LocationsPage })),
+);
 
 export function App() {
   // automatically keeps track of the currently logged in user and updates whenever the login status changes

@@ -53,6 +53,7 @@ mongo-id@1.0.9
 npm-mongo@6.16.1
 ordered-dict@1.2.0
 promise@1.0.0
+raix:eventemitter@1.0.0
 random@1.2.2
 rate-limit@1.1.2
 react-fast-refresh@0.3.0
