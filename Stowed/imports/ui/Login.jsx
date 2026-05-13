@@ -13,10 +13,12 @@ export const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // handles form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    // basic frontend validation
     if (!login.trim() || !password) {
       setError('Please fill in all fields.');
       return;
@@ -24,6 +26,7 @@ export const Login = () => {
 
     setLoading(true);
 
+    // log in logic
     try {
       const isEmail = login.includes('@');
       await new Promise((resolve, reject) => {

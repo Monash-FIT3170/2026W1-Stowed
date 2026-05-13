@@ -8,9 +8,10 @@ import { useTracker } from 'meteor/react-meteor-data';
  * Registration Page
  */
 const Register = () => {
-
+  // gets currently logged in user reactively
   const currentUser = useTracker(() => Meteor.user());
 
+  // stores all form input values
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -32,6 +33,7 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // handles form submission
   const onSubmit = async (e) => {
     e.preventDefault();
 

@@ -54,11 +54,13 @@ export function Sidebar() {
               <SidebarLink key={link.to} {...link} />
             ))}
         </section>
+        {/* Account section */}
         <section>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             Account
           </h3>
           {ACCOUNT_LINKS.map(link => ( <SidebarLink key={link.to} {...link} /> ))}
+          {/* logout button */}
           {isLoggedIn && (
             <button onClick={logoutUser} className="text-left text-base text-black" >
               Logout

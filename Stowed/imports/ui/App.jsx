@@ -15,7 +15,7 @@ import { Register }       from './Register';
 import { Login }          from './Login';
 
 export function App() {
-
+  // automatically keeps track of the currently logged in user and updates whenever the login status changes
   const user = useTracker(() => Meteor.user());
   const isLoggedIn = !!user;
 
@@ -23,7 +23,6 @@ export function App() {
     <BrowserRouter>
       <div className="flex h-screen overflow-hidden bg-white">
         <Sidebar />
-
         <main className="flex-1 overflow-y-auto">
           <Routes>
             <Route path="/login"               element={<Login />} />
