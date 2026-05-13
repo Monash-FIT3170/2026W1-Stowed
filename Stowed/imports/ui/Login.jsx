@@ -37,12 +37,6 @@ export const Login = () => {
         );
       });
 
-      const user = Meteor.user();
-
-      if (!user) {
-        throw new Error('Login succeeded but user not found');
-      }
-
       navigate('/');
 
     } catch (err) {
@@ -52,7 +46,6 @@ export const Login = () => {
     }
   };
 
-  // 
   return (
     <div className="flex items-center justify-center min-h-full p-4">
       <div className="w-full max-w-md">

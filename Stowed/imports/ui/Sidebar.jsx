@@ -1,4 +1,6 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from "/imports/api/useAuth";
+
 
 const WORKSPACE_LINKS = [
   { to: '/floor-map', label: 'Floor Map' },
@@ -33,11 +35,15 @@ function SidebarLink({ to, label, end }) {
 }
 
 export function Sidebar() {
+  const { username, isLoggedIn, role } = useAuth();
   return (
     <aside className="w-64 border-r border-black bg-white p-4">
       {/* Logo */}
       <div className="mb-8 text-2xl font-bold">Stowed</div>
-
+      {/* Username */}
+      <div className="mb-6 text-sm text-gray-600">
+        {isLoggedIn ? `Logged in as ${username}` : "Not logged in"}
+      </div>
       <nav className="space-y-6">
         {/* Workspace section */}
         <section>
