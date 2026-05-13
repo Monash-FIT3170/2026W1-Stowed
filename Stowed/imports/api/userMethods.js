@@ -36,7 +36,7 @@ export async function hasPermission( userId, permission ) {
   if (!role) return false;
   // check permissions map to get the lowest role level with permission
   const requiredRole = PERMISSIONS[permission];
-  if (!requiredRole) return false;
+  if (requiredRole == null) return false;
   return role >= requiredRole;
 }
 
@@ -110,6 +110,7 @@ Meteor.methods({
 
     // determine role based on existing users
     const userCount = await Meteor.users.find().countAsync();
+    // first registered account becomes the system owner
     const role = userCount === 0
       ? ROLES.OWNER
       : ROLES.STANDARD;

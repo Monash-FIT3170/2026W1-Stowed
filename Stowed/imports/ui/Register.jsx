@@ -107,13 +107,12 @@ const Register = () => {
 
         {error && <div className="status error">⚠ {error}</div>}
         {success && <div className="status success">✓ {success}</div>}
-
+        {/* back button for registration page */}
         {!isLoggedIn && (
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="absolute top-4 left-4 text-sm hover:underline"
-          >
+            className="absolute top-4 left-4 text-sm hover:underline">
             Back to login
           </button>
         )}

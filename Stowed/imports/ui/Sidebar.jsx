@@ -78,14 +78,15 @@ export function Sidebar() {
         {/* Account links */}
         {ACCOUNT_LINKS
           .filter(link => {
-            // before login show login page and create account page
-            if (!isLoggedIn) return true;
-            // after login hide login page
-            if (link.to === "/login") { return false; }
-            // after login only admins+ can see create account
-            if (link.to === "/register") { return hasClientPermission(role, "create-users"); }
-            return true; })
-          .map(link => ( <SidebarLink key={link.to} {...link} /> ))}
+            if (link.to === "/register") {
+              return hasClientPermission(role, "create-users");
+            }
+
+            return true;
+          })
+          .map(link => (
+            <SidebarLink key={link.to} {...link} />
+        ))}
           {/* logout button */}
           {isLoggedIn && (
             <button onClick={handleLogout} className="text-left text-base text-black" >

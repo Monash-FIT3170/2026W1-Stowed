@@ -37,7 +37,7 @@ export function App() {
   return (
     <BrowserRouter>
       <div className="flex h-screen overflow-hidden bg-white">
-        {/* sidebar handles visibility of navigation links based on role permissions */}
+        {/* only show navigation after authentication */}
         {isLoggedIn && <Sidebar />}
         <main className="flex-1 overflow-y-auto">
           <Routes>
@@ -48,7 +48,8 @@ export function App() {
                 - authenticated users must also pass route permission checks
                 - unauthorised users are redirected back to login page
             */}
-            <Route path="/login" element={ isLoggedIn ? <Navigate to="/" replace /> : <Login /> } />
+            {/* prevent logged-in users from revisiting the login page */}
+            <Route path="/login"               element={ isLoggedIn ? <Navigate to="/" replace /> : <Login /> } />
             <Route path="/"                    element={isLoggedIn ? <InventoryPage /> : <Navigate to="/login" replace />} />
             <Route path="/inventory/:itemId"   element={isLoggedIn ? <ItemDetailPage /> : <Navigate to="/login" replace />} />
             <Route path="/floor-map" element={ isLoggedIn ? hasClientPermission(role, "route:/floor-map") ? <FloorMapPage />
