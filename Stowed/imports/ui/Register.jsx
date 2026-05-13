@@ -3,6 +3,7 @@ import './Register.css';
 import { ROLES } from 'imports/api/roles';
 import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Registration Page
@@ -10,6 +11,8 @@ import { useTracker } from 'meteor/react-meteor-data';
 const Register = () => {
   // gets currently logged in user reactively
   const currentUser = useTracker(() => Meteor.user());
+
+  const navigate = useNavigate();
 
   // stores all form input values
   const [formData, setFormData] = useState({
@@ -104,6 +107,16 @@ const Register = () => {
 
         {error && <div className="status error">⚠ {error}</div>}
         {success && <div className="status success">✓ {success}</div>}
+
+        {!isLoggedIn && (
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="absolute top-4 left-4 text-sm hover:underline"
+          >
+            Back to login
+          </button>
+        )}
 
         <form onSubmit={onSubmit}>
           <div>
