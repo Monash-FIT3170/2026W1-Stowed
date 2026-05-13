@@ -14,6 +14,7 @@ const PERMISSIONS = {
 
   // routes
   "route:/": ROLES.STANDARD,
+  "route:/locations": ROLES.STANDARD,
   "route:/floor-map": ROLES.STANDARD,
   "route:/stocktake": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,

@@ -40,6 +40,7 @@ export function App() {
 
   // gets the current user's role for route authorisation
   const role = user?.profile?.role ?? null;
+  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/");
 
   return (
     <BrowserRouter>
@@ -58,8 +59,14 @@ export function App() {
             {/* prevent logged-in users from revisiting the login page */}
             <Route path="/login"               element={ isLoggedIn ? <Navigate to="/" replace /> : <Login /> } />
             <Route path="/"                    element={isLoggedIn ? <InventoryPage /> : <Navigate to="/login" replace />} />
-            <Route path="/inventory/:itemId"   element={isLoggedIn ? <ItemDetailPage /> : <Navigate to="/login" replace />} />
+            <Route path="/inventory/new"           element={ canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace /> } />
+            <Route path="/inventory/:productId/edit" element={ canAccessInventory ? <EditProductPage /> : <Navigate to="/" replace /> } />
+            <Route path="/inventory/:productId"      element={ canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace /> } />
             <Route path="/floor-map" element={ isLoggedIn ? hasClientPermission(role, "route:/floor-map") ? <FloorMapPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/floor-map/:floorMapId" element={ isLoggedIn ? hasClientPermission(role, "route:/floor-map") ? <FloorMapPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/locations"           element={ isLoggedIn ? hasClientPermission(role, "route:/locations") ? <LocationsPage />
             : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
             <Route path="/lists" element={ isLoggedIn ? hasClientPermission(role, "route:/lists") ? <ListsPage />
             : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
