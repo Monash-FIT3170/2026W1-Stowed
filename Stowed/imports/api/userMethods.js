@@ -4,25 +4,63 @@ import { ROLES } from "./roles";
 import { Accounts } from 'meteor/accounts-base';
 
 /**
+ * Helper methods
+ */
+
+// permissions map. outlines the lowest role level with permission to perform said tasks
+const PERMISSIONS = {
+  "create-users": ROLES.ADMIN,
+};
+
+// returns the role of the user
+export async function getRole(userId) {
+  if (!userId) return null;
+  const user = await Meteor.users.findOneAsync(userId);
+  if (!user || !user.profile) { return null; }
+  return user.profile.role;}
+
+// check permission
+export async function hasPermission( userId, permission ) {
+  const role = await getRole(userId);
+  if (!role) return false;
+  // check permissions map to get the lowest role level with permission
+  const requiredRole = PERMISSIONS[permission];
+  if (!requiredRole) return false;
+  return role >= requiredRole;
+}
+
+// throw if unauthorized
+export async function requirePermission( userId, permission ) {
+  const allowed = await hasPermission( userId, permission );
+  if (!allowed) {
+    throw new Meteor.Error(
+      "forbidden",
+      "Insufficient permissions"
+    );
+  }
+}
+
+/**
  * User Methods
  */
 Meteor.methods({
   // user creation method, only to be accessed by admins and owners
-  "users.create"({ username, email, password, role }) {
+  "users.create": async function ({ username, email, password, role }) {
     check(username, String);
     check(email, String);
     check(password, String);
     check(role, Number);
 
-    // ensure user is logged in
-    if (!this.userId) {
-      throw new Meteor.Error("not-authorized", "You must be logged in");
+    // ensure role is valid
+    if (role !== ROLES.STANDARD && role !== ROLES.ADMIN) {
+      throw new Meteor.Error(
+        "invalid-role",
+        "Role not allowed"
+      );
     }
-    const currentUser = Meteor.users.findOneAsync(this.userId);
-    // ensure user is admin or higher
-    if (!currentUser || currentUser.profile?.role < ROLES.ADMIN) {
-      throw new Meteor.Error("forbidden", "Only admins can create users");
-    }
+
+    // ensure user has permission to perform task
+    await requirePermission( this.userId, "create-users" );
 
     const userId = Accounts.createUser({ // create user
       email,
@@ -36,7 +74,10 @@ Meteor.methods({
     return userId;
   },
 
-  // user registration method, first user becomes owner (can be modified in the future to facilitate org id)
+  // user registration method, first user becomes owner
+  // can be modified to facilitate org id: e.g. backend automatically creates and assigns an organisation ID for 
+  // each registration (the user who registered becomes the owner), except when the user provides an existing known 
+  // organisation ID, in which case they become a standard user of that organisation
   "users.register": async function ({ username, email, password }) {
     check(username, String);
     check(email, String);
