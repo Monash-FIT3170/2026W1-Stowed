@@ -1,18 +1,34 @@
-import React, { useState } from 'react';
 import { Meteor } from 'meteor/meteor';
 import './Register.css';
+import { ROLES } from 'imports/api/roles';
+import React, { useState } from 'react';
+import { useTracker } from 'meteor/react-meteor-data';
+import { useNavigate } from 'react-router-dom';
 
+/**
+ * Registration Page
+ */
 const Register = () => {
+  // gets currently logged in user reactively
+  const currentUser = useTracker(() => Meteor.user());
+
+  const navigate = useNavigate();
+
+  // stores all form input values
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState(ROLES.STANDARD);
+
+  const isLoggedIn = !!currentUser;
+  const isPrivileged = currentUser?.profile?.role >= ROLES.ADMIN;
 
   const { username, email, password, confirmPassword } = formData;
 
@@ -20,6 +36,7 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // handles form submission
   const onSubmit = async (e) => {
     e.preventDefault();
 
@@ -27,10 +44,12 @@ const Register = () => {
       setError('Passwords do not match');
       return;
     }
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
+
     if (!/^.+@.+\..+$/.test(email)) {
       setError('Invalid email format');
       return;
@@ -41,11 +60,41 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const result = await Meteor.callAsync('users.register', { username, email, password, isAdmin });
-      setSuccess(`Account created for ${result.username}`);
-      setFormData({ username: '', email: '', password: '', confirmPassword: '' });
+
+
+      // admin/owner creates user
+      if (isPrivileged) {
+
+        await Meteor.callAsync('users.create', {
+          username,
+          email,
+          password,
+          role,
+        });
+
+        setSuccess(`User created: ${username}`);
+      }
+      // self registration
+      else {
+
+        await Meteor.callAsync('users.register', {
+          username,
+          email,
+          password,
+        });
+
+        setSuccess(`Account created for ${username}`);
+      }
+
+      setFormData({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+
     } catch (err) {
-      setError(err.reason || 'Registration failed');
+      setError(err.reason || err.message || 'Operation failed');
     } finally {
       setLoading(false);
     }
@@ -58,16 +107,25 @@ const Register = () => {
 
         {error && <div className="status error">⚠ {error}</div>}
         {success && <div className="status success">✓ {success}</div>}
+        {/* back button for registration page */}
+        {!isLoggedIn && (
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="absolute top-4 left-4 text-sm hover:underline">
+            Back to login
+          </button>
+        )}
 
         <form onSubmit={onSubmit}>
           <div>
             <label>Username</label>
-            <input type="text" name="username" value={username} onChange={onChange} required />
+            <input name="username" value={username} onChange={onChange} required />
           </div>
 
           <div>
             <label>Email</label>
-            <input type="email" name="email" value={email} onChange={onChange} required />
+            <input name="email" value={email} onChange={onChange} required />
           </div>
 
           <div>
@@ -80,15 +138,21 @@ const Register = () => {
             <input type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} required />
           </div>
 
-          <div>
-            <p>User Type</p>
-            <button type="button" onClick={() => setIsAdmin(true)} className={isAdmin ? 'active' : ''}>
-              Admin
-            </button>
-            <button type="button" onClick={() => setIsAdmin(false)} className={!isAdmin ? 'active' : ''}>
-              Standard
-            </button>
-          </div>
+          {isLoggedIn && isPrivileged && (
+            <div>
+              <p>User Type</p>
+
+              <button type="button" onClick={() => setRole(ROLES.ADMIN)}
+                className={role === ROLES.ADMIN ? 'active' : ''}>
+                Admin
+              </button>
+
+              <button type="button" onClick={() => setRole(ROLES.STANDARD)}
+                className={role === ROLES.STANDARD ? 'active' : ''}>
+                Standard
+              </button>
+            </div>
+          )}
 
           <button type="submit" disabled={loading}>
             {loading ? 'Creating...' : 'Register'}

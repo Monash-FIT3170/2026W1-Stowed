@@ -1,4 +1,8 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from "/imports/api/useAuth";
+import { logoutUser } from "/imports/api/userMethods";
+import { hasClientPermission } from "/imports/api/userMethods";
+import { useNavigate } from 'react-router-dom';
 
 const WORKSPACE_LINKS = [
   { to: '/locations', label: 'Locations' },
@@ -33,28 +37,63 @@ function SidebarLink({ to, label, end }) {
 }
 
 export function Sidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/login');
+  };
+  const { username, isLoggedIn, role } = useAuth();
   return (
     <aside className="w-64 border-r border-black bg-white p-4">
       {/* Logo */}
       <div className="mb-8 text-2xl font-bold">Stowed</div>
-
+      {/* Username */}
+      <div className="mb-6 text-sm text-gray-600">
+        {isLoggedIn ? `Logged in as ${username}` : "Not logged in"}
+      </div>
       <nav className="space-y-6">
         {/* Workspace section */}
         <section>
-            {WORKSPACE_LINKS.map(link => (
-              <SidebarLink key={link.to} {...link} end={link.to === '/'} />
+          {/* Workspace + tool links
+            - checks the user's role before showing each link
+            - users only see pages they have permission to access
+        */}
+            {WORKSPACE_LINKS
+              .filter(link =>
+                hasClientPermission(role, `route:${link.to}`))
+              .map(link => (
+                <SidebarLink key={link.to} {...link} end={link.to === '/'} />
             ))}
-            {TOOL_LINKS.map(link => (
-              <SidebarLink key={link.to} {...link} />
+            {TOOL_LINKS
+              .filter(link =>
+                hasClientPermission(role, `route:${link.to}`))
+              .map(link => ( <SidebarLink key={link.to} {...link} />
             ))}
         </section>
+        {/* Account section */}
         <section>
-          <h3 className= "text-sm font-semibold uppercase tracking-wider text-gray-500">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             Account
           </h3>
-          {ACCOUNT_LINKS.map(link => (
+        {/* Account links */}
+        {ACCOUNT_LINKS
+          .filter(link => {
+            if (link.to === "/register") {
+              return hasClientPermission(role, "create-users");
+            }
+
+            return true;
+          })
+          .map(link => (
             <SidebarLink key={link.to} {...link} />
-          ))}
+        ))}
+          {/* logout button */}
+          {isLoggedIn && (
+            <button onClick={handleLogout} className="text-left text-base text-black" >
+              Logout
+            </button>
+          )}
         </section>
       </nav>
     </aside>

@@ -1,7 +1,6 @@
-import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
 
-export const Users = new Mongo.Collection('users');
+export const Users = Meteor.users;
 
 export const Organisations = new Mongo.Collection('organisations');
 
@@ -30,4 +29,3 @@ if (Meteor.isServer) {
     Users.rawCollection().createIndex({ username: 1 }, { unique: true });
   });
 }
-
