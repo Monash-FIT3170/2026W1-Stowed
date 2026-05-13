@@ -52,7 +52,7 @@ export function App() {
             : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
             <Route path="/alerts" element={ isLoggedIn ? hasClientPermission(role, "route:/alerts") ? <AlertsPage />
             : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
-                        <Route path="*"                    element={<Navigate to="/" replace />} />
+            <Route path="*"                    element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
