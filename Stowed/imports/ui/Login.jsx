@@ -87,14 +87,14 @@ export const Login = () => {
               className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          // login button
+          {/* login button */}
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50">
             {loading ? 'Logging in...' : 'Log In'}
           </button>
-          // link to registration page
+          {/* link to registration page */}
           <div className="text-center mt-4">
             <p className="text-sm text-gray-600"> Don’t have an account? </p>
             <Link

@@ -38,7 +38,7 @@ export function App() {
     <BrowserRouter>
       <div className="flex h-screen overflow-hidden bg-white">
         {/* sidebar handles visibility of navigation links based on role permissions */}
-        <Sidebar />
+        {isLoggedIn && <Sidebar />}
         <main className="flex-1 overflow-y-auto">
           <Routes>
             {/* public routes */}
