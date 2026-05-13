@@ -42,13 +42,13 @@ export function App() {
         <main className="flex-1 overflow-y-auto">
           <Routes>
             {/* public routes */}
-            <Route path="/login"               element={<Login />} />
             <Route path="/register"            element={<Register />} />
             {/* protected routes:
                 - unauthenticated users are redirected to login
                 - authenticated users must also pass route permission checks
                 - unauthorised users are redirected back to login page
             */}
+            <Route path="/login" element={ isLoggedIn ? <Navigate to="/" replace /> : <Login /> } />
             <Route path="/"                    element={isLoggedIn ? <InventoryPage /> : <Navigate to="/login" replace />} />
             <Route path="/inventory/:itemId"   element={isLoggedIn ? <ItemDetailPage /> : <Navigate to="/login" replace />} />
             <Route path="/floor-map" element={ isLoggedIn ? hasClientPermission(role, "route:/floor-map") ? <FloorMapPage />

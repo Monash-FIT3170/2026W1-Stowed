@@ -58,20 +58,9 @@ const Register = () => {
 
     try {
 
-      // self registration
-      if (!isLoggedIn) {
-
-        await Meteor.callAsync('users.register', {
-          username,
-          email,
-          password,
-        });
-
-        setSuccess(`Account created for ${username}`);
-      }
 
       // admin/owner creates user
-      else if (isPrivileged) {
+      if (isPrivileged) {
 
         await Meteor.callAsync('users.create', {
           username,
@@ -82,11 +71,16 @@ const Register = () => {
 
         setSuccess(`User created: ${username}`);
       }
-
-      // no allowed
+      // self registration
       else {
-        setError('You are not allowed to create users.');
-        return;
+
+        await Meteor.callAsync('users.register', {
+          username,
+          email,
+          password,
+        });
+
+        setSuccess(`Account created for ${username}`);
       }
 
       setFormData({
