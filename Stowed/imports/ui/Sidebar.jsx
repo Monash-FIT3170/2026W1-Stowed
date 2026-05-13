@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from "/imports/api/useAuth";
 import { logoutUser } from "/imports/api/userMethods";
 import { hasClientPermission } from "/imports/api/userMethods";
+import { useNavigate } from 'react-router-dom';
 
 const WORKSPACE_LINKS = [
   { to: '/floor-map', label: 'Floor Map' },
@@ -35,6 +36,12 @@ function SidebarLink({ to, label, end }) {
 }
 
 export function Sidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/login');
+  };
   const { username, isLoggedIn, role } = useAuth();
   return (
     <aside className="w-64 border-r border-black bg-white p-4">
@@ -81,7 +88,7 @@ export function Sidebar() {
           .map(link => ( <SidebarLink key={link.to} {...link} /> ))}
           {/* logout button */}
           {isLoggedIn && (
-            <button onClick={logoutUser} className="text-left text-base text-black" >
+            <button onClick={handleLogout} className="text-left text-base text-black" >
               Logout
             </button>
           )}
