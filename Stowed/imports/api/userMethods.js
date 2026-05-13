@@ -9,7 +9,19 @@ import { Accounts } from 'meteor/accounts-base';
 
 // permissions map. outlines the lowest role level with permission to perform said tasks
 const PERMISSIONS = {
+  // methods
   "create-users": ROLES.ADMIN,
+
+  // routes
+  "route:/": ROLES.STANDARD,
+  "route:/floor-map": ROLES.STANDARD,
+  "route:/stocktake": ROLES.STANDARD,
+  "route:/lists": ROLES.STANDARD,
+
+  "route:/qr-codes": ROLES.ADMIN,
+  "route:/forecast": ROLES.ADMIN,
+  "route:/alerts": ROLES.ADMIN,
+  "route:/register": ROLES.ADMIN,
 };
 
 // returns the role of the user
@@ -26,6 +38,15 @@ export async function hasPermission( userId, permission ) {
   // check permissions map to get the lowest role level with permission
   const requiredRole = PERMISSIONS[permission];
   if (!requiredRole) return false;
+  return role >= requiredRole;
+}
+
+/// checks if the user's role is allowed to access something
+export function hasClientPermission(role, permission) {
+  if (role == null) return false;
+  // check permissions map to get the lowest role level with permission
+  const requiredRole = PERMISSIONS[permission];
+  if (requiredRole == null) return false;
   return role >= requiredRole;
 }
 

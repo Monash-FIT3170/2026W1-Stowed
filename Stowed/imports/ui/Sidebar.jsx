@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from "/imports/api/useAuth";
 import { logoutUser } from "/imports/api/userMethods";
+import { hasClientPermission } from "/imports/api/userMethods";
 
 const WORKSPACE_LINKS = [
   { to: '/floor-map', label: 'Floor Map' },
@@ -47,11 +48,20 @@ export function Sidebar() {
       <nav className="space-y-6">
         {/* Workspace section */}
         <section>
-            {WORKSPACE_LINKS.map(link => (
-              <SidebarLink key={link.to} {...link} end={link.to === '/'} />
+          {/* Workspace + tool links
+            - checks the user's role before showing each link
+            - users only see pages they have permission to access
+        */}
+            {WORKSPACE_LINKS
+              .filter(link =>
+                hasClientPermission(role, `route:${link.to}`))
+              .map(link => (
+                <SidebarLink key={link.to} {...link} end={link.to === '/'} />
             ))}
-            {TOOL_LINKS.map(link => (
-              <SidebarLink key={link.to} {...link} />
+            {TOOL_LINKS
+              .filter(link =>
+                hasClientPermission(role, `route:${link.to}`))
+              .map(link => ( <SidebarLink key={link.to} {...link} />
             ))}
         </section>
         {/* Account section */}
@@ -59,7 +69,12 @@ export function Sidebar() {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             Account
           </h3>
-          {ACCOUNT_LINKS.map(link => ( <SidebarLink key={link.to} {...link} /> ))}
+          {ACCOUNT_LINKS .filter(link => {
+              // always show login
+              if (link.to === "/login") return true;
+              // check permissions for protected account routes
+              return hasClientPermission(role, `route:${link.to}`); })
+            .map(link => ( <SidebarLink key={link.to} {...link} />))}
           {/* logout button */}
           {isLoggedIn && (
             <button onClick={logoutUser} className="text-left text-base text-black" >

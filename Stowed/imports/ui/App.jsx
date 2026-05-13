@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
+import { hasClientPermission } from "/imports/api/userMethods";
 
 import { Sidebar } from './Sidebar';
 import { InventoryPage }  from './pages/InventoryPage';
@@ -19,23 +20,40 @@ export function App() {
   const user = useTracker(() => Meteor.user());
   const isLoggedIn = !!user;
 
+  // gets the current user's role for route authorisation
+  const role = user?.profile?.role ?? null;
+
   return (
     <BrowserRouter>
       <div className="flex h-screen overflow-hidden bg-white">
+        {/* sidebar handles visibility of navigation links based on role permissions */}
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <Routes>
+            {/* public routes */}
             <Route path="/login"               element={<Login />} />
-            <Route path="/register"            element={<Register />} />
+            {/* protected routes:
+                - unauthenticated users are redirected to login
+                - authenticated users must also pass route permission checks
+                - unauthorised users are redirected back to login page
+            */}
+            <Route path="/register" element={ isLoggedIn ? hasClientPermission(role, "route:/register") ? <Register />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
             <Route path="/"                    element={isLoggedIn ? <InventoryPage /> : <Navigate to="/login" replace />} />
             <Route path="/inventory/:itemId"   element={isLoggedIn ? <ItemDetailPage /> : <Navigate to="/login" replace />} />
-            <Route path="/floor-map"           element={isLoggedIn ? <FloorMapPage /> : <Navigate to="/login" replace />} />
-            <Route path="/lists"               element={isLoggedIn ? <ListsPage /> : <Navigate to="/login" replace />} />
-            <Route path="/stocktake"           element={isLoggedIn ? <StocktakePage /> : <Navigate to="/login" replace />} />
-            <Route path="/qr-codes"            element={isLoggedIn ? <QRCodesPage /> : <Navigate to="/login" replace />} />
-            <Route path="/forecast"            element={isLoggedIn ? <ForecastPage /> : <Navigate to="/login" replace />} />
-            <Route path="/alerts"              element={isLoggedIn ? <AlertsPage /> : <Navigate to="/login" replace />} />
-            <Route path="*"                    element={<Navigate to="/" replace />} />
+            <Route path="/floor-map" element={ isLoggedIn ? hasClientPermission(role, "route:/floor-map") ? <FloorMapPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/lists" element={ isLoggedIn ? hasClientPermission(role, "route:/lists") ? <ListsPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/stocktake" element={ isLoggedIn ? hasClientPermission(role, "route:/stocktake") ? <StocktakePage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/qr-codes" element={ isLoggedIn ? hasClientPermission(role, "route:/qr-codes") ? <QRCodesPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/forecast" element={ isLoggedIn ? hasClientPermission(role, "route:/forecast") ? <ForecastPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/alerts" element={ isLoggedIn ? hasClientPermission(role, "route:/alerts") ? <AlertsPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+                        <Route path="*"                    element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
