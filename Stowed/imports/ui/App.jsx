@@ -17,7 +17,18 @@ import { Login }          from './Login';
 
 export function App() {
   // automatically keeps track of the currently logged in user and updates whenever the login status changes
-  const user = useTracker(() => Meteor.user());
+  const { user, loggingIn } = useTracker(() => {
+    return {
+      user: Meteor.user(),
+      loggingIn: Meteor.loggingIn(),
+    };
+  });
+
+  // wait while Meteor restores the user's session after refresh
+  if (loggingIn) {
+    return <div>Loading...</div>;
+  }
+
   const isLoggedIn = !!user;
 
   // gets the current user's role for route authorisation
