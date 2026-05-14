@@ -1,4 +1,4 @@
-// imports/api/locations/schemas.js
+
 import SimpleSchema from 'simpl-schema';
 
 export const ProductSchema = new SimpleSchema({

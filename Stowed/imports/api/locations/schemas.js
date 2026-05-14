@@ -37,15 +37,60 @@ export const SiteSchema = new SimpleSchema({
  */
 export const FloorMapSchema = new SimpleSchema({
   siteId: String,
+
   name: {
     type: String,
     min: 1,
     max: 100,
   },
+
   imageUrl: {
     type: String,
     optional: true,
   },
+
+  floorSize: {
+    type: Object,
+    optional: true,
+  },
+
+  'floorSize.width': {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  'floorSize.height': {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  settings: {
+    type: Object,
+    optional: true,
+  },
+
+  'settings.gridInterval': {
+    type: Number,
+    optional: true,
+  },
+
+  'settings.showGrid': {
+    type: Boolean,
+    optional: true,
+  },
+
+  'settings.snapToGrid': {
+    type: Boolean,
+    optional: true,
+  },
+
+  'settings.pixelsPerMeter': {
+    type: Number,
+    optional: true,
+  },
+
   createdAt: Date,
   updatedAt: Date,
 });
@@ -71,7 +116,7 @@ export const StorageUnitSchema = new SimpleSchema({
 
   type: {
     type: String,
-    allowedValues: ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other'],
+    allowedValues: ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other', 'custom'],
   },
   
   position: {
@@ -119,23 +164,19 @@ export const StorageLocationSchema = new SimpleSchema({
     type: String,
   },
 
-  name: {
-    type: String,
-    min: 1,
-    max: 100,
-  },
-
   code: {
     type: String,
     min: 1,
     max: 50,
   },
 
-  createdAt: {
-    type: Date,
+  name: {
+    type: String,
+    optional: true,
+    max: 100,
   },
 
-  updatedAt: {
-    type: Date,
-  },
+  createdAt: Date,
+
+  updatedAt: Date,
 });
