@@ -3,6 +3,7 @@ import { Canvas }               from "./floorMapComponents/canvas/components/Can
 import { CanvasToolbar }        from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel }         from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal }  from "./floorMapComponents/CanvasSettingsModal";
+import { useParams } from "react-router-dom";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -114,8 +115,10 @@ function FloorMapPageInner() {
  * Wraps the layout in EditorProvider so all descendants can access editor state.
  */
 export function FloorMapPage() {
+  const { floorMapId } = useParams();
+
   return (
-    <EditorProvider>
+    <EditorProvider floorMapId={floorMapId}>
       <FloorMapPageInner />
     </EditorProvider>
   );
