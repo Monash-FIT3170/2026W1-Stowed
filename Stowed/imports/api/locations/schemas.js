@@ -37,15 +37,60 @@ export const SiteSchema = new SimpleSchema({
  */
 export const FloorMapSchema = new SimpleSchema({
   siteId: String,
+
   name: {
     type: String,
     min: 1,
     max: 100,
   },
+
   imageUrl: {
     type: String,
     optional: true,
   },
+
+  floorSize: {
+    type: Object,
+    optional: true,
+  },
+
+  'floorSize.width': {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  'floorSize.height': {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  settings: {
+    type: Object,
+    optional: true,
+  },
+
+  'settings.gridInterval': {
+    type: Number,
+    optional: true,
+  },
+
+  'settings.showGrid': {
+    type: Boolean,
+    optional: true,
+  },
+
+  'settings.snapToGrid': {
+    type: Boolean,
+    optional: true,
+  },
+
+  'settings.pixelsPerMeter': {
+    type: Number,
+    optional: true,
+  },
+
   createdAt: Date,
   updatedAt: Date,
 });
@@ -131,11 +176,55 @@ export const StorageLocationSchema = new SimpleSchema({
     max: 50,
   },
 
-  createdAt: {
-    type: Date,
+  position: {
+    type: Object,
+    optional: true,
   },
 
-  updatedAt: {
-    type: Date,
+  'position.x': {
+    type: Number,
+    min: 0,
+    optional: true,
   },
+
+  'position.y': {
+    type: Number,
+    min: 0,
+    optional: true,
+  },
+
+  'position.width': {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  'position.height': {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  row: {
+    type: Number,
+    optional: true,
+  },
+
+  column: {
+    type: Number,
+    optional: true,
+  },
+
+  level: {
+    type: Number,
+    optional: true,
+  },
+
+  capacity: {
+    type: Number,
+    optional: true,
+  },
+
+  createdAt: Date,
+  updatedAt: Date,
 });
