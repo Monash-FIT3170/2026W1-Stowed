@@ -152,6 +152,18 @@ export function EditorProvider({ children, floorMapId }) {
           height: unit.height,
         };
 
+        const currentUnitIds = units
+          .filter((unit) => unit._id)
+          .map((unit) => unit._id);
+
+        for (const savedUnit of savedUnits) {
+          if (!currentUnitIds.includes(savedUnit._id)) {
+            await callMethod("storageUnits.delete", {
+              storageUnitId: savedUnit._id,
+            });
+          }
+        }
+
         if (unit._id) {
           await callMethod("storageUnits.update", {
             storageUnitId: unit._id,

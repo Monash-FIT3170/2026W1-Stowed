@@ -373,16 +373,10 @@ Meteor.methods({
     storageUnitId,
     name,
     code,
-    position = {},
-    row,
-    column,
-    level,
-    capacity,
   }) {
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
-    check(position, Object);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
@@ -399,11 +393,6 @@ Meteor.methods({
       storageUnitId,
       name,
       code,
-      position,
-      row,
-      column,
-      level,
-      capacity,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -427,17 +416,12 @@ Meteor.methods({
     storageUnitId,
     name,
     code,
-    position = {},
-    row,
-    column,
-    level,
-    capacity,
   }) {
     check(storageLocationId, String);
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
-    check(position, Object);
+
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
@@ -458,11 +442,6 @@ Meteor.methods({
         storageUnitId,
         name,
         code,
-        position,
-        row,
-        column,
-        level,
-        capacity,
         updatedAt: new Date(),
       },
     });

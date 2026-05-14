@@ -116,7 +116,7 @@ export const StorageUnitSchema = new SimpleSchema({
 
   type: {
     type: String,
-    allowedValues: ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other'],
+    allowedValues: ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other', 'custom'],
   },
   
   position: {
@@ -164,67 +164,19 @@ export const StorageLocationSchema = new SimpleSchema({
     type: String,
   },
 
-  name: {
-    type: String,
-    min: 1,
-    max: 100,
-  },
-
   code: {
     type: String,
     min: 1,
     max: 50,
   },
 
-  position: {
-    type: Object,
+  name: {
+    type: String,
     optional: true,
-  },
-
-  'position.x': {
-    type: Number,
-    min: 0,
-    optional: true,
-  },
-
-  'position.y': {
-    type: Number,
-    min: 0,
-    optional: true,
-  },
-
-  'position.width': {
-    type: Number,
-    min: 1,
-    optional: true,
-  },
-
-  'position.height': {
-    type: Number,
-    min: 1,
-    optional: true,
-  },
-
-  row: {
-    type: Number,
-    optional: true,
-  },
-
-  column: {
-    type: Number,
-    optional: true,
-  },
-
-  level: {
-    type: Number,
-    optional: true,
-  },
-
-  capacity: {
-    type: Number,
-    optional: true,
+    max: 100,
   },
 
   createdAt: Date,
+
   updatedAt: Date,
 });
