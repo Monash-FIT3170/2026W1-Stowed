@@ -17,6 +17,7 @@ import { AlertsPage }     from './pages/AlertsPage';
 import { FloorMapPage }  from './pages/FloorMapPage';
 import { Register }       from './Register';
 import { Login }          from './Login';
+import { ViewAccounts }   from './pages/ViewAccounts';
 
 const LocationsPage = lazy(() =>
   import('./pages/LocationsPage').then((module) => ({ default: module.LocationsPage })),
@@ -77,6 +78,8 @@ export function App() {
             <Route path="/forecast" element={ isLoggedIn ? hasClientPermission(role, "route:/forecast") ? <ForecastPage />
             : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
             <Route path="/alerts" element={ isLoggedIn ? hasClientPermission(role, "route:/alerts") ? <AlertsPage />
+            : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
+            <Route path="/accounts" element={ isLoggedIn ? hasClientPermission(role, "route:/accounts") ? <ViewAccounts />
             : <Navigate to="/" replace /> : <Navigate to="/login" replace /> }/>
             <Route path="*"                    element={<Navigate to="/" replace />} />
           </Routes>

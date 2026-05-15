@@ -129,12 +129,12 @@ Meteor.methods({
 
     return userId;
   },
-  
+
   // delete accounts method for owner 
   "users.delete": async function ({userId}) {
     check(userId, String);
 
-  await requirePermission(this.userId, "delete-user");
+  await requirePermission(this.userId, "delete-users");
   await Meteor.users.removeAsync(userId);
   return true;
   },

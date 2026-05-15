@@ -1,8 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { useAuth } from "/imports/api/useAuth";
+//import { useAuth } from "/imports/api/useAuth";
 import { logoutUser } from "/imports/api/userMethods";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { useNavigate } from 'react-router-dom';
+import { useTracker } from 'meteor/react-meteor-data';
+import { ROLES } from '/imports/api/roles';
 
 const WORKSPACE_LINKS = [
   { to: '/locations', label: 'Locations' },
@@ -37,13 +39,26 @@ function SidebarLink({ to, label, end }) {
 }
 
 export function Sidebar() {
+  const currentUser = useTracker(() => Meteor.user());
+  const role = currentUser?.profile?.role;
+  const isLoggedIn = !!currentUser;
+  const username = currentUser?.username;
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logoutUser();
     navigate('/login');
   };
-  const { username, isLoggedIn, role } = useAuth();
+  //const { username, isLoggedIn, role } = useAuth();
+
+  const ACCOUNT_LINKS = [
+    { to: '/register', label: 'Create Account' },
+    { to: '/login',    label: 'Login' },
+  ];
+  if (role >= ROLES.OWNER) {
+    ACCOUNT_LINKS.push({ to: '/accounts', label: 'Manage Accounts' });
+  }
+
   return (
     <aside className="w-64 border-r border-black bg-white p-4">
       {/* Logo */}
