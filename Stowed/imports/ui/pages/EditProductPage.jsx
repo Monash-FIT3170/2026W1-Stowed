@@ -303,7 +303,19 @@ export function EditProductPage() {
             All stock must be assigned before saving.
           </p>
 
-          {assignments.map((assignment, index) => (
+          {assignments.map((assignment, index) => {
+            // Locations already chosen by other rows (not this one).
+            const usedElsewhere = new Set(
+              assignments
+                .filter((_, i) => i !== index)
+                .map((a) => a.locationId)
+                .filter(Boolean)
+            );
+            const availableLocations = storageLocations.filter(
+              (loc) => !usedElsewhere.has(loc._id)
+            );
+
+            return (
             <div key={index} style={assignmentRowStyle}>
               <select
                 value={assignment.locationId}
@@ -311,7 +323,7 @@ export function EditProductPage() {
                 style={{ ...inputStyle, flex: 2 }}
               >
                 <option value="">Select a location…</option>
-                {storageLocations.map((location) => (
+                {availableLocations.map((location) => (
                   <option key={location._id} value={location._id}>
                     {buildLocationLabel(location, storageUnits, floorMaps, sites)}
                   </option>
@@ -335,7 +347,8 @@ export function EditProductPage() {
                 Remove
               </button>
             </div>
-          ))}
+            );
+          })}
 
           <button
             type="button"
