@@ -1,3 +1,5 @@
+import { LowStockLayer } from "./layers/LowStockLayer";
+
 import { useRef, useEffect, useReducer }     from "react";
 import { Stage }                             from "react-konva";
 
@@ -118,6 +120,8 @@ export function Canvas({ style, isCanvasEditMode }) {
           <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef}/>
 
           <GhostLayer ghostUnit={ghostUnit} dragOffsets={dragOffsets} selectedIds={selectedIds} units={units} snapEnabled={snapEnabled} gridSizePx={gridSizePx}/>
+          
+          <LowStockLayer units={units} />
 
         </Stage>
       
