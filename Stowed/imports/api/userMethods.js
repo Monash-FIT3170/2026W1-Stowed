@@ -11,6 +11,7 @@ import { Accounts } from 'meteor/accounts-base';
 const PERMISSIONS = {
   // methods
   "create-users": ROLES.ADMIN,
+  "delete-users": ROLES.OWNER,
 
   // routes
   "route:/": ROLES.STANDARD,
@@ -22,6 +23,7 @@ const PERMISSIONS = {
   "route:/qr-codes": ROLES.ADMIN,
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
+  "route:/accounts": ROLES.OWNER,
 };
 
 // returns the role of the user
@@ -126,5 +128,14 @@ Meteor.methods({
     });
 
     return userId;
-  }
+  },
+  
+  // delete accounts method for owner 
+  "users.delete": async function ({userId}) {
+    check(userId, String);
+
+  await requirePermission(this.userId, "delete-user");
+  await Meteor.users.removeAsync(userId);
+  return true;
+  },
 });
