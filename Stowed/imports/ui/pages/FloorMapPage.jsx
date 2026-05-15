@@ -33,6 +33,7 @@ function FloorMapPageInner() {
   const lowItems = items.filter((i) => i.isLow);
   const okItems  = items.filter((i) => !i.isLow);
   const hasLow   = lowItems.length > 0;
+  const isEmpty  = items.length === 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -76,12 +77,16 @@ function FloorMapPageInner() {
           <div className="low-stock-panel">
 
             {/* HEADER */}
-            <div className={`panel-header ${hasLow ? "has-low" : "all-ok"}`}>
+            <div className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}>
               <div>
                 <div className="panel-header-label">Storage Unit</div>
                 <div className="panel-header-title">{selectedUnit.name}</div>
-                <span className={`panel-status-badge ${hasLow ? "low" : "ok"}`}>
-                  {hasLow ? `⚠ ${lowItems.length} low stock` : "✓ All in stock"}
+                <span className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}>
+                  {isEmpty
+                    ? "No items assigned"
+                    : hasLow
+                      ? `⚠ ${lowItems.length} low stock`
+                      : "✓ All in stock"}
                 </span>
               </div>
               <button className="panel-close-btn" onClick={() => setIsPanelOpen(false)}>
@@ -91,7 +96,7 @@ function FloorMapPageInner() {
 
             {/* CONTENT */}
             <div className="panel-content">
-              {items.length === 0 ? (
+              {isEmpty ? (
                 <div className="panel-empty">No products assigned to this unit.</div>
               ) : (
                 <>

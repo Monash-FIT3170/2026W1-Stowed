@@ -158,3 +158,12 @@
 .panel-section {
   margin-bottom: 16px;
 }
+
+.panel-header.no-items {
+  background: #f5f5f5;
+}
+
+.panel-status-badge.empty {
+  color: #998874;
+  background: #f5efe6;
+}
