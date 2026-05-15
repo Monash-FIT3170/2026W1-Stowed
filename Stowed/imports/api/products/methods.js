@@ -2,6 +2,22 @@ import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
 import { Products, ProductRecords } from './collections';
 
+/**
+ * Merges any duplicate locationIds in an assignments array by summing their
+ * quantities. The UI already prevents this, but we do it here too so the data
+ * layer is always consistent regardless of how the method was called.
+ *
+ * e.g. [{ locationId: 'A', quantity: 7 }, { locationId: 'A', quantity: 6 }]
+ *      → [{ locationId: 'A', quantity: 13 }]
+ */
+function mergeAssignments(assignments) {
+  const map = new Map();
+  for (const { locationId, quantity } of assignments) {
+    map.set(locationId, (map.get(locationId) ?? 0) + quantity);
+  }
+  return Array.from(map.entries()).map(([locationId, quantity]) => ({ locationId, quantity }));
+}
+
 Meteor.methods({
   /**
    * Creates a new Product along with its location assignments (ProductRecords).
@@ -41,8 +57,11 @@ Meteor.methods({
       throw new Meteor.Error('duplicate-name', `A product named "${name}" already exists.`);
     }
 
+    // Merge any duplicate locationIds by summing their quantities.
+    const mergedAssignments = mergeAssignments(assignments);
+
     // All stock must be accounted for across assignments.
-    const assignedTotal = assignments.reduce((sum, a) => sum + a.quantity, 0);
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== totalQuantity) {
       throw new Meteor.Error(
         'quantity-mismatch',
@@ -59,7 +78,7 @@ Meteor.methods({
       updatedAt: now,
     });
 
-    for (const { locationId, quantity } of assignments) {
+    for (const { locationId, quantity } of mergedAssignments) {
       await ProductRecords.insertAsync({
         productId,
         locationId,
@@ -122,7 +141,10 @@ Meteor.methods({
       throw new Meteor.Error('duplicate-name', `A product named "${name}" already exists.`);
     }
 
-    const assignedTotal = assignments.reduce((sum, a) => sum + a.quantity, 0);
+    // Merge any duplicate locationIds by summing their quantities.
+    const mergedAssignments = mergeAssignments(assignments);
+
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== totalQuantity) {
       throw new Meteor.Error(
         'quantity-mismatch',
@@ -136,9 +158,9 @@ Meteor.methods({
       $set: { name, description, totalQuantity, updatedAt: now },
     });
 
-    // Replace all records for this product with the new assignments.
+    // Replace all records for this product with the merged assignments.
     await ProductRecords.removeAsync({ productId });
-    for (const { locationId, quantity } of assignments) {
+    for (const { locationId, quantity } of mergedAssignments) {
       await ProductRecords.insertAsync({ productId, locationId, quantity, createdAt: now, updatedAt: now });
     }
   },
