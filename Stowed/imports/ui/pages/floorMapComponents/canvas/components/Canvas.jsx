@@ -21,7 +21,7 @@ import { GhostLayer }                        from "./layers/GhostLayer";
  * 
  * @param {React.CSSProperties} style - Forwarded to the Konva Stage element. 
  */
-export function Canvas({ style, isCanvasEditMode }) {
+export function Canvas({ style, isCanvasEditMode, onUnitHover, onUnitHoverEnd  }) {
   const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
 
   const width  = floorSize.width;
@@ -121,7 +121,7 @@ export function Canvas({ style, isCanvasEditMode }) {
 
           <GhostLayer ghostUnit={ghostUnit} dragOffsets={dragOffsets} selectedIds={selectedIds} units={units} snapEnabled={snapEnabled} gridSizePx={gridSizePx}/>
           
-          <LowStockLayer units={units} />
+          <LowStockLayer units={units} onHover={onUnitHover} onHoverEnd={onUnitHoverEnd} />
 
         </Stage>
       
