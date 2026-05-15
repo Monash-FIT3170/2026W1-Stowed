@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
-import { FloorMaps, StorageUnits } from "/imports/api/locations/collections";
+import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
+import { Products, ProductRecords } from "/imports/api/products/collections";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 
 // --- TOOL OPTIONS ---
@@ -24,9 +25,9 @@ const EditorContext = createContext(null);
 /**
  * Top level context provider for the floor plan editor.
  * Owns all shared editor state: active tool, floor dimensions, canvas settings,
- * placed units, undo/redo history, and save/load.
+ * placed units, undo/redo history, save/load, and low stock alert data.
  *
- * @param {{ children: React.ReactNode }} props
+ * @param {{ children: React.ReactNode, floorMapId: string }} props
  */
 export function EditorProvider({ children, floorMapId }) {
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
@@ -36,6 +37,10 @@ export function EditorProvider({ children, floorMapId }) {
   const [isCanvasEditMode, setCanvasEditMode] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
+
+  // --- SLIDE-OUT PANEL STATE ---
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [isPanelOpen, setIsPanelOpen]   = useState(false);
 
   // --- UNDO / REDO HISTORY ---
   const [_, forceRender] = useState(0);
@@ -69,6 +74,7 @@ export function EditorProvider({ children, floorMapId }) {
     forceRender((n) => n + 1);
   }
 
+  // --- FLOOR MAP + UNITS FROM MONGODB ---
   const { isLoading, floorMap, savedUnits } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
 
@@ -87,6 +93,44 @@ export function EditorProvider({ children, floorMapId }) {
     };
   }, [floorMapId]);
 
+  // --- LOW STOCK DATA ---
+  const { lowStockByUnitId } = useTracker(() => {
+    Meteor.subscribe("products");
+    Meteor.subscribe("productRecords");
+    Meteor.subscribe("locations.all");
+
+    const products         = Products.find().fetch();
+    const productRecords   = ProductRecords.find().fetch();
+    const storageLocations = StorageLocations.find().fetch();
+
+    // Build map: unitId -> [{ product, quantity, threshold, isLow, locationName }]
+    const map = {};
+
+    productRecords.forEach((record) => {
+      const product  = products.find((p) => p._id === record.productId);
+      if (!product) return;
+
+      const location = storageLocations.find((l) => l._id === record.locationId);
+      if (!location) return;
+
+      const threshold = product.reorderAt ?? 10;
+      const isLow     = product.totalQuantity <= threshold;
+      const unitId    = location.storageUnitId;
+
+      if (!map[unitId]) map[unitId] = [];
+
+      map[unitId].push({
+        product,
+        quantity:     product.totalQuantity,
+        threshold,
+        isLow,
+        locationName: location.name,
+      });
+    });
+
+    return { lowStockByUnitId: map };
+  }, []);
+
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
@@ -102,20 +146,21 @@ export function EditorProvider({ children, floorMapId }) {
     }
 
     const canvasUnits = savedUnits.map((unit) => ({
-      id: unit._id,
-      _id: unit._id,
-      name: unit.name,
-      type: unit.type,
-      x: unit.position.x,
-      y: unit.position.y,
-      width: unit.position.width,
+      id:     unit._id,
+      _id:    unit._id,
+      name:   unit.name,
+      type:   unit.type,
+      x:      unit.position.x,
+      y:      unit.position.y,
+      width:  unit.position.width,
       height: unit.position.height,
-      fill: unit.fill || "lightblue",
+      fill:   unit.fill || "lightblue",
     }));
 
     setUnits(canvasUnits);
     historyRef.current = { stack: [canvasUnits], index: 0 };
   }, [isLoading, floorMap, savedUnits.length]);
+
   // --- SAVE / LOAD ---
   function callMethod(methodName, params) {
     return new Promise((resolve, reject) => {
@@ -137,18 +182,18 @@ export function EditorProvider({ children, floorMapId }) {
     try {
       await callMethod("floorMaps.update", {
         floorMapId: activeFloorMapId,
-        siteId: floorMap.siteId,
-        name: floorMap.name,
-        imageUrl: floorMap.imageUrl || "",
+        siteId:     floorMap.siteId,
+        name:       floorMap.name,
+        imageUrl:   floorMap.imageUrl || "",
         floorSize,
-        settings: canvasSettings,
+        settings:   canvasSettings,
       });
 
       for (const unit of units) {
         const position = {
-          x: unit.x,
-          y: unit.y,
-          width: unit.width,
+          x:      unit.x,
+          y:      unit.y,
+          width:  unit.width,
           height: unit.height,
         };
 
@@ -167,21 +212,21 @@ export function EditorProvider({ children, floorMapId }) {
         if (unit._id) {
           await callMethod("storageUnits.update", {
             storageUnitId: unit._id,
-            floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
+            floorMapId:    activeFloorMapId,
+            name:          unit.name,
+            type:          unit.type || "other",
             position,
           });
         } else {
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
+            name:       unit.name,
+            type:       unit.type || "other",
             position,
           });
 
           unit._id = newId;
-          unit.id = newId;
+          unit.id  = newId;
         }
       }
 
@@ -210,15 +255,15 @@ export function EditorProvider({ children, floorMapId }) {
     }
 
     const canvasUnits = savedUnits.map((unit) => ({
-      id: unit._id,
-      _id: unit._id,
-      name: unit.name,
-      type: unit.type,
-      x: unit.position.x,
-      y: unit.position.y,
-      width: unit.position.width,
+      id:     unit._id,
+      _id:    unit._id,
+      name:   unit.name,
+      type:   unit.type,
+      x:      unit.position.x,
+      y:      unit.position.y,
+      width:  unit.position.width,
       height: unit.position.height,
-      fill: unit.fill || "lightblue",
+      fill:   unit.fill || "lightblue",
     }));
 
     commitUnits(canvasUnits);
@@ -252,9 +297,8 @@ export function EditorProvider({ children, floorMapId }) {
     // Canvas settings
     canvasSettings, isCanvasSettingsOpen, setCanvasSettingsOpen, handleCanvasSettingsSave,
 
-    //Mode Toggling
+    // Mode toggling
     isCanvasEditMode, setCanvasEditMode,
-
 
     // Units
     units, commitUnits,
@@ -268,6 +312,13 @@ export function EditorProvider({ children, floorMapId }) {
 
     // Placement helpers
     handlePlaceUnit, handleUnitPlaced,
+
+    // Low stock
+    lowStockByUnitId,
+
+    // Slide-out panel
+    selectedUnit, setSelectedUnit,
+    isPanelOpen,  setIsPanelOpen,
   };
 
   return (
