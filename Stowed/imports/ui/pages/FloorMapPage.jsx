@@ -29,7 +29,7 @@ function FloorMapPageInner() {
 
   const [tooltip, setTooltip] = useState(null);
 
-  const items = selectedUnit ? (lowStockByUnitId?.[selectedUnit?._id] ?? []) : [];
+  const items    = selectedUnit?.mockItems ?? (lowStockByUnitId?.[selectedUnit?._id] ?? []);
   const lowItems = items.filter((i) => i.isLow);
   const okItems  = items.filter((i) => !i.isLow);
   const hasLow   = lowItems.length > 0;
