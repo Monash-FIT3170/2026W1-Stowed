@@ -1,5 +1,5 @@
 import { useState } from "react"; 
-import { COLOURS } from "./FloorMapStyles";
+import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 
 /**
@@ -26,38 +26,95 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
 
     // floor dimension validation
     const updateDimension = (dimensionType, rawValue) => {
-      setInputMeters(prev => ({ ...prev, [dimensionType]: rawValue}));
+    setInputMeters((prev) => ({ ...prev, [dimensionType]: rawValue }));
       const val = Number(rawValue);
-      if (rawValue === "" || Number.isNaN(val) || val <=0) return;
-      setFloorSize(prev => ({...prev, [dimensionType]: val*CANVAS_CONFIG.PIXELS_PER_METER}));      
+    if (rawValue === "" || Number.isNaN(val) || val <= 0) return;
+    setFloorSize((prev) => ({
+      ...prev,
+      [dimensionType]: val * CANVAS_CONFIG.PIXELS_PER_METER,
+    }));
     };
 
+  const activeToolLabel = activeTool
+    ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
+    : "None";
+
+  const toolButtonStyle = (tool) => ({
+    ...buttonStyles.base,
+    ...(activeTool === tool ? buttonStyles.active : buttonStyles.secondary),
+  });
+
+  const disabledStyle = (isDisabled) =>
+    isDisabled ? buttonStyles.disabled : null;
+
     return (
-      <div style={{
-        display: "flex",
-        gap: "10px",
-        padding: "10px",
-        background: COLOURS.TOOL_BAR_COLOUR,
-        borderBottom: "1px solid #ccc",
-      }}>
-  
+    <div style={toolbarStyles.bar}>
         {/* TOOLS */}
-        <button onClick={() => setActiveTool("select")}>Select</button>
-        <button onClick={() => setActiveTool("move")}>Move</button>
-        <button onClick={onSaveLayout}>Save Layout</button>
-        <button onClick={onLoadLayout}>Load Layout</button>
-  
-        <div style={{ marginLeft: "20px" }}>Active Tool: <b>{activeTool}</b></div>
-  
-        {/* FLOOR SIZE CONTROLS */}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "20px" }}>
-          <div style={{gap: "10px"}}>
-          <button onClick={onUndo} disabled={!canUndo}>Undo</button>
-          <button onClick={onRedo} disabled={!canRedo}>Redo</button>
-          </div>
-          <button onClick={onOpenCanvasSettings}>Canvas Settings</button>
+      <div style={toolbarStyles.group}>
+        <button
+          onClick={() => setActiveTool("select")}
+          style={toolButtonStyle("select")}
+        >
+          Select
+        </button>
+        <button
+          onClick={() => setActiveTool("move")}
+          style={toolButtonStyle("move")}
+        >
+          Move
+        </button>
+      </div>
+
+      <div style={toolbarStyles.group}>
+        <button
+          onClick={onSaveLayout}
+          style={{ ...buttonStyles.base, ...buttonStyles.primary }}
+        >
+          Save Layout
+        </button>
+        <button
+          onClick={onLoadLayout}
+          style={{ ...buttonStyles.base, ...buttonStyles.secondary }}
+        >
+          Load Layout
+        </button>
+      </div>
+
+      <div style={toolbarStyles.status}>
+        <span>Active tool</span>
+        <span style={toolbarStyles.statusBadge}>{activeToolLabel}</span>
         </div>
   
+      <div style={toolbarStyles.actions}>
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.secondary,
+            ...disabledStyle(!canUndo),
+          }}
+        >
+          Undo
+        </button>
+        <button
+          onClick={onRedo}
+          disabled={!canRedo}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.secondary,
+            ...disabledStyle(!canRedo),
+          }}
+        >
+          Redo
+        </button>
+        <button
+          onClick={onOpenCanvasSettings}
+          style={{ ...buttonStyles.base, ...buttonStyles.secondary }}
+        >
+          Canvas Settings
+        </button>
+      </div>
       </div>
     );
 }
