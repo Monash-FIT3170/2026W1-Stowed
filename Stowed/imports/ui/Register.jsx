@@ -101,64 +101,86 @@ const Register = () => {
   };
 
   return (
-    <div className="page">
-      <div className="container">
-        <h2>Create Account</h2>
+    <div className="auth-page">
+      <section className="auth-shell" aria-label="Create account">
+        <div className="auth-brand-panel">
+          <p className="auth-kicker">Stocktake / Users</p>
+          <h1>{isPrivileged ? 'Add a team member' : 'Start mapping with Stowed'}</h1>
+          <p>
+            Give people access to manage items, update stock counts, and maintain storage locations.
+          </p>
+          <ul className="auth-feature-list">
+            <li>Shop and home floor layouts</li>
+            <li>QR labels for fast item lookup</li>
+            <li>Shopping lists from stock needs</li>
+          </ul>
+        </div>
 
-        {error && <div className="status error">⚠ {error}</div>}
-        {success && <div className="status success">✓ {success}</div>}
-        {/* back button for registration page */}
-        {!isLoggedIn && (
-          <button
-            type="button"
-            onClick={() => navigate('/login')}
-            className="absolute top-4 left-4 text-sm hover:underline">
-            Back to login
-          </button>
-        )}
-
-        <form onSubmit={onSubmit}>
-          <div>
-            <label>Username</label>
-            <input name="username" value={username} onChange={onChange} required />
-          </div>
-
-          <div>
-            <label>Email</label>
-            <input name="email" value={email} onChange={onChange} required />
-          </div>
-
-          <div>
-            <label>Password</label>
-            <input type="password" name="password" value={password} onChange={onChange} required />
-          </div>
-
-          <div>
-            <label>Confirm Password</label>
-            <input type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} required />
-          </div>
-
-          {isLoggedIn && isPrivileged && (
+        <div className="auth-card">
+          <div className="auth-card-header">
             <div>
-              <p>User Type</p>
-
-              <button type="button" onClick={() => setRole(ROLES.ADMIN)}
-                className={role === ROLES.ADMIN ? 'active' : ''}>
-                Admin
-              </button>
-
-              <button type="button" onClick={() => setRole(ROLES.STANDARD)}
-                className={role === ROLES.STANDARD ? 'active' : ''}>
-                Standard
-              </button>
+              <p className="auth-kicker">Account setup</p>
+              <h2>Create Account</h2>
             </div>
-          )}
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Register'}
-          </button>
-        </form>
-      </div>
+            {!isLoggedIn && (
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="auth-link-button">
+                Back to login
+              </button>
+            )}
+          </div>
+
+          {error && <div className="auth-status auth-status-error">{error}</div>}
+          {success && <div className="auth-status auth-status-success">{success}</div>}
+
+          <form onSubmit={onSubmit} className="auth-form">
+            <label className="auth-field">
+              <span>Username</span>
+              <input className="auth-input" name="username" value={username} onChange={onChange} required />
+            </label>
+
+            <label className="auth-field">
+              <span>Email</span>
+              <input className="auth-input" name="email" value={email} onChange={onChange} required />
+            </label>
+
+            <label className="auth-field">
+              <span>Password</span>
+              <input className="auth-input" type="password" name="password" value={password} onChange={onChange} required />
+            </label>
+
+            <label className="auth-field">
+              <span>Confirm Password</span>
+              <input className="auth-input" type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} required />
+            </label>
+
+            {isLoggedIn && isPrivileged && (
+              <div className="auth-role-group">
+                <p>User Type</p>
+
+                <div className="auth-segmented-control">
+                  <button type="button" onClick={() => setRole(ROLES.ADMIN)}
+                    className={role === ROLES.ADMIN ? 'active' : ''}>
+                    Admin
+                  </button>
+
+                  <button type="button" onClick={() => setRole(ROLES.STANDARD)}
+                    className={role === ROLES.STANDARD ? 'active' : ''}>
+                    Standard
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="auth-primary-button">
+              {loading ? 'Creating...' : 'Register'}
+            </button>
+          </form>
+        </div>
+      </section>
     </div>
   );
 };
