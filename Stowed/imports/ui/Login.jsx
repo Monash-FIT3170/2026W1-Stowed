@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import './Register.css';
 
 /**
  * Login Page
@@ -51,61 +52,65 @@ export const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-full p-4">
-      <div className="w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">Log In</h2>
-
-        {error && <p className="text-red-600 mb-2">{error}</p>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="login" className="block text-sm font-medium mb-1">
-              Email or Username
-            </label>
-
-            <input
-              id="login"
-              type="text"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
-              required
-              className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Password
-            </label>
-
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          {/* login button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50">
-            {loading ? 'Logging in...' : 'Log In'}
-          </button>
-          {/* link to registration page */}
-          <div className="text-center mt-4">
-            <p className="text-sm text-gray-600"> Don’t have an account? </p>
-            <Link
-              to="/register"
-              className="inline-block mt-2 text-blue-600 hover:underline"
-            >
-              Create Account
-            </Link>
+    <div className="auth-page">
+      <section className="auth-shell" aria-label="Login">
+        <div className="auth-brand-panel">
+          <p className="auth-kicker">Stocktake / Floor maps</p>
+          <h1>Welcome back to <span>Stowed</span></h1>
+          <p>
+            Map your shop or home storage, scan QR labels, and keep every item easy to find.
+          </p>
+          <ul className="auth-feature-list">
+            <li>Storage units and item locations</li>
+            <li>Low-stock visual alerts</li>
+            <li>Photo-based item catalogue</li>
+          </ul>
         </div>
-        </form>
-      </div>
+
+        <div className="auth-card">
+          <p className="auth-kicker">Account access</p>
+          <h2>Log in</h2>
+
+          {error && <p className="auth-status auth-status-error">{error}</p>}
+
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label className="auth-field" htmlFor="login">
+              <span>Email or Username</span>
+              <input
+                id="login"
+                type="text"
+                value={login}
+                onChange={(e) => setLogin(e.target.value)}
+                required
+                className="auth-input"
+              />
+            </label>
+
+            <label className="auth-field" htmlFor="password">
+              <span>Password</span>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="auth-input"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="auth-primary-button">
+              {loading ? 'Logging in...' : 'Log In'}
+            </button>
+
+            <p className="auth-switch">
+              Need an account? <Link to="/register">Create Account</Link>
+            </p>
+          </form>
+        </div>
+      </section>
     </div>
   );
 };
