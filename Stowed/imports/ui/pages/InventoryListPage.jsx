@@ -4,6 +4,7 @@ import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockItems, getLowStockItems } from "../../api/mockItems";
 import "./InventoryListPage.css";
+import Fuse from "fuse.js";
 
 export function ItemThumbnail({ photoUrl, name }) {
   const [imgError, setImgError] = useState(false);
@@ -42,19 +43,20 @@ export function InventoryListPage() {
       items = getLowStockItems(items);
     }
 
+     // Apply fuzzy search
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      items = items.filter((item) => {
-        const name = (item.name || "").toLowerCase();
-        const tag = (item.tag || "").toLowerCase();
-        const id = (item._id || "").toLowerCase();
-        return (
-          name.includes(query) || tag.includes(query) || id.includes(query)
-        );
+      const fuse = new Fuse(items, {
+        keys: ["name", "description", "tag", "_id"],
+        threshold: 0.4,
       });
+
+      const results = fuse.search(searchQuery);
+
+      items = results.map((result) => result.item);
     }
 
     return items;
+    
   }, [activeFilter, searchQuery]);
 
   const lowStockCount = getLowStockItems(mockItems).length;
