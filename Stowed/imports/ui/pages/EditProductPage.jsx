@@ -313,25 +313,6 @@ export function EditProductPage() {
 
           <div className="detail-section">
             <h2 className="section-title">
-              <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>AD</span>
-              Additional details
-            </h2>
-            <div className="section-content">
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="form-input"
-                  rows="4"
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="detail-section">
-            <h2 className="section-title">
               <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>LC</span>
               Storage Locations
             </h2>
