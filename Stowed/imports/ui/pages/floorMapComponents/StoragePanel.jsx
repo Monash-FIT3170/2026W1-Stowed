@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { storagePanelStyles } from "./FloorMapStyles";
 import { UnitCard } from "./UnitCard";
 
@@ -6,6 +6,7 @@ import { UnitCard } from "./UnitCard";
 // width & height set in meters
 const PRESET_UNITS = [{ type: "shelf", name: "Shelf", width: 2, height: 1, fill: "lightblue"} ]
 const EMPTY_FORM = { name: "", width: 1, height: 1, fill: "white"}
+const CUSTOM_UNITS_STORAGE_KEY = "stowed.customStorageUnitTemplates";
 
 /**
  * Panel component for displaying and creating storage unit templates
@@ -16,9 +17,24 @@ const EMPTY_FORM = { name: "", width: 1, height: 1, fill: "white"}
  * @returns {JSX.Element} Storage Panel UI
  */
 export function StoragePanel({ onSelectUnit }) {
-    const [customUnits, setCustomUnits] = useState([]);
+    const [customUnits, setCustomUnits] = useState(() => {
+        try {
+            const savedUnits = window.localStorage.getItem(CUSTOM_UNITS_STORAGE_KEY);
+            return savedUnits ? JSON.parse(savedUnits) : [];
+        } catch (error) {
+            return [];
+        }
+    });
     const [form, setForm] = useState(EMPTY_FORM);
     const [showForm, setShowForm] = useState(false);
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(customUnits));
+        } catch (error) {
+            // Custom templates are a convenience; storage failures should not block editing.
+        }
+    }, [customUnits]);
 
     function handleFormChange(e) {
         const { name, value } = e.target;
