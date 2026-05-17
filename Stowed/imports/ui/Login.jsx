@@ -1,25 +1,29 @@
 import React, { useState } from 'react';
 import { Meteor } from 'meteor/meteor';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 /**
  * Login Page
  */
 export const Login = () => {
-    // stores input
-  const [login, setLogin] = useState(''); // email or username
+  const [orgCode, setOrgCode] = useState('');      // organisation code
+  const [login, setLogin] = useState('');          // email or username
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // handles form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // basic frontend validation
+    // 1. Organisation required first
+    if (!orgCode.trim()) {
+      setError('Please enter your organisation code.');
+      return;
+    }
+
+    // 2. Other fields
     if (!login.trim() || !password) {
       setError('Please fill in all fields.');
       return;
@@ -27,22 +31,23 @@ export const Login = () => {
 
     setLoading(true);
 
-    // log in logic
     try {
-      const isEmail = login.includes('@');
-      await new Promise((resolve, reject) => {
-        Meteor.loginWithPassword(
-          isEmail ? login : { username: login },
-          password,
-          (err) => {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
+    await Meteor.callAsync('users.checkOrganisation', {
+      orgCode: orgCode.trim(),
+      login: login.trim(),
+    });
 
+    await new Promise((resolve, reject) => {
+      Meteor.loginWithPassword(
+        login.includes('@') ? login : { username: login },
+        password,
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
       navigate('/');
-
     } catch (err) {
       setError(err.reason || err.message || 'Login failed.');
     } finally {
@@ -58,11 +63,26 @@ export const Login = () => {
         {error && <p className="text-red-600 mb-2">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Organisation Code */}
+          <div>
+            <label htmlFor="orgCode" className="block text-sm font-medium mb-1">
+              Organisation Code
+            </label>
+            <input
+              id="orgCode"
+              type="text"
+              value={orgCode}
+              onChange={(e) => setOrgCode(e.target.value)}
+              required
+              className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Email or Username */}
           <div>
             <label htmlFor="login" className="block text-sm font-medium mb-1">
               Email or Username
             </label>
-
             <input
               id="login"
               type="text"
@@ -73,11 +93,11 @@ export const Login = () => {
             />
           </div>
 
+          {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium mb-1">
               Password
             </label>
-
             <input
               id="password"
               type="password"
@@ -87,23 +107,21 @@ export const Login = () => {
               className="w-full border border-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          {/* login button */}
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50">
+            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+          >
             {loading ? 'Logging in...' : 'Log In'}
           </button>
-          {/* link to registration page */}
+
           <div className="text-center mt-4">
-            <p className="text-sm text-gray-600"> Don’t have an account? </p>
-            <Link
-              to="/register"
-              className="inline-block mt-2 text-blue-600 hover:underline"
-            >
+            <p className="text-sm text-gray-600">Don’t have an account?</p>
+            <Link to="/register" className="inline-block mt-2 text-blue-600 hover:underline">
               Create Account
             </Link>
-        </div>
+          </div>
         </form>
       </div>
     </div>
