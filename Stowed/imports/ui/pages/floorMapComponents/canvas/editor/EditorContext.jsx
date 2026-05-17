@@ -144,6 +144,18 @@ export function EditorProvider({ children, floorMapId }) {
         settings: canvasSettings,
       });
 
+      const currentUnitIds = units
+        .filter((unit) => unit._id)
+        .map((unit) => unit._id);
+
+      for (const savedUnit of savedUnits) {
+        if (!currentUnitIds.includes(savedUnit._id)) {
+          await callMethod("storageUnits.delete", {
+            storageUnitId: savedUnit._id,
+          });
+        }
+      }
+
       for (const unit of units) {
         const position = {
           x: unit.x,
@@ -151,18 +163,6 @@ export function EditorProvider({ children, floorMapId }) {
           width: unit.width,
           height: unit.height,
         };
-
-        const currentUnitIds = units
-          .filter((unit) => unit._id)
-          .map((unit) => unit._id);
-
-        for (const savedUnit of savedUnits) {
-          if (!currentUnitIds.includes(savedUnit._id)) {
-            await callMethod("storageUnits.delete", {
-              storageUnitId: savedUnit._id,
-            });
-          }
-        }
 
         if (unit._id) {
           await callMethod("storageUnits.update", {
@@ -238,8 +238,32 @@ export function EditorProvider({ children, floorMapId }) {
 
   // --- CANVAS SETTINGS ---
   function handleCanvasSettingsSave({ floorSize: newFloorSize, gridInterval, showGrid, snapToGrid }) {
+    const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+    const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+    const unitsInsideFloor = units.filter(
+      (unit) =>
+        unit.x >= 0 &&
+        unit.y >= 0 &&
+        unit.x + unit.width <= floorWidthMeters &&
+        unit.y + unit.height <= floorHeightMeters
+    );
+    const removedUnits = units.filter(
+      (unit) => !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id)
+    );
+
+    if (removedUnits.length > 0) {
+      const unitNames = removedUnits.map((unit) => unit.name || unit.id).join(", ");
+      const proceed = confirm(
+        `The resized floor is too small for ${removedUnits.length} unit(s): ${unitNames}.\n\nDelete these unit(s) from the floor map?\n\nChoose Cancel to keep editing the floor size.`
+      );
+
+      if (!proceed) return false;
+      commitUnits(unitsInsideFloor);
+    }
+
     setFloorSize(newFloorSize);
     setCanvasSettings({ gridInterval, showGrid, snapToGrid });
+    return true;
   }
 
   const value = {
