@@ -14,3 +14,21 @@
   padding: 24px;
   max-width: 900px;
 }
+
+.view-accounts-container .breadcrumb {
+  font-size: 12px;
+  color: #998874;
+  margin-bottom: 8px;
+}
+
+.view-accounts-container .page-title {
+  font-size: 24px;
+  font-weight: 500;
+  font-family: Georgia, serif;
+  margin: 8px 0 16px;
+}
+
+.view-accounts-container .page-title em {
+  color: #b5532a;
+  font-style: italic;
+}

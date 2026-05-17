@@ -37,8 +37,11 @@ export function ViewAccounts(){
   const getEmail = (user) => (user.emails && user.emails[0]?.address) || '';
   return (
     <div className="view-accounts-container">
+      <div className="breadcrumb">Account management / All accounts</div>
+      <h1 className="page-title">
+        Manage <em>accounts</em>
+      </h1>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Manage Accounts</h2>
         {/* Create Account button links to the existing registration page */}
         <button
           onClick={() => navigate('/register')}
