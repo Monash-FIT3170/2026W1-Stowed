@@ -156,6 +156,8 @@ export function EditorProvider({ children, floorMapId }) {
         }
       }
 
+      const savedCanvasUnits = [];
+
       for (const unit of units) {
         const position = {
           x: unit.x,
@@ -171,20 +173,29 @@ export function EditorProvider({ children, floorMapId }) {
             name: unit.name,
             type: unit.type || "other",
             position,
+            fill: unit.fill,
           });
+
+          savedCanvasUnits.push(unit);
         } else {
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
             name: unit.name,
             type: unit.type || "other",
             position,
+            fill: unit.fill,
           });
 
-          unit._id = newId;
-          unit.id = newId;
+          savedCanvasUnits.push({
+            ...unit,
+            _id: newId,
+            id: newId,
+          });
         }
       }
 
+      setUnits(savedCanvasUnits);
+      historyRef.current = { stack: [savedCanvasUnits], index: 0 };
       alert("Layout saved to database!");
     } catch (error) {
       console.error(error);

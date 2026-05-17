@@ -248,11 +248,12 @@ Meteor.methods({
    * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-floor-map if the parent FloorMap does not exist.
    */
-  async 'storageUnits.create'({ floorMapId, name, type, position }) {
+  async 'storageUnits.create'({ floorMapId, name, type, position, fill }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
     check(position, Object);
+    if (fill !== undefined) check(fill, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
@@ -270,6 +271,7 @@ Meteor.methods({
       name,
       type,
       position,
+      ...(fill !== undefined ? { fill } : {}),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -289,12 +291,13 @@ Meteor.methods({
    * @throws {Meteor.Error} storage-unit-not-found if no storage unit exists for the provided ID.
    * @throws {Meteor.Error} invalid-floor-map if the parent FloorMap does not exist.
    */
-  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, position }) {
+  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, position, fill }) {
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
     check(type, String);
     check(position, Object);
+    if (fill !== undefined) check(fill, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
@@ -316,6 +319,7 @@ Meteor.methods({
         name,
         type,
         position,
+        ...(fill !== undefined ? { fill } : {}),
         updatedAt: new Date(),
       },
     });
