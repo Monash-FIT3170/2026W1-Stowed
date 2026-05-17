@@ -509,18 +509,14 @@ export function EditProductPage() {
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
               <button
-                style={{
-                  ...buttonStyle,
-                  opacity: isSaving ? 0.4 : 1,
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                }}
+                className="btn-primary"
                 disabled={isSaving}
                 onClick={confirmSave}
               >
                 {isSaving ? 'Saving…' : 'Confirm Save'}
               </button>
               <button
-                style={buttonStyle}
+                className="btn-secondary"
                 disabled={isSaving}
                 onClick={() => setShowSaveModal(false)}
               >
