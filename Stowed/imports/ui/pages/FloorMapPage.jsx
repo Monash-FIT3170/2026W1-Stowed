@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas }               from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar }        from "./floorMapComponents/CanvasToolbar";
@@ -36,45 +37,73 @@ function FloorMapPageInner() {
     handlePlaceUnit, handleUnitPlaced,
     handleCanvasSettingsSave,
   } = useEditor();
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div style={pageStyles.page}>
-      {/* CANVAS TOOLBAR */}
-      {isCanvasEditMode && (
-      <CanvasToolbar
-        activeTool={activeTool}
-        setActiveTool={setActiveTool}
-        floorSize={floorSize}
-        onSaveLayout={handleSaveLayout}
-        onLoadLayout={handleLoadLayout}
-        onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
-      )}
-
       {/* MAIN ROW */}
       <div style={pageStyles.mainRow}>
-        {/* STORAGE PANEL */}
-        {isCanvasEditMode && 
-         ( <StoragePanel onSelectUnit={handlePlaceUnit} />
-        )}
-
         {/* CANVAS AREA */}
-        <div style={pageStyles.canvasShell}>
-          <div style={pageStyles.canvasInner}>
-            <Canvas
-              style={{
-                display: "block",
-                width: "100%",
-                height: "100%",
-              }}
-              isCanvasEditMode={isCanvasEditMode}
-            />
-          </div>
+        <div style={pageStyles.canvasArea}>
+          <Canvas
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+            }}
+            isCanvasEditMode={isCanvasEditMode}
+          />
         </div>
+
+        {/* SIDEBAR */}
+        {isCanvasEditMode && (
+          <div
+            style={{
+              ...pageStyles.sidebarBase,
+              ...pageStyles.sidebarRight,
+              ...(isSidebarOpen ? pageStyles.sidebarOpen : pageStyles.sidebarCollapsed),
+            }}
+          >
+            <button
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              style={pageStyles.sidebarToggle}
+              aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {isSidebarOpen ? "☰" : "☰"}
+            </button>
+            {isSidebarOpen && (
+              <>
+                <StoragePanel onSelectUnit={handlePlaceUnit} />
+                <div style={pageStyles.sidebarDivider} />
+                <CanvasToolbar
+                  activeTool={activeTool}
+                  setActiveTool={setActiveTool}
+                  floorSize={floorSize}
+                  onSaveLayout={handleSaveLayout}
+                  onLoadLayout={handleLoadLayout}
+                  onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                />
+                <div style={pageStyles.sidebarFooter}>
+                  <button
+                    onClick={() => setCanvasEditMode(false)}
+                    style={{
+                      ...buttonStyles.base,
+                      ...buttonStyles.secondary,
+                      width: "100%",
+                    }}
+                  >
+                    Exit Edit Mode
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* CANVAS SETTINGS MODAL */}
@@ -89,17 +118,19 @@ function FloorMapPageInner() {
         />
       )}
 
-      <button
-        onClick={() => setCanvasEditMode(!isCanvasEditMode)}
-        style={{
-          ...buttonStyles.base,
-          ...(isCanvasEditMode ? buttonStyles.secondary : buttonStyles.primary),
-          ...pageStyles.floatingButton,
-          padding: "10px 18px",
-        }}
-      >
-        {isCanvasEditMode ? "Exit Edit Mode" : "Edit Floor Map"}
-      </button>
+      {!isCanvasEditMode && (
+        <button
+          onClick={() => setCanvasEditMode(true)}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.primary,
+            ...pageStyles.floatingButton,
+            padding: "10px 18px",
+          }}
+        >
+          Edit Floor Map
+        </button>
+      )}
     </div>
 
 

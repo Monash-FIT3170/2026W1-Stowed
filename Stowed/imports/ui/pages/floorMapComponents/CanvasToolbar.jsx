@@ -49,49 +49,60 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
 
     return (
     <div style={toolbarStyles.bar}>
-        {/* TOOLS */}
-      <div style={toolbarStyles.group}>
+      <div style={toolbarStyles.status}>
+        <span>Active tool</span>
+        <span style={toolbarStyles.statusBadge}>{activeToolLabel}</span>
+      </div>
+
+      {/* TOOLS */}
+      <div style={toolbarStyles.row}>
         <button
           onClick={() => setActiveTool("select")}
           style={toolButtonStyle("select")}
+          aria-pressed={activeTool === "select"}
         >
           Select
         </button>
         <button
           onClick={() => setActiveTool("move")}
           style={toolButtonStyle("move")}
+          aria-pressed={activeTool === "move"}
         >
           Move
         </button>
       </div>
 
-      <div style={toolbarStyles.group}>
+      <div style={toolbarStyles.row}>
         <button
           onClick={onSaveLayout}
-          style={{ ...buttonStyles.base, ...buttonStyles.primary }}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.primary,
+            ...toolbarStyles.button,
+          }}
         >
           Save Layout
         </button>
         <button
           onClick={onLoadLayout}
-          style={{ ...buttonStyles.base, ...buttonStyles.secondary }}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.secondary,
+            ...toolbarStyles.button,
+          }}
         >
           Load Layout
         </button>
       </div>
 
-      <div style={toolbarStyles.status}>
-        <span>Active tool</span>
-        <span style={toolbarStyles.statusBadge}>{activeToolLabel}</span>
-        </div>
-  
-      <div style={toolbarStyles.actions}>
+      <div style={toolbarStyles.row}>
         <button
           onClick={onUndo}
           disabled={!canUndo}
           style={{
             ...buttonStyles.base,
             ...buttonStyles.secondary,
+            ...toolbarStyles.button,
             ...disabledStyle(!canUndo),
           }}
         >
@@ -103,14 +114,21 @@ export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSi
           style={{
             ...buttonStyles.base,
             ...buttonStyles.secondary,
+            ...toolbarStyles.button,
             ...disabledStyle(!canRedo),
           }}
         >
           Redo
         </button>
+      </div>
+      <div style={toolbarStyles.rowSingle}>
         <button
           onClick={onOpenCanvasSettings}
-          style={{ ...buttonStyles.base, ...buttonStyles.secondary }}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.secondary,
+            ...toolbarStyles.button,
+          }}
         >
           Canvas Settings
         </button>
