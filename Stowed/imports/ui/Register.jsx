@@ -26,6 +26,7 @@ const Register = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState(ROLES.STANDARD);
+  const [orgCode, setOrgCode] = useState('');
 
   const isLoggedIn = !!currentUser;
   const isPrivileged = currentUser?.profile?.role >= ROLES.ADMIN;
@@ -81,6 +82,7 @@ const Register = () => {
           username,
           email,
           password,
+          orgCode: orgCode.trim() || null,
         });
 
         setSuccess(`Account created for ${username}`);
@@ -118,6 +120,16 @@ const Register = () => {
         )}
 
         <form onSubmit={onSubmit}>
+          {!isLoggedIn && (
+            <div>
+              <label>Organisation Code</label>
+              <input
+                type="text"
+                value={orgCode}
+                onChange={(e) => setOrgCode(e.target.value)}
+              />
+            </div>
+          )}
           <div>
             <label>Username</label>
             <input name="username" value={username} onChange={onChange} required />
