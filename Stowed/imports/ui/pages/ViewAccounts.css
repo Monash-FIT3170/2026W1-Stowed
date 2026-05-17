@@ -75,3 +75,48 @@
   color: #998874;
   margin-bottom: 8px;
 }
+
+.view-accounts-container .table-header,
+.view-accounts-container .table-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr 100px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.view-accounts-container .table-header {
+  border-bottom: 1px solid #d9cfc0;
+  font-size: 11px;
+  color: #998874;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.view-accounts-container .table-row {
+  border-bottom: 0.5px solid #efe7da;
+  font-size: 13px;
+}
+
+.view-accounts-container .cell-email {
+  color: #998874;
+}
+
+.view-accounts-container .btn-row-delete {
+  background: transparent;
+  border: none;
+  color: #c23b22;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.view-accounts-container .btn-row-delete:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.view-accounts-container .btn-row-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

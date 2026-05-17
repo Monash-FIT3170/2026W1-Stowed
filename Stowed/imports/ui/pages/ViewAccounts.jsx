@@ -72,34 +72,29 @@ export function ViewAccounts(){
         Showing {filteredUsers.length} of {users.length}
       </div>
 
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left py-2">Username</th>
-            <th className="text-left py-2">Email</th>
-            <th className="text-left py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredUsers.map((user) => (
-            <tr key={user._id} className="border-b">
-              <td className="py-2">{user.username}</td>
-              <td className="py-2">{getEmail(user)}</td>
-              <td className="py-2">
-                {user._id !== currentUser._id && (
-                  <button
-                    onClick={() => openDeleteModal(user._id)}
-                    disabled={deleting === user._id}
-                    className="text-red-600 hover:underline disabled:opacity-50"
-                  >
-                    {deleting === user._id ? 'Deleting...' : 'Delete'}
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="table-header">
+        <span>Username</span>
+        <span>Email</span>
+        <span>Actions</span>
+      </div>
+
+      {filteredUsers.map((user) => (
+        <div key={user._id} className="table-row">
+          <span>{user.username}</span>
+          <span className="cell-email">{getEmail(user)}</span>
+          <span>
+            {user._id !== currentUser._id && (
+              <button
+                onClick={() => openDeleteModal(user._id)}
+                disabled={deleting === user._id}
+                className="btn-row-delete"
+              >
+                {deleting === user._id ? 'Deleting...' : 'Delete'}
+              </button>
+            )}
+          </span>
+        </div>
+      ))}
       {showDeleteModal && (
         <div
           style={{
