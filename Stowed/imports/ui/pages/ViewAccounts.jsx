@@ -96,79 +96,27 @@ export function ViewAccounts(){
         </div>
       ))}
       {showDeleteModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(36,20,15,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 100,
-          }}
-        >
-          <div
-            style={{
-              background: "#fffaf8",
-              border: "1px solid rgba(36,20,15,0.08)",
-              borderRadius: "16px",
-              padding: "32px",
-              maxWidth: "420px",
-              width: "90%",
-              boxShadow: "0 10px 40px rgba(36,20,15,0.15)",
-              fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif",
-            }}
-          >
-            <h3
-              style={{
-                marginTop: 0,
-                marginBottom: "12px",
-                fontSize: "20px",
-                fontFamily: "Georgia, 'Times New Roman', serif",
-                fontWeight: 700,
-                color: "#24140f",
-              }}
-            >
-              Delete this account?
-            </h3>
-            <p style={{ marginBottom: "28px", color: "#6b4f46", lineHeight: 1.5 }}>
-              This will permanently delete the account. This action cannot be undone.
-            </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+        <div className="view-accounts-modal-overlay">
+          <div className="view-accounts-modal">
+            <h3>Delete this account?</h3>
+            <p>This will permanently delete the account. This action cannot be undone.</p>
+            <div className="view-accounts-modal-actions">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
                   setUserToDelete(null);
                 }}
                 disabled={deleting !== null}
-                style={{
-                  padding: "10px 22px",
-                  background: "#fffaf8",
-                  border: "1px solid rgba(36,20,15,0.12)",
-                  borderRadius: "999px",
-                  color: "#24140f",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
+                className="view-accounts-btn-cancel"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={deleting !== null}
-                style={{
-                  padding: "10px 22px",
-                  background: "#e76a54",
-                  border: "1px solid #e76a54",
-                  borderRadius: "999px",
-                  color: "#fffaf8",
-                  fontWeight: 700,
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
+                className="view-accounts-btn-confirm"
               >
-                {deleting !== null ? "Deleting…" : "Confirm Delete"}
+                {deleting !== null ? 'Deleting…' : 'Confirm Delete'}
               </button>
             </div>
           </div>
