@@ -32,3 +32,24 @@
   color: #b5532a;
   font-style: italic;
 }
+
+.view-accounts-container .button-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.view-accounts-container .btn-add-item {
+  background: #e89b6f;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.view-accounts-container .btn-add-item:hover {
+  opacity: 0.9;
+}

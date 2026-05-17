@@ -41,11 +41,10 @@ export function ViewAccounts(){
       <h1 className="page-title">
         Manage <em>accounts</em>
       </h1>
-      <div className="flex justify-between items-center mb-4">
-        {/* Create Account button links to the existing registration page */}
+      <div className="button-row">
         <button
           onClick={() => navigate('/register')}
-          className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+          className="btn-add-item"
         >
           + Create Account
         </button>
