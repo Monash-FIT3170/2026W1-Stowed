@@ -1,0 +1,16 @@
+/* ViewAccountsPage Styles */
+
+:root {
+  --bg-primary: #f5efe6;
+  --text-muted: #998874;
+  --text-dark: #1a1a1a;
+  --accent-primary: #b5532a;
+  --accent-secondary: #e89b6f;
+  --border-light: #efe7da;
+  --border-subtle: #d9cfc0;
+}
+
+.view-accounts-container {
+  padding: 24px;
+  max-width: 900px;
+}

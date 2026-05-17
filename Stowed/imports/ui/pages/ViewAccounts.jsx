@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { useNavigate } from 'react-router-dom';
+import './ViewAccounts.css';
 
 export function ViewAccounts(){
     const navigate = useNavigate();
@@ -35,7 +36,7 @@ export function ViewAccounts(){
     };
   const getEmail = (user) => (user.emails && user.emails[0]?.address) || '';
   return (
-    <div className="p-6">
+    <div className="view-accounts-container">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Manage Accounts</h2>
         {/* Create Account button links to the existing registration page */}
