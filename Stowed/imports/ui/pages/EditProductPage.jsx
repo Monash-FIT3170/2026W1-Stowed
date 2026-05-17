@@ -80,7 +80,7 @@ const overlayStyle = {
 const modalStyle = {
   background: '#fff',
   border: '1px solid #ccc',
-  borderRadius: '6px',
+  borderRadius: '12px',
   padding: '28px',
   maxWidth: '440px',
   width: '100%',
