@@ -115,8 +115,9 @@ export function EditProductPage() {
   const navigate = useNavigate();
 
   const [name, setName]                   = useState('');
-  const [description, setDescription]     = useState('');
   const [totalQuantity, setTotalQuantity] = useState('');
+  const [category, setCategory] = useState('');
+  const [brand, setBrand]       = useState('');
   const [assignments, setAssignments]     = useState([]);
   const [initialised, setInitialised]     = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -146,7 +147,8 @@ export function EditProductPage() {
   useEffect(() => {
     if (!loading && product && !initialised) {
       setName(product.name);
-      setDescription(product.description || '');
+      setCategory(product.category);
+      setBrand(product.brand);
       setTotalQuantity(String(product.totalQuantity));
       setAssignments(
         originalRecords.map((r) => ({ locationId: r.locationId, quantity: String(r.quantity) }))
@@ -179,8 +181,11 @@ export function EditProductPage() {
     if (name.trim() !== product.name)
       result.name = { from: product.name, to: name.trim() };
 
-    if (description !== (product.description || ''))
-      result.description = { from: product.description || '', to: description };
+    if (category !== (product.category || ''))
+      result.category = { from: product.category || '', to: category };
+
+    if (brand !== (product.brand || ''))
+      result.brand = { from: product.brand || '', to: brand };
 
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
@@ -204,7 +209,7 @@ export function EditProductPage() {
     if (assignmentsChanged) result.assignments = true;
 
     return result;
-  }, [initialised, product, name, description, parsedTotal, validAssignments, originalRecords]);
+  }, [initialised, product, name, category, brand, parsedTotal, validAssignments, originalRecords]);
 
   // Assignment handlers
 
@@ -235,7 +240,8 @@ export function EditProductPage() {
       await callMethod('products.update', {
         productId,
         name: name.trim(),
-        description,
+        category,
+        brand,
         totalQuantity: parsedTotal,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
@@ -286,6 +292,26 @@ export function EditProductPage() {
                   onChange={(e) => setName(e.target.value)}
                   className="form-input"
                 />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Category</label>
+                  <input
+                    type="text"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Brand</label>
+                  <input
+                    type="text"
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -399,11 +425,20 @@ export function EditProductPage() {
               </div>
             )}
 
-            {changes.description !== undefined && (
+            {changes.category && (
               <div style={changeRowStyle}>
-                <strong>Description</strong>
+                <strong>Category</strong>
                 <div style={{ color: '#555' }}>
-                  {changes.description.from || '(none)'} → {changes.description.to || '(none)'}
+                  {changes.category.from} → {changes.category.to}
+                </div>
+              </div>
+            )}
+
+            {changes.brand && (
+              <div style={changeRowStyle}>
+                <strong>Brand</strong>
+                <div style={{ color: '#555' }}>
+                  {changes.brand.from} → {changes.brand.to}
                 </div>
               </div>
             )}
