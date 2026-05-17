@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { useNavigate } from 'react-router-dom';
@@ -9,12 +9,23 @@ export function ViewAccounts(){
     const [deleting, setDeleting] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const {users, currentUser} = useTracker(() => {
         const subscription = Meteor.subscribe('allUsers');
         const users = Meteor.users.find({}, {fields: {username: 1, emails: 1} }).fetch();
         return {users, currentUser: Meteor.user(), ready: subscription.ready() };
     }, []);
+
+    const filteredUsers = useMemo(() => {
+      if (!searchQuery.trim()) return users;
+      const query = searchQuery.toLowerCase();
+      return users.filter((user) => {
+        const username = (user.username || '').toLowerCase();
+        const email = ((user.emails && user.emails[0]?.address) || '').toLowerCase();
+        return username.includes(query) || email.includes(query);
+      });
+    }, [users, searchQuery]);
 
     const openDeleteModal = (userId) => {
       setUserToDelete(userId);
@@ -41,13 +52,24 @@ export function ViewAccounts(){
       <h1 className="page-title">
         Manage <em>accounts</em>
       </h1>
-      <div className="button-row">
+      <div className="search-bar-container">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by username or email"
+          className="search-input"
+        />
         <button
           onClick={() => navigate('/register')}
           className="btn-add-item"
         >
           + Create Account
         </button>
+      </div>
+
+      <div className="search-result-count">
+        Showing {filteredUsers.length} of {users.length}
       </div>
 
       <table className="w-full border-collapse">
@@ -59,7 +81,7 @@ export function ViewAccounts(){
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {filteredUsers.map((user) => (
             <tr key={user._id} className="border-b">
               <td className="py-2">{user.username}</td>
               <td className="py-2">{getEmail(user)}</td>
