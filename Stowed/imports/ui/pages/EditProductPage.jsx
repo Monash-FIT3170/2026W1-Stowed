@@ -9,7 +9,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from '/imports/api/locations/collections';
-import './ItemDetailPage.css';
+import './CreateProductPage.css';
 
 // Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
@@ -266,12 +266,17 @@ export function EditProductPage() {
             </button>
           </div>
         </div>
+        <h1 className="header-title">Edit <em>{name}</em></h1>
       </div>
+
 
       <div className="item-detail-grid">
         <div className="left-column">
           <div className="detail-section">
-            <h2 className="section-title">Core identification</h2>
+            <h2 className="section-title">
+              <span className="section-badge" style={{ background: '#d6ede8', color: '#4a8c78' }}>ID</span>
+              Core identification
+            </h2>
             <div className="section-content">
               <div className="form-group">
                 <label>Item name</label>
@@ -286,7 +291,10 @@ export function EditProductPage() {
           </div>
 
           <div className="detail-section">
-            <h2 className="section-title">Operational details</h2>
+            <h2 className="section-title">
+              <span className="section-badge" style={{ background: '#fde8d8', color: '#b5532a' }}>OP</span>
+              Operational details
+            </h2>
             <div className="section-content">
               <div className="form-row">
                 <div className="form-group">
@@ -304,7 +312,10 @@ export function EditProductPage() {
           </div>
 
           <div className="detail-section">
-            <h2 className="section-title">Additional details</h2>
+            <h2 className="section-title">
+              <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>AD</span>
+              Additional details
+            </h2>
             <div className="section-content">
               <div className="form-group">
                 <label>Description</label>
@@ -320,7 +331,10 @@ export function EditProductPage() {
           </div>
 
           <div className="detail-section">
-            <h2 className="section-title">Storage Locations</h2>
+            <h2 className="section-title">
+              <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>LC</span>
+              Storage Locations
+            </h2>
             <div className="section-content">
               <p style={{ marginBottom: '16px', color: '#555' }}>
                 All stock must be assigned before saving.
