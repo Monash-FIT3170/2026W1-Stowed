@@ -118,6 +118,7 @@ export function EditProductPage() {
   const [totalQuantity, setTotalQuantity] = useState('');
   const [category, setCategory] = useState('');
   const [brand, setBrand]       = useState('');
+  const [unitCost, setUnitCost] = useState('');
   const [assignments, setAssignments]     = useState([]);
   const [initialised, setInitialised]     = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -150,6 +151,7 @@ export function EditProductPage() {
       setCategory(product.category);
       setBrand(product.brand);
       setTotalQuantity(String(product.totalQuantity));
+      setUnitCost(String(product.unitCost));
       setAssignments(
         originalRecords.map((r) => ({ locationId: r.locationId, quantity: String(r.quantity) }))
       );
@@ -189,6 +191,9 @@ export function EditProductPage() {
 
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
+
+    if (parseFloat(unitCost) !== product.unitCost)
+      result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
 
     const normalise = (arr) =>
       [...arr].sort((a, b) => a.locationId.localeCompare(b.locationId));
@@ -243,6 +248,7 @@ export function EditProductPage() {
         category,
         brand,
         totalQuantity: parsedTotal,
+        unitCost: unitCost ? parseFloat(unitCost) : 0,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity:   parseInt(a.quantity, 10),
@@ -331,6 +337,18 @@ export function EditProductPage() {
                     onChange={(e) => setTotalQuantity(e.target.value)}
                     className="form-input"
                     min="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Unit cost</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={unitCost}
+                    onChange={(e) => setUnitCost(e.target.value)}
+                    className="form-input"
+                    placeholder="$0.00"
                   />
                 </div>
               </div>
@@ -448,6 +466,15 @@ export function EditProductPage() {
                 <strong>Total Quantity</strong>
                 <div style={{ color: '#555' }}>
                   {changes.totalQuantity.from} → {changes.totalQuantity.to}
+                </div>
+              </div>
+            )}
+
+            {changes.unitCost && (
+              <div style={changeRowStyle}>
+                <strong>Unit cost</strong>
+                <div style={{ color: '#555' }}>
+                  ${changes.unitCost.from} → ${changes.unitCost.to}
                 </div>
               </div>
             )}

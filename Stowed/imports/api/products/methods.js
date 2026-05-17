@@ -184,7 +184,7 @@ Meteor.methods({
     const now = new Date();
 
     await Products.updateAsync(productId, {
-      $set: { name, category, brand, totalQuantity, updatedAt: now },
+      $set: { name, category, brand, totalQuantity, unitCost, updatedAt: now },
     });
 
     // Replace all records for this product with the new assignments.
