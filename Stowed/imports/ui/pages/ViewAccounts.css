@@ -120,3 +120,25 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.view-accounts-container .btn-row-delete {
+  padding: 4px 12px;
+  background: #fff7f4;
+  border: 1px solid rgba(216, 111, 88, 0.32);
+  border-radius: 14px;
+  color: #d86f58;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.view-accounts-container .btn-row-delete:hover:not(:disabled) {
+  background: #fde9e2;
+  border-color: rgba(216, 111, 88, 0.5);
+}
+
+.view-accounts-container .btn-row-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
