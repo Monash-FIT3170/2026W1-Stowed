@@ -75,70 +75,85 @@ export function ViewAccounts(){
           ))}
         </tbody>
       </table>
-          {showDeleteModal && (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-        }}
-      >
+      {showDeleteModal && (
         <div
           style={{
-            background: '#fff',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            padding: '28px',
-            maxWidth: '400px',
+            position: "fixed",
+            inset: 0,
+            background: "rgba(36,20,15,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
           }}
         >
-          <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '18px' }}>
-            Delete this account?
-          </h3>
-          <p style={{ marginBottom: '24px', color: '#666' }}>
-            This will permanently delete the account. This action cannot be undone.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => {
-                setShowDeleteModal(false);
-                setUserToDelete(null);
-              }}
-              disabled={deleting !== null}
+          <div
+            style={{
+              background: "#fffaf8",
+              border: "1px solid rgba(36,20,15,0.08)",
+              borderRadius: "16px",
+              padding: "32px",
+              maxWidth: "420px",
+              width: "90%",
+              boxShadow: "0 10px 40px rgba(36,20,15,0.15)",
+              fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif",
+            }}
+          >
+            <h3
               style={{
-                padding: '6px 14px',
-                border: '1px solid #333',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                background: 'transparent',
-                fontSize: '14px',
+                marginTop: 0,
+                marginBottom: "12px",
+                fontSize: "20px",
+                fontFamily: "Georgia, 'Times New Roman', serif",
+                fontWeight: 700,
+                color: "#24140f",
               }}
             >
-              Cancel
-            </button>
-            <button
-              onClick={confirmDelete}
-              disabled={deleting !== null}
-              style={{
-                padding: '6px 14px',
-                border: '1px solid #c00',
-                color: '#c00',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                background: 'transparent',
-                fontSize: '14px',
-              }}
-            >
-              {deleting !== null ? 'Deleting...' : 'Confirm Delete'}
-            </button>
+              Delete this account?
+            </h3>
+            <p style={{ marginBottom: "28px", color: "#6b4f46", lineHeight: 1.5 }}>
+              This will permanently delete the account. This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setUserToDelete(null);
+                }}
+                disabled={deleting !== null}
+                style={{
+                  padding: "10px 22px",
+                  background: "#fffaf8",
+                  border: "1px solid rgba(36,20,15,0.12)",
+                  borderRadius: "999px",
+                  color: "#24140f",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting !== null}
+                style={{
+                  padding: "10px 22px",
+                  background: "#e76a54",
+                  border: "1px solid #e76a54",
+                  borderRadius: "999px",
+                  color: "#fffaf8",
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                {deleting !== null ? "Deleting…" : "Confirm Delete"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 }
