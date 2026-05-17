@@ -2,6 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import '/imports/api/products/methods';
 import '/imports/api/locations/methods';
 import '/imports/api/publications';
+import '/imports/api/upload.js';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
 import { Products, ProductRecords } from '/imports/api/products/collections';
 
