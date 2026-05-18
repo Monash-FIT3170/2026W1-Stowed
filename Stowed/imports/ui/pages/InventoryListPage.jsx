@@ -6,7 +6,6 @@ import { Products } from "../../api/products/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
-import Fuse from "fuse.js";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -66,25 +65,20 @@ export function InventoryListPage() {
       result = result.filter((item) => item.totalQuantity <= 10);
     }
 
-     // Apply fuzzy search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((item) => {
         const name = (item.name || "").toLowerCase();
-        const tag = (item.tag || "").toLowerCase();
+        const description = (item.description || "").toLowerCase();
         const sku = (item.sku || "").toLowerCase();
         const id = (item._id || "").toLowerCase();
         return (
           name.includes(query) ||
-          tag.includes(query) ||
+          description.includes(query) ||
           sku.includes(query) ||
           id.includes(query)
         );
       });
-
-      const results = fuse.search(searchQuery);
-
-      items = results.map((result) => result.item);
     }
 
     return result;
@@ -94,14 +88,14 @@ export function InventoryListPage() {
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedProductIds.includes(item._id)),
-    [items, selectedProductIds]
+    [items, selectedProductIds],
   );
 
   const toggleSelectedProduct = (productId) => {
     setSelectedProductIds((current) =>
       current.includes(productId)
         ? current.filter((id) => id !== productId)
-        : [...current, productId]
+        : [...current, productId],
     );
   };
 
@@ -131,7 +125,9 @@ export function InventoryListPage() {
       setShowDeleteModal(false);
     } catch (error) {
       console.error("Failed to delete selected products:", error);
-      setDeleteError(error.reason || error.message || "Could not delete selected items.");
+      setDeleteError(
+        error.reason || error.message || "Could not delete selected items.",
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -191,11 +187,7 @@ export function InventoryListPage() {
           aria-label="Delete selected items"
           title="Delete selected items"
         >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="delete-icon"
-          >
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
             <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
             <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
           </svg>
@@ -252,7 +244,8 @@ export function InventoryListPage() {
             aria-labelledby="delete-product-title"
           >
             <h2 id="delete-product-title">
-              Delete {selectedItems.length} selected item{selectedItems.length !== 1 ? "s" : ""}?
+              Delete {selectedItems.length} selected item
+              {selectedItems.length !== 1 ? "s" : ""}?
             </h2>
             <p>
               This will permanently delete the selected product

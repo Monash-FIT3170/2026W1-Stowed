@@ -337,6 +337,16 @@ export function LocationsPage() {
       setLocationForm(DEFAULT_LOCATION_FORM);
     });
   }
+  function Field({ label, children }) {
+    return (
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-zinc-700">
+          {label}
+        </span>
+        {children}
+      </label>
+    );
+  }
 
   return (
     <div className="locations-page-container">

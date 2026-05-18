@@ -53,6 +53,17 @@ export function ItemDetailView({ item, productId }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
+  const unitCost = Number(item.unitCost);
+  const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
+  const reorderAt = item.reorderAt ?? 10;
+  const catalogImages =
+    Array.isArray(item.catalogImages) && item.catalogImages.length
+      ? item.catalogImages
+      : item.photoUrl
+        ? [item.photoUrl]
+        : [];
+  const qrCode = item.qrCode || item.photoUrl || "";
+  const hasUnitCost = Number.isFinite(unitCost);
 
   if (!item) {
     return <div className="p-8 text-center">Item not found.</div>;
@@ -116,9 +127,9 @@ export function ItemDetailView({ item, productId }) {
               <div className={statusClass}>{statusLabel}</div>
               <h1 className="header-title">{item.name}</h1>
               <div className="header-meta">
-                <span>{item.currentStock} in stock</span>
+                <span>{currentStock} in stock</span>
                 <span></span>
-                <span>Reorder at {item.reorderAt}</span>
+                <span>Reorder at {reorderAt}</span>
                 <span></span>
                 <span className="sku">SKU: {item.sku}</span>
               </div>
@@ -161,7 +172,7 @@ export function ItemDetailView({ item, productId }) {
                     <label>Unit cost</label>
                     <input
                       type="text"
-                      value={`$${item.unitCost.toFixed(2)}`}
+                      value={hasUnitCost ? `$${unitCost.toFixed(2)}` : "—"}
                       readOnly
                       className="form-input"
                     />
@@ -170,7 +181,7 @@ export function ItemDetailView({ item, productId }) {
                     <label>Current stock</label>
                     <input
                       type="text"
-                      value={item.currentStock}
+                      value={currentStock}
                       readOnly
                       className="form-input"
                     />
@@ -181,7 +192,7 @@ export function ItemDetailView({ item, productId }) {
                     <label>Reorder at</label>
                     <input
                       type="text"
-                      value={item.reorderAt}
+                      value={reorderAt}
                       readOnly
                       className="form-input"
                     />
@@ -201,13 +212,13 @@ export function ItemDetailView({ item, productId }) {
               <div className="section-content">
                 <div className="main-image-container">
                   <img
-                    src={item.catalogImages[selectedImageIndex]}
+                    src={catalogImages[selectedImageIndex]}
                     alt={item.name}
                     className="main-image"
                   />
                 </div>
                 <div className="thumbnail-gallery">
-                  {item.catalogImages.map((img, index) => (
+                  {catalogImages.map((img, index) => (
                     <button
                       key={index}
                       className={`thumbnail ${selectedImageIndex === index ? "active" : ""}`}
@@ -225,7 +236,7 @@ export function ItemDetailView({ item, productId }) {
               <h2 className="section-title"> QR & label</h2>
               <div className="section-content qr-section">
                 <div className="qr-container">
-                  <img src={item.qrCode} alt="QR Code" className="qr-code" />
+                  <img src={qrCode} alt="QR Code" className="qr-code" />
                   <p className="qr-label">SKU: {item.sku}</p>
                   <p className="qr-label">{item.location}</p>
                 </div>
