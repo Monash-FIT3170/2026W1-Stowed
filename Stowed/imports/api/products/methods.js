@@ -194,6 +194,70 @@ Meteor.methods({
   },
 
   /**
+   * Restocks a Product by increasing its total quantity and replacing its
+   * location assignments with the updated distribution.
+   *
+   * The caller supplies the number of units being added and the full new
+   * assignment list (existing locations with adjusted quantities + any new
+   * locations). The sum of all assignments must equal the current totalQuantity
+   * plus additionalQuantity.
+   *
+   * @param {Object}   params
+   * @param {string}   params.productId
+   * @param {number}   params.additionalQuantity - Must be a positive integer.
+   * @param {Object[]} params.assignments        - Full replacement assignment list.
+   * @param {string}   params.assignments[].locationId
+   * @param {number}   params.assignments[].quantity
+   *
+   * @throws {Meteor.Error} not-authorised     - Not logged in outside development.
+   * @throws {Meteor.Error} product-not-found  - No product with this _id exists.
+   * @throws {Meteor.Error} invalid-quantity   - additionalQuantity is not > 0.
+   * @throws {Meteor.Error} quantity-mismatch  - Assignments do not sum to new total.
+   */
+  async 'products.restock'({ productId, additionalQuantity, assignments }) {
+    check(productId, String);
+    check(additionalQuantity, Match.Integer);
+    check(assignments, [{ locationId: String, quantity: Match.Integer }]);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error('not-authorised', 'You must be logged in.');
+    }
+
+    const product = await Products.findOneAsync(productId);
+    if (!product) {
+      throw new Meteor.Error('product-not-found', 'No product found with that ID.');
+    }
+
+    if (additionalQuantity <= 0) {
+      throw new Meteor.Error('invalid-quantity', 'Units being added must be greater than zero.');
+    }
+
+    // Merge any duplicate locationIds by summing their quantities.
+    const mergedAssignments = mergeAssignments(assignments);
+
+    const newTotal      = product.totalQuantity + additionalQuantity;
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
+    if (assignedTotal !== newTotal) {
+      throw new Meteor.Error(
+        'quantity-mismatch',
+        `Assigned quantity (${assignedTotal}) must equal new total quantity (${newTotal}).`
+      );
+    }
+
+    const now = new Date();
+
+    await Products.updateAsync(productId, {
+      $set: { totalQuantity: newTotal, updatedAt: now },
+    });
+
+    // Replace all records with the merged new assignments.
+    await ProductRecords.removeAsync({ productId });
+    for (const { locationId, quantity } of mergedAssignments) {
+      await ProductRecords.insertAsync({ productId, locationId, quantity, createdAt: now, updatedAt: now });
+    }
+  },
+
+  /**
    * Creates a new ProductRecord, assigning a quantity of a product to a location.
    *
    * @param {Object} params
