@@ -5,7 +5,7 @@ import { check } from 'meteor/check';
 
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from './collections';
 import { ProductRecords } from '../products/collections';
-import { getCallerOrgId, assertOrgAccess } from '../orgAccess';
+import { getCallerOrgId, assertOrgAccess } from '../userMethods';
 
 Meteor.methods({
   async 'sites.create'({ name, description = '' }) {

@@ -2,7 +2,7 @@ import { Meteor } from 'meteor/meteor';
 
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from './locations/collections';
 import { Products, ProductRecords } from './products/collections';
-import { getCallerOrgId } from './orgAccess';
+import { getCallerOrgId } from './userMethods';
 
 Meteor.publish('locations.all', async function () {
   if (!this.userId) return this.ready();

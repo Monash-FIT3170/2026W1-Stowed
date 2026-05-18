@@ -2,7 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
 import { Products, ProductRecords } from './collections';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '../locations/collections';
-import { getCallerOrgId, assertOrgAccess } from '../orgAccess';
+import { getCallerOrgId, assertOrgAccess } from '../userMethods';
 
 // Traverses StorageLocation → StorageUnit → FloorMap → Site and asserts org access.
 async function assertLocationOrgAccess(locationId, userId) {
