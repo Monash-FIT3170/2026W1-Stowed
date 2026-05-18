@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { InventoryPage }  from './pages/InventoryPage';
 import { ItemDetailPage } from './pages/ItemDetailPage';
+import { EditProductPage } from './pages/EditProductPage';
+import { CreateProductPage } from './pages/CreateProductPage';
 import { ListsPage }      from './pages/ListsPage';
 import { StocktakePage }  from './pages/StocktakePage';
 import { QRCodesPage }    from './pages/QRCodesPage';
@@ -10,6 +12,7 @@ import { ForecastPage }   from './pages/ForecastPage';
 import { AlertsPage }     from './pages/AlertsPage';
 import { FloorMapPage }  from './pages/FloorMapPage';
 import { InventoryListPage } from './pages/InventoryListPage';
+import { StorageUnitDetailPage } from './pages/StorageUnitDetailPage';
 
 const LocationsPage = lazy(() =>
   import('./pages/LocationsPage').then((module) => ({ default: module.LocationsPage })),
@@ -22,11 +25,14 @@ export function App() {
       <div className="flex h-screen overflow-hidden bg-white">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
-          <Suspense fallback={<div className="p-6 text-sm text-zinc-500">Loading…</div>}>
+          <Suspense fallback={null}>
             <Routes>
               <Route path="/"                    element={<InventoryPage />} />
-              <Route path="/inventory/:itemId"   element={<ItemDetailPage />} />
+              <Route path="/inventory/new"              element={<CreateProductPage />} />
+              <Route path="/inventory/:productId/edit" element={<EditProductPage />} />
+              <Route path="/inventory/:productId"      element={<ItemDetailPage />} />
               <Route path="/floor-map"           element={<FloorMapPage />} />
+              <Route path="/floor-map/:floorMapId" element={<FloorMapPage />} />
               <Route path="/locations"           element={<LocationsPage />} />
               <Route path="/lists"               element={<ListsPage />} />
               <Route path="/stocktake"           element={<StocktakePage />} />
@@ -35,6 +41,7 @@ export function App() {
               <Route path="/alerts"              element={<AlertsPage />} />
               <Route path="*"                    element={<Navigate to="/" replace />} />
               <Route path="/inventory/list"      element={<InventoryListPage />} />
+              <Route path="/storage-unit/:unitId" element={<StorageUnitDetailPage />} />
             </Routes>
           </Suspense>
         </main>

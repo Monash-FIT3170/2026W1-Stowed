@@ -40,7 +40,7 @@ function hasValidUnitPosition(unitForm) {
   });
 }
 
-function Panel({ title, subtitle, children }) {
+function Panel({ title, subtitle, children, actions }) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -70,7 +70,16 @@ function TextInput({ label, value, onChange, placeholder }) {
   );
 }
 
-function TextArea({ label, value, onChange, placeholder }) {
+function TextInput(props) {
+  return (
+    <input
+      {...props}
+      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
+    />
+  );
+}
+
+function TextArea(props) {
   return (
     <label className="form-input-wrapper">
       <span className="form-input-label">{label}</span>
@@ -84,7 +93,7 @@ function TextArea({ label, value, onChange, placeholder }) {
   );
 }
 
-function SelectInput({ label, value, onChange, options }) {
+function SectionButton({ active, children, ...props }) {
   return (
     <label className="form-input-wrapper">
       <span className="form-input-label">{label}</span>
@@ -103,7 +112,7 @@ function SelectInput({ label, value, onChange, options }) {
   );
 }
 
-function NumberInput({ label, value, onChange }) {
+function EmptyState({ children }) {
   return (
     <label className="form-input-wrapper">
       <span className="form-input-label">{label}</span>
@@ -202,7 +211,7 @@ export function LocationsPage() {
     if (!sites.some((site) => site._id === selectedSiteId)) {
       setSelectedSiteId(sites[0]._id);
     }
-  }, [sites, selectedSiteId]);
+  }, [selectedSiteId, sites]);
 
   useEffect(() => {
     if (!floorMapsForSite.length) {
@@ -232,7 +241,7 @@ export function LocationsPage() {
     }
   }, [storageUnitsForFloorMap, selectedStorageUnitId]);
 
-  async function runSubmit(action) {
+  async function runAction(action, successMessage) {
     setSubmitting(true);
     setStatus({ type: "", message: "" });
 
@@ -249,7 +258,7 @@ export function LocationsPage() {
     }
   }
 
-  async function handleCreateSite(event) {
+  async function handleSiteSubmit(event) {
     event.preventDefault();
 
     await runSubmit(async () => {
@@ -261,8 +270,9 @@ export function LocationsPage() {
     });
   }
 
-  async function handleCreateFloorMap(event) {
+  async function handleFloorMapSubmit(event) {
     event.preventDefault();
+
     if (!selectedSiteId) {
       setStatus({ type: "error", message: "Create a site first." });
       return;
@@ -365,35 +375,50 @@ export function LocationsPage() {
               subtitle="Create and select the top-level physical area."
             >
               <form className="form-grid" onSubmit={handleCreateSite}>
-                <TextInput
-                  label="Name"
-                  value={siteForm.name}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  placeholder="Warehouse"
-                />
-                <TextArea
-                  label="Description"
-                  value={siteForm.description}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({
-                      ...current,
-                      description: event.target.value,
-                    }))
-                  }
-                  placeholder="Optional note about this site"
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || !siteForm.name.trim()}
-                  className="form-button form-button-full-width"
-                >
-                  Add Site
-                </button>
+                <Field label="Name">
+                  <TextInput
+                    value={siteForm.name}
+                    onChange={(event) =>
+                      setSiteForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Warehouse"
+                  />
+                </Field>
+                <Field label="Description">
+                  <TextArea
+                    value={siteForm.description}
+                    onChange={(event) =>
+                      setSiteForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    placeholder="Optional note"
+                  />
+                </Field>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    disabled={submitting || !siteForm.name.trim()}
+                    className="form-button form-button-full-width"
+                  >
+                    {editingSiteId ? "Save Site" : "Add Site"}
+                  </button>
+                  {editingSiteId ? (
+                    <button
+                      type="button"
+                      onClick={resetSiteForm}
+                      disabled={submitting}
+                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </form>
 
               {sites.length ? (
@@ -441,37 +466,52 @@ export function LocationsPage() {
                 className="form-grid form-grid-cols-2"
                 onSubmit={handleCreateFloorMap}
               >
-                <TextInput
-                  label="Name"
-                  value={floorMapForm.name}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  placeholder="Ground Floor"
-                />
-                <TextInput
-                  label="Image URL"
-                  value={floorMapForm.imageUrl}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({
-                      ...current,
-                      imageUrl: event.target.value,
-                    }))
-                  }
-                  placeholder="https://example.com/floor.png"
-                />
-                <button
-                  type="submit"
-                  disabled={
-                    submitting || !selectedSiteId || !floorMapForm.name.trim()
-                  }
-                  className="form-button form-button-full-width"
-                >
-                  Add Floor Map
-                </button>
+                <Field label="Name">
+                  <TextInput
+                    value={floorMapForm.name}
+                    onChange={(event) =>
+                      setFloorMapForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Ground Floor"
+                  />
+                </Field>
+                <Field label="Image URL">
+                  <TextInput
+                    value={floorMapForm.imageUrl}
+                    onChange={(event) =>
+                      setFloorMapForm((current) => ({
+                        ...current,
+                        imageUrl: event.target.value,
+                      }))
+                    }
+                    placeholder="https://example.com/floor-map.png"
+                  />
+                </Field>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    disabled={
+                      submitting || !selectedSiteId || !floorMapForm.name.trim()
+                    }
+                    className="form-button form-button-full-width"
+                  >
+                    {editingFloorMapId ? "Save Floor Map" : "Add Floor Map"}
+                  </button>
+                  {editingFloorMapId ? (
+                    <button
+                      type="button"
+                      onClick={resetFloorMapForm}
+                      disabled={submitting}
+                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </form>
 
               {floorMapsForSite.length ? (
@@ -594,7 +634,7 @@ export function LocationsPage() {
                   }
                   className="form-button form-button-full-width"
                 >
-                  Add Storage Unit
+                  Edit Selected Floor Map
                 </button>
               </form>
 
@@ -684,7 +724,7 @@ export function LocationsPage() {
                   }
                   className="form-button form-button-full-width"
                 >
-                  Add Storage Location
+                  Manage Units
                 </button>
               </form>
 

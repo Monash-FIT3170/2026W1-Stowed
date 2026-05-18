@@ -1,10 +1,21 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
+import { Products } from "../../api/products/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
-import { mockItems, getLowStockItems } from "../../api/mockItems";
 import "./InventoryListPage.css";
 import Fuse from "fuse.js";
+
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
 
 export function ItemThumbnail({ photoUrl, name }) {
   const [imgError, setImgError] = useState(false);
@@ -35,19 +46,40 @@ export function ItemThumbnail({ photoUrl, name }) {
 export function InventoryListPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const { items, loading } = useTracker(() => {
+    const sub = Meteor.subscribe("products");
+    return {
+      items: Products.find().fetch(),
+      loading: !sub.ready(),
+    };
+  }, []);
 
   const filteredItems = useMemo(() => {
-    let items = mockItems;
+    let result = items;
 
     if (activeFilter === "low-stock") {
-      items = getLowStockItems(items);
+      result = result.filter((item) => item.totalQuantity <= 10);
     }
 
      // Apply fuzzy search
     if (searchQuery.trim()) {
-      const fuse = new Fuse(items, {
-        keys: ["name", "description", "tag", "_id"],
-        threshold: 0.4,
+      const query = searchQuery.toLowerCase();
+      result = result.filter((item) => {
+        const name = (item.name || "").toLowerCase();
+        const tag = (item.tag || "").toLowerCase();
+        const sku = (item.sku || "").toLowerCase();
+        const id = (item._id || "").toLowerCase();
+        return (
+          name.includes(query) ||
+          tag.includes(query) ||
+          sku.includes(query) ||
+          id.includes(query)
+        );
       });
 
       const results = fuse.search(searchQuery);
@@ -55,18 +87,66 @@ export function InventoryListPage() {
       items = results.map((result) => result.item);
     }
 
-    return items;
-    
-  }, [activeFilter, searchQuery]);
+    return result;
+  }, [items, activeFilter, searchQuery]);
 
-  const lowStockCount = getLowStockItems(mockItems).length;
+  const lowStockCount = items.filter((item) => item.totalQuantity <= 10).length;
+
+  const selectedItems = useMemo(
+    () => items.filter((item) => selectedProductIds.includes(item._id)),
+    [items, selectedProductIds]
+  );
+
+  const toggleSelectedProduct = (productId) => {
+    setSelectedProductIds((current) =>
+      current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId]
+    );
+  };
+
+  const openDeleteModal = () => {
+    if (selectedProductIds.length === 0) return;
+    setShowDeleteModal(true);
+    setDeleteError("");
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeleting) return;
+    setShowDeleteModal(false);
+    setDeleteError("");
+  };
+
+  const handleDeleteSelectedProducts = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      for (const productId of selectedProductIds) {
+        await callMethod("products.delete", { productId });
+      }
+      setSelectedProductIds([]);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error("Failed to delete selected products:", error);
+      setDeleteError(error.reason || error.message || "Could not delete selected items.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filters = [
-    { id: "all", label: "All", count: mockItems.length },
+    { id: "all", label: "All", count: items.length },
     { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
     { id: "tag", label: "Tag ▾" },
     { id: "location", label: "Location ▾" },
   ];
+
+  if (loading) {
+    return <div className="inventory-list-container">Loading...</div>;
+  }
 
   return (
     <div className="inventory-list-container">
@@ -81,10 +161,12 @@ export function InventoryListPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by ID, name, or tag"
+          placeholder="Search by ID, name, tag, or SKU"
           className="search-input"
         />
-        <button className="btn-add-item">+ Add item</button>
+        <Link to="/inventory/new">
+          <button className="btn-add-item">+ Add item</button>
+        </Link>
       </div>
 
       <FilterChips
@@ -94,9 +176,32 @@ export function InventoryListPage() {
       />
 
       <div className="filter-count">
-        Showing {filteredItems.length} of {mockItems.length}
+        Showing {filteredItems.length} of {items.length}
         {activeFilter !== "all" &&
           ` · Filter: ${activeFilter.replace("-", " ")}`}
+      </div>
+
+      <div className="selected-actions">
+        <span>{selectedProductIds.length} selected</span>
+        <button
+          type="button"
+          className="btn-selected-delete"
+          onClick={openDeleteModal}
+          disabled={selectedProductIds.length === 0}
+          aria-label="Delete selected items"
+          title="Delete selected items"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="delete-icon"
+          >
+            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+            <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+          </svg>
+          <span className="sr-only">Delete selected items</span>
+        </button>
+        <span className="selected-count">{selectedProductIds.length}</span>
       </div>
 
       <div className="table-header">
@@ -106,6 +211,7 @@ export function InventoryListPage() {
         <span>Location</span>
         <span>Stock</span>
         <span>Status</span>
+        <span />
       </div>
 
       {filteredItems.length === 0 ? (
@@ -122,16 +228,58 @@ export function InventoryListPage() {
             <span>
               <span className="item-tag">{item.tag || "—"}</span>
             </span>
-            <span className="item-location">{item.location}</span>
-            <span>
-              {item.quantity}/{item.lowStockThreshold}
-            </span>
-            <StatusBadge
-              quantity={item.quantity}
-              threshold={item.lowStockThreshold}
-            />
+            <span className="item-location">{item.location || "—"}</span>
+            <span>{item.totalQuantity}</span>
+            <StatusBadge quantity={item.totalQuantity} threshold={10} />
+            <label className="row-select">
+              <input
+                type="checkbox"
+                checked={selectedProductIds.includes(item._id)}
+                onChange={() => toggleSelectedProduct(item._id)}
+                aria-label={`Select ${item.name}`}
+              />
+            </label>
           </div>
         ))
+      )}
+
+      {showDeleteModal && (
+        <div className="delete-modal-overlay" role="presentation">
+          <div
+            className="delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-product-title"
+          >
+            <h2 id="delete-product-title">
+              Delete {selectedItems.length} selected item{selectedItems.length !== 1 ? "s" : ""}?
+            </h2>
+            <p>
+              This will permanently delete the selected product
+              {selectedItems.length !== 1 ? "s" : ""} and remove all related
+              location stock records.
+            </p>
+            {deleteError && <div className="delete-error">{deleteError}</div>}
+            <div className="delete-modal-actions">
+              <button
+                type="button"
+                className="btn-cancel-delete"
+                onClick={closeDeleteModal}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-confirm-delete"
+                onClick={handleDeleteSelectedProducts}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete selected"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

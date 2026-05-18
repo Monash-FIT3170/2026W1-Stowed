@@ -1,26 +1,34 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { mockUser } from "../../api/mockUser";
-import {
-  mockItems,
-  getLowStockItems,
-  getTotalValue,
-  getRecentlyUpdatedItems,
-} from "../../api/mockItems";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
+import { Products } from "../../api/products/collections";
 import { ItemThumbnail } from "../components/ItemThumbnail";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryPage.css";
 
 export function InventoryPage() {
-  const totalItems = mockItems.length;
-  const lowStockCount = getLowStockItems(mockItems).length;
-  const totalValue = getTotalValue(mockItems);
-  const recentItems = getRecentlyUpdatedItems(mockItems);
+  const { items, loading } = useTracker(() => {
+    const sub = Meteor.subscribe("products");
+    return {
+      items: Products.find().fetch(),
+      loading: !sub.ready(),
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="inventory-page-container">Loading...</div>;
+  }
+
+  const totalItems = items.length;
+  const lowStockCount = items.filter((item) => item.totalQuantity <= 10).length;
+  const totalValue = items.reduce((sum, item) => sum + (item.unitCost * item.totalQuantity || 0), 0);
+  const recentItems = items.slice(0, 5);
 
   return (
     <div className="inventory-page-container">
       Inventory Page
-      <h1 className="page-heading">Hello, {mockUser.name}</h1>
+      <h1 className="page-heading">Hello, User</h1>
       <h2 className="page-subheading">Here's what's stocked.</h2>
       <div className="stats-container">
         <div className="stat-card stat-card-green">
@@ -43,7 +51,7 @@ export function InventoryPage() {
           <div>
             <div className="recent-items-title">Recently updated</div>
             <div className="recent-items-subtitle">
-              {recentItems.length} of {mockItems.length} items shown
+              {recentItems.length} of {totalItems} items shown
             </div>
           </div>
           <Link to="/inventory/list" className="view-all-link">
@@ -64,11 +72,11 @@ export function InventoryPage() {
             </span>
             <span className="item-location">{item.location}</span>
             <span>
-              {item.quantity}/{item.lowStockThreshold}
+              {item.totalQuantity}/{10}
             </span>
             <StatusBadge
-              quantity={item.quantity}
-              threshold={item.lowStockThreshold}
+              quantity={item.totalQuantity}
+              threshold={10}
             />
           </div>
         ))}
