@@ -6,6 +6,7 @@ import { Products } from "../../api/products/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
+import Fuse from "fuse.js";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -65,6 +66,7 @@ export function InventoryListPage() {
       result = result.filter((item) => item.totalQuantity <= 10);
     }
 
+     // Apply fuzzy search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((item) => {
@@ -79,6 +81,10 @@ export function InventoryListPage() {
           id.includes(query)
         );
       });
+
+      const results = fuse.search(searchQuery);
+
+      items = results.map((result) => result.item);
     }
 
     return result;
