@@ -1,53 +1,58 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Meteor } from 'meteor/meteor';
-import { useTracker } from 'meteor/react-meteor-data';
-import { Products } from '/imports/api/products/collections';
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
-import './CreateProductPage.css';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
+import { Products } from "/imports/api/products/collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+} from "/imports/api/locations/collections";
+import "./CreateProductPage.css";
 
 const inputStyle = {
-  padding: '6px 8px',
-  border: '1px solid #999',
-  borderRadius: '3px',
-  fontSize: '14px',
-  width: '100%',
-  boxSizing: 'border-box',
+  padding: "6px 8px",
+  border: "1px solid #999",
+  borderRadius: "3px",
+  fontSize: "14px",
+  width: "100%",
+  boxSizing: "border-box",
 };
 
 const buttonStyle = {
-  padding: '6px 14px',
-  border: '1px solid #333',
-  borderRadius: '3px',
-  cursor: 'pointer',
-  background: 'transparent',
-  fontSize: '14px',
+  padding: "6px 14px",
+  border: "1px solid #333",
+  borderRadius: "3px",
+  cursor: "pointer",
+  background: "transparent",
+  fontSize: "14px",
 };
 
 const fieldStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px',
-  marginBottom: '16px',
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  marginBottom: "16px",
 };
 
 const sectionStyle = {
-  borderTop: '1px solid #ccc',
-  marginTop: '24px',
-  paddingTop: '16px',
+  borderTop: "1px solid #ccc",
+  marginTop: "24px",
+  paddingTop: "16px",
 };
 
 const assignmentRowStyle = {
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'center',
-  marginBottom: '8px',
+  display: "flex",
+  gap: "8px",
+  alignItems: "center",
+  marginBottom: "8px",
 };
 
 const warningStyle = {
-  marginTop: '4px',
-  fontStyle: 'italic',
-  fontSize: '13px',
+  marginTop: "4px",
+  fontStyle: "italic",
+  fontSize: "13px",
 };
 
 // Helpers
@@ -65,13 +70,15 @@ function callMethod(methodName, params) {
 // Builds a full readable path for a StorageLocation, e.g.:
 // "Main Warehouse → Ground Floor → Shelf A → Bay 1"
 function buildLocationLabel(location, storageUnits, floorMaps, sites) {
-  const unit     = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit     ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
-  const site     = floorMap ? sites.find((s) => s._id === floorMap.siteId)     : null;
+  const unit = storageUnits.find((u) => u._id === location.storageUnitId);
+  const floorMap = unit
+    ? floorMaps.find((f) => f._id === unit.floorMapId)
+    : null;
+  const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
 
   return [site?.name, floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
-    .join(' → ');
+    .join(" → ");
 }
 
 // Component
@@ -79,56 +86,61 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 export function CreateProductPage() {
   const navigate = useNavigate();
 
-  const [name, setName]                   = useState('');
-  const [description, setDescription]     = useState('');
-  const [category, setCategory]           = useState('');
-  const [brand, setBrand]                 = useState('');
-  const [unitCost, setUnitCost]           = useState('');
-  const [totalQuantity, setTotalQuantity] = useState('');
-  const [reorderAt, setReorderAt]         = useState('');
-  const [location, setLocation]           = useState('');
-  const [assignments, setAssignments]     = useState([]);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [brand, setBrand] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  const [totalQuantity, setTotalQuantity] = useState("");
+  const [reorderAt, setReorderAt] = useState("");
+  const [location, setLocation] = useState("");
+  const [assignments, setAssignments] = useState([]);
 
-  const { products, sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
-    Meteor.subscribe('products');
-    Meteor.subscribe('locations.all');
-    return {
-      products:         Products.find().fetch(),
-      sites:            Sites.find().fetch(),
-      floorMaps:        FloorMaps.find().fetch(),
-      storageUnits:     StorageUnits.find().fetch(),
-      storageLocations: StorageLocations.find().fetch(),
-    };
-  }, []);
+  const { products, sites, floorMaps, storageUnits, storageLocations } =
+    useTracker(() => {
+      Meteor.subscribe("products");
+      Meteor.subscribe("locations.all");
+      return {
+        products: Products.find().fetch(),
+        sites: Sites.find().fetch(),
+        floorMaps: FloorMaps.find().fetch(),
+        storageUnits: StorageUnits.find().fetch(),
+        storageLocations: StorageLocations.find().fetch(),
+      };
+    }, []);
 
   // Derived validation
 
   const parsedTotal = parseInt(totalQuantity, 10);
 
-  const nameIsValid          = name.trim().length > 0;
-  const totalQuantityIsValid = totalQuantity !== '' && !isNaN(parsedTotal);
+  const nameIsValid = name.trim().length > 0;
+  const totalQuantityIsValid = totalQuantity !== "" && !isNaN(parsedTotal);
 
   // Case-insensitive check against all existing product names.
-  const isDuplicate = nameIsValid && products.some(
-    (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase()
-  );
+  const isDuplicate =
+    nameIsValid &&
+    products.some(
+      (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase(),
+    );
 
   // Only count rows that have both a location and a quantity filled in.
   const validAssignments = assignments.filter(
-    (a) => a.locationId && a.quantity !== ''
+    (a) => a.locationId && a.quantity !== "",
   );
   const assignedTotal = validAssignments.reduce(
-    (sum, a) => sum + parseInt(a.quantity, 10), 0
+    (sum, a) => sum + parseInt(a.quantity, 10),
+    0,
   );
-  const remaining  = totalQuantityIsValid ? parsedTotal - assignedTotal : null;
+  const remaining = totalQuantityIsValid ? parsedTotal - assignedTotal : null;
   const isBalanced = totalQuantityIsValid && remaining === 0;
 
-  const canSubmit = nameIsValid && totalQuantityIsValid && isBalanced && !isDuplicate;
+  const canSubmit =
+    nameIsValid && totalQuantityIsValid && isBalanced && !isDuplicate;
 
   // Assignment handlers
 
   function addAssignment() {
-    setAssignments([...assignments, { locationId: '', quantity: '' }]);
+    setAssignments([...assignments, { locationId: "", quantity: "" }]);
   }
 
   function removeAssignment(index) {
@@ -136,9 +148,9 @@ export function CreateProductPage() {
   }
 
   function updateAssignment(index, field, value) {
-    setAssignments(assignments.map((a, i) =>
-      i === index ? { ...a, [field]: value } : a
-    ));
+    setAssignments(
+      assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
+    );
   }
 
   // Submit
@@ -147,24 +159,24 @@ export function CreateProductPage() {
     event.preventDefault();
 
     try {
-      await callMethod('products.createWithAssignments', {
+      await callMethod("products.createWithAssignments", {
         name,
         description,
         category,
         brand,
-        unitCost:      unitCost  ? parseFloat(unitCost)    : undefined,
+        unitCost: unitCost ? parseFloat(unitCost) : undefined,
         totalQuantity: parsedTotal,
-        reorderAt:     reorderAt ? parseInt(reorderAt, 10) : undefined,
+        reorderAt: reorderAt ? parseInt(reorderAt, 10) : undefined,
         location,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
-          quantity:   parseInt(a.quantity, 10),
+          quantity: parseInt(a.quantity, 10),
         })),
       });
 
-      navigate('/inventory/list');
+      navigate("/inventory/list");
     } catch (error) {
-      console.error('Failed to create product:', error);
+      console.error("Failed to create product:", error);
     }
   }
 
@@ -172,7 +184,7 @@ export function CreateProductPage() {
 
   // Render
 
-return (
+  return (
     <>
       <div className="item-detail-container">
         <div className="item-detail-header">
@@ -181,16 +193,22 @@ return (
               Inventory &nbsp;/&nbsp; Create item
             </div>
           </div>
-          <h1 className="header-title">Create <em>Product</em></h1>
+          <h1 className="header-title">
+            Create <em>Product</em>
+          </h1>
         </div>
 
         <div className="item-detail-grid">
           <div className="left-column">
-
             {/* Core identification */}
             <div className="detail-section">
               <div className="section-title">
-                <span className="section-badge" style={{ background: '#d6ede8', color: '#4a8c78' }}>ID</span>
+                <span
+                  className="section-badge"
+                  style={{ background: "#d6ede8", color: "#4a8c78" }}
+                >
+                  ID
+                </span>
                 Core identification
               </div>
               <div className="section-content">
@@ -204,7 +222,9 @@ return (
                     placeholder="e.g. AAA Battery Pack"
                   />
                   {isDuplicate && (
-                    <span className="warning-text">A product with this name already exists.</span>
+                    <span className="warning-text">
+                      A product with this name already exists.
+                    </span>
                   )}
                 </div>
                 <div className="form-row">
@@ -235,7 +255,12 @@ return (
             {/* Operational details */}
             <div className="detail-section">
               <div className="section-title">
-                <span className="section-badge" style={{ background: '#fde8d8', color: '#b5532a' }}>OP</span>
+                <span
+                  className="section-badge"
+                  style={{ background: "#fde8d8", color: "#b5532a" }}
+                >
+                  OP
+                </span>
                 Operational details
               </div>
               <div className="section-content">
@@ -281,12 +306,17 @@ return (
                     <select
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className={`form-input ${location ? 'selected' : ''}`}
+                      className={`form-input ${location ? "selected" : ""}`}
                     >
                       <option value="">Select a location...</option>
                       {storageLocations.map((loc) => (
                         <option key={loc._id} value={loc._id}>
-                          {buildLocationLabel(loc, storageUnits, floorMaps, sites)}
+                          {buildLocationLabel(
+                            loc,
+                            storageUnits,
+                            floorMaps,
+                            sites,
+                          )}
                         </option>
                       ))}
                     </select>
@@ -298,29 +328,53 @@ return (
             {/* Assign to locations */}
             <div className="detail-section">
               <div className="section-title">
-                <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>LC</span>
+                <span
+                  className="section-badge"
+                  style={{ background: "#f5efe6", color: "#998874" }}
+                >
+                  LC
+                </span>
                 Assign to locations
               </div>
               <div className="section-content">
                 {!locationsExist ? (
                   <p>
-                    No storage locations set up yet.{' '}
+                    No storage locations set up yet.{" "}
                     <Link to="/locations">Go to Locations</Link>
                   </p>
                 ) : (
                   <>
                     {assignments.map((assignment, index) => (
-                      <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          alignItems: "center",
+                          marginBottom: "8px",
+                        }}
+                      >
                         <select
                           value={assignment.locationId}
-                          onChange={(e) => updateAssignment(index, 'locationId', e.target.value)}
+                          onChange={(e) =>
+                            updateAssignment(
+                              index,
+                              "locationId",
+                              e.target.value,
+                            )
+                          }
                           className="form-input"
                           style={{ flex: 2 }}
                         >
                           <option value="">Select a location...</option>
                           {storageLocations.map((loc) => (
                             <option key={loc._id} value={loc._id}>
-                              {buildLocationLabel(loc, storageUnits, floorMaps, sites)}
+                              {buildLocationLabel(
+                                loc,
+                                storageUnits,
+                                floorMaps,
+                                sites,
+                              )}
                             </option>
                           ))}
                         </select>
@@ -329,9 +383,11 @@ return (
                           min="0"
                           placeholder="Qty"
                           value={assignment.quantity}
-                          onChange={(e) => updateAssignment(index, 'quantity', e.target.value)}
+                          onChange={(e) =>
+                            updateAssignment(index, "quantity", e.target.value)
+                          }
                           className="form-input"
-                          style={{ maxWidth: '80px' }}
+                          style={{ maxWidth: "80px" }}
                         />
                         <button
                           type="button"
@@ -350,31 +406,39 @@ return (
                       + Add Location
                     </button>
                     {remaining !== null && (
-                      <p className="warning-text" style={{ marginTop: '12px' }}>
-                        {remaining === 0 && `All ${parsedTotal} units assigned.`}
-                        {remaining  > 0 && `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
-                        {remaining  < 0 && `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? 's' : ''}.`}
+                      <p className="warning-text" style={{ marginTop: "12px" }}>
+                        {remaining === 0 &&
+                          `All ${parsedTotal} units assigned.`}
+                        {remaining > 0 &&
+                          `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
+                        {remaining < 0 &&
+                          `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? "s" : ""}.`}
                       </p>
                     )}
                   </>
                 )}
               </div>
             </div>
-
           </div>
 
           {/* Right column */}
           <div className="right-column">
-
             {/* Visual catalogue */}
             <div className="detail-section">
               <div className="section-title">
-                <span className="section-badge" style={{ background: '#d6ede8', color: '#4a8c78' }}>IM</span>
+                <span
+                  className="section-badge"
+                  style={{ background: "#d6ede8", color: "#4a8c78" }}
+                >
+                  IM
+                </span>
                 Visual catalogue
               </div>
               <div className="section-content">
                 <div className="main-image-container">
-                  <span style={{ fontSize: '13px', color: '#998874' }}>No image uploaded</span>
+                  <span style={{ fontSize: "13px", color: "#998874" }}>
+                    No image uploaded
+                  </span>
                 </div>
                 <div className="thumbnail-gallery">
                   <button className="thumbnail add-btn">+</button>
@@ -385,7 +449,12 @@ return (
             {/* QR & label */}
             <div className="detail-section">
               <div className="section-title">
-                <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>QR</span>
+                <span
+                  className="section-badge"
+                  style={{ background: "#f5efe6", color: "#998874" }}
+                >
+                  QR
+                </span>
                 QR & label
               </div>
               <div className="section-content qr-section">
@@ -395,7 +464,6 @@ return (
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -411,7 +479,6 @@ return (
             Create Product
           </button>
         </div>
-
       </div>
     </>
   );
