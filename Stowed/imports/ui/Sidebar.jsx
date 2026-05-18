@@ -53,7 +53,6 @@ export function Sidebar() {
 
   const ACCOUNT_LINKS = [
     { to: '/register', label: 'Create Account' },
-    { to: '/login',    label: 'Login' },
   ];
   if (role >= ROLES.OWNER) {
     ACCOUNT_LINKS.push({ to: '/accounts', label: 'Manage Accounts' });
