@@ -31,11 +31,6 @@ export function App() {
     };
   });
 
-  // wait while Meteor restores the user's session after refresh
-  if (loggingIn) {
-    return <div>Loading...</div>;
-  }
-
   const isLoggedIn = !!user;
 
   // gets the current user's role for route authorisation
