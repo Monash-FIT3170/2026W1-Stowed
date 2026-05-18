@@ -4,6 +4,7 @@ import '/imports/api/locations/methods';
 import '/imports/api/publications';
 import '/imports/api/userMethods';
 import { ROLES } from '/imports/api/roles';
+import '/imports/api/upload.js';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
 import { Products, ProductRecords } from '/imports/api/products/collections';
 
