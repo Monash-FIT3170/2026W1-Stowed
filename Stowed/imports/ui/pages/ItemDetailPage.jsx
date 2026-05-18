@@ -53,6 +53,11 @@ export function ItemDetailView({ item, productId }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
+
+  if (!item) {
+    return <div className="p-8 text-center">Item not found.</div>;
+  }
+
   const unitCost = Number(item.unitCost);
   const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
   const reorderAt = item.reorderAt ?? 10;
@@ -64,10 +69,6 @@ export function ItemDetailView({ item, productId }) {
         : [];
   const qrCode = item.qrCode || item.photoUrl || "";
   const hasUnitCost = Number.isFinite(unitCost);
-
-  if (!item) {
-    return <div className="p-8 text-center">Item not found.</div>;
-  }
 
   const handleDelete = async () => {
     setIsDeleting(true);

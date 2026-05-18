@@ -10,7 +10,7 @@ const WORKSPACE_LINKS = [
   { to: "/locations", label: "Locations" },
   { to: "/floor-map", label: "Floor Map" },
   { to: "/inventory", label: "Inventory" },
-  { to: "/stocktake", label: "Stocktake" },
+  { to: "/", label: "Inventory Page" },
   { to: "/lists", label: "Lists" },
 ];
 
@@ -101,31 +101,6 @@ export function Sidebar() {
               <SidebarLink key={link.to} {...link} />
             ))}
           </div>
-        </section>
-        {/* Account section */}
-        <section>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
-            Account
-          </h3>
-          {/* Account links */}
-          {ACCOUNT_LINKS.filter((link) => {
-            if (link.to === "/register") {
-              return hasClientPermission(role, "create-users");
-            }
-
-            return true;
-          }).map((link) => (
-            <SidebarLink key={link.to} {...link} />
-          ))}
-          {/* logout button */}
-          {isLoggedIn && (
-            <button
-              onClick={handleLogout}
-              className="text-left text-base text-black"
-            >
-              Logout
-            </button>
-          )}
         </section>
         {/* Account section */}
         <section>

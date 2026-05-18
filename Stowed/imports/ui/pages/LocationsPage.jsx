@@ -56,6 +56,15 @@ function EmptyState({ children }) {
   return <div className="empty-state">{children}</div>;
 }
 
+function Field({ label, children }) {
+  return (
+    <label className="form-input-wrapper">
+      <span className="form-input-label">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 function TextInput({ label, value, onChange, placeholder }) {
   return (
     <label className="form-input-wrapper">
@@ -70,37 +79,16 @@ function TextInput({ label, value, onChange, placeholder }) {
   );
 }
 
-function TextInput(props) {
-  return (
-    <input
-      {...props}
-      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
-    />
-  );
-}
-
 function TextArea(props) {
-  return (
-    <label className="form-input-wrapper">
-      <span className="form-input-label">{label}</span>
-      <textarea
-        className="form-input-field form-textarea"
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-      />
-    </label>
-  );
+  return <textarea {...props} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900 min-h-[96px]" />;
 }
 
-function SectionButton({ active, children, ...props }) {
+function SelectInput({ label, options, ...props }) {
   return (
-    <label className="form-input-wrapper">
-      <span className="form-input-label">{label}</span>
+    <Field label={label}>
       <select
-        className="form-input-field form-select"
-        value={value}
-        onChange={onChange}
+        {...props}
+        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900 bg-white"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -108,22 +96,20 @@ function SectionButton({ active, children, ...props }) {
           </option>
         ))}
       </select>
-    </label>
+    </Field>
   );
 }
 
-function EmptyState({ children }) {
+function NumberInput({ label, ...props }) {
   return (
-    <label className="form-input-wrapper">
-      <span className="form-input-label">{label}</span>
+    <Field label={label}>
       <input
+        {...props}
         type="number"
-        min="0"
-        className="form-input-field form-number-input"
-        value={value}
-        onChange={onChange}
+        min={0}
+        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
       />
-    </label>
+    </Field>
   );
 }
 
@@ -384,7 +370,7 @@ export function LocationsPage() {
               title="Site"
               subtitle="Create and select the top-level physical area."
             >
-              <form className="form-grid" onSubmit={handleCreateSite}>
+              <form className="form-grid" onSubmit={handleSiteSubmit}>
                 <Field label="Name">
                   <TextInput
                     value={siteForm.name}
@@ -416,18 +402,8 @@ export function LocationsPage() {
                     disabled={submitting || !siteForm.name.trim()}
                     className="form-button form-button-full-width"
                   >
-                    {editingSiteId ? "Save Site" : "Add Site"}
+                    Add Site
                   </button>
-                  {editingSiteId ? (
-                    <button
-                      type="button"
-                      onClick={resetSiteForm}
-                      disabled={submitting}
-                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
-                    >
-                      Cancel
-                    </button>
-                  ) : null}
                 </div>
               </form>
 
@@ -474,7 +450,7 @@ export function LocationsPage() {
             >
               <form
                 className="form-grid form-grid-cols-2"
-                onSubmit={handleCreateFloorMap}
+                onSubmit={handleFloorMapSubmit}
               >
                 <Field label="Name">
                   <TextInput
@@ -509,18 +485,8 @@ export function LocationsPage() {
                     }
                     className="form-button form-button-full-width"
                   >
-                    {editingFloorMapId ? "Save Floor Map" : "Add Floor Map"}
+                    Add Floor Map
                   </button>
-                  {editingFloorMapId ? (
-                    <button
-                      type="button"
-                      onClick={resetFloorMapForm}
-                      disabled={submitting}
-                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
-                    >
-                      Cancel
-                    </button>
-                  ) : null}
                 </div>
               </form>
 

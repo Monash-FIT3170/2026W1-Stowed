@@ -5,7 +5,6 @@ import { InventoryPage } from "./pages/InventoryPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
-import { StocktakePage } from "./pages/StocktakePage";
 import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
@@ -93,12 +92,13 @@ export function App() {
               path="/inventory/:productId"
               element={
                 canAccessInventory ? (
-                  <ProductDetailPage />
+                  <ItemDetailPage />
                 ) : (
                   <Navigate to="/" replace />
                 )
               }
             />
+            <Route path="/inventory/list" element={<InventoryListPage />} />
             <Route
               path="/floor-map"
               element={
@@ -155,20 +155,7 @@ export function App() {
                 )
               }
             />
-            <Route
-              path="/stocktake"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/stocktake") ? (
-                    <StocktakePage />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
+            <Route path="/stocktake" element={<Navigate to="/" replace />} />
             <Route
               path="/qr-codes"
               element={
