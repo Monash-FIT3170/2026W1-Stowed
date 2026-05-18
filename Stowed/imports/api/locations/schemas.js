@@ -8,6 +8,10 @@ import SimpleSchema from 'simpl-schema';
  * Examples include a warehouse, office, shop, or home.
  */
 export const SiteSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   name: {
     type: String,
     min: 1,
