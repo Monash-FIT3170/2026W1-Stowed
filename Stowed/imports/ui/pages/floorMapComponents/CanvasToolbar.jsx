@@ -1,0 +1,63 @@
+import { useState } from "react"; 
+import { COLOURS } from "./FloorMapStyles";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
+
+/**
+ * Toolbar component for selecting tools and adjusting floor dimensions.
+ *
+ * @param {string} activeTool - Currently selected tool
+ * @param {(tool: string) => void} setActiveTool - State setter for updating the active tool
+ * @param {{ width: number, height: number }} floorSize - Floor dimensions in pixels
+ * @param {(updater: Function) => void} setFloorSize - State setter for updating floor dimensions
+ * @param {() => void} onOpenCanvasSettings - Callback to open canvas settings modal
+ * @param {() => void} onUndo - Callback to undo last action
+ * @param {() => void} onRedo - Callback to redo last undone action
+ * @param {boolean} canUndo - Whether there are actions to undo
+ * @param {boolean} canRedo - Whether there are actions to redo
+ *
+ * @returns {JSX.Element} Toolbar UI element
+ */
+export function CanvasToolbar({ activeTool, setActiveTool, floorSize, setFloorSize, onOpenCanvasSettings, onSaveLayout, onLoadLayout, onUndo, onRedo, canUndo, canRedo }) {
+    // store input seperately from pixels to avoid crash
+    const [inputMeters, setInputMeters] = useState({
+      width: floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER,
+      height: floorSize.height /  CANVAS_CONFIG.PIXELS_PER_METER,
+    });
+
+    // floor dimension validation
+    const updateDimension = (dimensionType, rawValue) => {
+      setInputMeters(prev => ({ ...prev, [dimensionType]: rawValue}));
+      const val = Number(rawValue);
+      if (rawValue === "" || Number.isNaN(val) || val <=0) return;
+      setFloorSize(prev => ({...prev, [dimensionType]: val*CANVAS_CONFIG.PIXELS_PER_METER}));      
+    };
+
+    return (
+      <div style={{
+        display: "flex",
+        gap: "10px",
+        padding: "10px",
+        background: COLOURS.TOOL_BAR_COLOUR,
+        borderBottom: "1px solid #ccc",
+      }}>
+  
+        {/* TOOLS */}
+        <button onClick={() => setActiveTool("select")}>Select</button>
+        <button onClick={() => setActiveTool("move")}>Move</button>
+        <button onClick={onSaveLayout}>Save Layout</button>
+        <button onClick={onLoadLayout}>Load Layout</button>
+  
+        <div style={{ marginLeft: "20px" }}>Active Tool: <b>{activeTool}</b></div>
+  
+        {/* FLOOR SIZE CONTROLS */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{gap: "10px"}}>
+          <button onClick={onUndo} disabled={!canUndo}>Undo</button>
+          <button onClick={onRedo} disabled={!canRedo}>Redo</button>
+          </div>
+          <button onClick={onOpenCanvasSettings}>Canvas Settings</button>
+        </div>
+  
+      </div>
+    );
+}
