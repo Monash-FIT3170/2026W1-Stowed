@@ -8,19 +8,24 @@ import './Register.css';
  * Login Page
  */
 export const Login = () => {
-    // stores input
-  const [login, setLogin] = useState(''); // email or username
+  const [orgCode, setOrgCode] = useState('');      // organisation code
+  const [login, setLogin] = useState('');          // email or username
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // handles form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // basic frontend validation
+    // 1. Organisation required first
+    if (!orgCode.trim()) {
+      setError('Please enter your organisation code.');
+      return;
+    }
+
+    // 2. Other fields
     if (!login.trim() || !password) {
       setError('Please fill in all fields.');
       return;
@@ -28,22 +33,23 @@ export const Login = () => {
 
     setLoading(true);
 
-    // log in logic
     try {
-      const isEmail = login.includes('@');
-      await new Promise((resolve, reject) => {
-        Meteor.loginWithPassword(
-          isEmail ? login : { username: login },
-          password,
-          (err) => {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
+    await Meteor.callAsync('users.checkOrganisation', {
+      orgCode: orgCode.trim(),
+      login: login.trim(),
+    });
 
+    await new Promise((resolve, reject) => {
+      Meteor.loginWithPassword(
+        login.includes('@') ? login : { username: login },
+        password,
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
       navigate('/');
-
     } catch (err) {
       setError(err.reason || err.message || 'Login failed.');
     } finally {
@@ -74,6 +80,18 @@ export const Login = () => {
           {error && <p className="auth-status auth-status-error">{error}</p>}
 
           <form onSubmit={handleSubmit} className="auth-form">
+            <label className="auth-field" htmlFor="orgCode">
+              <span>Organisation Code</span>
+              <input
+                id="orgCode"
+                type="text"
+                value={orgCode}
+                onChange={(e) => setOrgCode(e.target.value)}
+                required
+                className="auth-input"
+              />
+            </label>
+            
             <label className="auth-field" htmlFor="login">
               <span>Email or Username</span>
               <input
