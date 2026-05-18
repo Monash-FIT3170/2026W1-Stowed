@@ -9,7 +9,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from '/imports/api/locations/collections';
-import './ItemDetailPage.css';
+import './CreateProductPage.css';
 
 // Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
@@ -80,7 +80,7 @@ const overlayStyle = {
 const modalStyle = {
   background: '#fff',
   border: '1px solid #ccc',
-  borderRadius: '6px',
+  borderRadius: '12px',
   padding: '28px',
   maxWidth: '440px',
   width: '100%',
@@ -115,8 +115,10 @@ export function EditProductPage() {
   const navigate = useNavigate();
 
   const [name, setName]                   = useState('');
-  const [description, setDescription]     = useState('');
   const [totalQuantity, setTotalQuantity] = useState('');
+  const [category, setCategory] = useState('');
+  const [brand, setBrand]       = useState('');
+  const [unitCost, setUnitCost] = useState('');
   const [assignments, setAssignments]     = useState([]);
   const [initialised, setInitialised]     = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -146,8 +148,10 @@ export function EditProductPage() {
   useEffect(() => {
     if (!loading && product && !initialised) {
       setName(product.name);
-      setDescription(product.description || '');
+      setCategory(product.category);
+      setBrand(product.brand);
       setTotalQuantity(String(product.totalQuantity));
+      setUnitCost(String(product.unitCost));
       setAssignments(
         originalRecords.map((r) => ({ locationId: r.locationId, quantity: String(r.quantity) }))
       );
@@ -179,11 +183,17 @@ export function EditProductPage() {
     if (name.trim() !== product.name)
       result.name = { from: product.name, to: name.trim() };
 
-    if (description !== (product.description || ''))
-      result.description = { from: product.description || '', to: description };
+    if (category !== (product.category || ''))
+      result.category = { from: product.category || '', to: category };
+
+    if (brand !== (product.brand || ''))
+      result.brand = { from: product.brand || '', to: brand };
 
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
+
+    if (parseFloat(unitCost) !== product.unitCost)
+      result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
 
     const normalise = (arr) =>
       [...arr].sort((a, b) => a.locationId.localeCompare(b.locationId));
@@ -204,7 +214,7 @@ export function EditProductPage() {
     if (assignmentsChanged) result.assignments = true;
 
     return result;
-  }, [initialised, product, name, description, parsedTotal, validAssignments, originalRecords]);
+  }, [initialised, product, name, category, brand, parsedTotal, validAssignments, originalRecords]);
 
   // Assignment handlers
 
@@ -235,8 +245,10 @@ export function EditProductPage() {
       await callMethod('products.update', {
         productId,
         name: name.trim(),
-        description,
+        category,
+        brand,
         totalQuantity: parsedTotal,
+        unitCost: unitCost ? parseFloat(unitCost) : 0,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity:   parseInt(a.quantity, 10),
@@ -266,12 +278,17 @@ export function EditProductPage() {
             </button>
           </div>
         </div>
+        <h1 className="header-title">Edit <em>{name}</em></h1>
       </div>
+
 
       <div className="item-detail-grid">
         <div className="left-column">
           <div className="detail-section">
-            <h2 className="section-title">Core identification</h2>
+            <h2 className="section-title">
+              <span className="section-badge" style={{ background: '#d6ede8', color: '#4a8c78' }}>ID</span>
+              Core identification
+            </h2>
             <div className="section-content">
               <div className="form-group">
                 <label>Item name</label>
@@ -282,11 +299,34 @@ export function EditProductPage() {
                   className="form-input"
                 />
               </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Category</label>
+                  <input
+                    type="text"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Brand</label>
+                  <input
+                    type="text"
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="detail-section">
-            <h2 className="section-title">Operational details</h2>
+            <h2 className="section-title">
+              <span className="section-badge" style={{ background: '#fde8d8', color: '#b5532a' }}>OP</span>
+              Operational details
+            </h2>
             <div className="section-content">
               <div className="form-row">
                 <div className="form-group">
@@ -299,28 +339,27 @@ export function EditProductPage() {
                     min="0"
                   />
                 </div>
+                <div className="form-group">
+                  <label>Unit cost</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={unitCost}
+                    onChange={(e) => setUnitCost(e.target.value)}
+                    className="form-input"
+                    placeholder="$0.00"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           <div className="detail-section">
-            <h2 className="section-title">Additional details</h2>
-            <div className="section-content">
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="form-input"
-                  rows="4"
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="detail-section">
-            <h2 className="section-title">Storage Locations</h2>
+            <h2 className="section-title">
+              <span className="section-badge" style={{ background: '#f5efe6', color: '#998874' }}>LC</span>
+              Storage Locations
+            </h2>
             <div className="section-content">
               <p style={{ marginBottom: '16px', color: '#555' }}>
                 All stock must be assigned before saving.
@@ -404,11 +443,20 @@ export function EditProductPage() {
               </div>
             )}
 
-            {changes.description !== undefined && (
+            {changes.category && (
               <div style={changeRowStyle}>
-                <strong>Description</strong>
+                <strong>Category</strong>
                 <div style={{ color: '#555' }}>
-                  {changes.description.from || '(none)'} → {changes.description.to || '(none)'}
+                  {changes.category.from} → {changes.category.to}
+                </div>
+              </div>
+            )}
+
+            {changes.brand && (
+              <div style={changeRowStyle}>
+                <strong>Brand</strong>
+                <div style={{ color: '#555' }}>
+                  {changes.brand.from} → {changes.brand.to}
                 </div>
               </div>
             )}
@@ -418,6 +466,15 @@ export function EditProductPage() {
                 <strong>Total Quantity</strong>
                 <div style={{ color: '#555' }}>
                   {changes.totalQuantity.from} → {changes.totalQuantity.to}
+                </div>
+              </div>
+            )}
+
+            {changes.unitCost && (
+              <div style={changeRowStyle}>
+                <strong>Unit cost</strong>
+                <div style={{ color: '#555' }}>
+                  ${changes.unitCost.from} → ${changes.unitCost.to}
                 </div>
               </div>
             )}
@@ -452,18 +509,14 @@ export function EditProductPage() {
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
               <button
-                style={{
-                  ...buttonStyle,
-                  opacity: isSaving ? 0.4 : 1,
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                }}
+                className="btn-primary"
                 disabled={isSaving}
                 onClick={confirmSave}
               >
                 {isSaving ? 'Saving…' : 'Confirm Save'}
               </button>
               <button
-                style={buttonStyle}
+                className="btn-secondary"
                 disabled={isSaving}
                 onClick={() => setShowSaveModal(false)}
               >
