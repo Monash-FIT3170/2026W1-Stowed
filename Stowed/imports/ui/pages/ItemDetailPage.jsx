@@ -1,9 +1,10 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products } from "../../api/products/collections";
 import "./ItemDetailPage.css";
+import "./Breadcrumb.css";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -59,7 +60,11 @@ export function ItemDetailView({ item, productId }) {
         <div className="item-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              Inventory &nbsp;/&nbsp; {item.name}
+              <Link to="/inventory/list" className="breadcrumb-link">
+                Inventory
+              </Link>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">Item</span>
             </div>
             <div className="header-actions">
               <button className="btn-secondary" onClick={() => navigate(-1)}>
