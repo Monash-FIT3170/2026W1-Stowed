@@ -1,20 +1,27 @@
-/* CreateProductPage Styles */
+/* CreateProductPage Styles — aligned to v3-bloom (ItemDetailPage.css) */
 
 :root {
   --bg-primary: #f5efe6;
-  --text-muted: #998874;
   --text-dark: #1a1a1a;
+  --text-muted: #998874;
   --accent-primary: #b5532a;
   --accent-secondary: #e89b6f;
   --border-light: #efe7da;
   --border-subtle: #d9cfc0;
   --card-bg: #ffffff;
   --input-bg: #fdf7f2;
+  --tag-bg: #f5efe6;
+  --tag-text: #5c4f3f;
+  --danger: #c00;
+  --dark: #2b1f1a;
+  --cream: #fff6ef;
 }
 
 .item-detail-container {
   min-height: 100vh;
   background-color: var(--bg-primary);
+  color: var(--text-dark);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
 .item-detail-header {
@@ -25,20 +32,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .breadcrumb {
   font-size: 12px;
   color: var(--text-muted);
+  font-weight: 400;
   margin-bottom: 8px;
 }
 
 .header-title {
   font-size: 28px;
-  font-family: Georgia, serif;
+  font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
   color: var(--text-dark);
-  margin: 8px 0 16px;
+  margin: 4px 0 8px 0;
 }
 
 .header-title em {
@@ -50,7 +59,7 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 24px;
-  padding: 18px 28px;
+  padding: 18px 28px 48px 28px;
 }
 
 .left-column,
@@ -62,8 +71,10 @@
 
 .detail-section {
   background-color: var(--card-bg);
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border-light);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
 }
 
 .section-title {
@@ -81,9 +92,10 @@
 .section-badge {
   font-size: 10px;
   font-weight: 700;
-  padding: 3px 6px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
   text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .section-content {
@@ -102,7 +114,7 @@
   font-size: 11px;
   color: var(--text-muted);
   font-weight: 600;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   display: block;
 }
 
@@ -130,20 +142,20 @@
 
 .main-image-container {
   width: 100%;
-  background: var(--bg-primary);
-  border-radius: 10px;
+  background: var(--input-bg);
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border-light);
-  height: 200px;
+  height: 220px;
 }
 
 .thumbnail-gallery {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .add-btn {
@@ -153,7 +165,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: var(--bg-primary);
+  background: #ffffff;
   border: 1px dashed var(--border-subtle);
   font-size: 18px;
   color: var(--text-muted);
@@ -161,31 +173,31 @@
 }
 
 .qr-container {
-  background: var(--bg-primary);
-  padding: 16px;
-  border-radius: 10px;
+  background: var(--input-bg);
+  padding: 18px;
+  border-radius: 12px;
   text-align: center;
   border: 1px solid var(--border-light);
   width: 100%;
 }
 
 .qr-code {
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   margin: 0 auto 8px;
   background: var(--border-light);
   border-radius: 6px;
 }
 
 .qr-label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
   margin: 0;
 }
 
 .warning-text {
   font-size: 11px;
-  color: #c00;
+  color: var(--danger);
   font-style: italic;
   margin-top: 4px;
   display: block;
@@ -201,37 +213,30 @@
 }
 
 .btn-secondary {
-  padding: 10px 22px;
+  padding: 8px 18px;
   background-color: var(--card-bg);
   border: 1px solid var(--border-subtle);
   border-radius: 999px;
   color: var(--text-dark);
   font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .btn-primary {
-  padding: 10px 22px;
+  padding: 8px 18px;
   background-color: var(--accent-primary);
   color: #ffffff;
   border-radius: 999px;
   font-weight: 700;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .btn-primary:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-@media (max-width: 900px) {
-  .item-detail-grid {
-    grid-template-columns: 1fr;
-    padding: 18px;
-  }
 }
 
 select.form-input {
@@ -240,4 +245,11 @@ select.form-input {
 
 select.form-input.selected {
   color: var(--text-dark);
+}
+
+@media (max-width: 900px) {
+  .item-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
 }
