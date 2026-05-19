@@ -373,10 +373,12 @@ Meteor.methods({
     storageUnitId,
     name,
     code,
+    imageUrl = '',
   }) {
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
+    check(imageUrl, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
@@ -393,6 +395,7 @@ Meteor.methods({
       storageUnitId,
       name,
       code,
+      imageUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -416,11 +419,13 @@ Meteor.methods({
     storageUnitId,
     name,
     code,
+    imageUrl = '',
   }) {
     check(storageLocationId, String);
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
+    check(imageUrl, String);
 
 
     if (!this.userId && !Meteor.isDevelopment) {
@@ -442,6 +447,7 @@ Meteor.methods({
         storageUnitId,
         name,
         code,
+        imageUrl,
         updatedAt: new Date(),
       },
     });

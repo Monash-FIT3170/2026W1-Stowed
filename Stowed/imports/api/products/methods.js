@@ -23,11 +23,18 @@ Meteor.methods({
    * @throws {Meteor.Error} duplicate-name    - A product with this name already exists.
    * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
    */
-  async 'products.createWithAssignments'({ name, description = '', totalQuantity, assignments }) {
+  async 'products.createWithAssignments'({
+    name,
+    description = '',
+    imageUrl = '',
+    totalQuantity,
+    assignments,
+  }) {
     check(name, String);
     check(description, String);
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
+    check(imageUrl, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
@@ -54,6 +61,7 @@ Meteor.methods({
     const productId = await Products.insertAsync({
       name,
       description,
+      imageUrl,
       totalQuantity,
       createdAt: now,
       updatedAt: now,
@@ -97,12 +105,20 @@ Meteor.methods({
    * @throws {Meteor.Error} duplicate-name    - Another product already has this name.
    * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
    */
-  async 'products.update'({ productId, name, description = '', totalQuantity, assignments }) {
+  async 'products.update'({
+    productId,
+    name,
+    description = '',
+    imageUrl = '',
+    totalQuantity,
+    assignments,
+  }) {
     check(productId, String);
     check(name, String);
     check(description, String);
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
+    check(imageUrl, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
@@ -133,7 +149,13 @@ Meteor.methods({
     const now = new Date();
 
     await Products.updateAsync(productId, {
-      $set: { name, description, totalQuantity, updatedAt: now },
+      $set: {
+        name,
+        description,
+        imageUrl,
+        totalQuantity,
+        updatedAt: now,
+      },
     });
 
     // Replace all records for this product with the new assignments.

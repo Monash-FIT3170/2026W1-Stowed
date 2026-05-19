@@ -13,6 +13,11 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
     max: 500,
   },
+  imageUrl: {
+    type: String,
+    optional: true,
+    max: 500,
+  },
 
   totalQuantity: {
     type: SimpleSchema.Integer,
@@ -25,6 +30,12 @@ export const ProductSchema = new SimpleSchema({
 
   updatedAt: {
     type: Date,
+  },
+
+  imageUrl: {
+    type: String,
+    optional: true,
+    max: 500,
   },
 });
 
