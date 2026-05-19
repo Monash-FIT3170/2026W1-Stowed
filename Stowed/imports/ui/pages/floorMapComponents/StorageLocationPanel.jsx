@@ -54,7 +54,7 @@ export function StorageLocationPanel({ storageUnitId }) {
                     background: "#fdf7f2",
                 }}
             >
-                <p style={{ fontWeight: 500, marginBottom: "6px", color: "#8b7b70" }}>
+                <p style={{ fontWeight: 500, marginBottom: "6px", color: "#494949ff" }}>
                     Storage Locations
                 </p>
                 <p style={{ fontSize: "13px", color: "#7e6f65ff" }}>
