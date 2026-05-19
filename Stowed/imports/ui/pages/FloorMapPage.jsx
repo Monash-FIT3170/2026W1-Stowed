@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
-import { Canvas }               from "./floorMapComponents/canvas/components/Canvas";
-import { CanvasToolbar }        from "./floorMapComponents/CanvasToolbar";
-import { StoragePanel }         from "./floorMapComponents/StoragePanel";
-import { CanvasSettingsModal }  from "./floorMapComponents/CanvasSettingsModal";
+import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
+import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
+import { StoragePanel } from "./floorMapComponents/StoragePanel";
+import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
 import { buttonStyles, pageStyles } from "./floorMapComponents/FloorMapStyles";
 import { useParams } from "react-router-dom";
+import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -38,6 +39,7 @@ function FloorMapPageInner() {
     handleCanvasSettingsSave,
   } = useEditor();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedStorageUnitId, setSelectedStorageUnitId] = useState(null);
 
   return (
     <div style={pageStyles.page}>
@@ -52,6 +54,8 @@ function FloorMapPageInner() {
               height: "100%",
             }}
             isCanvasEditMode={isCanvasEditMode}
+            selectedStorageUnitId={selectedStorageUnitId}
+            setSelectedStorageUnitId={setSelectedStorageUnitId}
           />
         </div>
 
@@ -75,7 +79,15 @@ function FloorMapPageInner() {
             {isSidebarOpen && (
               <>
                 <StoragePanel onSelectUnit={handlePlaceUnit} />
+
                 <div style={pageStyles.sidebarDivider} />
+
+                <StorageLocationPanel
+                  storageUnitId={selectedStorageUnitId}
+                />
+
+                <div style={pageStyles.sidebarDivider} />
+
                 <CanvasToolbar
                   activeTool={activeTool}
                   setActiveTool={setActiveTool}

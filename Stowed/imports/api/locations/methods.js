@@ -485,4 +485,13 @@ Meteor.methods({
 
     await StorageLocations.removeAsync(storageLocationId);
   },
+
+  async 'storageLocations.getByStorageUnit'({ storageUnitId }) {
+    check(storageUnitId, String);
+
+    return StorageLocations.find(
+      { storageUnitId },
+      { sort: { code: 1 } }
+    ).fetchAsync();
+  },
 });
