@@ -1,5 +1,4 @@
-
-import SimpleSchema from 'simpl-schema';
+import SimpleSchema from "simpl-schema";
 
 export const ProductSchema = new SimpleSchema({
   name: {
@@ -12,6 +11,61 @@ export const ProductSchema = new SimpleSchema({
     type: String,
     optional: true,
     max: 500,
+  },
+
+  tag: {
+    type: String,
+    optional: true,
+  },
+
+  category: {
+    type: String,
+    optional: true,
+  },
+
+  sku: {
+    type: String,
+    optional: true,
+  },
+
+  brand: {
+    type: String,
+    optional: true,
+  },
+
+  unitCost: {
+    type: Number,
+    optional: true,
+    min: 0,
+  },
+
+  photoUrl: {
+    type: String,
+    optional: true,
+  },
+
+  catalogImages: {
+    type: Array,
+    optional: true,
+  },
+
+  "catalogImages.$": {
+    type: String,
+  },
+
+  qrCode: {
+    type: String,
+    optional: true,
+  },
+
+  location: {
+    type: String,
+    optional: true,
+  },
+
+  status: {
+    type: String,
+    optional: true,
   },
   imageUrl: {
     type: String,
@@ -30,6 +84,13 @@ export const ProductSchema = new SimpleSchema({
 
   updatedAt: {
     type: Date,
+  },
+
+  images: {
+    type: Array,
+  },
+  "images.$": {
+    type: String,
   },
 
   imageUrl: {
@@ -61,7 +122,3 @@ export const ProductRecordSchema = new SimpleSchema({
     type: Date,
   },
 });
-
-ProductRecords.attachSchema(ProductRecordSchema);
-
-Products.attachSchema(ProductSchema);

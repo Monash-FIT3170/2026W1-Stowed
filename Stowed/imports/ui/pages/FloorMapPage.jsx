@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
+import {
+  EditorProvider,
+  useEditor,
+} from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
@@ -26,16 +29,24 @@ function callMethod(methodName, params) {
  */
 function FloorMapPageInner() {
   const {
-    activeTool, setActiveTool,
+    activeTool,
+    setActiveTool,
     floorSize,
     canvasSettings,
-    isCanvasSettingsOpen, setCanvasSettingsOpen,
-    isCanvasEditMode, setCanvasEditMode,
-    units, commitUnits,
-    canUndo, canRedo,
-    handleUndo, handleRedo,
-    handleSaveLayout, handleLoadLayout,
-    handlePlaceUnit, handleUnitPlaced,
+    isCanvasSettingsOpen,
+    setCanvasSettingsOpen,
+    isCanvasEditMode,
+    setCanvasEditMode,
+    units,
+    commitUnits,
+    canUndo,
+    canRedo,
+    handleUndo,
+    handleRedo,
+    handleSaveLayout,
+    handleLoadLayout,
+    handlePlaceUnit,
+    handleUnitPlaced,
     handleCanvasSettingsSave,
   } = useEditor();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -65,7 +76,9 @@ function FloorMapPageInner() {
             style={{
               ...pageStyles.sidebarBase,
               ...pageStyles.sidebarRight,
-              ...(isSidebarOpen ? pageStyles.sidebarOpen : pageStyles.sidebarCollapsed),
+              ...(isSidebarOpen
+                ? pageStyles.sidebarOpen
+                : pageStyles.sidebarCollapsed),
             }}
           >
             <button
@@ -82,9 +95,7 @@ function FloorMapPageInner() {
 
                 <div style={pageStyles.sidebarDivider} />
 
-                <StorageLocationPanel
-                  storageUnitId={selectedStorageUnitId}
-                />
+                <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
 
                 <div style={pageStyles.sidebarDivider} />
 
@@ -130,6 +141,21 @@ function FloorMapPageInner() {
         />
       )}
 
+      <button
+        onClick={() => setCanvasEditMode(!isCanvasEditMode)}
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          borderRadius: "8px",
+          background: "black",
+          color: "white",
+          padding: "12px",
+          zIndex: 1000,
+        }}
+      >
+        {isCanvasEditMode ? "Toggle View" : "Toggle Edit"}
+      </button>
       {!isCanvasEditMode && (
         <button
           onClick={() => setCanvasEditMode(true)}
@@ -144,8 +170,6 @@ function FloorMapPageInner() {
         </button>
       )}
     </div>
-
-
   );
 }
 
