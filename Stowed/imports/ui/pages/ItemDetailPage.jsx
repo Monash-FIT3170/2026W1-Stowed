@@ -4,7 +4,7 @@ import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products } from "../../api/products/collections";
 import "./ItemDetailPage.css";
-import "./Breadcrumb.css";
+import "../Global.css";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {

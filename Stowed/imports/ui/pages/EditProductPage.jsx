@@ -10,7 +10,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import "./CreateProductPage.css";
-import "./Breadcrumb.css";
+import "../Global.css";
 
 // Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
