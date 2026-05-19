@@ -2,16 +2,14 @@ import { Meteor } from 'meteor/meteor';
 import './Register.css';
 import { ROLES } from 'imports/api/roles';
 import React, { useState } from 'react';
-import { useTracker } from 'meteor/react-meteor-data';
 import { useNavigate } from 'react-router-dom';
+import { hasClientPermission } from '../api/userMethods';
+import { useAuth } from '../api/useAuth';
 
 /**
- * Registration Page
+ * Registration Page 
  */
 const Register = () => {
-  // gets currently logged in user reactively
-  const currentUser = useTracker(() => Meteor.user());
-
   const navigate = useNavigate();
 
   // stores all form input values
@@ -25,11 +23,12 @@ const Register = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState(ROLES.STANDARD);
+  const [roleState, setRoleState] = useState(ROLES.STANDARD);
   const [orgCode, setOrgCode] = useState('');
 
-  const isLoggedIn = !!currentUser;
-  const isPrivileged = currentUser?.profile?.role >= ROLES.ADMIN;
+  // get details of current user
+  const { isLoggedIn, role } = useAuth();
+  const isPrivileged = hasClientPermission(role, "create-users");
 
   const { username, email, password, confirmPassword } = formData;
 
@@ -70,7 +69,7 @@ const Register = () => {
           username,
           email,
           password,
-          role,
+          role: roleState,
         });
 
         setSuccess(`User created: ${username}`);
@@ -102,7 +101,7 @@ const Register = () => {
     }
   };
 
-  return (
+   return (
     <div className="auth-page">
       <section className="auth-shell" aria-label="Create account">
         <div className="auth-brand-panel">
@@ -121,11 +120,11 @@ const Register = () => {
         <div className="auth-card">
           <div className="auth-card-header">
             <div>
-              <p className="auth-kicker">Account setup</p>
+              <p className="auth-kicker">Account setup</p> 
               <h2>Create Account</h2>
             </div>
 
-            {!isLoggedIn && (
+        {!isLoggedIn && (
               <button
                 type="button"
                 onClick={() => navigate('/login')}
@@ -174,12 +173,12 @@ const Register = () => {
                 <p>User Type</p>
 
                 <div className="auth-segmented-control">
-                  <button type="button" onClick={() => setRole(ROLES.ADMIN)}
+                  <button type="button" onClick={() => setRoleState(ROLES.ADMIN)}
                     className={role === ROLES.ADMIN ? 'active' : ''}>
                     Admin
                   </button>
 
-                  <button type="button" onClick={() => setRole(ROLES.STANDARD)}
+                  <button type="button" onClick={() => setroleState(ROLES.STANDARD)}
                     className={role === ROLES.STANDARD ? 'active' : ''}>
                     Standard
                   </button>
