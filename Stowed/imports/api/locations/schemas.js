@@ -54,13 +54,13 @@ export const FloorMapSchema = new SimpleSchema({
     optional: true,
   },
 
-  "floorSize.width": {
+  'floorSize.width': {
     type: Number,
     min: 1,
     optional: true,
   },
 
-  "floorSize.height": {
+  'floorSize.height': {
     type: Number,
     min: 1,
     optional: true,
@@ -71,22 +71,22 @@ export const FloorMapSchema = new SimpleSchema({
     optional: true,
   },
 
-  "settings.gridInterval": {
+  'settings.gridInterval': {
     type: Number,
     optional: true,
   },
 
-  "settings.showGrid": {
+  'settings.showGrid': {
     type: Boolean,
     optional: true,
   },
 
-  "settings.snapToGrid": {
+  'settings.snapToGrid': {
     type: Boolean,
     optional: true,
   },
 
-  "settings.pixelsPerMeter": {
+  'settings.pixelsPerMeter': {
     type: Number,
     optional: true,
   },
@@ -98,8 +98,8 @@ export const FloorMapSchema = new SimpleSchema({
 /**
  * Schema for a StorageUnit.
  *
- * A StorageUnit represents the larger physical block on a FloorMap, such as
- * "CAB-01", a shelf bay, cabinet, rack, drawer set, fridge, or other unit.
+ * A StorageUnit represents a physical storage structure on a FloorMap,
+ * such as a shelf, cabinet, rack, drawer set, fridge, or other unit.
  *
  * The position field is used by the floor map UI to place and size the unit.
  */
@@ -116,15 +116,7 @@ export const StorageUnitSchema = new SimpleSchema({
 
   type: {
     type: String,
-    allowedValues: [
-      "shelf",
-      "cabinet",
-      "rack",
-      "drawer",
-      "fridge",
-      "other",
-      "custom",
-    ],
+    allowedValues: ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other', 'custom'],
   },
 
   position: {
@@ -172,33 +164,7 @@ export const StorageLocationSchema = new SimpleSchema({
     type: String,
   },
 
-  "storedItems.$.sku": {
-    type: String,
-    optional: true,
-    max: 50,
-  },
-
-  storedItems: {
-    type: Array,
-    optional: true,
-  },
-
-  "storedItems.$": {
-    type: Object,
-  },
-
-  "storedItems.$.itemId": {
-    type: String,
-    optional: true,
-  },
-
-  "storedItems.$.name": {
-    type: String,
-    min: 1,
-    max: 100,
-  },
-
-  "storedItems.$.sku": {
+  code: {
     type: String,
     optional: true,
     max: 50,
@@ -208,12 +174,6 @@ export const StorageLocationSchema = new SimpleSchema({
     type: String,
     optional: true,
     max: 100,
-  },
-
-  imageUrl: {
-    type: String,
-    optional: true,
-    max: 500,
   },
 
   createdAt: Date,

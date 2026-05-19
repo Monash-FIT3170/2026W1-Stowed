@@ -2,9 +2,6 @@ import { Meteor } from 'meteor/meteor';
 import '/imports/api/products/methods';
 import '/imports/api/locations/methods';
 import '/imports/api/publications';
-import '/imports/api/userMethods';
-import { ROLES } from '/imports/api/roles';
-import '/imports/api/upload.js';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
 import { Products, ProductRecords } from '/imports/api/products/collections';
 
@@ -97,18 +94,4 @@ Meteor.startup(async () => {
   await seedProducts();
   await seedLocations();
   await seedProductRecords();
-});
-
-Meteor.publish('allUsers', async function () {
-  // allow only if the logged-in user has owner role
-  if (!this.userId) return this.ready();
-  const user = await Meteor.users.findOneAsync(
-    this.userId,
-    { fields: { 'profile.role': 1 } }
-  );
-  
-  if (!user || user.profile.role < ROLES.OWNER) {
-    throw new Meteor.Error('unauthorized', 'Owners only');
-  }
-  return Meteor.users.find({}, { fields: { username: 1, emails: 1 } });
 });
