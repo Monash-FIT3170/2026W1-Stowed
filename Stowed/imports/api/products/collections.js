@@ -1,5 +1,6 @@
 import { Mongo } from 'meteor/mongo';
 import 'meteor/aldeed:collection2/static';
+import { ProductSchema, ProductRecordSchema } from './schemas';
 
 /**
  * A Product represents a type of inventory item tracked in the system.
@@ -18,3 +19,6 @@ export const Products = new Mongo.Collection('products');
  * the Product's totalQuantity.
  */
 export const ProductRecords = new Mongo.Collection('productRecords');
+
+ProductRecords.attachSchema(ProductRecordSchema);
+Products.attachSchema(ProductSchema);
