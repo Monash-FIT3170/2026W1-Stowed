@@ -1,4 +1,4 @@
-/* CreateProductPage Styles — aligned to v3-bloom (ItemDetailPage.css) */
+/* CreateProductPage Styles */
 
 :root {
   --bg-primary: #f5efe6;
@@ -165,7 +165,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px dashed var(--border-subtle);
   font-size: 18px;
   color: var(--text-muted);
@@ -226,7 +226,7 @@
 .btn-primary {
   padding: 8px 18px;
   background-color: var(--accent-primary);
-  color: #ffffff;
+  color: var(--card-bg);
   border-radius: 999px;
   font-weight: 700;
   border: none;
