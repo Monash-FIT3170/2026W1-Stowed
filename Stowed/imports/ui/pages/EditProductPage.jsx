@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products, ProductRecords } from "/imports/api/products/collections";
@@ -10,6 +10,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import "./CreateProductPage.css";
+import "./Breadcrumb.css";
 
 // Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
@@ -313,7 +314,15 @@ export function EditProductPage() {
       <div className="item-detail-header">
         <div className="header-top">
           <div className="breadcrumb">
-            Inventory &nbsp;/&nbsp; Edit &nbsp;/&nbsp; {name}
+            <Link to="/inventory/list" className="breadcrumb-link">
+              Inventory
+            </Link>
+            <span className="breadcrumb-separator">/</span>
+            <Link to={`/inventory/${productId}`} className="breadcrumb-link">
+              Item
+            </Link>
+            <span className="breadcrumb-separator">/</span>
+            <span className="breadcrumb-current">Edit</span>
           </div>
           <div className="header-actions">
             <button className="btn-secondary" onClick={() => navigate(-1)}>

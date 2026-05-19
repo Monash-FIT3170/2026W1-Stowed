@@ -6,6 +6,7 @@ import { Products } from "../../api/products/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
+import "./Breadcrumb.css";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -146,7 +147,13 @@ export function InventoryListPage() {
 
   return (
     <div className="inventory-list-container">
-      <div className="breadcrumb">Inventory / All items</div>
+      <div className="breadcrumb">
+        <Link to="/" className="breadcrumb-link">
+          Inventory
+        </Link>
+        <span className="breadcrumb-separator">/</span>
+        <span className="breadcrumb-current">All items</span>
+      </div>
 
       <h1 className="page-title">
         All <em>items</em>

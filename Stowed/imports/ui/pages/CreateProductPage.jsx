@@ -10,6 +10,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import "./CreateProductPage.css";
+import "./Breadcrumb.css";
 
 const inputStyle = {
   padding: "6px 8px",

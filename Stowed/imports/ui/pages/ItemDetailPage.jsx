@@ -1,9 +1,10 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products } from "../../api/products/collections";
 import "./ItemDetailPage.css";
+import "./Breadcrumb.css";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -13,40 +14,6 @@ function callMethod(methodName, params) {
     });
   });
 }
-
-const buttonStyle = {
-  padding: "6px 14px",
-  border: "1px solid #333",
-  borderRadius: "3px",
-  cursor: "pointer",
-  background: "transparent",
-  fontSize: "14px",
-};
-
-const dangerButtonStyle = {
-  ...buttonStyle,
-  border: "1px solid #c00",
-  color: "#c00",
-};
-
-const overlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.4)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 100,
-};
-
-const modalStyle = {
-  background: "#fff",
-  border: "1px solid #ccc",
-  borderRadius: "6px",
-  padding: "28px",
-  maxWidth: "400px",
-  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-};
 
 export function ItemDetailView({ item, productId }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -82,10 +49,10 @@ export function ItemDetailView({ item, productId }) {
   };
 
   const isLowStock = item.status && item.status.includes("CRITICAL");
-  const statusLabel = isLowStock ? item.status : "In Stock";
+  const statusLabel = isLowStock ? "Low stock" : "In stock";
   const statusClass = isLowStock
-    ? "status-badge critical-badge"
-    : "status-badge available-badge";
+    ? "panel-status-badge low"
+    : "panel-status-badge ok";
 
   return (
     <>
@@ -93,7 +60,11 @@ export function ItemDetailView({ item, productId }) {
         <div className="item-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              Inventory &nbsp;/&nbsp; {item.name}
+              <Link to="/inventory/list" className="breadcrumb-link">
+                Inventory
+              </Link>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">Item</span>
             </div>
             <div className="header-actions">
               <button className="btn-secondary" onClick={() => navigate(-1)}>
@@ -114,9 +85,7 @@ export function ItemDetailView({ item, productId }) {
             </div>
           </div>
 
-          <div
-            className={`header-content ${isLowStock ? "critical" : "available"}`}
-          >
+          <div className="header-content">
             <div className="header-icon-section">
               <img
                 src={item.photoUrl}
@@ -141,7 +110,10 @@ export function ItemDetailView({ item, productId }) {
         <div className="item-detail-grid">
           <div className="left-column">
             <div className="detail-section">
-              <h2 className="section-title"> Core identification</h2>
+              <h2 className="section-title">
+                <span className="section-badge id">ID</span>
+                Core identification
+              </h2>
               <div className="section-content">
                 <div className="form-group">
                   <label>Item name</label>
@@ -166,7 +138,10 @@ export function ItemDetailView({ item, productId }) {
             </div>
 
             <div className="detail-section">
-              <h2 className="section-title"> Operational details</h2>
+              <h2 className="section-title">
+                <span className="section-badge op">OP</span>
+                Operational details
+              </h2>
               <div className="section-content">
                 <div className="form-row">
                   <div className="form-group">
@@ -209,7 +184,10 @@ export function ItemDetailView({ item, productId }) {
 
           <div className="right-column">
             <div className="detail-section">
-              <h2 className="section-title"> Visual catalogue</h2>
+              <h2 className="section-title">
+                <span className="section-badge im">IM</span>
+                Visual catalogue
+              </h2>
               <div className="section-content">
                 <div className="main-image-container">
                   <img
@@ -234,7 +212,10 @@ export function ItemDetailView({ item, productId }) {
             </div>
 
             <div className="detail-section">
-              <h2 className="section-title"> QR & label</h2>
+              <h2 className="section-title">
+                <span className="section-badge qr">QR</span>
+                QR & label
+              </h2>
               <div className="section-content qr-section">
                 <div className="qr-container">
                   <img src={qrCode} alt="QR Code" className="qr-code" />
@@ -249,33 +230,23 @@ export function ItemDetailView({ item, productId }) {
       </div>
 
       {showDeleteModal && (
-        <div style={overlayStyle}>
-          <div style={modalStyle}>
-            <h3
-              style={{ marginTop: 0, marginBottom: "16px", fontSize: "18px" }}
-            >
-              Delete "{item.name}"?
-            </h3>
-            <p style={{ marginBottom: "24px", color: "#666" }}>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 className="modal-title">Delete "{item.name}"?</h3>
+            <p className="modal-text">
               This will permanently delete the product and remove it from all
               storage locations.
             </p>
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                justifyContent: "flex-end",
-              }}
-            >
+            <div className="modal-actions">
               <button
-                style={buttonStyle}
+                className="btn-secondary"
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
               >
                 Cancel
               </button>
               <button
-                style={dangerButtonStyle}
+                className="btn-danger"
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
