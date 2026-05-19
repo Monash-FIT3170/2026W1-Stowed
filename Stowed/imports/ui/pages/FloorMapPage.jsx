@@ -25,24 +25,16 @@ function callMethod(methodName, params) {
  */
 function FloorMapPageInner() {
   const {
-    activeTool,
-    setActiveTool,
+    activeTool, setActiveTool,
     floorSize,
     canvasSettings,
-    isCanvasSettingsOpen,
-    setCanvasSettingsOpen,
-    isCanvasEditMode,
-    setCanvasEditMode,
-    units,
-    commitUnits,
-    canUndo,
-    canRedo,
-    handleUndo,
-    handleRedo,
-    handleSaveLayout,
-    handleLoadLayout,
-    handlePlaceUnit,
-    handleUnitPlaced,
+    isCanvasSettingsOpen, setCanvasSettingsOpen,
+    isCanvasEditMode, setCanvasEditMode,
+    units, commitUnits,
+    canUndo, canRedo,
+    handleUndo, handleRedo,
+    handleSaveLayout, handleLoadLayout,
+    handlePlaceUnit, handleUnitPlaced,
     handleCanvasSettingsSave,
   } = useEditor();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -140,6 +132,8 @@ function FloorMapPageInner() {
         </button>
       )}
     </div>
+
+
   );
 }
 
