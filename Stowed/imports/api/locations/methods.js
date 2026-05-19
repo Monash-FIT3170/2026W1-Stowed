@@ -127,8 +127,13 @@ Meteor.methods({
    * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-site if the parent Site does not exist.
    */
-  async "floorMaps.create"({ siteId, name, imageUrl = "" }) {
-  async 'floorMaps.create'({ siteId, name, imageUrl = '', floorSize = {}, settings = {} }) {
+  async "floorMaps.create"({
+    siteId,
+    name,
+    imageUrl = "",
+    floorSize = {},
+    settings = {},
+  }) {
     check(siteId, String);
     check(name, String);
     check(imageUrl, String);
@@ -170,8 +175,14 @@ Meteor.methods({
    * @throws {Meteor.Error} floor-map-not-found if no floor map exists for the provided ID.
    * @throws {Meteor.Error} invalid-site if the parent Site does not exist.
    */
-  async "floorMaps.update"({ floorMapId, siteId, name, imageUrl = "" }) {
-  async 'floorMaps.update'({ floorMapId, siteId, name, imageUrl = '', floorSize = {}, settings = {} }) {
+  async "floorMaps.update"({
+    floorMapId,
+    siteId,
+    name,
+    imageUrl = "",
+    floorSize = {},
+    settings = {},
+  }) {
     check(floorMapId, String);
     check(siteId, String);
     check(name, String);
@@ -400,12 +411,11 @@ Meteor.methods({
    * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-storage-unit if the parent StorageUnit does not exist.
    */
-  async "storageLocations.create"({ storageUnitId, name, code }) {
-  async 'storageLocations.create'({
+  async "storageLocations.create"({
     storageUnitId,
     name,
     code,
-    imageUrl = '',
+    imageUrl = "",
   }) {
     check(storageUnitId, String);
     check(name, String);
@@ -455,13 +465,7 @@ Meteor.methods({
     storageUnitId,
     name,
     code,
-  }) {
-  async 'storageLocations.update'({
-    storageLocationId,
-    storageUnitId,
-    name,
-    code,
-    imageUrl = '',
+    imageUrl = "",
   }) {
     check(storageLocationId, String);
     check(storageUnitId, String);
