@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
@@ -126,6 +126,8 @@ function submitMeteorMethod(methodName, params) {
   });
 }
 
+
+
 export function LocationsPage() {
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedFloorMapId, setSelectedFloorMapId] = useState("");
@@ -138,6 +140,8 @@ export function LocationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const fileInputRef = useRef(null);
+
 
   const { isLoading, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -189,6 +193,11 @@ export function LocationsPage() {
       ),
     [storageLocations, selectedStorageUnitId],
   );
+
+  
+    // reactive reference to storage location chosen
+  const currentLocation = storageLocations.find((loc) => loc._id
+                            === selectedLocation?._id) ?? selectedLocation;
 
   useEffect(() => {
     if (!sites.length) {
@@ -274,6 +283,41 @@ export function LocationsPage() {
       });
       setFloorMapForm({ name: "", imageUrl: "" });
     });
+  }
+
+  async function handleUpload(e) {
+    
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png'];
+
+    if(!allowedTypes.includes(file.type)) {
+      setStatus({type: 'error', message: 'Invaid file type. Must be PNG or JPEG.'})
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result.split(',')[1];
+      const extension = file.name.split('.').pop();
+
+      try {
+        const url = await Meteor.callAsync('uploads.image', base64, extension);
+        const payload = {
+          storageLocationId: selectedLocation._id,
+          storageUnitId: selectedLocation.storageUnitId,
+          name: selectedLocation.name ?? '',
+          code: selectedLocation.code ?? '',
+          imageUrl: url,
+        };
+        await Meteor.callAsync('storageLocations.update', payload);
+        setStatus({ type: 'success', message: 'Image uploaded successfully.'})
+      } catch (err) {
+        setStatus({ type: 'error', message: 'Image failed to upload.'})
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleCreateStorageUnit(event) {
@@ -722,7 +766,6 @@ export function LocationsPage() {
                       onClick = {()=>{
                         setSelectedLocation(location);
                         setImageModalOpen(true);
-
                       }}>
                         See Image
                       </button>
@@ -818,33 +861,58 @@ export function LocationsPage() {
         </div>
       </div>
     
-    {imageModalOpen && selectedLocation && (
+    {imageModalOpen && currentLocation && (
         <div className="location-image-modal">
           <div className="location-image-container">
             <h2 className="location-image-title">
-              {selectedLocation.name} ({selectedLocation.code})
+              {currentLocation.name} ({currentLocation.code})
             </h2>
 
             <div className="location-image-display">
-              IMAGE HERE
+                  <img
+                    src={currentLocation.imageUrl}
+                    alt={currentLocation.name}
+                    className="location-image"
+                  />
             </div>
 
             <div className="location-image-footer">
+
+            {status.message ? (
+            <div
+              className={`status-message ${
+                status.type === "error"
+                  ? "status-message-error"
+                  : "status-message-success"
+              }`}
+            >
+              {status.message}
+            </div>
+                ) : null}
+
+            <div className="location-image-footer-buttons">
               <button
                 className="location-image-exit"
                 onClick = {() => {
-                  console.log("clicked location", selectedLocation);
                   setImageModalOpen(false);
                   setSelectedLocation(null);
                 }}>
                   Cancel
                 </button>
 
+                <input
+                  type = "file"
+                  accept = "image/*"
+                  ref = {fileInputRef}
+                  style = {{display: 'none'}}
+                  onChange = {handleUpload}
+                />
                 <button
                   className="location-image-upload"
-                  onClick = {() => {}}>
+                  onClick = {() => fileInputRef.current.click()}>
                     Upload New
                 </button>
+                </div>
             </div>
                 
           </div>

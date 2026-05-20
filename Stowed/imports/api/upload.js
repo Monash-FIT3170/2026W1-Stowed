@@ -43,7 +43,7 @@ Meteor.methods({
 
 
 // Serve uploaded images via a simple static file handler
-WebApp.connectHandlers.use('/Uploads/images', (req, res) => {
+WebApp.connectHandlers.use('/uploads/images', (req, res) => {
   const filename = path.basename(req.url);
   const filepath = path.join(uploadDir, filename);
 
