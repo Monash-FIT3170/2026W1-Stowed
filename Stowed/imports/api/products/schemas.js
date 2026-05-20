@@ -84,6 +84,7 @@ export const ProductSchema = new SimpleSchema({
 
   images: {
     type: Array,
+    optional: true,
   },
   "images.$": {
     type: String, 
