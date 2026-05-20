@@ -118,6 +118,7 @@ Meteor.methods({
       qrCode,
       imageUrl,
       totalQuantity,
+      images: [],
       createdAt: now,
       updatedAt: now,
     });
