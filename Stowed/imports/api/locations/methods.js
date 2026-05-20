@@ -127,10 +127,18 @@ Meteor.methods({
    * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-site if the parent Site does not exist.
    */
-  async "floorMaps.create"({ siteId, name, imageUrl = "" }) {
+  async "floorMaps.create"({
+    siteId,
+    name,
+    imageUrl = "",
+    floorSize = {},
+    settings = {},
+  }) {
     check(siteId, String);
     check(name, String);
     check(imageUrl, String);
+    check(floorSize, Object);
+    check(settings, Object);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -147,6 +155,8 @@ Meteor.methods({
       siteId,
       name,
       imageUrl,
+      floorSize,
+      settings,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -165,11 +175,20 @@ Meteor.methods({
    * @throws {Meteor.Error} floor-map-not-found if no floor map exists for the provided ID.
    * @throws {Meteor.Error} invalid-site if the parent Site does not exist.
    */
-  async "floorMaps.update"({ floorMapId, siteId, name, imageUrl = "" }) {
+  async "floorMaps.update"({
+    floorMapId,
+    siteId,
+    name,
+    imageUrl = "",
+    floorSize = {},
+    settings = {},
+  }) {
     check(floorMapId, String);
     check(siteId, String);
     check(name, String);
     check(imageUrl, String);
+    check(floorSize, Object);
+    check(settings, Object);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -193,6 +212,8 @@ Meteor.methods({
         siteId,
         name,
         imageUrl,
+        floorSize,
+        settings,
         updatedAt: new Date(),
       },
     });
@@ -390,10 +411,16 @@ Meteor.methods({
    * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    * @throws {Meteor.Error} invalid-storage-unit if the parent StorageUnit does not exist.
    */
-  async "storageLocations.create"({ storageUnitId, name, code }) {
+  async "storageLocations.create"({
+    storageUnitId,
+    name,
+    code,
+    imageUrl = "",
+  }) {
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
+    check(imageUrl, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -413,6 +440,7 @@ Meteor.methods({
       storageUnitId,
       name,
       code,
+      imageUrl,
       storedItems: [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -437,11 +465,13 @@ Meteor.methods({
     storageUnitId,
     name,
     code,
+    imageUrl = "",
   }) {
     check(storageLocationId, String);
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
+    check(imageUrl, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -469,6 +499,7 @@ Meteor.methods({
         storageUnitId,
         name,
         code,
+        imageUrl,
         updatedAt: new Date(),
       },
     });
@@ -511,5 +542,14 @@ Meteor.methods({
     }
 
     await StorageLocations.removeAsync(storageLocationId);
+  },
+
+  async "storageLocations.getByStorageUnit"({ storageUnitId }) {
+    check(storageUnitId, String);
+
+    return StorageLocations.find(
+      { storageUnitId },
+      { sort: { code: 1 } },
+    ).fetchAsync();
   },
 });
