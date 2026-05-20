@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
@@ -9,6 +9,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { uploadImageToServer } from "/imports/api/upload";
 import "./CreateProductPage.css";
 import "../Global.css";
 
@@ -129,6 +130,13 @@ export function EditProductPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Image state
+  const [imageUrls, setImageUrls] = useState([]);
+  const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef(null);
+
   const {
     loading,
     product,
@@ -168,6 +176,8 @@ export function EditProductPage() {
       setBrand(product.brand);
       setTotalQuantity(String(product.totalQuantity));
       setUnitCost(String(product.unitCost));
+      setImageUrls(product.imageUrls || []);
+      setMainImageIndex(product.mainImageIndex || 0);
       setAssignments(
         originalRecords.map((r) => ({
           locationId: r.locationId,
@@ -198,7 +208,6 @@ export function EditProductPage() {
   const canSave = nameIsValid && totalQuantityIsValid && isBalanced;
 
   // Compute which fields have changed from the original saved values.
-  // Assignments are compared order-independently by sorting on locationId.
   const changes = useMemo(() => {
     if (!initialised || !product) return {};
 
@@ -218,6 +227,15 @@ export function EditProductPage() {
 
     if (parseFloat(unitCost) !== product.unitCost)
       result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
+
+    // Image change detection (order-sensitive).
+    const originalImages = product.imageUrls || [];
+    const imagesChanged =
+      imageUrls.length !== originalImages.length ||
+      imageUrls.some((url, i) => url !== originalImages[i]);
+
+    if (imagesChanged)
+      result.images = { from: originalImages, to: imageUrls };
 
     const normalise = (arr) =>
       [...arr].sort((a, b) => a.locationId.localeCompare(b.locationId));
@@ -253,6 +271,8 @@ export function EditProductPage() {
     category,
     brand,
     parsedTotal,
+    unitCost,
+    imageUrls,
     validAssignments,
     originalRecords,
   ]);
@@ -273,9 +293,47 @@ export function EditProductPage() {
     );
   }
 
+  // Image handlers
+
+  async function handleImageSelect(event) {
+    const file = event.target.files?.[0];
+    // Reset so picking the same file twice still fires onChange.
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file.");
+      return;
+    }
+
+    setUploadError("");
+    setUploadingImage(true);
+    try {
+      const url = await uploadImageToServer(file);
+      setImageUrls((prev) => {
+        const next = [...prev, url];
+        if (prev.length === 0) setMainImageIndex(0);
+        return next;
+      });
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  function removeImage(index) {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+    setMainImageIndex((current) => {
+      if (index === current) return 0;
+      if (index < current) return current - 1;
+      return current;
+    });
+  }
+
   function handleSave() {
     if (Object.keys(changes).length === 0) {
-      // Nothing changed — skip the modal and go straight back.
       navigate(`/inventory/${productId}`);
       return;
     }
@@ -292,6 +350,7 @@ export function EditProductPage() {
         brand,
         totalQuantity: parsedTotal,
         unitCost: unitCost ? parseFloat(unitCost) : 0,
+        catalogImages: imageUrls,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity: parseInt(a.quantity, 10),
@@ -506,7 +565,7 @@ export function EditProductPage() {
                 >
                   {remaining === 0 && `All ${parsedTotal} units assigned.`}
                   {remaining > 0 &&
-                    `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
+                    `${assignedTotal} of ${parsedTotal} assigned, ${remaining} remaining.`}
                   {remaining < 0 &&
                     `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? "s" : ""}.`}
                 </p>
@@ -514,9 +573,113 @@ export function EditProductPage() {
             </div>
           </div>
         </div>
+
+        {/* Right column */}
+        <div className="right-column">
+          <div className="detail-section">
+            <h2 className="section-title">
+              <span
+                className="section-badge"
+                style={{ background: "#d6ede8", color: "#4a8c78" }}
+              >
+                IM
+              </span>
+              Visual catalogue
+            </h2>
+            <div className="section-content">
+              <div className="main-image-container">
+                {imageUrls.length > 0 ? (
+                  <img
+                    src={imageUrls[mainImageIndex]}
+                    alt="Product preview"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: "13px", color: "#998874" }}>
+                    {uploadingImage ? "Uploading..." : "No image uploaded"}
+                  </span>
+                )}
+              </div>
+
+              <div className="thumbnail-gallery">
+                {imageUrls.map((url, index) => (
+                  <div
+                    key={url}
+                    style={{ position: "relative", display: "inline-block" }}
+                  >
+                    <button
+                      type="button"
+                      className={`thumbnail ${index === mainImageIndex ? "active" : ""}`}
+                      onClick={() => setMainImageIndex(index)}
+                      title="Set as main image"
+                    >
+                      <img
+                        src={url}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      title="Remove image"
+                      style={{
+                        position: "absolute",
+                        top: "-6px",
+                        right: "-6px",
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "50%",
+                        border: "1px solid #999",
+                        background: "#fff",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        lineHeight: "1",
+                        padding: 0,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  className="thumbnail add-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? "..." : "+"}
+                </button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  style={{ display: "none" }}
+                />
+              </div>
+
+              {uploadError && (
+                <p className="warning-text" style={{ marginTop: "8px" }}>
+                  {uploadError}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* ── Save confirmation modal ── */}
+      {/* Save confirmation modal */}
       {showSaveModal && (
         <div style={overlayStyle}>
           <div style={modalStyle}>
@@ -576,6 +739,18 @@ export function EditProductPage() {
                 <strong>Unit cost</strong>
                 <div style={{ color: "#555" }}>
                   ${changes.unitCost.from} → ${changes.unitCost.to}
+                </div>
+              </div>
+            )}
+
+            {changes.images && (
+              <div style={changeRowStyle}>
+                <strong>Images</strong>
+                <div style={{ color: "#555" }}>
+                  {changes.images.from.length} image
+                  {changes.images.from.length !== 1 ? "s" : ""} →{" "}
+                  {changes.images.to.length} image
+                  {changes.images.to.length !== 1 ? "s" : ""}
                 </div>
               </div>
             )}
