@@ -313,8 +313,10 @@ export function LocationsPage() {
         };
         await Meteor.callAsync('storageLocations.update', payload);
         setStatus({ type: 'success', message: 'Image uploaded successfully.'})
+        setTimeout(() => setStatus({ type: '', message: '' }), 2000);
       } catch (err) {
         setStatus({ type: 'error', message: 'Image failed to upload.'})
+        setTimeout(() => setStatus({ type: '', message: '' }), 2000);
       }
     };
     reader.readAsDataURL(file);
@@ -862,8 +864,13 @@ export function LocationsPage() {
       </div>
     
     {imageModalOpen && currentLocation && (
-        <div className="location-image-modal">
-          <div className="location-image-container">
+        <div className="location-image-modal"
+          onClick={() => {
+            setImageModalOpen(false);
+            setSelectedLocation(null);
+          }}>
+          <div className="location-image-container" 
+              onClick={(e) => e.stopPropagation()}>
             <h2 className="location-image-title">
               {currentLocation.name} ({currentLocation.code})
             </h2>
