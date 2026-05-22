@@ -10,6 +10,8 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import "./CreateProductPage.css";
+import { hasClientPermission } from "../../api/userMethods";
+import { useAuth } from "../../api/useAuth";
 
 const inputStyle = {
   padding: "6px 8px",
@@ -95,6 +97,8 @@ export function CreateProductPage() {
   const [reorderAt, setReorderAt] = useState("");
   const [location, setLocation] = useState("");
   const [assignments, setAssignments] = useState([]);
+  const { isLoggedIn, role } = useAuth();
+  const isPrivileged = hasClientPermission(role, "products.delete");
 
   const { products, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -159,6 +163,7 @@ export function CreateProductPage() {
     event.preventDefault();
 
     try {
+      if (isPrivileged) {
       await callMethod("products.createWithAssignments", {
         name,
         description,
@@ -175,6 +180,7 @@ export function CreateProductPage() {
       });
 
       navigate("/inventory/list");
+    }
     } catch (error) {
       console.error("Failed to create product:", error);
     }
