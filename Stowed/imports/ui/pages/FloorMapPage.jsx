@@ -54,6 +54,31 @@ function FloorMapPageInner() {
 
   return (
     <div style={pageStyles.page}>
+      <header style={pageStyles.header}>
+        <div>
+          <p style={pageStyles.breadcrumb}>Locations / Floor map</p>
+          <h1 style={pageStyles.title}>
+            Floor <em style={pageStyles.titleAccent}>map</em>
+          </h1>
+          <p style={pageStyles.subtitle}>
+            {isCanvasEditMode ? "Edit mode enabled" : "Viewing layout"}
+          </p>
+        </div>
+        <div style={pageStyles.headerActions}>
+          <button
+            onClick={() => setCanvasEditMode((prev) => !prev)}
+            style={{
+              ...buttonStyles.base,
+              ...(isCanvasEditMode
+                ? buttonStyles.secondary
+                : buttonStyles.primary),
+            }}
+          >
+            {isCanvasEditMode ? "Exit edit mode" : "Edit floor map"}
+          </button>
+        </div>
+      </header>
+
       {/* MAIN ROW */}
       <div style={pageStyles.mainRow}>
         {/* CANVAS AREA */}
@@ -139,35 +164,6 @@ function FloorMapPageInner() {
           onSave={handleCanvasSettingsSave}
           onClose={() => setCanvasSettingsOpen(false)}
         />
-      )}
-
-      <button
-        onClick={() => setCanvasEditMode(!isCanvasEditMode)}
-        style={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          borderRadius: "8px",
-          background: "black",
-          color: "white",
-          padding: "12px",
-          zIndex: 1000,
-        }}
-      >
-        {isCanvasEditMode ? "Toggle View" : "Toggle Edit"}
-      </button>
-      {!isCanvasEditMode && (
-        <button
-          onClick={() => setCanvasEditMode(true)}
-          style={{
-            ...buttonStyles.base,
-            ...buttonStyles.primary,
-            ...pageStyles.floatingButton,
-            padding: "10px 18px",
-          }}
-        >
-          Edit Floor Map
-        </button>
       )}
     </div>
   );
