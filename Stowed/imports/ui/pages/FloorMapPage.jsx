@@ -136,18 +136,6 @@ function FloorMapPageInner() {
                   canUndo={canUndo}
                   canRedo={canRedo}
                 />
-                <div style={pageStyles.sidebarFooter}>
-                  <button
-                    onClick={() => setCanvasEditMode(false)}
-                    style={{
-                      ...buttonStyles.base,
-                      ...buttonStyles.secondary,
-                      width: "100%",
-                    }}
-                  >
-                    Exit Edit Mode
-                  </button>
-                </div>
               </>
             )}
           </div>

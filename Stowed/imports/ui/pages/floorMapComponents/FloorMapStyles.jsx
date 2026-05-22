@@ -142,14 +142,14 @@ export const pageStyles = {
     height: "100%",
     boxSizing: "border-box",
     background: COLOURS.CARD_BG,
-    gap: 12,
+    gap: 10,
     overflow: "hidden",
     transition: "width 0.2s ease, padding 0.2s ease",
   },
   sidebarOpen: {
     width: 280,
     minWidth: 260,
-    padding: "14px",
+    padding: "12px",
   },
   sidebarCollapsed: {
     width: 44,
@@ -168,8 +168,8 @@ export const pageStyles = {
   },
   sidebarDivider: {
     borderTop: `1px solid ${COLOURS.CARD_BORDER}`,
-    marginTop: 4,
-    paddingTop: 12,
+    marginTop: 3,
+    paddingTop: 10,
   },
   sidebarFooter: {
     marginTop: "auto",
@@ -194,7 +194,7 @@ export const toolbarStyles = {
     padding: "10px",
     background: COLOURS.TOOL_BAR_COLOUR,
     border: `1px solid ${COLOURS.CARD_BORDER}`,
-    borderRadius: 16,
+    borderRadius: 13,
     boxShadow: "0 8px 20px rgba(26, 26, 26, 0.06)",
     width: "100%",
   },
@@ -209,19 +209,19 @@ export const toolbarStyles = {
   },
   button: {
     width: "100%",
-    borderRadius: 10,
+    borderRadius: 8,
     textAlign: "center",
     justifyContent: "center",
     padding: "6px 10px",
-    fontSize: 12,
+    fontSize: 11,
   },
   status: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
+    gap: "6px",
     justifyContent: "space-between",
     color: COLOURS.TEXT_MUTED,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 600,
     textTransform: "uppercase",
     letterSpacing: 0.6,
@@ -233,7 +233,7 @@ export const toolbarStyles = {
     background: COLOURS.INPUT_BG,
     color: COLOURS.TEXT_PRIMARY,
     fontWeight: 600,
-    fontSize: 11,
+    fontSize: 9,
     textTransform: "none",
     letterSpacing: 0,
   },
@@ -358,15 +358,15 @@ export const storagePanelStyles = {
 
 export const locationPanelStyles = {
   panel: {
-    padding: "16px",
-    borderRadius: "18px",
+    padding: "13px",
+    borderRadius: "14px",
     border: `1px solid ${COLOURS.CARD_BORDER}`,
     background: COLOURS.CARD_BG,
     boxShadow: "0 8px 20px rgba(26, 26, 26, 0.04)",
   },
   title: {
     margin: 0,
-    fontSize: 12,
+    fontSize: 10,
     letterSpacing: "1.1px",
     color: COLOURS.TEXT_MUTED,
     fontWeight: 600,
@@ -374,55 +374,56 @@ export const locationPanelStyles = {
   },
   helper: {
     margin: "6px 0 0",
-    fontSize: 13,
+    fontSize: 11,
     color: COLOURS.TEXT_MUTED,
   },
   form: {
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
-    marginTop: "12px",
+    gap: "6px",
+    marginTop: "10px",
   },
   input: {
-    padding: "10px 12px",
-    borderRadius: "10px",
+    padding: "8px 10px",
+    borderRadius: "8px",
     border: `1px solid ${COLOURS.BUTTON_BORDER}`,
     outline: "none",
     background: COLOURS.INPUT_BG,
     color: COLOURS.TEXT_PRIMARY,
-    fontSize: 13,
+    fontSize: 11,
   },
   addButton: {
-    padding: "10px 12px",
+    padding: "8px 10px",
     borderRadius: "999px",
     border: `1px dashed ${COLOURS.BUTTON_BORDER}`,
     background: COLOURS.CARD_BG,
     fontWeight: 600,
     cursor: "pointer",
     color: COLOURS.TEXT_PRIMARY,
+    fontSize: 11,
   },
   list: {
-    marginTop: "12px",
+    marginTop: "10px",
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: "6px",
   },
   row: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "10px 12px",
-    borderRadius: "12px",
+    padding: "8px 10px",
+    borderRadius: "10px",
     background: COLOURS.INPUT_BG,
     border: `1px solid ${COLOURS.CARD_BORDER}`,
   },
   rowCode: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: 700,
     color: COLOURS.TEXT_PRIMARY,
   },
   rowName: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLOURS.TEXT_MUTED,
   },
   deleteButton: {
@@ -431,6 +432,7 @@ export const locationPanelStyles = {
     color: COLOURS.ACCENT,
     fontWeight: 600,
     cursor: "pointer",
+    fontSize: 11,
   },
 };
 
@@ -450,19 +452,19 @@ export const modalStyles = {
 
   modal: {
     background: COLOURS.CARD_BG,
-    padding: "20px",
-    borderRadius: "16px",
-    width: "320px",
+    padding: "16px",
+    borderRadius: "13px",
+    width: "280px",
     boxShadow: "0 16px 32px rgba(26, 26, 26, 0.2)",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "10px",
     border: `1px solid ${COLOURS.CARD_BORDER}`,
   },
 
   title: {
     margin: 0,
-    fontSize: "16px",
+    fontSize: "13px",
     fontWeight: 600,
     color: COLOURS.TEXT_PRIMARY,
   },
@@ -470,28 +472,28 @@ export const modalStyles = {
   field: {
     display: "flex",
     flexDirection: "column",
-    gap: "6px",
+    gap: "5px",
   },
 
   label: {
-    fontSize: "12px",
+    fontSize: "10px",
     color: COLOURS.TEXT_MUTED,
     fontWeight: 600,
     textTransform: "uppercase",
-    letterSpacing: "0.6px",
+    letterSpacing: "0.5px",
   },
 
   input: {
-    padding: "8px 10px",
-    borderRadius: "10px",
+    padding: "6px 8px",
+    borderRadius: "8px",
     border: `1px solid ${COLOURS.BUTTON_BORDER}`,
-    fontSize: "14px",
+    fontSize: "11px",
     background: COLOURS.INPUT_BG,
     color: COLOURS.TEXT_PRIMARY,
   },
 
   checkboxRow: {
-    fontSize: "13px",
+    fontSize: "11px",
     color: COLOURS.TEXT_PRIMARY,
     fontWeight: 600,
   },
@@ -499,12 +501,14 @@ export const modalStyles = {
   actions: {
     display: "flex",
     justifyContent: "flex-end",
-    gap: "8px",
-    marginTop: "10px",
+    gap: "6px",
+    marginTop: "8px",
   },
 
   buttonPrimary: {
     ...baseButton,
+    padding: "8px 14px",
+    fontSize: 11,
     background: COLOURS.ACCENT,
     border: `1px solid ${COLOURS.ACCENT}`,
     color: "white",
@@ -512,6 +516,8 @@ export const modalStyles = {
 
   buttonSecondary: {
     ...baseButton,
+    padding: "8px 14px",
+    fontSize: 11,
     background: COLOURS.CARD_BG,
   },
 };
