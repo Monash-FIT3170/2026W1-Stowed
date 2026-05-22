@@ -4,6 +4,8 @@ import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products } from "../../api/products/collections";
 import "./ItemDetailPage.css";
+import { hasClientPermission } from "../../api/userMethods";
+import { useAuth } from "../../api/useAuth";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -46,13 +48,15 @@ const modalStyle = {
   padding: "28px",
   maxWidth: "400px",
   boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-};
+}
 
 export function ItemDetailView({ item, productId }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
+  const { isLoggedIn, role } = useAuth();
+  const isPrivileged = hasClientPermission(role, "products.delete");
 
   if (!item) {
     return <div className="p-8 text-center">Item not found.</div>;
@@ -73,8 +77,10 @@ export function ItemDetailView({ item, productId }) {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
+      if (isPrivileged) {
       await callMethod("products.delete", { productId });
       navigate("/");
+    }
     } catch (error) {
       console.error("Failed to delete product:", error);
       setIsDeleting(false);
@@ -105,12 +111,14 @@ export function ItemDetailView({ item, productId }) {
               >
                 Update
               </button>
-              <button
-                className="btn-danger"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                Delete
-              </button>
+              {isPrivileged && (
+                <button
+                  className="btn-danger"
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
 
@@ -248,7 +256,7 @@ export function ItemDetailView({ item, productId }) {
         </div>
       </div>
 
-      {showDeleteModal && (
+      {showDeleteModal && isPrivileged && (
         <div style={overlayStyle}>
           <div style={modalStyle}>
             <h3

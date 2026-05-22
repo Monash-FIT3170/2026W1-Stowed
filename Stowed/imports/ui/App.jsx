@@ -37,7 +37,7 @@ export function App() {
 
   // gets the current user's role for route authorisation
   const role = user?.profile?.role ?? null;
-  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/");
+  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/inventory");
 
   return (
     <BrowserRouter>

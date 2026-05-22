@@ -10,21 +10,29 @@ import { Accounts } from 'meteor/accounts-base';
 
 // permissions map. outlines the lowest role level with permission to perform said tasks
 const PERMISSIONS = {
-  // methods
-  "create-users": ROLES.ADMIN,
+  // User management
+  "create-users": ROLES.OWNER,
   "delete-users": ROLES.OWNER,
 
-  // routes
-  "route:/": ROLES.STANDARD,
-  "route:/locations": ROLES.STANDARD,
-  "route:/floor-map": ROLES.STANDARD,
-  "route:/stocktake": ROLES.STANDARD,
-  "route:/lists": ROLES.STANDARD,
+  // Product operations
+  "products.create":    ROLES.ADMIN,    // create new products + assign locations
+  "products.update":    ROLES.ADMIN,    // edit product details / reassign locations
+  "products.delete":    ROLES.ADMIN,    // Allow Admin
+  "products.restock":   ROLES.STANDARD, // add stock — all staff can do this
+  "products.uploadImage": ROLES.ADMIN,  // attach images to products
 
-  "route:/qr-codes": ROLES.ADMIN,
-  "route:/forecast": ROLES.ADMIN,
-  "route:/alerts": ROLES.ADMIN,
-  "route:/accounts": ROLES.OWNER,
+  // Location structure management (all CRUD across the hierarchy)
+  "locations.manage":   ROLES.ADMIN,    // sites, floorMaps, storageUnits, storageLocations
+
+  // Routes
+  "route:/inventory":   ROLES.STANDARD,
+  "route:/locations":   ROLES.STANDARD,
+  "route:/floor-map":   ROLES.STANDARD,
+  "route:/lists":       ROLES.STANDARD,
+  "route:/qr-codes":    ROLES.ADMIN,
+  "route:/forecast":    ROLES.ADMIN,
+  "route:/alerts":      ROLES.ADMIN,
+  "route:/accounts":    ROLES.OWNER,
 };
 
 // returns the role of the user
