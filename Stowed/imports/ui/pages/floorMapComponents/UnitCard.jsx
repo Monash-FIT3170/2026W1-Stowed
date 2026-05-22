@@ -55,24 +55,28 @@ export function UnitCard({ unit, onClick }) {
         setTimeout(() => document.body.removeChild(offscreen), 0);
     }
 
-    function handleDragEnd() {
-        // Clear shared drag state once the drag operation is finished
-        dragState.template = null;
-    }
+  function handleDragEnd() {
+    // Clear shared drag state once the drag operation is finished
+    dragState.template = null;
+  }
 
-    
-    return (
-        <div 
-            draggable 
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            style={{...storagePanelStyles.card, background: hovered ? COLOURS.UNIT_CARD_HOVER : "white", cursor: "grab"}}
-            onClick={onClick}
-            onMouseEnter={()=>setHovered(true)}
-            onMouseLeave={()=>setHovered(false)}
-        >
-        
-            <div style={{...storagePanelStyles.swatch, background: unit.fill}}/>
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      style={{
+        ...storagePanelStyles.card,
+        background: hovered
+          ? COLOURS.UNIT_CARD_HOVER
+          : storagePanelStyles.card.background,
+        cursor: "grab",
+      }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div style={{ ...storagePanelStyles.swatch, background: unit.fill }} />
 
             <p style={storagePanelStyles.cardName}>{unit.name}</p>
             <p style={storagePanelStyles.cardSub}>{unit.width} × {unit.height}m</p>

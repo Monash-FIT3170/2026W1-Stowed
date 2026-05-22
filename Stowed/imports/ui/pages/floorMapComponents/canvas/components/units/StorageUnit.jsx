@@ -1,5 +1,6 @@
 import { Group, Rect, Text } from "react-konva";
-import { CANVAS_CONFIG }     from "../../CanvasConfig";
+import { CANVAS_CONFIG } from "../../CanvasConfig";
+import { COLOURS } from "../../../FloorMapStyles";
 
 /**
  * Individual storage unit rendered as a labelled rectangle on the canvas.
@@ -22,7 +23,15 @@ export function StorageUnit({ unit, isSelected, activeTool, onSelect, onDragMove
   return (
     <Group ref={groupRef} id={unit.id} x={unit.x * px} y={unit.y * px} draggable={canMove} onClick={onSelect} onDragMove={onDragMove} onDragEnd={onDragEnd} onTransformEnd={onTransformEnd}>
       {/* MAIN BODY */}
-      <Rect width={unit.width * px} height={unit.height * px} fill={unit.fill} stroke={isSelected ? "orange" : "transparent"} strokeWidth={2} cornerRadius={4} opacity={0.85}/>
+      <Rect
+        width={unit.width * px}
+        height={unit.height * px}
+        fill={unit.fill}
+        stroke={isSelected ? COLOURS.ACCENT : "transparent"}
+        strokeWidth={2}
+        cornerRadius={4}
+        opacity={0.85}
+      />
       {/* UNIT NAME */}
       <Text width={unit.width * px} height={unit.height * px} align="center" verticalAlign="middle" text={unit.name} fontSize={12} fill="white"/>
     </Group>
