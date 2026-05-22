@@ -6,7 +6,7 @@ import { Products } from "../../api/products/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
-import "./Breadcrumb.css";
+import "../Global.css";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {

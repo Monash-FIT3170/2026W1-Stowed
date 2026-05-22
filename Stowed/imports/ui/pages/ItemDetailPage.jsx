@@ -4,7 +4,7 @@ import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products } from "../../api/products/collections";
 import "./ItemDetailPage.css";
-import "./Breadcrumb.css";
+import "../Global.css";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -66,24 +66,9 @@ export function ItemDetailView({ item, productId }) {
               <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-current">Item</span>
             </div>
-            <div className="header-actions">
-              <button className="btn-secondary" onClick={() => navigate(-1)}>
-                Back
-              </button>
-              <button
-                className="btn-primary"
-                onClick={() => navigate(`/inventory/${productId}/edit`)}
-              >
-                Update
-              </button>
-              <button
-                className="btn-danger"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                Delete
-              </button>
-            </div>
           </div>
+
+          <h1 className="header-title">Item <em>Details</em></h1>
 
           <div className="header-content">
             <div className="header-icon-section">
@@ -226,6 +211,24 @@ export function ItemDetailView({ item, productId }) {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="create-product-footer">
+          <button className="btn-secondary" onClick={() => navigate(-1)}>
+            Back
+          </button>
+          <button
+            className="btn-primary"
+            onClick={() => navigate(`/inventory/${productId}/edit`)}
+          >
+            Update
+          </button>
+          <button
+            className="btn-danger"
+            onClick={() => setShowDeleteModal(true)}
+          >
+            Delete
+          </button>
         </div>
       </div>
 
