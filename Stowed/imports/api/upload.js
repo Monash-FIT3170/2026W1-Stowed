@@ -44,17 +44,10 @@ if (Meteor.isServer) {
   // Ensure the upload directory exists, create if it doesn't
   fs.mkdirSync(uploadDir, { recursive: true });
 
-  Meteor.methods({
-    /**
-     * Saves a base64-encoded image to the server's filesystem.
-     *
-     * @param {string} fileData   Base64-encoded image data.
-     * @param {string} extension  File extension (e.g. "png", "jpg").
-     * @returns {string} Public URL path to the saved image.
-     */
-    async 'uploads.image'(fileData, extension) {
-      check(fileData, String);
-      check(extension, String);
+// Serve uploaded images via a simple static file handler
+WebApp.connectHandlers.use('/uploads/images', (req, res) => {
+  const filename = path.basename(req.url);
+  const filepath = path.join(uploadDir, filename);
 
       // Require login unless running in development mode
       if (!this.userId && !Meteor.isDevelopment) {

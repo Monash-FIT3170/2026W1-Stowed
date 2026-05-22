@@ -1,3 +1,6 @@
+import { useState } from "react"; 
+import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
 
 /**
@@ -28,6 +31,21 @@ export function CanvasToolbar({
     ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
     : "None";
 
+    // floor dimension validation
+    const updateDimension = (dimensionType, rawValue) => {
+    setInputMeters((prev) => ({ ...prev, [dimensionType]: rawValue }));
+      const val = Number(rawValue);
+    if (rawValue === "" || Number.isNaN(val) || val <= 0) return;
+    setFloorSize((prev) => ({
+      ...prev,
+      [dimensionType]: val * CANVAS_CONFIG.PIXELS_PER_METER,
+    }));
+    };
+
+  const activeToolLabel = activeTool
+    ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
+    : "None";
+
   const toolButtonStyle = (tool) => ({
     ...buttonStyles.base,
     ...(activeTool === tool ? buttonStyles.active : buttonStyles.secondary),
@@ -36,7 +54,7 @@ export function CanvasToolbar({
   const disabledStyle = (isDisabled) =>
     isDisabled ? buttonStyles.disabled : null;
 
-  return (
+    return (
     <div style={toolbarStyles.bar}>
       <div style={toolbarStyles.status}>
         <span>Active tool</span>
@@ -46,17 +64,15 @@ export function CanvasToolbar({
       {/* TOOLS */}
       <div style={toolbarStyles.row}>
         <button
-          type="button"
           onClick={() => setActiveTool("select")}
-          style={{ ...toolButtonStyle("select"), ...toolbarStyles.button }}
+          style={toolButtonStyle("select")}
           aria-pressed={activeTool === "select"}
         >
           Select
         </button>
         <button
-          type="button"
           onClick={() => setActiveTool("move")}
-          style={{ ...toolButtonStyle("move"), ...toolbarStyles.button }}
+          style={toolButtonStyle("move")}
           aria-pressed={activeTool === "move"}
         >
           Move
@@ -65,7 +81,6 @@ export function CanvasToolbar({
 
       <div style={toolbarStyles.row}>
         <button
-          type="button"
           onClick={onSaveLayout}
           style={{
             ...buttonStyles.base,
@@ -76,7 +91,6 @@ export function CanvasToolbar({
           Save Layout
         </button>
         <button
-          type="button"
           onClick={onLoadLayout}
           style={{
             ...buttonStyles.base,
@@ -90,7 +104,6 @@ export function CanvasToolbar({
 
       <div style={toolbarStyles.row}>
         <button
-          type="button"
           onClick={onUndo}
           disabled={!canUndo}
           style={{
@@ -103,7 +116,6 @@ export function CanvasToolbar({
           Undo
         </button>
         <button
-          type="button"
           onClick={onRedo}
           disabled={!canRedo}
           style={{
@@ -118,7 +130,6 @@ export function CanvasToolbar({
       </div>
       <div style={toolbarStyles.rowSingle}>
         <button
-          type="button"
           onClick={onOpenCanvasSettings}
           style={{
             ...buttonStyles.base,
@@ -128,6 +139,7 @@ export function CanvasToolbar({
         >
           Canvas Settings
         </button>
+      </div>
       </div>
     </div>
   );

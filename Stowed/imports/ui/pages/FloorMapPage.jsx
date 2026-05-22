@@ -6,6 +6,7 @@ import { StoragePanel } from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
 import { buttonStyles, pageStyles } from "./floorMapComponents/FloorMapStyles";
 import { useParams } from "react-router-dom";
+import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -52,6 +53,8 @@ function FloorMapPageInner() {
               height: "100%",
             }}
             isCanvasEditMode={isCanvasEditMode}
+            selectedStorageUnitId={selectedStorageUnitId}
+            setSelectedStorageUnitId={setSelectedStorageUnitId}
           />
         </div>
 

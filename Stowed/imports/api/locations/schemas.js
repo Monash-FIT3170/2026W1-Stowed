@@ -1,5 +1,5 @@
 // imports/api/locations/schemas.js
-import SimpleSchema from 'simpl-schema';
+import SimpleSchema from "simpl-schema";
 
 /**
  * Schema for a Site.
@@ -37,15 +37,60 @@ export const SiteSchema = new SimpleSchema({
  */
 export const FloorMapSchema = new SimpleSchema({
   siteId: String,
+
   name: {
     type: String,
     min: 1,
     max: 100,
   },
+
   imageUrl: {
     type: String,
     optional: true,
   },
+
+  floorSize: {
+    type: Object,
+    optional: true,
+  },
+
+  "floorSize.width": {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  "floorSize.height": {
+    type: Number,
+    min: 1,
+    optional: true,
+  },
+
+  settings: {
+    type: Object,
+    optional: true,
+  },
+
+  "settings.gridInterval": {
+    type: Number,
+    optional: true,
+  },
+
+  "settings.showGrid": {
+    type: Boolean,
+    optional: true,
+  },
+
+  "settings.snapToGrid": {
+    type: Boolean,
+    optional: true,
+  },
+
+  "settings.pixelsPerMeter": {
+    type: Number,
+    optional: true,
+  },
+
   createdAt: Date,
   updatedAt: Date,
 });
@@ -71,29 +116,37 @@ export const StorageUnitSchema = new SimpleSchema({
 
   type: {
     type: String,
-    allowedValues: ['shelf', 'cabinet', 'rack', 'drawer', 'fridge', 'other'],
+    allowedValues: [
+      "shelf",
+      "cabinet",
+      "rack",
+      "drawer",
+      "fridge",
+      "other",
+      "custom",
+    ],
   },
-  
+
   position: {
     type: Object,
   },
 
-  'position.x': {
+  "position.x": {
     type: Number,
     min: 0,
   },
 
-  'position.y': {
+  "position.y": {
     type: Number,
     min: 0,
   },
 
-  'position.width': {
+  "position.width": {
     type: Number,
     min: 1,
   },
 
-  'position.height': {
+  "position.height": {
     type: Number,
     min: 1,
   },
@@ -104,11 +157,6 @@ export const StorageUnitSchema = new SimpleSchema({
 
   updatedAt: {
     type: Date,
-  },
-  
-  photoUrl: {
-    type: String,
-    optional: true,
   },
 });
 
@@ -124,60 +172,51 @@ export const StorageLocationSchema = new SimpleSchema({
     type: String,
   },
 
-  name: {
-    type: String,
-    min: 1,
-    max: 100,
-  },
-
-  code: {
-    type: String,
-    min: 1,
-    max: 50,
-  },
-
   storedItems: {
     type: Array,
     optional: true,
   },
 
-  'storedItems.$': {
+  "storedItems.$": {
     type: Object,
   },
 
-  'storedItems.$.itemId': {
+  "storedItems.$.itemId": {
     type: String,
     optional: true,
   },
 
-  'storedItems.$.name': {
+  "storedItems.$.name": {
     type: String,
     min: 1,
     max: 100,
   },
 
-  'storedItems.$.sku': {
+  "storedItems.$.sku": {
     type: String,
     optional: true,
     max: 50,
   },
 
-  'storedItems.$.quantity': {
-    type: SimpleSchema.Integer,
-    min: 0,
-  },
-
-  'storedItems.$.status': {
+  name: {
     type: String,
     optional: true,
-    allowedValues: ['OK', 'LOW', 'CRITICAL'],
+    max: 100,
   },
 
-  createdAt: {
-    type: Date,
+  code: {
+    type: String,
+    optional: true,
+    max: 50
   },
 
-  updatedAt: {
-    type: Date,
+  imageUrl: {
+    type: String,
+    optional: true,
+    max: 500,
   },
+
+  createdAt: Date,
+
+  updatedAt: Date,
 });

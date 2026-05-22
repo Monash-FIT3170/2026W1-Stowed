@@ -114,7 +114,7 @@ export function App() {
               }
             />
             <Route
-              path="/floor-map/:floorMapId"
+              path="/floor-map/:floorMapId?"
               element={
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/floor-map") ? (

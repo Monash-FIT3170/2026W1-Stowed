@@ -1,34 +1,29 @@
 export const COLOURS = {
   // General Colour
   TEXT_COLOUR: "white",
-  TEXT_PRIMARY: "#1a1a1a",
-  TEXT_MUTED: "#998874",
+  TEXT_PRIMARY: "#2f2b27",
+  TEXT_MUTED: "#7b726a",
 
   // Layout Colours
-  PAGE_BG: "#f5efe6",
+  PAGE_BG: "#f4eee6",
   CARD_BG: "#ffffff",
-  CARD_BORDER: "#efe7da",
-  BORDER_SUBTLE: "#d9cfc0",
-  INPUT_BG: "#fdf7f2",
-  TAG_BG: "#f5efe6",
-  TAG_TEXT: "#5c4f3f",
+  CARD_BORDER: "#eadfd2",
 
   // Button Colours
-  BUTTON_BG: "#fdf7f2",
-  BUTTON_BORDER: "#d9cfc0",
-  BUTTON_TEXT: "#1a1a1a",
-  ACCENT: "#b5532a",
-  ACCENT_SECONDARY: "#e89b6f",
-  ACCENT_SOFT: "#fde8d8",
+  BUTTON_BG: "#fff8f1",
+  BUTTON_BORDER: "#e5d8cc",
+  BUTTON_TEXT: "#4e463f",
+  ACCENT: "#d6a28d",
+  ACCENT_SOFT: "#f3d7c8",
 
   // Canvas Colours
   TOOL_BAR_COLOUR: "#ffffff",
-  UNIT_CARD_HOVER: "#fdf7f2",
-  CANVAS_FILL: "#f5efe6",
+  UNIT_CARD_HOVER: "#f7f1ea",
+  CANVAS_FILL: "#e7dfd5",
   CANVAS_LABEL: "white",
 };
 
-const cardShadow = "0 2px 8px rgba(26, 26, 26, 0.04)";
+const cardShadow = "0 2px 8px rgba(0,0,0,0.04)";
 
 const baseButton = {
   padding: "8px 14px",
@@ -49,7 +44,7 @@ export const buttonStyles = {
   primary: {
     background: COLOURS.ACCENT,
     border: `1px solid ${COLOURS.ACCENT}`,
-    color: COLOURS.CARD_BG,
+    color: "white",
   },
   secondary: {
     background: COLOURS.CARD_BG,
@@ -61,7 +56,7 @@ export const buttonStyles = {
   active: {
     background: COLOURS.ACCENT_SOFT,
     border: `1px solid ${COLOURS.ACCENT}`,
-    color: COLOURS.ACCENT,
+    color: COLOURS.TEXT_PRIMARY,
   },
   disabled: {
     opacity: 0.5,
@@ -148,10 +143,10 @@ export const toolbarStyles = {
     flexDirection: "column",
     alignItems: "stretch",
     gap: "12px",
-    padding: "14px",
+    padding: "12px 14px",
     background: COLOURS.TOOL_BAR_COLOUR,
     border: `1px solid ${COLOURS.CARD_BORDER}`,
-    borderRadius: 14,
+    borderRadius: 18,
     boxShadow: cardShadow,
     width: "100%",
   },
@@ -166,7 +161,7 @@ export const toolbarStyles = {
   },
   button: {
     width: "100%",
-    borderRadius: 999,
+    borderRadius: 10,
     textAlign: "center",
     justifyContent: "center",
   },
@@ -183,8 +178,8 @@ export const toolbarStyles = {
     padding: "6px 10px",
     borderRadius: "999px",
     border: `1px solid ${COLOURS.BUTTON_BORDER}`,
-    background: COLOURS.TAG_BG,
-    color: COLOURS.TAG_TEXT,
+    background: COLOURS.BUTTON_BG,
+    color: COLOURS.TEXT_PRIMARY,
     fontWeight: 600,
     fontSize: 12,
   },
@@ -201,7 +196,7 @@ export const storagePanelStyles = {
     minWidth: 0,
     background: COLOURS.CARD_BG,
     border: `1px solid ${COLOURS.CARD_BORDER}`,
-    borderRadius: 14,
+    borderRadius: 18,
     padding: "14px",
     flexDirection: "column",
     gap: 8,
@@ -224,7 +219,7 @@ export const storagePanelStyles = {
     padding: "8px 10px",
     borderRadius: 12,
     cursor: "pointer",
-    background: COLOURS.CARD_BG,
+    background: COLOURS.BUTTON_BG,
     border: `1px solid ${COLOURS.CARD_BORDER}`,
     boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
     transition: "background 0.15s, border 0.15s, box-shadow 0.15s",
@@ -269,8 +264,8 @@ export const storagePanelStyles = {
     gap: 6,
     marginTop: 6,
     padding: "12px 10px",
-    background: COLOURS.INPUT_BG,
-    borderRadius: 8,
+    background: COLOURS.BUTTON_BG,
+    borderRadius: 12,
     border: `1px solid ${COLOURS.CARD_BORDER}`,
     boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
   },
@@ -283,9 +278,9 @@ export const storagePanelStyles = {
   },
 
   input: {
-    background: COLOURS.INPUT_BG,
+    background: "#fff",
     border: `1px solid ${COLOURS.BUTTON_BORDER}`,
-    borderRadius: 8,
+    borderRadius: 10,
     color: COLOURS.TEXT_PRIMARY,
     padding: "8px 10px",
     fontSize: 13,
@@ -298,7 +293,7 @@ export const storagePanelStyles = {
     padding: "8px 0",
     width: "100%",
     background: COLOURS.ACCENT,
-    color: COLOURS.CARD_BG,
+    color: "white",
     border: `1px solid ${COLOURS.ACCENT}`,
     borderRadius: 999,
     cursor: "pointer",
@@ -324,9 +319,9 @@ export const modalStyles = {
   modal: {
     background: COLOURS.CARD_BG,
     padding: "20px",
-    borderRadius: "14px",
+    borderRadius: "16px",
     width: "300px",
-    boxShadow: cardShadow,
+    boxShadow: "0 10px 24px rgba(0,0,0,0.2)",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
@@ -354,9 +349,8 @@ export const modalStyles = {
 
   input: {
     padding: "8px 10px",
-    borderRadius: "8px",
+    borderRadius: "10px",
     border: `1px solid ${COLOURS.BUTTON_BORDER}`,
-    background: COLOURS.INPUT_BG,
     fontSize: "14px",
   },
 
@@ -376,7 +370,7 @@ export const modalStyles = {
     ...baseButton,
     background: COLOURS.ACCENT,
     border: `1px solid ${COLOURS.ACCENT}`,
-    color: COLOURS.CARD_BG,
+    color: "white",
   },
 
   buttonSecondary: {

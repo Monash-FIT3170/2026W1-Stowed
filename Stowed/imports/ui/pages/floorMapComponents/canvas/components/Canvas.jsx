@@ -1,16 +1,16 @@
-import { useRef, useEffect, useReducer }     from "react";
-import { Stage }                             from "react-konva";
+import { useRef, useEffect, useReducer } from "react";
+import { Stage } from "react-konva";
 
-import { useEditor }                         from "../editor/EditorContext";
+import { useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
-import { CANVAS_ACTIONS }                    from "../editor/Actions";
-import { useCanvasHandlers }                 from "../hooks/UseCanvasHandlers";
-import { CANVAS_CONFIG }                     from "../CanvasConfig"
+import { CANVAS_ACTIONS } from "../editor/Actions";
+import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
+import { CANVAS_CONFIG } from "../CanvasConfig"
 
-import { GridLayer }                         from "./layers/GridLayer";
-import { UnitLayer }                         from "./layers/UnitLayer";
-import { TransformerLayer }                  from "./layers/TransformerLayer";
-import { GhostLayer }                        from "./layers/GhostLayer";
+import { GridLayer } from "./layers/GridLayer";
+import { UnitLayer } from "./layers/UnitLayer";
+import { TransformerLayer } from "./layers/TransformerLayer";
+import { GhostLayer } from "./layers/GhostLayer";
 
 /**
  * Root canvas comonent. Owns the Konva Stage and composes all layers.
@@ -19,28 +19,32 @@ import { GhostLayer }                        from "./layers/GhostLayer";
  * 
  * @param {React.CSSProperties} style - Forwarded to the Konva Stage element. 
  */
-export function Canvas({ style, isCanvasEditMode }) {
+export function Canvas({
+  style,
+  isCanvasEditMode,
+  setSelectedStorageUnitId,
+}) {
   const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
 
-  const width  = floorSize.width;
+  const width = floorSize.width;
   const height = floorSize.height;
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
-  const showGrid     =  isCanvasEditMode ?  (canvasSettings?.showGrid ?? true) : false ;
-  const snapEnabled  = canvasSettings?.snapToGrid   ?? true;
-  const gridSizePx   = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
+  const showGrid = isCanvasEditMode ? (canvasSettings?.showGrid ?? true) : false;
+  const snapEnabled = canvasSettings?.snapToGrid ?? true;
+  const gridSizePx = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
 
   // REFS 
-  const stageRef     = useRef(null);
-  const wrapperRef   = useRef(null);
+  const stageRef = useRef(null);
+  const wrapperRef = useRef(null);
   const containerRef = useRef(null);
-  const groupRefs    = useRef({});
+  const groupRefs = useRef({});
 
   // REDUCER 
   const [state, dispatch] = useReducer(canvasReducer, initialCanvasState);
   const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize, clipboard } = state;
 
-  
+
   // HANDLERS - centralised in UseCanvasHandlers to keep this file focused on composition
   const {
     getGroupRef,
@@ -74,7 +78,7 @@ export function Canvas({ style, isCanvasEditMode }) {
     clipboard,
     isCanvasEditMode
   });
-  
+
   // ON MOUNT USE EFFECT
   useEffect(() => {
     // MEASURE CONTAINER TO FILL SCREEN FULLY
@@ -86,7 +90,7 @@ export function Canvas({ style, isCanvasEditMode }) {
     // CENTER CANVAS ON SCREEN
     const centeredX = (width - floorSize.width * scale) / 2;
     const centeredY = (height - floorSize.height * scale) / 2;
-    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: { x: centeredX, y: centeredY }})
+    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: { x: centeredX, y: centeredY } })
   }, []);
 
   // EVERY CHANGE USE EFFECT
@@ -106,23 +110,36 @@ export function Canvas({ style, isCanvasEditMode }) {
   // RENDER 
   return (
     <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{ width: "100%", height: "100%" }}>
-      
+
       <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
-        
+
         <Stage ref={stageRef} width={displaySize.width} height={displaySize.height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style} draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid} onClick={handleStageClick}>
-          
-          <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid}/>
 
-          <UnitLayer units={units} selectedIds={selectedIds} activeTool={activeTool} getGroupRef={getGroupRef} onUnitClick={handleUnitClick} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onTransformEnd={handleTransformEnd}/>
+          <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
-          <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef}/>
+          <UnitLayer
+            units={units}
+            selectedIds={selectedIds}
+            activeTool={activeTool}
+            getGroupRef={getGroupRef}
+            onUnitClick={(unit, e) => {
+              setSelectedStorageUnitId?.(unit._id || unit.id);
+              console.log("Selected storage unit:", unit._id || unit.id);
+              handleUnitClick(unit, e);
+            }}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            onTransformEnd={handleTransformEnd}
+          />
 
-          <GhostLayer ghostUnit={ghostUnit} dragOffsets={dragOffsets} selectedIds={selectedIds} units={units} snapEnabled={snapEnabled} gridSizePx={gridSizePx}/>
+          <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef} />
+
+          <GhostLayer ghostUnit={ghostUnit} dragOffsets={dragOffsets} selectedIds={selectedIds} units={units} snapEnabled={snapEnabled} gridSizePx={gridSizePx} />
 
         </Stage>
-      
+
       </div>
-    
+
     </div>
   );
 }

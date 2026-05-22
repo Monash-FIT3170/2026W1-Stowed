@@ -1,5 +1,4 @@
-// imports/api/locations/schemas.js
-import SimpleSchema from 'simpl-schema';
+import SimpleSchema from "simpl-schema";
 
 export const ProductSchema = new SimpleSchema({
   name: {
@@ -68,6 +67,11 @@ export const ProductSchema = new SimpleSchema({
     type: String,
     optional: true,
   },
+  imageUrl: {
+    type: String,
+    optional: true,
+    max: 500,
+  },
 
   totalQuantity: {
     type: SimpleSchema.Integer,
@@ -87,9 +91,14 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
   },
   "images.$": {
-    type: String, 
+    type: String,
   },
 
+  imageUrl: {
+    type: String,
+    optional: true,
+    max: 500,
+  },
 });
 
 export const ProductRecordSchema = new SimpleSchema({
