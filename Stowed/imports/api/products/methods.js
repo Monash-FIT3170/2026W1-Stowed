@@ -164,6 +164,15 @@ Meteor.methods({
     productId,
     name,
     description = "",
+    tag = "",
+    category = "",
+    sku = "",
+    brand = "",
+    unitCost = 0,
+    photoUrl = "",
+    catalogImages = [],
+    qrCode = "",
+    imageUrl = "",
     totalQuantity,
     assignments,
   }) {
@@ -178,9 +187,9 @@ Meteor.methods({
     check(photoUrl, String);
     check(catalogImages, [String]);
     check(qrCode, String);
+    check(imageUrl, String);
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
-    check(imageUrl, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -194,7 +203,6 @@ Meteor.methods({
       );
     }
 
-    // Duplicate name check excluding this product.
     const existing = await Products.findOneAsync({
       _id: { $ne: productId },
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
@@ -206,7 +214,6 @@ Meteor.methods({
       );
     }
 
-    // Merge any duplicate locationIds by summing their quantities.
     const mergedAssignments = mergeAssignments(assignments);
 
     const assignedTotal = mergedAssignments.reduce(
@@ -223,10 +230,9 @@ Meteor.methods({
     const now = new Date();
 
     await Products.updateAsync(productId, {
-      $set: { name, category, brand, totalQuantity, unitCost, catalogImages, updatedAt: now },
+      $set: { name, description, tag, category, sku, brand, unitCost, photoUrl, catalogImages, qrCode, imageUrl, totalQuantity, updatedAt: now },
     });
 
-    // Replace all records for this product with the merged assignments.
     await ProductRecords.removeAsync({ productId });
     for (const { locationId, quantity } of mergedAssignments) {
       await ProductRecords.insertAsync({

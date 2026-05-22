@@ -42,9 +42,6 @@ export function CanvasToolbar({
     }));
     };
 
-  const activeToolLabel = activeTool
-    ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
-    : "None";
 
   const toolButtonStyle = (tool) => ({
     ...buttonStyles.base,
@@ -139,7 +136,6 @@ export function CanvasToolbar({
         >
           Canvas Settings
         </button>
-      </div>
       </div>
     </div>
   );
