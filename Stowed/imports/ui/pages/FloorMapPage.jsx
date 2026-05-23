@@ -1,31 +1,58 @@
 import { useState } from "react";
-import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
-import { Canvas }               from "./floorMapComponents/canvas/components/Canvas";
-import { CanvasToolbar }        from "./floorMapComponents/CanvasToolbar";
-import { StoragePanel }         from "./floorMapComponents/StoragePanel";
-import { CanvasSettingsModal }  from "./floorMapComponents/CanvasSettingsModal";
-import { useParams }            from "react-router-dom";
-import "./FloorMapPage.css";
+import {
+  EditorProvider,
+  useEditor,
+} from "./floorMapComponents/canvas/editor/EditorContext";
+import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
+import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
+import { StoragePanel } from "./floorMapComponents/StoragePanel";
+import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
+import { buttonStyles, pageStyles } from "./floorMapComponents/FloorMapStyles";
+import { useParams } from "react-router-dom";
+import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
+
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(result);
+    });
+  });
+}
 
 /**
  * Inner layout component. Consumes EditorContext - no local state.
  */
 function FloorMapPageInner() {
   const {
-    activeTool, setActiveTool,
+    activeTool,
+    setActiveTool,
     floorSize,
     canvasSettings,
-    isCanvasSettingsOpen, setCanvasSettingsOpen,
-    isCanvasEditMode, setCanvasEditMode,
+    isCanvasSettingsOpen,
+    setCanvasSettingsOpen,
+    isCanvasEditMode,
+    setCanvasEditMode,
     units,
-    canUndo, canRedo,
-    handleUndo, handleRedo,
-    handleSaveLayout, handleLoadLayout,
+    commitUnits,
+    canUndo,
+    canRedo,
+    handleUndo,
+    handleRedo,
+    handleSaveLayout,
+    handleLoadLayout,
     handlePlaceUnit,
+    handleUnitPlaced,
     handleCanvasSettingsSave,
     selectedUnit, setIsPanelOpen, isPanelOpen,
     lowStockByUnitId,
   } = useEditor();
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedStorageUnitId, setSelectedStorageUnitId] = useState(null);
 
   const [tooltip, setTooltip] = useState(null);
 
@@ -36,114 +63,80 @@ function FloorMapPageInner() {
   const isEmpty  = items.length === 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-
-      {/* CANVAS TOOLBAR */}
-      {isCanvasEditMode && (
-        <CanvasToolbar
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          floorSize={floorSize}
-          onSaveLayout={handleSaveLayout}
-          onLoadLayout={handleLoadLayout}
-          onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-        />
-      )}
-
+    <div style={pageStyles.page}>
       {/* MAIN ROW */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-
-        {/* STORAGE PANEL */}
-        {isCanvasEditMode && (
-          <StoragePanel onSelectUnit={handlePlaceUnit} />
-        )}
-
+      <div style={pageStyles.mainRow}>
         {/* CANVAS AREA */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", overflow: "auto" }}>
+        <div style={pageStyles.canvasArea}>
           <Canvas
-            style={{ display: "block", width: "100%", height: "100%" }}
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+            }}
             isCanvasEditMode={isCanvasEditMode}
-            onUnitHover={({ unit, items, x, y }) => setTooltip({ unit, items, x, y })}
-            onUnitHoverEnd={() => setTooltip(null)}
+            selectedStorageUnitId={selectedStorageUnitId}
+            setSelectedStorageUnitId={setSelectedStorageUnitId}
           />
         </div>
 
-        {/* SLIDE-OUT PANEL */}
-        {isPanelOpen && selectedUnit && (
-          <div className="low-stock-panel">
+        {/* SIDEBAR */}
+        {isCanvasEditMode && (
+          <div
+            style={{
+              ...pageStyles.sidebarBase,
+              ...pageStyles.sidebarRight,
+              ...(isSidebarOpen
+                ? pageStyles.sidebarOpen
+                : pageStyles.sidebarCollapsed),
+            }}
+          >
+            <button
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              style={pageStyles.sidebarToggle}
+              aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {isSidebarOpen ? "☰" : "☰"}
+            </button>
+            {isSidebarOpen && (
+              <>
+                <StoragePanel onSelectUnit={handlePlaceUnit} />
 
-            {/* HEADER */}
-            <div className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}>
-              <div>
-                <div className="panel-header-label">Storage Unit</div>
-                <div className="panel-header-title">{selectedUnit.name}</div>
-                <span className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}>
-                  {isEmpty
-                    ? "No items assigned"
-                    : hasLow
-                      ? `⚠ ${lowItems.length} low stock`
-                      : "✓ All in stock"}
-                </span>
-              </div>
-              <button className="panel-close-btn" onClick={() => setIsPanelOpen(false)}>
-                ✕
-              </button>
-            </div>
+                <div style={pageStyles.sidebarDivider} />
 
-            {/* CONTENT */}
-            <div className="panel-content">
-              {isEmpty ? (
-                <div className="panel-empty">No products assigned to this unit.</div>
-              ) : (
-                <>
-                  {/* LOW STOCK */}
-                  {lowItems.length > 0 && (
-                    <div className="panel-section">
-                      <div className="panel-section-title low">Low Stock</div>
-                      {lowItems.map((item, i) => (
-                        <div key={i} className="panel-item low">
-                          <div>
-                            <div className="panel-item-name">{item.product.name}</div>
-                            <div className="panel-item-location">{item.locationName}</div>
-                          </div>
-                          <div>
-                            <div className="panel-item-qty low">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.threshold}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
 
-                  {/* IN STOCK */}
-                  {okItems.length > 0 && (
-                    <div className="panel-section">
-                      <div className="panel-section-title ok">In Stock</div>
-                      {okItems.map((item, i) => (
-                        <div key={i} className="panel-item ok">
-                          <div>
-                            <div className="panel-item-name">{item.product.name}</div>
-                            <div className="panel-item-location">{item.locationName}</div>
-                          </div>
-                          <div>
-                            <div className="panel-item-qty ok">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.threshold}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                <div style={pageStyles.sidebarDivider} />
 
+                <CanvasToolbar
+                  activeTool={activeTool}
+                  setActiveTool={setActiveTool}
+                  floorSize={floorSize}
+                  onSaveLayout={handleSaveLayout}
+                  onLoadLayout={handleLoadLayout}
+                  onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                />
+                <div style={pageStyles.sidebarFooter}>
+                  <button
+                    onClick={() => setCanvasEditMode(false)}
+                    style={{
+                      ...buttonStyles.base,
+                      ...buttonStyles.secondary,
+                      width: "100%",
+                    }}
+                  >
+                    Exit Edit Mode
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
-
       </div>
 
       {/* HOVER TOOLTIP */}
@@ -228,19 +221,31 @@ function FloorMapPageInner() {
       <button
         onClick={() => setCanvasEditMode(!isCanvasEditMode)}
         style={{
-          position:     "fixed",
-          bottom:       20,
-          right:        20,
+          position: "fixed",
+          bottom: 20,
+          right: 20,
           borderRadius: "8px",
-          background:   "black",
-          color:        "white",
-          padding:      "12px",
-          zIndex:       1000,
+          background: "black",
+          color: "white",
+          padding: "12px",
+          zIndex: 1000,
         }}
       >
         {isCanvasEditMode ? "Toggle View" : "Toggle Edit"}
       </button>
-
+      {!isCanvasEditMode && (
+        <button
+          onClick={() => setCanvasEditMode(true)}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.primary,
+            ...pageStyles.floatingButton,
+            padding: "10px 18px",
+          }}
+        >
+          Edit Floor Map
+        </button>
+      )}
     </div>
   );
 }
