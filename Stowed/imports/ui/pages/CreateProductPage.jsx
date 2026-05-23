@@ -236,8 +236,10 @@ export function CreateProductPage() {
         <div className="item-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              Inventory &nbsp;/&nbsp; Create item
-            </div>
+            <span className="breadcrumb-link">Inventory</span>
+            {" "}&nbsp;/{" "}&nbsp;
+            <span className="breadcrumb-current">Create product</span>
+          </div>
           </div>
           <h1 className="header-title">
             Create <em>Product</em>

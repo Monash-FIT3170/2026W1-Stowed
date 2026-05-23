@@ -147,18 +147,20 @@ export function InventoryListPage() {
 
   return (
     <div className="inventory-list-container">
-      <div className="breadcrumb">
-        <Link to="/" className="breadcrumb-link">
-          Inventory
-        </Link>
-        <span className="breadcrumb-separator">/</span>
-        <span className="breadcrumb-current">All items</span>
+      <div className="item-detail-header">
+        <div className="header-top">
+          <div className="breadcrumb">
+            <Link to="/" className="breadcrumb-link">Inventory</Link>
+            {" "}&nbsp;/{" "}&nbsp;
+            <span className="breadcrumb-current">All items</span>
+          </div>
+        </div>
+        <h1 className="header-title">
+          All <em>items</em>
+        </h1>
       </div>
 
-      <h1 className="page-title">
-        All <em>items</em>
-      </h1>
-
+      <div style={{padding: "0 28px 48px"}}>
       <div className="search-bar-container">
         <input
           type="text"
@@ -168,7 +170,7 @@ export function InventoryListPage() {
           className="search-input"
         />
         <Link to="/inventory/new">
-          <button className="btn-add-item">+ Add item</button>
+          <button className="btn-primary">+ Add item</button>
         </Link>
       </div>
 
@@ -243,27 +245,27 @@ export function InventoryListPage() {
       )}
 
       {showDeleteModal && (
-        <div className="delete-modal-overlay" role="presentation">
+        <div className="modal-overlay" role="presentation">
           <div
-            className="delete-modal"
+            className="modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-product-title"
           >
-            <h2 id="delete-product-title">
+            <h2 id="delete-product-title" className="modal-title">
               Delete {selectedItems.length} selected item
               {selectedItems.length !== 1 ? "s" : ""}?
             </h2>
-            <p>
+            <p className="modal-text">
               This will permanently delete the selected product
               {selectedItems.length !== 1 ? "s" : ""} and remove all related
               location stock records.
             </p>
-            {deleteError && <div className="delete-error">{deleteError}</div>}
-            <div className="delete-modal-actions">
+            {deleteError && <div className="warning-text">{deleteError}</div>}
+            <div className="modal-actions">
               <button
                 type="button"
-                className="btn-cancel-delete"
+                className="btn-secondary"
                 onClick={closeDeleteModal}
                 disabled={isDeleting}
               >
@@ -271,7 +273,7 @@ export function InventoryListPage() {
               </button>
               <button
                 type="button"
-                className="btn-confirm-delete"
+                className="btn-danger"
                 onClick={handleDeleteSelectedProducts}
                 disabled={isDeleting}
               >
@@ -281,6 +283,7 @@ export function InventoryListPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
