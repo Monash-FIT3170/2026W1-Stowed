@@ -20,7 +20,7 @@ async function seedProducts() {
 
   const now = new Date();
   const add = ({ name, description, totalQuantity }) =>
-    Products.insertAsync({ name, description, totalQuantity, createdAt: now, updatedAt: now });
+    Products.insertAsync({ name, description, totalQuantity, images: [], createdAt: now, updatedAt: now });
 
   await add({ name: 'Cardboard Boxes', description: 'Medium-sized cardboard boxes used for general storage and shipping.', totalQuantity: 48 });
   await add({ name: 'Cable Ties',      description: 'Nylon cable ties in assorted sizes for bundling and organising.',   totalQuantity: 23 });
