@@ -122,13 +122,11 @@ export function InventoryListPage() {
     setDeleteError("");
 
     try {
-      if (isPrivileged) {
       for (const productId of selectedProductIds) {
         await callMethod("products.delete", { productId });
       }
       setSelectedProductIds([]);
       setShowDeleteModal(false);
-    }
     } catch (error) {
       console.error("Failed to delete selected products:", error);
       setDeleteError(

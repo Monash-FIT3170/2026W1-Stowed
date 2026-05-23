@@ -1,6 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
 import { Products, ProductRecords } from './collections';
+import { requirePermission } from '../userMethods';
 
 /**
  * Merges any duplicate locationIds in an assignments array by summing their
@@ -39,6 +40,7 @@ Meteor.methods({
    * @throws {Meteor.Error} duplicate-name    - A product with this name already exists.
    * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
    */
+  
   async "products.createWithAssignments"({
     name,
     description = "",
@@ -69,6 +71,8 @@ Meteor.methods({
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
+
+    await requirePermission(this.userId, "products.create");
 
     // Case-insensitive duplicate name check.
     const existing = await Products.findOneAsync({
@@ -103,6 +107,7 @@ Meteor.methods({
       catalogImages,
       qrCode,
       totalQuantity,
+      images: [],
       createdAt: now,
       updatedAt: now,
     });
@@ -178,6 +183,9 @@ Meteor.methods({
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
+
+    await requirePermission(this.userId, "products.update");
+
     const product = await Products.findOneAsync(productId);
     if (!product) {
       throw new Meteor.Error('product-not-found', 'No product found with that ID.');
@@ -235,6 +243,8 @@ Meteor.methods({
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
+    await requirePermission(this.userId, "products.delete");
+
     const product = await Products.findOneAsync(productId);
     if (!product) {
       throw new Meteor.Error('product-not-found', 'No product found with that ID.');
@@ -274,10 +284,14 @@ Meteor.methods({
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
+    await requirePermission(this.userId, "products.restock");
+
     const product = await Products.findOneAsync(productId);
     if (!product) {
       throw new Meteor.Error('product-not-found', 'No product found with that ID.');
     }
+
+    await requirePermission(this.userId, "products.uploadImage");
 
     if (additionalQuantity <= 0) {
       throw new Meteor.Error('invalid-quantity', 'Units being added must be greater than zero.');
@@ -328,6 +342,8 @@ Meteor.methods({
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
 
+    await requirePermission(this.userId, "products.create");
+
     const now = new Date();
     return await ProductRecords.insertAsync({
       productId,
@@ -356,6 +372,9 @@ Meteor.methods({
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error('not-authorised', 'You must be logged in.');
     }
+
+    await requirePermission(this.userId, "products.uploadImage");
+
     const now = new Date();
 
     await Products.updateAsync(

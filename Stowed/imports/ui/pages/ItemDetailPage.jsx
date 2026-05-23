@@ -77,10 +77,8 @@ export function ItemDetailView({ item, productId }) {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      if (isPrivileged) {
       await callMethod("products.delete", { productId });
       navigate("/");
-    }
     } catch (error) {
       console.error("Failed to delete product:", error);
       setIsDeleting(false);
