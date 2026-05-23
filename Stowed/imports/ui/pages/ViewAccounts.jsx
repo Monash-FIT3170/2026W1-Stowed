@@ -3,6 +3,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { useNavigate } from 'react-router-dom';
 import './ViewAccounts.css';
+import { ROLES } from '/imports/api/roles';
 
 export function ViewAccounts(){
     const navigate = useNavigate();
@@ -13,7 +14,7 @@ export function ViewAccounts(){
 
     const {users, currentUser} = useTracker(() => {
         const subscription = Meteor.subscribe('allUsers');
-        const users = Meteor.users.find({}, {fields: {username: 1, emails: 1} }).fetch();
+        const users = Meteor.users.find({}, {fields: {username: 1, emails: 1, 'profile.role': 1} }).fetch();
         return {users, currentUser: Meteor.user(), ready: subscription.ready() };
     }, []);
 
@@ -46,6 +47,13 @@ export function ViewAccounts(){
       }
     };
   const getEmail = (user) => (user.emails && user.emails[0]?.address) || '';
+  const roleLabel = (roleValue) => {
+  if (roleValue == null) return '';
+  if (roleValue >= ROLES.OWNER) return 'Owner';
+  if (roleValue >= ROLES.ADMIN) return 'Admin';
+  if (roleValue >= ROLES.STANDARD) return 'Standard';
+  return '';
+  };
   return (
     <div className="view-accounts-container">
       <div className="breadcrumb">Account management / All accounts</div>
@@ -75,6 +83,7 @@ export function ViewAccounts(){
       <div className="table-header">
         <span>Username</span>
         <span>Email</span>
+        <span>Role</span>
         <span>Actions</span>
       </div>
 
@@ -82,6 +91,7 @@ export function ViewAccounts(){
         <div key={user._id} className="table-row">
           <span>{user.username}</span>
           <span className="cell-email">{getEmail(user)}</span>
+          <span>{roleLabel(user.profile?.role)}</span>
           <span>
             {user._id !== currentUser._id && (
               <button

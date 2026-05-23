@@ -114,6 +114,6 @@ Meteor.publish('allUsers', async function () {
   // Only users from the same organisation
   return Meteor.users.find(
     { 'profile.organisationId': currentUser.profile.organisationId },
-    { fields: { username: 1, emails: 1 } }
+    { fields: { username: 1, emails: 1, 'profile.role': 1 } }
   );
 });
