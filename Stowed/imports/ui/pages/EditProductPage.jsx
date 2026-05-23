@@ -10,6 +10,8 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import "./CreateProductPage.css";
+import { hasClientPermission } from "../../api/userMethods";
+import { useAuth } from "../../api/useAuth";
 
 // Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
@@ -127,6 +129,8 @@ export function EditProductPage() {
   const [initialised, setInitialised] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const { isLoggedIn, role } = useAuth();
+  const isPrivileged = hasClientPermission(role, "products.update");
 
   const {
     loading,
@@ -282,21 +286,29 @@ export function EditProductPage() {
   }
 
   async function confirmSave() {
+    if (!isPrivileged) {
+      return;
+    }
     setIsSaving(true);
     try {
+      if (isPrivileged) {
       await callMethod("products.update", {
         productId,
         name: name.trim(),
         category,
         brand,
         totalQuantity: parsedTotal,
-        unitCost: unitCost ? parseFloat(unitCost) : 0,
+        // unitCost: unitCost ? parseFloat(unitCost) : 0,
+        unitCost: Number.isFinite(parseFloat(unitCost))
+          ? parseFloat(unitCost)
+          : 0,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity: parseInt(a.quantity, 10),
         })),
       });
       navigate(`/inventory/${productId}`);
+    }
     } catch (error) {
       console.error("Failed to update product:", error);
       setIsSaving(false);
