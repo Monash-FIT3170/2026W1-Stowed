@@ -5,6 +5,8 @@ import { hasClientPermission } from "/imports/api/userMethods";
 import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
+import { Organisations } from '/imports/api/organisations';
+import React, { useEffect, useRef, useState } from 'react';
 
 const WORKSPACE_LINKS = [
   { to: "/locations", label: "Locations" },
@@ -51,6 +53,24 @@ export function Sidebar() {
   const username = currentUser?.username;
   const navigate = useNavigate();
 
+  const [orgSubReady, setOrgSubReady] = useState(false);
+  useEffect(() => {
+    if (!currentUser) return;
+    const sub = Meteor.subscribe('currentOrganisation');
+    sub.ready() ? setOrgSubReady(true) : setOrgSubReady(false);   // initial ready state
+    const interval = setInterval(() => {
+      setOrgSubReady(sub.ready());
+    }, 100);
+    return () => {
+      sub.stop();
+      clearInterval(interval);
+    };
+  }, [currentUser?._id]);
+
+  const organisation = useTracker(() => {
+    if (!currentUser || !orgSubReady) return null;
+    return Organisations.findOne(currentUser.profile.organisationId);
+  }, [currentUser?.profile?.organisationId, orgSubReady]);
   const handleLogout = () => {
     logoutUser();
     navigate("/login");
@@ -79,6 +99,11 @@ export function Sidebar() {
           a place for everything
         </div>
       </div>
+      {isLoggedIn && organisation && (
+        <div className="text-xs text-gray-500 mb-1">
+          {`Organisation Code: ${organisation.name}`} {/* or organisation.code */}
+        </div>
+      )}
       {/* Username */}
       <div className="mb-6 text-sm text-gray-600">
         {isLoggedIn ? `Logged in as ${username}` : "Not logged in"}

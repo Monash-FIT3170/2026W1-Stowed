@@ -3,6 +3,7 @@ import { Meteor } from 'meteor/meteor';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from './locations/collections';
 
 import { Products, ProductRecords } from './products/collections';
+import { Organisations } from '/imports/api/organisations';
 
 /**
  * Publishes all location-management data required by the client.
@@ -41,4 +42,14 @@ Meteor.publish('productRecords', function () {
     return this.ready();
   }
   return ProductRecords.find();
+});
+
+Meteor.publish('currentOrganisation', async function () {
+  if (!this.userId) return this.ready();
+  const user = await Meteor.users.findOneAsync(
+    this.userId,
+    { fields: { 'profile.organisationId': 1 } }
+  );
+  if (!user || !user.profile.organisationId) return this.ready();
+  return Organisations.find(user.profile.organisationId);
 });
