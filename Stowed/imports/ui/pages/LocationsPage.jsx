@@ -42,12 +42,14 @@ function hasValidUnitPosition(unitForm) {
 
 function Panel({ title, subtitle, children, actions }) {
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <h2 className="panel-title">{title}</h2>
-        {subtitle ? <p className="panel-subtitle">{subtitle}</p> : null}
+    <section className="detail-section">
+      <div className="section-title">
+        {title}
+        {subtitle ? <span className="breadcrumb" style={{marginLeft: "auto", fontWeight: 400}}>{subtitle}</span> : null}
       </div>
-      {children}
+      <div className="section-content">
+        {children}
+      </div>
     </section>
   );
 }
@@ -58,29 +60,29 @@ function EmptyState({ children }) {
 
 function Field({ label, children }) {
   return (
-    <label className="form-input-wrapper">
-      <span className="form-input-label">{label}</span>
+    <div className="form-group">
+      <label>{label}</label>
       {children}
-    </label>
+    </div>
   );
 }
 
 function TextInput({ label, value, onChange, placeholder }) {
   return (
-    <label className="form-input-wrapper">
-      <span className="form-input-label">{label}</span>
+    <div className="form-group">
+      <label>{label}</label>
       <input
-        className="form-input-field"
+        className="form-input"
         value={value}
         onChange={onChange}
         placeholder={placeholder}
       />
-    </label>
+    </div>
   );
 }
 
 function TextArea(props) {
-  return <textarea {...props} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900 min-h-[96px]" />;
+  return <textarea {...props} className="form-input" />;
 }
 
 function SelectInput({ label, options, ...props }) {
@@ -88,7 +90,7 @@ function SelectInput({ label, options, ...props }) {
     <Field label={label}>
       <select
         {...props}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900 bg-white"
+        className="form-input"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -107,7 +109,7 @@ function NumberInput({ label, ...props }) {
         {...props}
         type="number"
         min={0}
-        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
+        className="form-input"
       />
     </Field>
   );
@@ -371,27 +373,16 @@ export function LocationsPage() {
       setLocationForm(DEFAULT_LOCATION_FORM);
     });
   }
-  function Field({ label, children }) {
-    return (
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-zinc-700">
-          {label}
-        </span>
-        {children}
-      </label>
-    );
-  }
+
 
   return (
-    <div className="locations-page-container">
-      <div className="locations-page-wrapper">
-        <div className="locations-page-header">
-          <div>
-            <h1 className="locations-page-title">Locations</h1>
-            <p className="locations-page-subtitle">
-              Minimal management UI for testing the Site → Floor Map → Storage
-              Unit → Storage Location object chain.
-            </p>
+    <div className="item-detail-container">
+      <div className="item-detail-header">
+        <div className="header-top">
+          <div className="breadcrumb">
+            <span className="breadcrumb-link">Locations</span>
+            {" "}&nbsp;/{" "}&nbsp;
+            <span className="breadcrumb-current">Add locations</span>
           </div>
           <div className="locations-page-status-indicator">
             {isLoading
@@ -399,6 +390,9 @@ export function LocationsPage() {
               : `${sites.length} sites loaded`}
           </div>
         </div>
+        <h1 className="header-title">
+          Locations <em>overview</em>
+        </h1>
 
         {status.message ? (
           <div
@@ -412,8 +406,8 @@ export function LocationsPage() {
           </div>
         ) : null}
 
-        <div className="locations-page-content">
-          <div className="locations-page-left-column">
+        <div className="item-detail-grid">
+          <div className="left-column">
             <Panel
               title="Site"
               subtitle="Create and select the top-level physical area."
@@ -444,15 +438,13 @@ export function LocationsPage() {
                   />
                 </Field>
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="submit"
-                    disabled={submitting || !siteForm.name.trim()}
-                    className="form-button form-button-full-width"
-                  >
-                    Add Site
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={submitting || !siteForm.name.trim()}
+                  className="btn-primary" style={{width: "100%"}}
+                >
+                  Add Site
+                </button>
               </form>
 
               {sites.length ? (
@@ -525,17 +517,15 @@ export function LocationsPage() {
                   />
                 </Field>
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="submit"
-                    disabled={
-                      submitting || !selectedSiteId || !floorMapForm.name.trim()
-                    }
-                    className="form-button form-button-full-width"
-                  >
-                    Add Floor Map
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={
+                    submitting || !selectedSiteId || !floorMapForm.name.trim()
+                  }
+                  className="btn-primary" style={{width: "100%"}}
+                >
+                  Add Floor Map
+                </button>
               </form>
 
               {floorMapsForSite.length ? (
@@ -656,7 +646,7 @@ export function LocationsPage() {
                     Number(unitForm.width) < 1 ||
                     Number(unitForm.height) < 1
                   }
-                  className="form-button form-button-full-width"
+                  className="btn-primary" style={{width: "100%"}}
                 >
                   Edit Selected Floor Map
                 </button>
@@ -746,7 +736,7 @@ export function LocationsPage() {
                     !locationForm.name.trim() ||
                     !locationForm.code.trim()
                   }
-                  className="form-button form-button-full-width"
+                  className="btn-primary" style={{width: "100%"}}
                 >
                   Manage Units
                 </button>
@@ -780,7 +770,7 @@ export function LocationsPage() {
             </Panel>
           </div>
 
-          <div className="locations-page-right-column">
+          <div className="right-column">
             <Panel
               title="Relationship Summary"
               subtitle="Quick sanity check of what is currently selected."
@@ -899,7 +889,7 @@ export function LocationsPage() {
 
             <div className="location-image-footer-buttons">
               <button
-                className="location-image-exit"
+                className="btn-secondary"
                 onClick = {() => {
                   setImageModalOpen(false);
                   setSelectedLocation(null);
@@ -915,7 +905,7 @@ export function LocationsPage() {
                   onChange = {handleUpload}
                 />
                 <button
-                  className="location-image-upload"
+                  className="btn-primary"
                   onClick = {() => fileInputRef.current.click()}>
                     Upload New
                 </button>
