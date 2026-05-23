@@ -97,9 +97,11 @@ export function Sidebar() {
             ).map((link) => (
               <SidebarLink key={link.to} {...link} end={link.to === "/"} />
             ))}
-            {TOOL_LINKS.map((link) => (
-              <SidebarLink key={link.to} {...link} />
-            ))}
+            {TOOL_LINKS.filter((link) =>
+                hasClientPermission(role, `route:${link.to}`)
+              ).map((link) => (
+                <SidebarLink key={link.to} {...link} />
+              ))}
           </div>
         </section>
         {/* Account section */}

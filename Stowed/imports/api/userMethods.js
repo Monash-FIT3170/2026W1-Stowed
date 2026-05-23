@@ -34,7 +34,7 @@ const PERMISSIONS = {
   "route:/alerts":      ROLES.ADMIN,
   "route:/create-item": ROLES.ADMIN,
   "route:/edit-item":   ROLES.ADMIN,
-  "route:/item-detail": ROLES.ADMIN,
+  "route:/item-detail": ROLES.STANDARD,
   "route:/accounts":    ROLES.OWNER,
 };
 

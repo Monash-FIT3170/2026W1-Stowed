@@ -52,7 +52,9 @@ export function InventoryListPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const { isLoggedIn, role } = useAuth();
-  const isPrivileged = hasClientPermission(role, "products.delete");
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canCreate = hasClientPermission(role, "products.create");
+
 
   const { items, loading } = useTracker(() => {
     const sub = Meteor.subscribe("products");
@@ -166,7 +168,8 @@ export function InventoryListPage() {
           className="search-input"
         />
         <Link to="/inventory/new">
-          <button className="btn-add-item">+ Add item</button>
+          {canDelete && (
+            <button className="btn-add-item">+ Add item</button>)}
         </Link>
       </div>
 
@@ -184,7 +187,7 @@ export function InventoryListPage() {
 
       <div className="selected-actions">
         <span>{selectedProductIds.length} selected</span>
-        {isPrivileged && (
+        {canDelete && (
           <button
             type="button"
             className="btn-selected-delete"
@@ -242,7 +245,7 @@ export function InventoryListPage() {
         ))
       )}
 
-      {showDeleteModal && isPrivileged && (
+      {showDeleteModal && canDelete && (
         <div className="delete-modal-overlay" role="presentation">
           <div
             className="delete-modal"

@@ -56,7 +56,8 @@ export function ItemDetailView({ item, productId }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
   const { isLoggedIn, role } = useAuth();
-  const isPrivileged = hasClientPermission(role, "products.delete");
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canEdit = hasClientPermission(role, "products.update");
 
   if (!item) {
     return <div className="p-8 text-center">Item not found.</div>;
@@ -103,13 +104,14 @@ export function ItemDetailView({ item, productId }) {
               <button className="btn-secondary" onClick={() => navigate(-1)}>
                 Back
               </button>
+              {canDelete && (
               <button
                 className="btn-primary"
                 onClick={() => navigate(`/inventory/${productId}/edit`)}
               >
                 Update
-              </button>
-              {isPrivileged && (
+              </button>)}
+              {canDelete && (
                 <button
                   className="btn-danger"
                   onClick={() => setShowDeleteModal(true)}
@@ -254,7 +256,7 @@ export function ItemDetailView({ item, productId }) {
         </div>
       </div>
 
-      {showDeleteModal && isPrivileged && (
+      {showDeleteModal && canDelete && (
         <div style={overlayStyle}>
           <div style={modalStyle}>
             <h3
