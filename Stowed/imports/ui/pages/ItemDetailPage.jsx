@@ -82,7 +82,7 @@ export function ItemDetailView({
           : item.photoUrl
             ? [item.photoUrl]
             : [];
-  const qrCode = item.qrCode || item.photoUrl || "";
+  const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
     ? records.map((record) => ({
