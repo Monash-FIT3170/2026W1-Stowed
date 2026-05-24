@@ -10,15 +10,11 @@ Meteor.publish('locations.all', async function () {
   const orgId = await getCallerOrgId(this.userId);
   if (!orgId) return this.ready();
 
-  const siteIds = (await Sites.find({ orgId }, { fields: { _id: 1 } }).fetchAsync()).map(s => s._id);
-  const floorMapIds = (await FloorMaps.find({ siteId: { $in: siteIds } }, { fields: { _id: 1 } }).fetchAsync()).map(f => f._id);
-  const storageUnitIds = (await StorageUnits.find({ floorMapId: { $in: floorMapIds } }, { fields: { _id: 1 } }).fetchAsync()).map(u => u._id);
-
   return [
     Sites.find({ orgId }),
-    FloorMaps.find({ siteId: { $in: siteIds } }),
-    StorageUnits.find({ floorMapId: { $in: floorMapIds } }),
-    StorageLocations.find({ storageUnitId: { $in: storageUnitIds } }),
+    FloorMaps.find({ orgId }),
+    StorageUnits.find({ orgId }),
+    StorageLocations.find({ orgId }),
   ];
 });
 

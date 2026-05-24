@@ -119,7 +119,10 @@ Meteor.methods({
     // assertOrgAccess covers both "site not found" and org ownership
     await assertOrgAccess(Sites, siteId, this.userId);
 
+    const orgId = await getCallerOrgId(this.userId);
+
     return FloorMaps.insertAsync({
+      orgId,
       siteId,
       name,
       imageUrl,
@@ -229,7 +232,10 @@ Meteor.methods({
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
 
+    const orgId = await getCallerOrgId(this.userId);
+
     return StorageUnits.insertAsync({
+      orgId,
       floorMapId,
       name,
       type,
@@ -381,7 +387,10 @@ Meteor.methods({
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
 
+    const orgId = await getCallerOrgId(this.userId);
+
     return StorageLocations.insertAsync({
+      orgId,
       storageUnitId,
       name,
       code,
