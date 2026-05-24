@@ -343,8 +343,8 @@ export function LocationsPage() {
   }
 
   return (
-    <div className="item-detail-container">
-      <div className="item-detail-header">
+    <div className="product-detail-container">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Locations</span>
           <span className="breadcrumb-separator">/</span>
@@ -367,7 +367,7 @@ export function LocationsPage() {
         </div>
       )}
 
-      <div className="item-detail-grid">
+      <div className="product-detail-grid">
         <div className="left-column">
           <Panel title="Site" subtitle="Create and select the top-level physical area.">
             <form className="form-grid" onSubmit={handleSiteSubmit}>

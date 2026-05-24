@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export function ItemThumbnail({ photoUrl, name, images }) {
+export function ProductThumbnail({ photoUrl, name, images }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name

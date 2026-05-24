@@ -11,7 +11,7 @@ import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
-import { ItemDetailPage } from "./pages/ItemDetailPage";
+import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -93,7 +93,7 @@ export function App() {
               path="/inventory/:productId"
               element={
                 canAccessInventory ? (
-                  <ItemDetailPage />
+                  <ProductDetailPage />
                 ) : (
                   <Navigate to="/" replace />
                 )

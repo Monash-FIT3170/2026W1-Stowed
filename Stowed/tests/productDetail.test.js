@@ -2,8 +2,8 @@ import assert from "assert";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { mockItems, getMockItemById } from "../imports/api/mockItems";
-import { ItemDetailView } from "../imports/ui/pages/ItemDetailPage";
+import { mockProducts, getMockProductById } from "../imports/api/mockProducts";
+import { ProductDetailView } from "../imports/ui/pages/ProductDetailPage";
 
 function renderWithoutLayoutEffectWarning(element) {
   const originalError = console.error;
@@ -25,27 +25,27 @@ function renderWithoutLayoutEffectWarning(element) {
   }
 }
 
-describe("ItemDetailView", function () {
-  it("renders not found when item is missing", function () {
+describe("ProductDetailView", function () {
+  it("renders not found when product is missing", function () {
     const html = renderWithoutLayoutEffectWarning(
       React.createElement(
         MemoryRouter,
         null,
-        React.createElement(ItemDetailView, { item: undefined }),
+        React.createElement(ProductDetailView, { item: undefined }),
       ),
     );
-    assert.ok(html.includes("Item not found."));
+    assert.ok(html.includes("Product not found."));
   });
 
-  it("renders core item information and images", function () {
-    assert.ok(mockItems.length > 0);
+  it("renders core product information and images", function () {
+    assert.ok(mockProducts.length > 0);
 
-    mockItems.forEach((item) => {
+    mockProducts.forEach((item) => {
       const html = renderWithoutLayoutEffectWarning(
         React.createElement(
           MemoryRouter,
           null,
-          React.createElement(ItemDetailView, { item, productId: item._id }),
+          React.createElement(ProductDetailView, { item, productId: item._id }),
         ),
       );
 
@@ -73,12 +73,12 @@ describe("ItemDetailView", function () {
   });
 
   it("selects first catalog image as main image when available", function () {
-    const item = getMockItemById("1") || mockItems[0];
+    const item = getMockProductById("1") || mockProducts[0];
     const html = renderWithoutLayoutEffectWarning(
       React.createElement(
         MemoryRouter,
         null,
-        React.createElement(ItemDetailView, { item, productId: item._id }),
+        React.createElement(ProductDetailView, { item, productId: item._id }),
       ),
     );
 

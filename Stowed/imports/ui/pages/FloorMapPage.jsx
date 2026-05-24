@@ -74,10 +74,10 @@ function FloorMapPageInner() {
   const floorMapsForSite = floorMaps.filter((f) => f.siteId === currentSite?._id);
 
   return (
-    <div className="item-detail-container" style={{ height: "100vh", minHeight: "unset", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="product-detail-container" style={{ height: "100vh", minHeight: "unset", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* ── Header ── */}
-      <div className="item-detail-header">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Workspace</span>
           <span className="breadcrumb-separator">/</span>
