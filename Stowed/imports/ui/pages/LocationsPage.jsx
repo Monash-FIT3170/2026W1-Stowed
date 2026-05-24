@@ -1,108 +1,153 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Meteor } from 'meteor/meteor';
-import { useTracker } from 'meteor/react-meteor-data';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState, useRef } from "react";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
 
-import { FloorMaps, Sites } from '/imports/api/locations/collections';
+import {
+  FloorMaps,
+  Sites,
+  StorageLocations,
+  StorageUnits,
+} from "/imports/api/locations/collections";
+import "../Global.css";
+import "./LocationsPage.css";
 
-function callMethod(methodName, params) {
+const STORAGE_UNIT_TYPES = [
+  "shelf",
+  "cabinet",
+  "rack",
+  "drawer",
+  "fridge",
+  "other",
+];
+
+// Default form uses meter values to match the floor map editor coordinate system
+const DEFAULT_UNIT_FORM = {
+  name: "",
+  type: "shelf",
+  x: "2",
+  y: "2",
+  width: "2",
+  height: "1",
+};
+
+const DEFAULT_LOCATION_FORM = {
+  name: "",
+  code: "",
+};
+
+function hasValidUnitPosition(unitForm) {
+  return ["x", "y", "width", "height"].every((key) => {
+    const value = Number(unitForm[key]);
+    return Number.isFinite(value) && value >= 0;
+  });
+}
+
+function Panel({ title, subtitle, children }) {
+  return (
+    <section className="detail-section">
+      <div className="section-title">
+        {title}
+        {subtitle && (
+          <span style={{ marginLeft: "auto", fontWeight: 400, fontSize: "12px", color: "var(--text-muted)" }}>
+            {subtitle}
+          </span>
+        )}
+      </div>
+      <div className="section-content">{children}</div>
+    </section>
+  );
+}
+
+function EmptyState({ children }) {
+  return <div className="empty-state">{children}</div>;
+}
+
+function Field({ label, children }) {
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function TextInput({ label, value, onChange, placeholder }) {
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+      <input
+        className="form-input"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+function TextArea(props) {
+  return <textarea {...props} className="form-input" />;
+}
+
+function SelectInput({ label, options, ...props }) {
+  return (
+    <Field label={label}>
+      <select {...props} className="form-input">
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+function NumberInput({ label, ...props }) {
+  return (
+    <Field label={label}>
+      <input {...props} type="number" min={0} className="form-input" />
+    </Field>
+  );
+}
+
+function submitMeteorMethod(methodName, params) {
   return new Promise((resolve, reject) => {
     Meteor.call(methodName, params, (error, result) => {
       if (error) {
         reject(error);
         return;
       }
-
       resolve(result);
     });
   });
 }
 
-function Panel({ title, subtitle, children, actions }) {
-  return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-950">{title}</h2>
-          {subtitle ? <p className="text-sm text-zinc-500">{subtitle}</p> : null}
-        </div>
-        {actions}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-zinc-700">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function TextInput(props) {
-  return (
-    <input
-      {...props}
-      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
-    />
-  );
-}
-
-function TextArea(props) {
-  return (
-    <textarea
-      {...props}
-      className="min-h-24 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-900"
-    />
-  );
-}
-
-function SectionButton({ active, children, ...props }) {
-  return (
-    <button
-      {...props}
-      className={`w-full rounded-lg border px-4 py-3 text-left transition ${
-        active
-          ? 'border-zinc-950 bg-zinc-950 text-white'
-          : 'border-zinc-200 bg-zinc-50 text-zinc-900 hover:border-zinc-400'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function EmptyState({ children }) {
-  return (
-    <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-500">
-      {children}
-    </div>
-  );
-}
-
 export function LocationsPage() {
-  const navigate = useNavigate();
-  const [selectedSiteId, setSelectedSiteId] = useState('');
-  const [selectedFloorMapId, setSelectedFloorMapId] = useState('');
-  const [siteForm, setSiteForm] = useState({ name: '', description: '' });
-  const [floorMapForm, setFloorMapForm] = useState({ name: '', imageUrl: '' });
-  const [editingSiteId, setEditingSiteId] = useState('');
-  const [editingFloorMapId, setEditingFloorMapId] = useState('');
+  const [selectedSiteId, setSelectedSiteId] = useState("");
+  const [selectedFloorMapId, setSelectedFloorMapId] = useState("");
+  const [selectedStorageUnitId, setSelectedStorageUnitId] = useState("");
+  const [siteForm, setSiteForm] = useState({ name: "", description: "" });
+  const [floorMapForm, setFloorMapForm] = useState({ name: "", imageUrl: "" });
+  const [unitForm, setUnitForm] = useState(DEFAULT_UNIT_FORM);
+  const [locationForm, setLocationForm] = useState(DEFAULT_LOCATION_FORM);
+  const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState({ type: '', message: '' });
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const fileInputRef = useRef(null);
 
-  const { isLoading, sites, floorMaps } = useTracker(() => {
-    const handle = Meteor.subscribe('locations.all');
-
-    return {
-      isLoading: !handle.ready(),
-      sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
-      floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
-    };
-  }, []);
+  const { isLoading, sites, floorMaps, storageUnits, storageLocations } =
+    useTracker(() => {
+      const handle = Meteor.subscribe("locations.all");
+      return {
+        isLoading: !handle.ready(),
+        sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
+        floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+        storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
+        storageLocations: StorageLocations.find({}, { sort: { createdAt: 1 } }).fetch(),
+      };
+    }, []);
 
   const selectedSite = useMemo(
     () => sites.find((site) => site._id === selectedSiteId) ?? null,
@@ -119,50 +164,53 @@ export function LocationsPage() {
     [floorMaps, selectedFloorMapId],
   );
 
-  useEffect(() => {
-    if (!sites.length) {
-      setSelectedSiteId('');
-      return;
-    }
+  const storageUnitsForFloorMap = useMemo(
+    () => storageUnits.filter((unit) => unit.floorMapId === selectedFloorMapId),
+    [storageUnits, selectedFloorMapId],
+  );
 
+  const selectedStorageUnit = useMemo(
+    () => storageUnits.find((unit) => unit._id === selectedStorageUnitId) ?? null,
+    [storageUnits, selectedStorageUnitId],
+  );
+
+  const locationsForStorageUnit = useMemo(
+    () => storageLocations.filter((location) => location.storageUnitId === selectedStorageUnitId),
+    [storageLocations, selectedStorageUnitId],
+  );
+
+  const currentLocation =
+    storageLocations.find((loc) => loc._id === selectedLocation?._id) ?? selectedLocation;
+
+  useEffect(() => {
+    if (!sites.length) { setSelectedSiteId(""); return; }
     if (!sites.some((site) => site._id === selectedSiteId)) {
       setSelectedSiteId(sites[0]._id);
     }
   }, [selectedSiteId, sites]);
 
   useEffect(() => {
-    if (!floorMapsForSite.length) {
-      setSelectedFloorMapId('');
-      return;
-    }
-
+    if (!floorMapsForSite.length) { setSelectedFloorMapId(""); return; }
     if (!floorMapsForSite.some((floorMap) => floorMap._id === selectedFloorMapId)) {
       setSelectedFloorMapId(floorMapsForSite[0]._id);
     }
   }, [floorMapsForSite, selectedFloorMapId]);
 
-  function resetSiteForm() {
-    setSiteForm({ name: '', description: '' });
-    setEditingSiteId('');
-  }
+  useEffect(() => {
+    if (!storageUnitsForFloorMap.length) { setSelectedStorageUnitId(""); return; }
+    if (!storageUnitsForFloorMap.some((unit) => unit._id === selectedStorageUnitId)) {
+      setSelectedStorageUnitId(storageUnitsForFloorMap[0]._id);
+    }
+  }, [storageUnitsForFloorMap, selectedStorageUnitId]);
 
-  function resetFloorMapForm() {
-    setFloorMapForm({ name: '', imageUrl: '' });
-    setEditingFloorMapId('');
-  }
-
-  async function runAction(action, successMessage) {
+  async function runSubmit(action) {
     setSubmitting(true);
-    setStatus({ type: '', message: '' });
-
+    setStatus({ type: "", message: "" });
     try {
       await action();
-      setStatus({ type: 'success', message: successMessage });
+      setStatus({ type: "success", message: "Saved." });
     } catch (error) {
-      setStatus({
-        type: 'error',
-        message: error.reason || error.message || 'Something went wrong.',
-      });
+      setStatus({ type: "error", message: error.reason || error.message || "Something went wrong." });
     } finally {
       setSubmitting(false);
     }
@@ -170,324 +218,392 @@ export function LocationsPage() {
 
   async function handleSiteSubmit(event) {
     event.preventDefault();
-
-    await runAction(async () => {
-      const payload = {
+    await runSubmit(async () => {
+      await submitMeteorMethod("sites.create", {
         name: siteForm.name.trim(),
         description: siteForm.description.trim(),
-      };
-
-      if (editingSiteId) {
-        await callMethod('sites.update', { siteId: editingSiteId, ...payload });
-      } else {
-        await callMethod('sites.create', payload);
-      }
-
-      resetSiteForm();
-    }, editingSiteId ? 'Site updated.' : 'Site created.');
+      });
+      setSiteForm({ name: "", description: "" });
+    });
   }
 
   async function handleFloorMapSubmit(event) {
     event.preventDefault();
-
-    if (!selectedSiteId) {
-      setStatus({ type: 'error', message: 'Create a site first.' });
-      return;
-    }
-
-    await runAction(async () => {
-      const payload = {
+    if (!selectedSiteId) { setStatus({ type: "error", message: "Create a site first." }); return; }
+    await runSubmit(async () => {
+      await submitMeteorMethod("floorMaps.create", {
         siteId: selectedSiteId,
         name: floorMapForm.name.trim(),
         imageUrl: floorMapForm.imageUrl.trim(),
-      };
+      });
+      setFloorMapForm({ name: "", imageUrl: "" });
+    });
+  }
 
-      if (editingFloorMapId) {
-        await callMethod('floorMaps.update', { floorMapId: editingFloorMapId, ...payload });
-      } else {
-        await callMethod('floorMaps.create', payload);
+  async function handleUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      setStatus({ type: "error", message: "Invalid file type. Must be PNG or JPEG." });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result.split(",")[1];
+      const extension = file.name.split(".").pop();
+      try {
+        const url = await Meteor.callAsync("uploads.image", base64, extension);
+        await Meteor.callAsync("storageLocations.update", {
+          storageLocationId: selectedLocation._id,
+          storageUnitId: selectedLocation.storageUnitId,
+          name: selectedLocation.name ?? "",
+          code: selectedLocation.code ?? "",
+          imageUrl: url,
+        });
+        setStatus({ type: "success", message: "Image uploaded successfully." });
+        setTimeout(() => setStatus({ type: "", message: "" }), 2000);
+      } catch {
+        setStatus({ type: "error", message: "Image failed to upload." });
+        setTimeout(() => setStatus({ type: "", message: "" }), 2000);
       }
-
-      resetFloorMapForm();
-    }, editingFloorMapId ? 'Floor map updated.' : 'Floor map created.');
+    };
+    reader.readAsDataURL(file);
   }
 
-  async function handleDeleteSite() {
-    if (!selectedSite || !window.confirm(`Delete site "${selectedSite.name}"?`)) {
-      return;
-    }
-
-    await runAction(async () => {
-      await callMethod('sites.delete', { siteId: selectedSite._id });
-      resetSiteForm();
-    }, 'Site deleted.');
-  }
-
-  async function handleDeleteFloorMap() {
-    if (!selectedFloorMap || !window.confirm(`Delete floor map "${selectedFloorMap.name}"?`)) {
-      return;
-    }
-
-    await runAction(async () => {
-      await callMethod('floorMaps.delete', { floorMapId: selectedFloorMap._id });
-      resetFloorMapForm();
-    }, 'Floor map deleted.');
-  }
-
-  function startEditingSite() {
-    if (!selectedSite) return;
-
-    setEditingSiteId(selectedSite._id);
-    setSiteForm({
-      name: selectedSite.name,
-      description: selectedSite.description || '',
+  async function handleCreateStorageUnit(event) {
+    event.preventDefault();
+    if (!selectedFloorMapId) { setStatus({ type: "error", message: "Create a floor map first." }); return; }
+    await runSubmit(async () => {
+      if (!hasValidUnitPosition(unitForm) || Number(unitForm.width) < 1 || Number(unitForm.height) < 1) {
+        throw new Error("Position values must be numbers, and width/height must be at least 1.");
+      }
+      await submitMeteorMethod("storageUnits.create", {
+        floorMapId: selectedFloorMapId,
+        name: unitForm.name.trim(),
+        type: unitForm.type,
+        position: {
+          x: Number(unitForm.x),
+          y: Number(unitForm.y),
+          width: Number(unitForm.width),
+          height: Number(unitForm.height),
+        },
+      });
+      setUnitForm(DEFAULT_UNIT_FORM);
     });
   }
 
-  function startEditingFloorMap() {
-    if (!selectedFloorMap) return;
-
-    setEditingFloorMapId(selectedFloorMap._id);
-    setFloorMapForm({
-      name: selectedFloorMap.name,
-      imageUrl: selectedFloorMap.imageUrl || '',
+  async function handleCreateStorageLocation(event) {
+    event.preventDefault();
+    if (!selectedStorageUnitId) { setStatus({ type: "error", message: "Create a storage unit first." }); return; }
+    await runSubmit(async () => {
+      await submitMeteorMethod("storageLocations.create", {
+        storageUnitId: selectedStorageUnitId,
+        name: locationForm.name.trim(),
+        code: locationForm.code.trim(),
+      });
+      setLocationForm(DEFAULT_LOCATION_FORM);
     });
+  }
+
+  function closeModal() {
+    setImageModalOpen(false);
+    setSelectedLocation(null);
+  }
+
+  // Scale all units to fit within the preview container
+  function getPreviewLayout(units) {
+    if (!units.length) return { units: [], scale: 1 };
+
+    const PX = 50;
+    const PREVIEW_W = 280;
+    const PREVIEW_H = 300;
+
+    // Convert all to pixels first
+    const converted = units.map((unit) => {
+      const x = unit.position.x;
+      const y = unit.position.y;
+      const w = unit.position.width;
+      const h = unit.position.height;
+      const isMeters = x <= 20 && y <= 20 && w <= 20 && h <= 20;
+      return {
+        ...unit,
+        px: { left: isMeters ? x * PX : x, top: isMeters ? y * PX : y, width: isMeters ? w * PX : w, height: isMeters ? h * PX : h },
+      };
+    });
+
+    // Find bounding box
+    const maxRight  = Math.max(...converted.map((u) => u.px.left + u.px.width));
+    const maxBottom = Math.max(...converted.map((u) => u.px.top  + u.px.height));
+
+    // Scale to fit with padding
+    const scale = Math.min((PREVIEW_W - 8) / maxRight, (PREVIEW_H - 8) / maxBottom, 1);
+
+    return { units: converted, scale };
   }
 
   return (
-    <div className="min-h-full bg-zinc-100">
-      <div className="mx-auto max-w-7xl p-6">
-        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">Locations Setup</h1>
-            <p className="text-sm text-zinc-600">
-              Keep this page focused on sites and floor maps. Storage units and storage locations
-              are managed from the floor-map workspace.
-            </p>
-          </div>
-          <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500">
-            {isLoading ? 'Loading…' : `${sites.length} sites · ${floorMaps.length} floor maps`}
+    <div className="item-detail-container">
+      <div className="item-detail-header">
+        <div className="breadcrumb">
+          <span className="breadcrumb-link">Locations</span>
+          <span className="breadcrumb-separator">/</span>
+          <span className="breadcrumb-current">Add locations</span>
+        </div>
+        <div className="header-top">
+          <h1 className="header-title">Locations <em>Overview</em></h1>
+          <div className="locations-page-status-indicator">
+            {isLoading ? "Loading location data…" : `${sites.length} sites loaded`}
           </div>
         </div>
+      </div>
 
-        {status.message ? (
-          <div
-            className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
-              status.type === 'error'
-                ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-            }`}
-          >
-            {status.message}
-          </div>
-        ) : null}
+      {status.message && (
+        <div
+          className={`status-message ${status.type === "error" ? "status-message-error" : "status-message-success"}`}
+          style={{ margin: "0 28px 16px" }}
+        >
+          {status.message}
+        </div>
+      )}
 
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <Panel title="Sites" subtitle="Select a site, then manage its floor maps.">
-            <form className="mb-4 grid gap-3" onSubmit={handleSiteSubmit}>
+      <div className="item-detail-grid">
+        <div className="left-column">
+          <Panel title="Site" subtitle="Create and select the top-level physical area.">
+            <form className="form-grid" onSubmit={handleSiteSubmit}>
               <Field label="Name">
                 <TextInput
                   value={siteForm.name}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({ ...current, name: event.target.value }))
-                  }
+                  onChange={(e) => setSiteForm((cur) => ({ ...cur, name: e.target.value }))}
                   placeholder="Warehouse"
                 />
               </Field>
               <Field label="Description">
                 <TextArea
                   value={siteForm.description}
-                  onChange={(event) =>
-                    setSiteForm((current) => ({ ...current, description: event.target.value }))
-                  }
+                  onChange={(e) => setSiteForm((cur) => ({ ...cur, description: e.target.value }))}
                   placeholder="Optional note"
                 />
               </Field>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={submitting || !siteForm.name.trim()}
-                  className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
-                >
-                  {editingSiteId ? 'Save Site' : 'Add Site'}
-                </button>
-                {editingSiteId ? (
-                  <button
-                    type="button"
-                    onClick={resetSiteForm}
-                    disabled={submitting}
-                    className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
-                  >
-                    Cancel
-                  </button>
-                ) : null}
-              </div>
+              <button type="submit" disabled={submitting || !siteForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
+                Add Site
+              </button>
             </form>
-
             {sites.length ? (
-              <div className="grid gap-2">
+              <div className="selection-list">
                 {sites.map((site) => (
-                  <SectionButton
+                  <button
                     key={site._id}
                     type="button"
-                    active={site._id === selectedSiteId}
                     onClick={() => setSelectedSiteId(site._id)}
+                    className={`selection-item ${site._id === selectedSiteId ? "selection-item-selected" : "selection-item-unselected"}`}
                   >
-                    <div className="font-medium">{site.name}</div>
-                    <div className={site._id === selectedSiteId ? 'text-sm text-zinc-300' : 'text-sm text-zinc-500'}>
-                      {site.description || 'No description'}
-                    </div>
-                  </SectionButton>
+                    <div className="selection-item-name">{site.name}</div>
+                    <div className="selection-item-description">{site.description || "No description"}</div>
+                  </button>
                 ))}
               </div>
             ) : (
-              <EmptyState>Create a site to begin setting up your storage structure.</EmptyState>
+              <EmptyState>No sites yet. Create one to unlock the rest of the chain.</EmptyState>
             )}
-
-            {selectedSite ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={startEditingSite}
-                  disabled={submitting}
-                  className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
-                >
-                  Edit Selected Site
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteSite}
-                  disabled={submitting}
-                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700"
-                >
-                  Delete Selected Site
-                </button>
-              </div>
-            ) : null}
           </Panel>
 
-          <Panel
-            title="Floor Maps"
-            subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : 'Select a site first.'}
-            actions={
-              selectedFloorMap ? (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/floor-map/${selectedFloorMap._id}`)}
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700"
-                >
-                  Open Workspace
-                </button>
-              ) : null
-            }
-          >
-            <form className="mb-4 grid gap-3" onSubmit={handleFloorMapSubmit}>
+          <Panel title="Floor Maps" subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}>
+            <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
               <Field label="Name">
                 <TextInput
                   value={floorMapForm.name}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({ ...current, name: event.target.value }))
-                  }
+                  onChange={(e) => setFloorMapForm((cur) => ({ ...cur, name: e.target.value }))}
                   placeholder="Ground Floor"
                 />
               </Field>
               <Field label="Image URL">
                 <TextInput
                   value={floorMapForm.imageUrl}
-                  onChange={(event) =>
-                    setFloorMapForm((current) => ({ ...current, imageUrl: event.target.value }))
-                  }
+                  onChange={(e) => setFloorMapForm((cur) => ({ ...cur, imageUrl: e.target.value }))}
                   placeholder="https://example.com/floor-map.png"
                 />
               </Field>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()}
-                  className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
-                >
-                  {editingFloorMapId ? 'Save Floor Map' : 'Add Floor Map'}
-                </button>
-                {editingFloorMapId ? (
-                  <button
-                    type="button"
-                    onClick={resetFloorMapForm}
-                    disabled={submitting}
-                    className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
-                  >
-                    Cancel
-                  </button>
-                ) : null}
-              </div>
+              <button type="submit" disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
+                Add Floor Map
+              </button>
             </form>
-
             {floorMapsForSite.length ? (
-              <div className="grid gap-2">
+              <div className="selection-list">
                 {floorMapsForSite.map((floorMap) => (
-                  <SectionButton
+                  <button
                     key={floorMap._id}
                     type="button"
-                    active={floorMap._id === selectedFloorMapId}
                     onClick={() => setSelectedFloorMapId(floorMap._id)}
+                    className={`selection-item ${floorMap._id === selectedFloorMapId ? "selection-item-selected" : "selection-item-unselected"}`}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium">{floorMap.name}</span>
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs ${
-                          floorMap._id === selectedFloorMapId
-                            ? 'bg-zinc-700 text-zinc-100'
-                            : 'bg-zinc-200 text-zinc-700'
-                        }`}
-                      >
-                        Workspace
-                      </span>
-                    </div>
-                    <div
-                      className={
-                        floorMap._id === selectedFloorMapId ? 'text-sm text-zinc-300' : 'text-sm text-zinc-500'
-                      }
-                    >
-                      {floorMap.imageUrl || 'No image URL'}
-                    </div>
-                  </SectionButton>
+                    <div className="selection-item-name">{floorMap.name}</div>
+                    <div className="selection-item-description">{floorMap.imageUrl || "No image URL"}</div>
+                  </button>
                 ))}
               </div>
             ) : (
               <EmptyState>No floor maps for this site yet.</EmptyState>
             )}
+          </Panel>
 
-            {selectedFloorMap ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={startEditingFloorMap}
-                  disabled={submitting}
-                  className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
-                >
-                  Edit Selected Floor Map
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/floor-map/${selectedFloorMap._id}`)}
-                  className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700"
-                >
-                  Manage Units
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteFloorMap}
-                  disabled={submitting}
-                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700"
-                >
-                  Delete Selected Floor Map
-                </button>
+          <Panel title="Storage Units" subtitle={selectedFloorMap ? `Placed on ${selectedFloorMap.name}.` : "Select a floor map first."}>
+            <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
+              <TextInput label="Name" value={unitForm.name} onChange={(e) => setUnitForm((cur) => ({ ...cur, name: e.target.value }))} placeholder="Shelf A" />
+              <SelectInput
+                label="Type"
+                value={unitForm.type}
+                onChange={(e) => setUnitForm((cur) => ({ ...cur, type: e.target.value }))}
+                options={STORAGE_UNIT_TYPES.map((t) => ({ value: t, label: t }))}
+              />
+              <NumberInput label="X (meters)" value={unitForm.x} onChange={(e) => setUnitForm((cur) => ({ ...cur, x: e.target.value }))} />
+              <NumberInput label="Y (meters)" value={unitForm.y} onChange={(e) => setUnitForm((cur) => ({ ...cur, y: e.target.value }))} />
+              <NumberInput label="Width (meters)" value={unitForm.width} onChange={(e) => setUnitForm((cur) => ({ ...cur, width: e.target.value }))} />
+              <NumberInput label="Height (meters)" value={unitForm.height} onChange={(e) => setUnitForm((cur) => ({ ...cur, height: e.target.value }))} />
+              <button
+                type="submit"
+                disabled={submitting || !selectedFloorMapId || !unitForm.name.trim() || !hasValidUnitPosition(unitForm) || Number(unitForm.width) < 1 || Number(unitForm.height) < 1}
+                className="btn-primary"
+                style={{ width: "100%" }}
+              >
+                Add Storage Unit
+              </button>
+            </form>
+            {storageUnitsForFloorMap.length ? (
+              <div className="selection-list">
+                {storageUnitsForFloorMap.map((unit) => (
+                  <button
+                    key={unit._id}
+                    type="button"
+                    onClick={() => setSelectedStorageUnitId(unit._id)}
+                    className={`selection-item ${unit._id === selectedStorageUnitId ? "selection-item-selected" : "selection-item-unselected"}`}
+                  >
+                    <div className="unit-list-item-flex">
+                      <span className="selection-item-name">{unit.name}</span>
+                      <span className={`unit-type-badge ${unit._id === selectedStorageUnitId ? "unit-type-badge-selected" : ""}`}>{unit.type}</span>
+                    </div>
+                    <div className="unit-list-item-meta">
+                      {`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}
+                    </div>
+                  </button>
+                ))}
               </div>
-            ) : null}
+            ) : (
+              <EmptyState>No storage units on this floor map yet.</EmptyState>
+            )}
+          </Panel>
+
+          <Panel badge="lc" title="Storage Locations" subtitle={selectedStorageUnit ? `Attached to ${selectedStorageUnit.name}.` : "Select a storage unit first."}>
+            <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageLocation}>
+              <TextInput label="Name" value={locationForm.name} onChange={(e) => setLocationForm((cur) => ({ ...cur, name: e.target.value }))} placeholder="Top Shelf" />
+              <TextInput label="Code" value={locationForm.code} onChange={(e) => setLocationForm((cur) => ({ ...cur, code: e.target.value }))} placeholder="SH-A-01" />
+              <button
+                type="submit"
+                disabled={submitting || !selectedStorageUnitId || !locationForm.name.trim() || !locationForm.code.trim()}
+                className="btn-primary"
+                style={{ width: "100%" }}
+              >
+                Add Storage Location
+              </button>
+            </form>
+            {locationsForStorageUnit.length ? (
+              <div className="selection-list">
+                {locationsForStorageUnit.map((location) => (
+                  <div key={location._id} className="location-list-item">
+                    <div className="location-list-details">
+                      <div className="location-list-item-name">{location.name}</div>
+                      <div className="location-list-item-code">{location.code}</div>
+                    </div>
+                    <button
+                      className="location-list-item-view-image"
+                      onClick={() => { setSelectedLocation(location); setImageModalOpen(true); }}
+                    >
+                      See Image
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState>No storage locations on this unit yet.</EmptyState>
+            )}
+          </Panel>
+        </div>
+
+        <div className="right-column">
+          <Panel badge="qr" title="Relationship Summary" subtitle="Quick sanity check of what is currently selected.">
+            <dl className="relationship-summary-list">
+              <div className="relationship-summary-item">
+                <dt className="relationship-summary-label">Site</dt>
+                <dd className="relationship-summary-value">{selectedSite?.name || "None selected"}</dd>
+              </div>
+              <div className="relationship-summary-item">
+                <dt className="relationship-summary-label">Floor Map</dt>
+                <dd className="relationship-summary-value">{selectedFloorMap?.name || "None selected"}</dd>
+              </div>
+              <div className="relationship-summary-item">
+                <dt className="relationship-summary-label">Storage Unit</dt>
+                <dd className="relationship-summary-value">{selectedStorageUnit?.name || "None selected"}</dd>
+              </div>
+              <div className="relationship-summary-item">
+                <dt className="relationship-summary-label">Storage Locations</dt>
+                <dd className="relationship-summary-value">{locationsForStorageUnit.length}</dd>
+              </div>
+            </dl>
+          </Panel>
+
+          <Panel badge="lc" title="Floor Map Preview" subtitle="Simple visual check for storage-unit position values.">
+            <div className="floor-map-preview-container">
+              <div className="floor-map-preview-canvas" style={{ position: "relative", width: "100%", height: "300px", overflow: "hidden" }}>
+                {(() => {
+                  const { units: laid, scale } = getPreviewLayout(storageUnitsForFloorMap);
+                  return laid.length ? laid.map((unit) => (
+                    <button
+                      key={unit._id}
+                      type="button"
+                      onClick={() => setSelectedStorageUnitId(unit._id)}
+                      className={`floor-map-unit-button ${unit._id === selectedStorageUnitId ? "floor-map-unit-selected" : "floor-map-unit-unselected"}`}
+                      style={{
+                        left:   `${unit.px.left   * scale}px`,
+                        top:    `${unit.px.top    * scale}px`,
+                        width:  `${unit.px.width  * scale}px`,
+                        height: `${unit.px.height * scale}px`,
+                      }}
+                    >
+                      <div className="floor-map-unit-name" style={{ fontSize: `${Math.max(8, 11 * scale)}px` }}>{unit.name}</div>
+                      <div className="floor-map-unit-type" style={{ fontSize: `${Math.max(7, 10 * scale)}px` }}>{unit.type}</div>
+                    </button>
+                  )) : (
+                    <div className="floor-map-empty-state">Add a storage unit to see it plotted here.</div>
+                  );
+                })()}
+              </div>
+            </div>
           </Panel>
         </div>
       </div>
+
+      {imageModalOpen && currentLocation && (
+        <div className="modal-overlay location-image-modal" onClick={closeModal}>
+          <div className="modal location-image-container" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">{currentLocation.name} ({currentLocation.code})</h2>
+            <div className="location-image-display">
+              <img src={currentLocation.imageUrl} alt={currentLocation.name} className="location-image" />
+            </div>
+            <div className="location-image-footer">
+              {status.message && (
+                <div className={`status-message ${status.type === "error" ? "status-message-error" : "status-message-success"}`}>
+                  {status.message}
+                </div>
+              )}
+              <div className="location-image-footer-buttons">
+                <button className="btn-secondary" onClick={closeModal}>Cancel</button>
+                <input type="file" accept="image/*" ref={fileInputRef} style={{ display: "none" }} onChange={handleUpload} />
+                <button className="btn-primary" onClick={() => fileInputRef.current.click()}>Upload New</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

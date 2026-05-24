@@ -1,3 +1,4 @@
+import { useEditor } from "../editor/EditorContext";
 import { useNavigate }    from "react-router-dom";
 import { useCallback }    from "react";
 import { CANVAS_ACTIONS } from "../editor/Actions";
@@ -31,6 +32,7 @@ import { CANVAS_CONFIG }  from "../CanvasConfig";
 */
 export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef, clipboard, isCanvasEditMode }) {
   const navigate = useNavigate();
+  const { setSelectedUnit, setIsPanelOpen } = useEditor();
 
   // INTERNAL HELPERS 
   function getGroupRef(id) {
@@ -153,7 +155,8 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
 
   function handleUnitClick(unit, e) {
     if (!isCanvasEditMode) {
-      navigate(`/storage-unit/${unit._id}`);
+      setSelectedUnit(unit);
+      setIsPanelOpen(true);
       return;
     }
 

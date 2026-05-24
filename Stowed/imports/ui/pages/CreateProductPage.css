@@ -1,0 +1,23 @@
+/* CreateProductPage.css */
+
+/* -- Two-column grid -- */
+.item-detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  padding: 18px 28px 48px 28px;
+}
+
+.left-column,
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .item-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+}
