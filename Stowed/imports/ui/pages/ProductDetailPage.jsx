@@ -242,7 +242,7 @@ export function ProductDetailView({
               <span className="breadcrumb-current">Product</span>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button className="btn-secondary" onClick={() => navigate(-1)}>
+              <button className="btn-secondary" onClick={() => navigate("/inventory/list")}>
                 Back
               </button>
               <button
@@ -463,7 +463,7 @@ export function ProductDetailView({
             <div className="detail-section">
               <h2 className="section-title">
                 <span className="section-badge qr">QR</span>
-                QR & label
+                QR &amp; label
               </h2>
               <div className="section-content qr-section">
                 <div className="qr-container">
@@ -474,6 +474,7 @@ export function ProductDetailView({
                 <button className="btn-print">Print label</button>
               </div>
             </div>
+
           </div>
         </div>
 
