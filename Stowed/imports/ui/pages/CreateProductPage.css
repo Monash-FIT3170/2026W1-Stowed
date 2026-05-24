@@ -1,7 +1,7 @@
 /* CreateProductPage.css */
 
 /* -- Two-column grid -- */
-.item-detail-grid {
+.product-detail-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 24px;
@@ -16,7 +16,7 @@
 }
 
 @media (max-width: 900px) {
-  .item-detail-grid {
+  .product-detail-grid {
     grid-template-columns: 1fr;
     padding: 18px;
   }

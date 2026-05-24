@@ -77,6 +77,12 @@ export const ProductSchema = new SimpleSchema({
     min: 0,
   },
 
+  reorderAt: {
+    type: SimpleSchema.Integer,
+    optional: true,
+    min: 0,
+  },
+
   createdAt: {
     type: Date,
   },

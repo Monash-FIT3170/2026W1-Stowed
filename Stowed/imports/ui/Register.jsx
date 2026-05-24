@@ -111,11 +111,11 @@ const Register = () => {
           <p className="auth-kicker">Stocktake / Users</p>
           <h1>{isPrivileged ? 'Add a team member' : 'Start mapping with Stowed'}</h1>
           <p>
-            Give people access to manage items, update stock counts, and maintain storage locations.
+            Give people access to manage products, update stock counts, and maintain storage locations.
           </p>
           <ul className="auth-feature-list">
             <li>Shop and home floor layouts</li>
-            <li>QR labels for fast item lookup</li>
+            <li>QR labels for fast product lookup</li>
             <li>Shopping lists from stock needs</li>
           </ul>
         </div>

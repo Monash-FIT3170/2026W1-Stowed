@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products } from "../../api/products/collections";
-import { ItemThumbnail } from "../components/ItemThumbnail";
+import { ProductThumbnail } from "../components/ProductThumbnail";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryPage.css";
 import "../Global.css";
@@ -66,7 +66,7 @@ export function InventoryPage() {
 
         {recentItems.map((item) => (
           <div key={item._id} className="table-row">
-            <ItemThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
+            <ProductThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
             <span>
               <Link to={`/inventory/${item._id}`} className="item-name-link">
                 {item.name}

@@ -32,9 +32,9 @@ const PERMISSIONS = {
   "route:/qr-codes":    ROLES.ADMIN,
   "route:/forecast":    ROLES.ADMIN,
   "route:/alerts":      ROLES.ADMIN,
-  "route:/create-item": ROLES.ADMIN,
-  "route:/edit-item":   ROLES.ADMIN,
-  "route:/item-detail": ROLES.STANDARD,
+  "route:/create-product": ROLES.ADMIN,
+  "route:/edit-product":   ROLES.ADMIN,
+  "route:/product-detail": ROLES.STANDARD,
   "route:/accounts":    ROLES.OWNER,
 };
 

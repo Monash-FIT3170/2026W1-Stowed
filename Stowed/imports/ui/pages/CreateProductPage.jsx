@@ -232,8 +232,8 @@ export function CreateProductPage() {
 
   return (
     <>
-      <div className="item-detail-container">
-        <div className="item-detail-header">
+      <div className="product-detail-container">
+        <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
               <span className="breadcrumb-link">Inventory</span>
@@ -246,7 +246,7 @@ export function CreateProductPage() {
           </h1>
         </div>
 
-        <div className="item-detail-grid">
+        <div className="product-detail-grid">
           <div className="left-column">
             {/* Core identification */}
             <div className="detail-section">

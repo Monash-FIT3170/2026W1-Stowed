@@ -60,7 +60,7 @@ export function ViewAccounts() {
 
   return (
     <div className="inventory-list-container">
-      <div className="item-detail-header">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Account management</span>
           <span className="breadcrumb-separator">/</span>

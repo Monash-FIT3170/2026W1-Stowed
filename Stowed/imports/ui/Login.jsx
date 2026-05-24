@@ -65,12 +65,12 @@ export const Login = () => {
           <p className="auth-kicker">Stocktake / Floor maps</p>
           <h1>Welcome back to <em>Stowed</em></h1>
           <p>
-            Map your shop or home storage, scan QR labels, and keep every item easy to find.
+            Map your shop or home storage, scan QR labels, and keep every product easy to find.
           </p>
           <ul className="auth-feature-list">
-            <li>Storage units and item locations</li>
+            <li>Storage units and product locations</li>
             <li>Low-stock visual alerts</li>
-            <li>Photo-based item catalogue</li>
+            <li>Photo-based product catalogue</li>
           </ul>
         </div>
 

@@ -2,8 +2,8 @@ import "../Global.css";
 
 export function QRCodesPage() {
   return (
-    <div className="item-detail-container">
-      <div className="item-detail-header">
+    <div className="product-detail-container">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Tools</span>
           <span className="breadcrumb-separator">/</span>

@@ -18,7 +18,7 @@ function callMethod(methodName, params) {
   });
 }
 
-export function ItemThumbnail({ photoUrl, catalogImages, images, name }) {
+export function ProductThumbnail({ photoUrl, catalogImages, images, name }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
@@ -145,16 +145,16 @@ export function InventoryListPage() {
 
   return (
     <div className="inventory-list-container">
-      <div className="item-detail-header">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <Link to="/" className="breadcrumb-link">Inventory</Link>
           <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-current">All items</span>
+          <span className="breadcrumb-current">All products</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">All <em>Items</em></h1>
+          <h1 className="header-title">All <em>Products</em></h1>
           <Link to="/inventory/new">
-            <button className="btn-primary">+ Add item</button>
+            <button className="btn-primary">+ Add product</button>
           </Link>
         </div>
       </div>
@@ -211,7 +211,7 @@ export function InventoryListPage() {
               </div>
               {pagedItems.map((item) => (
                 <div key={item._id} className="table-row">
-                  <ItemThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
+                  <ProductThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
                   <span>
                     <Link to={`/inventory/${item._id}`} className="item-name-link">{item.name}</Link>
                   </span>

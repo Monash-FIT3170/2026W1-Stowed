@@ -49,6 +49,7 @@ Meteor.methods({
     catalogImages = [],
     qrCode = "",
     totalQuantity,
+    reorderAt,
     assignments,
   }) {
     check(name, String);
@@ -63,6 +64,7 @@ Meteor.methods({
     check(catalogImages, [String]);
     check(qrCode, String);
     check(totalQuantity, Match.Integer);
+    check(reorderAt, Match.Maybe(Match.Integer));
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
 
     if (!this.userId) {
@@ -117,6 +119,7 @@ Meteor.methods({
       catalogImages,
       qrCode,
       totalQuantity,
+      ...(reorderAt != null && { reorderAt }),
       createdAt: now,
       updatedAt: now,
     });
@@ -152,6 +155,7 @@ Meteor.methods({
     catalogImages = [],
     qrCode = "",
     totalQuantity,
+    reorderAt,
     assignments,
   }) {
     check(productId, String);
@@ -167,6 +171,7 @@ Meteor.methods({
     check(catalogImages, [String]);
     check(qrCode, String);
     check(totalQuantity, Match.Integer);
+    check(reorderAt, Match.Maybe(Match.Integer));
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
 
     await assertOrgAccess(Products, productId, this.userId);
@@ -216,6 +221,7 @@ Meteor.methods({
         images: galleryImages,
         qrCode,
         totalQuantity,
+        ...(reorderAt != null && { reorderAt }),
         updatedAt: now,
       },
     });
