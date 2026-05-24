@@ -154,10 +154,9 @@ Meteor.methods({
     let org = await Organisations.findOneAsync({ code: codeLower });
 
     if (org) {
-      // Existing organisation → join as Standard user
-      organisationId = org._id;
-      role = ROLES.STANDARD;
-    } else {
+    // Organisation already exists: do not allow joining via self‑registration
+      throw new Meteor.Error('org-exists', 'An organisation with that code already exists. Contact owner to create an account.');
+    }
       // New organisation → create it and become its Owner
       role = ROLES.OWNER;
       const now = new Date();
@@ -168,7 +167,6 @@ Meteor.methods({
         updatedAt: now,
       });
     }
-  }
 
   const userId = Accounts.createUser({
     username,
