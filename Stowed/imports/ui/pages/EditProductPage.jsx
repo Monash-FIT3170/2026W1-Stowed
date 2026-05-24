@@ -290,7 +290,10 @@ export function EditProductPage() {
         category,
         brand,
         totalQuantity: parsedTotal,
-        unitCost: unitCost ? parseFloat(unitCost) : 0,
+        // unitCost: unitCost ? parseFloat(unitCost) : 0,
+        unitCost: Number.isFinite(parseFloat(unitCost))
+          ? parseFloat(unitCost)
+          : 0,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity: parseInt(a.quantity, 10),

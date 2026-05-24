@@ -6,6 +6,8 @@ import { Products } from "../../api/products/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
+import { hasClientPermission } from "../../api/userMethods";
+import { useAuth } from "../../api/useAuth";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -49,6 +51,10 @@ export function InventoryListPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const { isLoggedIn, role } = useAuth();
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canCreate = hasClientPermission(role, "products.create");
+
 
   const { items, loading } = useTracker(() => {
     const sub = Meteor.subscribe("products");
@@ -131,6 +137,7 @@ export function InventoryListPage() {
     } finally {
       setIsDeleting(false);
     }
+    
   };
 
   const filters = [
@@ -161,7 +168,8 @@ export function InventoryListPage() {
           className="search-input"
         />
         <Link to="/inventory/new">
-          <button className="btn-add-item">+ Add item</button>
+          {canDelete && (
+            <button className="btn-add-item">+ Add item</button>)}
         </Link>
       </div>
 
@@ -179,20 +187,22 @@ export function InventoryListPage() {
 
       <div className="selected-actions">
         <span>{selectedProductIds.length} selected</span>
-        <button
-          type="button"
-          className="btn-selected-delete"
-          onClick={openDeleteModal}
-          disabled={selectedProductIds.length === 0}
-          aria-label="Delete selected items"
-          title="Delete selected items"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
-            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
-            <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
-          </svg>
-          <span className="sr-only">Delete selected items</span>
-        </button>
+        {canDelete && (
+          <button
+            type="button"
+            className="btn-selected-delete"
+            onClick={openDeleteModal}
+            disabled={selectedProductIds.length === 0}
+            aria-label="Delete selected items"
+            title="Delete selected items"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
+              <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+              <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+            </svg>
+            <span className="sr-only">Delete selected items</span>
+          </button>
+        )}
         <span className="selected-count">{selectedProductIds.length}</span>
       </div>
 
@@ -235,7 +245,7 @@ export function InventoryListPage() {
         ))
       )}
 
-      {showDeleteModal && (
+      {showDeleteModal && canDelete && (
         <div className="delete-modal-overlay" role="presentation">
           <div
             className="delete-modal"

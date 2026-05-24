@@ -85,6 +85,9 @@ const Register = () => {
         });
 
         setSuccess(`Account created for ${username}`);
+
+        // redirect to login page
+        navigate('/login');
       }
 
       setFormData({

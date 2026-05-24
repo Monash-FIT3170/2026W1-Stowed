@@ -37,7 +37,7 @@ export function App() {
 
   // gets the current user's role for route authorisation
   const role = user?.profile?.role ?? null;
-  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/");
+  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/inventory");
 
   return (
     <BrowserRouter>
@@ -62,7 +62,11 @@ export function App() {
               path="/"
               element={
                 isLoggedIn ? (
-                  <InventoryPage />
+                  hasClientPermission(role, "route:/inventory") ? (
+                    <InventoryPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -71,8 +75,12 @@ export function App() {
             <Route
               path="/inventory/new"
               element={
-                canAccessInventory ? (
-                  <CreateProductPage />
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/create-item") ? (
+                    <CreateProductPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -81,8 +89,12 @@ export function App() {
             <Route
               path="/inventory/:productId/edit"
               element={
-                canAccessInventory ? (
-                  <EditProductPage />
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/edit-item") ? (
+                    <EditProductPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -91,8 +103,12 @@ export function App() {
             <Route
               path="/inventory/:productId"
               element={
-                canAccessInventory ? (
-                  <ItemDetailPage />
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/item-detail") ? (
+                    <ItemDetailPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
                 ) : (
                   <Navigate to="/" replace />
                 )
