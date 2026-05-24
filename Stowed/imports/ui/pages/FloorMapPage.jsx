@@ -51,7 +51,7 @@ function FloorMapPageInner() {
   };
 
   return (
-    <div className="item-detail-container" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="item-detail-container" style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* ── Header ── */}
       <div className="item-detail-header">
@@ -70,10 +70,10 @@ function FloorMapPageInner() {
       </div>
 
       {/* ── Map row ── */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden", position: "relative" }}>
 
         {/* CANVAS */}
-        <div style={{ ...pageStyles.canvasArea, flex: 1 }}>
+        <div style={{ ...pageStyles.canvasArea, flex: 1, minHeight: 0, minWidth: 0 }}>
           <Canvas
             style={{ display: "block", width: "100%", height: "100%" }}
             isCanvasEditMode={isCanvasEditMode}
@@ -155,50 +155,111 @@ function FloorMapPageInner() {
 
         {/* EDIT MODE SIDEBAR */}
         {isCanvasEditMode && (
-          <div
-            style={{
-              ...pageStyles.sidebarBase,
-              ...pageStyles.sidebarRight,
-              ...(isSidebarOpen ? pageStyles.sidebarOpen : pageStyles.sidebarCollapsed),
-            }}
-          >
-            <button
-              onClick={() => setSidebarOpen((prev) => !prev)}
-              style={pageStyles.sidebarToggle}
-              aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-              title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-            >
-              {isSidebarOpen ? "☰" : "☰"}
-            </button>
-            {isSidebarOpen && (
-              <>
-                <StoragePanel onSelectUnit={handlePlaceUnit} />
-                <div style={pageStyles.sidebarDivider} />
-                <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
-                <div style={pageStyles.sidebarDivider} />
-                <CanvasToolbar
-                  activeTool={activeTool}
-                  setActiveTool={setActiveTool}
-                  floorSize={floorSize}
-                  onSaveLayout={handleSaveLayout}
-                  onLoadLayout={handleLoadLayout}
-                  onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
-                  onUndo={handleUndo}
-                  onRedo={handleRedo}
-                  canUndo={canUndo}
-                  canRedo={canRedo}
-                />
-                <div style={pageStyles.sidebarFooter}>
+          <>
+            {isSidebarOpen ? (
+              <div
+                style={{
+                  width: "260px",
+                  minWidth: "260px",
+                  maxWidth: "260px",
+                  flexShrink: 0,
+                  background: "var(--card-bg)",
+                  borderLeft: "1px solid var(--border-light)",
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                  height: "100%",
+                }}
+              >
+                {/* Header — pinned */}
+                <div className="section-title" style={{ padding: "14px", flexShrink: 0 }}>
+                  <span style={{ fontWeight: 700, color: "var(--text-dark)" }}>
+                    Edit Mode
+                  </span>
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
+                    aria-label="Collapse sidebar"
+                    title="Collapse sidebar"
+                  >
+                    →
+                  </button>
+                </div>
+
+                {/* Scrollable content */}
+                <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
+                  <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                    <StoragePanel onSelectUnit={handlePlaceUnit} />
+                  </div>
+                  <div style={{ height: "1px", background: "var(--border-light)" }} />
+                  <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                    <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
+                  </div>
+                  <div style={{ height: "1px", background: "var(--border-light)" }} />
+                  <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                    <CanvasToolbar
+                      activeTool={activeTool}
+                      setActiveTool={setActiveTool}
+                      floorSize={floorSize}
+                      onSaveLayout={handleSaveLayout}
+                      onLoadLayout={handleLoadLayout}
+                      onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
+                      onUndo={handleUndo}
+                      onRedo={handleRedo}
+                      canUndo={canUndo}
+                      canRedo={canRedo}
+                    />
+                  </div>
+                </div>
+
+                {/* Footer — pinned */}
+                <div style={{ flexShrink: 0, borderTop: "1px solid var(--border-light)", padding: "14px" }}>
                   <button
                     onClick={() => setCanvasEditMode(false)}
-                    style={{ ...buttonStyles.base, ...buttonStyles.secondary, width: "100%" }}
+                    className="btn-primary"
+                    style={{ width: "100%" }}
                   >
                     Exit Edit Mode
                   </button>
                 </div>
-              </>
+              </div>
+            ) : (
+              /* Collapsed — visible tab with arrow */
+              <div
+                style={{
+                  width: "32px",
+                  flexShrink: 0,
+                  background: "var(--card-bg)",
+                  borderLeft: "1px solid var(--border-light)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  paddingTop: "14px",
+                  gap: "8px",
+                  height: "100%",
+                }}
+              >
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Expand sidebar"
+                  title="Expand sidebar"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--text-muted)",
+                    fontSize: "14px",
+                    padding: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  ←
+                </button>
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
@@ -265,12 +326,8 @@ function FloorMapPageInner() {
       {!isCanvasEditMode && (
         <button
           onClick={() => setCanvasEditMode(true)}
-          style={{
-            ...buttonStyles.base,
-            ...buttonStyles.primary,
-            ...pageStyles.floatingButton,
-            padding: "10px 18px",
-          }}
+          className="btn-primary"
+          style={{ ...pageStyles.floatingButton }}
         >
           Edit Floor Map
         </button>
