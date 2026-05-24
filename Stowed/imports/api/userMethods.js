@@ -106,21 +106,36 @@ Meteor.methods({
     check(password, String);
     check(role, Number);
 
-    // ensure role is valid
     if (role !== ROLES.STANDARD && role !== ROLES.ADMIN) {
-      throw new Meteor.Error(
-        "invalid-role",
-        "Role not allowed"
-      );
+      throw new Meteor.Error("invalid-role", "Role not allowed");
     }
 
-    // ensure user has permission to perform task
-    await requirePermission( this.userId, "create-users" );
+    if (password.length < 6) {
+      throw new Meteor.Error("invalid-password", "Password must be at least 6 characters.");
+    }
+
+    await requirePermission(this.userId, "create-users");
 
     const caller = await Meteor.users.findOneAsync(this.userId);
     const organisationId = caller.profile.organisationId;
     if (!organisationId) {
       throw new Meteor.Error('no-org', 'Your account is not linked to an organisation.');
+    }
+
+    const emailTaken = await Meteor.users.findOneAsync({
+      'emails.address': email.toLowerCase(),
+      'profile.organisationId': organisationId,
+    });
+    if (emailTaken) {
+      throw new Meteor.Error('email-taken', 'An account with that email already exists in this organisation.');
+    }
+
+    const usernameTaken = await Meteor.users.findOneAsync({
+      username,
+      'profile.organisationId': organisationId,
+    });
+    if (usernameTaken) {
+      throw new Meteor.Error('username-taken', 'That username is already taken in this organisation.');
     }
 
     const userId = Accounts.createUser({
@@ -144,6 +159,10 @@ Meteor.methods({
   check(email, String);
   check(password, String);
   if (orgCode !== null) check(orgCode, String);
+
+  if (password.length < 6) {
+    throw new Meteor.Error("invalid-password", "Password must be at least 6 characters.");
+  }
 
   const userCount = await Meteor.users.find().countAsync();
   let organisationId;
