@@ -67,34 +67,36 @@ export function ItemDetailView({
   const unitCost = Number(item.unitCost);
   const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
   const reorderAt = item.reorderAt ?? 10;
-  const catalogImages =
-    Array.isArray(item.catalogImages) && item.catalogImages.length
-      ? item.catalogImages
-      : item.photoUrl
-        ? [item.photoUrl]
-        : [];
+  const galleryImages =
+    Array.isArray(item.images) && item.images.length
+      ? item.images
+      : Array.isArray(item.catalogImages) && item.catalogImages.length
+        ? item.catalogImages
+        : item.photoUrl
+          ? [item.photoUrl]
+          : [];
   const qrCode = item.qrCode || item.photoUrl || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
     ? records.map((record) => ({
-        key: record._id,
-        label: buildLocationLabel(
-          record.locationId,
-          storageLocations,
-          storageUnits,
-          floorMaps,
-          sites,
-        ),
-        quantity: record.quantity,
-      }))
+      key: record._id,
+      label: buildLocationLabel(
+        record.locationId,
+        storageLocations,
+        storageUnits,
+        floorMaps,
+        sites,
+      ),
+      quantity: record.quantity,
+    }))
     : item.location
       ? [
-          {
-            key: "legacy-location",
-            label: item.location,
-            quantity: currentStock,
-          },
-        ]
+        {
+          key: "legacy-location",
+          label: item.location,
+          quantity: currentStock,
+        },
+      ]
       : [];
 
   const handleDelete = async () => {
@@ -273,13 +275,13 @@ export function ItemDetailView({
               <div className="section-content">
                 <div className="main-image-container">
                   <img
-                    src={catalogImages[selectedImageIndex]}
+                    src={galleryImages[selectedImageIndex]}
                     alt={item.name}
                     className="main-image"
                   />
                 </div>
                 <div className="thumbnail-gallery">
-                  {catalogImages.map((img, index) => (
+                  {galleryImages.map((img, index) => (
                     <button
                       key={index}
                       className={`thumbnail ${selectedImageIndex === index ? "active" : ""}`}

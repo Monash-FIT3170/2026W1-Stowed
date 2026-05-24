@@ -52,12 +52,11 @@ Meteor.methods({
     brand = "",
     unitCost = 0,
     photoUrl = "",
+    images = [],
     catalogImages = [],
     qrCode = "",
 
-    imageUrl = "",
     totalQuantity,
-
     assignments,
   }) {
     check(name, String);
@@ -68,11 +67,10 @@ Meteor.methods({
     check(brand, String);
     check(unitCost, Number);
     check(photoUrl, String);
-    check(catalogImages, [String]);
+    check(images, [String]);
     check(qrCode, String);
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
-    check(imageUrl, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -105,6 +103,8 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const galleryImages = images.length ? images : catalogImages;
+    const primaryPhotoUrl = photoUrl || galleryImages[0] || "";
     const productId = await Products.insertAsync({
       name,
       description,
@@ -113,10 +113,9 @@ Meteor.methods({
       sku,
       brand,
       unitCost,
-      photoUrl,
-      catalogImages,
+      photoUrl: primaryPhotoUrl,
+      images: galleryImages,
       qrCode,
-      imageUrl,
       totalQuantity,
       createdAt: now,
       updatedAt: now,
@@ -170,9 +169,9 @@ Meteor.methods({
     brand = "",
     unitCost = 0,
     photoUrl = "",
+    images = [],
     catalogImages = [],
     qrCode = "",
-    imageUrl = "",
     totalQuantity,
     assignments,
   }) {
@@ -185,9 +184,8 @@ Meteor.methods({
     check(brand, String);
     check(unitCost, Number);
     check(photoUrl, String);
-    check(catalogImages, [String]);
+    check(images, [String]);
     check(qrCode, String);
-    check(imageUrl, String);
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
 
@@ -228,9 +226,24 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const galleryImages = images.length ? images : catalogImages;
+    const primaryPhotoUrl = photoUrl || product.photoUrl || galleryImages[0] || "";
 
     await Products.updateAsync(productId, {
-      $set: { name, description, tag, category, sku, brand, unitCost, photoUrl, catalogImages, qrCode, imageUrl, totalQuantity, updatedAt: now },
+      $set: {
+        name,
+        description,
+        tag,
+        category,
+        sku,
+        brand,
+        unitCost,
+        photoUrl: primaryPhotoUrl,
+        images: galleryImages,
+        qrCode,
+        totalQuantity,
+        updatedAt: now,
+      },
     });
 
     await ProductRecords.removeAsync({ productId });
