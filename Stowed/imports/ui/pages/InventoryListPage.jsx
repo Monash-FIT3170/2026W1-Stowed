@@ -156,7 +156,7 @@ export function InventoryListPage() {
           </div>
         </div>
         <h1 className="header-title">
-          All <em>items</em>
+          All <em>Items</em>
         </h1>
       </div>
 
