@@ -1,0 +1,215 @@
+/* ViewAccountsPage Styles */
+
+:root {
+  --bg-primary: #f5efe6;
+  --text-muted: #998874;
+  --text-dark: #1a1a1a;
+  --accent-primary: #b5532a;
+  --accent-secondary: #e89b6f;
+  --border-light: #efe7da;
+  --border-subtle: #d9cfc0;
+}
+
+.view-accounts-container {
+  padding: 24px;
+  max-width: 900px;
+}
+
+.view-accounts-container .breadcrumb {
+  font-size: 12px;
+  color: #998874;
+  margin-bottom: 8px;
+}
+
+.view-accounts-container .page-title {
+  font-size: 24px;
+  font-weight: 500;
+  font-family: Georgia, serif;
+  margin: 8px 0 16px;
+}
+
+.view-accounts-container .page-title em {
+  color: #b5532a;
+  font-style: italic;
+}
+
+.view-accounts-container .button-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.view-accounts-container .btn-add-item {
+  background: #e89b6f;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.view-accounts-container .btn-add-item:hover {
+  opacity: 0.9;
+}
+
+.view-accounts-container .search-bar-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.view-accounts-container .search-input {
+  flex: 1;
+  background: #f5efe6;
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: 12px;
+  border: none;
+  outline: none;
+}
+
+.view-accounts-container .search-result-count {
+  font-size: 11px;
+  color: #998874;
+  margin-bottom: 8px;
+}
+
+.view-accounts-container .table-header,
+.view-accounts-container .table-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr 1fr 100px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.view-accounts-container .table-header {
+  border-bottom: 1px solid #d9cfc0;
+  font-size: 11px;
+  color: #998874;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.view-accounts-container .table-row {
+  border-bottom: 0.5px solid #efe7da;
+  font-size: 13px;
+}
+
+.view-accounts-container .cell-email {
+  color: #998874;
+}
+
+.view-accounts-container .btn-row-delete {
+  background: transparent;
+  border: none;
+  color: #c23b22;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.view-accounts-container .btn-row-delete:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.view-accounts-container .btn-row-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.view-accounts-container .btn-row-delete {
+  padding: 4px 12px;
+  background: #fff7f4;
+  border: 1px solid rgba(216, 111, 88, 0.32);
+  border-radius: 14px;
+  color: #d86f58;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.view-accounts-container .btn-row-delete:hover:not(:disabled) {
+  background: #fde9e2;
+  border-color: rgba(216, 111, 88, 0.5);
+}
+
+.view-accounts-container .btn-row-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.view-accounts-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 20, 15, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.view-accounts-modal {
+  background: #fffaf8;
+  border: 1px solid rgba(36, 20, 15, 0.08);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(36, 20, 15, 0.15);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+.view-accounts-modal h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  color: #24140f;
+}
+
+.view-accounts-modal p {
+  margin-bottom: 28px;
+  color: #6b4f46;
+  line-height: 1.5;
+}
+
+.view-accounts-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.view-accounts-btn-cancel,
+.view-accounts-btn-confirm {
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.view-accounts-btn-cancel {
+  background: #fffaf8;
+  border-color: rgba(36, 20, 15, 0.12);
+  color: #24140f;
+  font-weight: 600;
+}
+
+.view-accounts-btn-confirm {
+  background: #e76a54;
+  border-color: #e76a54;
+  color: #fffaf8;
+  font-weight: 700;
+}
+
+.view-accounts-btn-cancel:disabled,
+.view-accounts-btn-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

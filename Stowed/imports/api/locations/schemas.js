@@ -57,8 +57,8 @@ export const FloorMapSchema = new SimpleSchema({
 /**
  * Schema for a StorageUnit.
  *
- * A StorageUnit represents a physical storage structure on a FloorMap,
- * such as a shelf, cabinet, rack, drawer set, fridge, or other unit.
+ * A StorageUnit represents the larger physical block on a FloorMap, such as
+ * "CAB-01", a shelf bay, cabinet, rack, drawer set, fridge, or other unit.
  *
  * The position field is used by the floor map UI to place and size the unit.
  */
@@ -109,6 +109,11 @@ export const StorageUnitSchema = new SimpleSchema({
   updatedAt: {
     type: Date,
   },
+  
+  photoUrl: {
+    type: String,
+    optional: true,
+  },
 });
 
 /**
@@ -133,6 +138,43 @@ export const StorageLocationSchema = new SimpleSchema({
     type: String,
     min: 1,
     max: 50,
+  },
+
+  storedItems: {
+    type: Array,
+    optional: true,
+  },
+
+  'storedItems.$': {
+    type: Object,
+  },
+
+  'storedItems.$.itemId': {
+    type: String,
+    optional: true,
+  },
+
+  'storedItems.$.name': {
+    type: String,
+    min: 1,
+    max: 100,
+  },
+
+  'storedItems.$.sku': {
+    type: String,
+    optional: true,
+    max: 50,
+  },
+
+  'storedItems.$.quantity': {
+    type: SimpleSchema.Integer,
+    min: 0,
+  },
+
+  'storedItems.$.status': {
+    type: String,
+    optional: true,
+    allowedValues: ['OK', 'LOW', 'CRITICAL'],
   },
 
   createdAt: {

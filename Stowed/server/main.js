@@ -4,6 +4,7 @@ import '/imports/api/locations/methods';
 import '/imports/api/publications';
 import '/imports/api/userMethods';
 import { ROLES } from '/imports/api/roles';
+import '/imports/api/upload.js';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
 import { Products, ProductRecords } from '/imports/api/products/collections';
 import { Organisations } from '/imports/api/organisations';
@@ -28,7 +29,7 @@ async function seedProducts(seedOrgId) {
 
   const now = new Date();
   const add = ({ name, description, totalQuantity }) =>
-    Products.insertAsync({ orgId: seedOrgId, name, description, totalQuantity, createdAt: now, updatedAt: now });
+    Products.insertAsync({ orgId: seedOrgId, name, description, totalQuantity, images: [], createdAt: now, updatedAt: now });
 
   await add({ name: 'Cardboard Boxes', description: 'Medium-sized cardboard boxes used for general storage and shipping.', totalQuantity: 48 });
   await add({ name: 'Cable Ties',      description: 'Nylon cable ties in assorted sizes for bundling and organising.',   totalQuantity: 23 });
@@ -109,15 +110,20 @@ Meteor.startup(async () => {
 });
 
 Meteor.publish('allUsers', async function () {
-  // allow only if the logged-in user has owner role
   if (!this.userId) return this.ready();
-  const user = await Meteor.users.findOneAsync(
+
+  const currentUser = await Meteor.users.findOneAsync(
     this.userId,
-    { fields: { 'profile.role': 1 } }
+    { fields: { 'profile.role': 1, 'profile.organisationId': 1 } }
   );
-  
-  if (!user || user.profile.role < ROLES.OWNER) {
+
+  if (!currentUser || currentUser.profile.role < ROLES.OWNER) {
     throw new Meteor.Error('unauthorized', 'Owners only');
   }
-  return Meteor.users.find({}, { fields: { username: 1, emails: 1 } });
+
+  // Only users from the same organisation
+  return Meteor.users.find(
+    { 'profile.organisationId': currentUser.profile.organisationId },
+    { fields: { username: 1, emails: 1, 'profile.role': 1 } }
+  );
 });
