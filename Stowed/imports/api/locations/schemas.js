@@ -216,6 +216,11 @@ export const StorageLocationSchema = new SimpleSchema({
     max: 500,
   },
 
+  fill: {
+    type: String,
+    optional: true,
+  },
+
   createdAt: Date,
 
   updatedAt: Date,
