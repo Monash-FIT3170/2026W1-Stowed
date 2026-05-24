@@ -41,10 +41,16 @@ export function App() {
 
   return (
     <BrowserRouter>
-      <div className="flex h-screen overflow-hidden bg-white">
+      <div
+        className="flex h-screen overflow-hidden"
+        style={{ backgroundColor: "var(--bg-primary)" }}
+      >
         {/* only show navigation after authentication */}
         {isLoggedIn && <Sidebar />}
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{ backgroundColor: "var(--bg-primary)" }}
+        >
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />
