@@ -42,11 +42,10 @@ function hasValidUnitPosition(unitForm) {
   });
 }
 
-function Panel({ title, subtitle, badge, children }) {
+function Panel({ title, subtitle, children }) {
   return (
     <section className="detail-section">
       <div className="section-title">
-        {badge && <span className={`section-badge ${badge}`}>{badge.toUpperCase()}</span>}
         {title}
         {subtitle && (
           <span style={{ marginLeft: "auto", fontWeight: 400, fontSize: "12px", color: "var(--text-muted)" }}>
@@ -370,7 +369,7 @@ export function LocationsPage() {
 
       <div className="item-detail-grid">
         <div className="left-column">
-          <Panel badge="id" title="Site" subtitle="Create and select the top-level physical area.">
+          <Panel title="Site" subtitle="Create and select the top-level physical area.">
             <form className="form-grid" onSubmit={handleSiteSubmit}>
               <Field label="Name">
                 <TextInput
@@ -409,7 +408,7 @@ export function LocationsPage() {
             )}
           </Panel>
 
-          <Panel badge="op" title="Floor Maps" subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}>
+          <Panel title="Floor Maps" subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}>
             <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
               <Field label="Name">
                 <TextInput
@@ -448,7 +447,7 @@ export function LocationsPage() {
             )}
           </Panel>
 
-          <Panel badge="im" title="Storage Units" subtitle={selectedFloorMap ? `Placed on ${selectedFloorMap.name}.` : "Select a floor map first."}>
+          <Panel title="Storage Units" subtitle={selectedFloorMap ? `Placed on ${selectedFloorMap.name}.` : "Select a floor map first."}>
             <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
               <TextInput label="Name" value={unitForm.name} onChange={(e) => setUnitForm((cur) => ({ ...cur, name: e.target.value }))} placeholder="Shelf A" />
               <SelectInput

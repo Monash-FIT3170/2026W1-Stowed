@@ -18,19 +18,27 @@ function callMethod(methodName, params) {
   });
 }
 
-export function ItemThumbnail({ photoUrl, name }) {
+export function ItemThumbnail({ photoUrl, catalogImages, images, name }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
     ? name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()
     : "?";
 
-  if (!photoUrl || imgError) {
+  const thumbnailUrls = [
+    ...(Array.isArray(images) ? images : []),
+    photoUrl,
+    ...(Array.isArray(catalogImages) ? catalogImages : []),
+  ].filter((u, i, arr) => Boolean(u) && arr.indexOf(u) === i);
+
+  const thumbnailUrl = thumbnailUrls[0] || "";
+
+  if (!thumbnailUrl || imgError) {
     return <div className="item-thumbnail">{initials}</div>;
   }
 
   return (
-    <img src={photoUrl} alt={name} onError={() => setImgError(true)} className="item-thumbnail" />
+    <img src={thumbnailUrl} alt={name} onError={() => setImgError(true)} className="item-thumbnail" />
   );
 }
 
@@ -63,7 +71,7 @@ export function InventoryListPage() {
     if (!records.length) return "—";
     // Show first location's path, + N more if multiple
     const first = records[0];
-    const loc  = storageLocations.find((l) => l._id === first.locationId);
+    const loc = storageLocations.find((l) => l._id === first.locationId);
     if (!loc) return "—";
     const unit = storageUnits.find((u) => u._id === loc.storageUnitId);
     const label = unit ? `${unit.name} · ${loc.name}` : loc.name;
@@ -78,10 +86,10 @@ export function InventoryListPage() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((item) => {
-        const name        = (item.name        || "").toLowerCase();
+        const name = (item.name || "").toLowerCase();
         const description = (item.description || "").toLowerCase();
-        const sku         = (item.sku         || "").toLowerCase();
-        const id          = (item._id         || "").toLowerCase();
+        const sku = (item.sku || "").toLowerCase();
+        const id = (item._id || "").toLowerCase();
         return name.includes(query) || description.includes(query) || sku.includes(query) || id.includes(query);
       });
     }
@@ -103,7 +111,7 @@ export function InventoryListPage() {
     );
   };
 
-  const openDeleteModal  = () => { if (selectedProductIds.length === 0) return; setShowDeleteModal(true); setDeleteError(""); };
+  const openDeleteModal = () => { if (selectedProductIds.length === 0) return; setShowDeleteModal(true); setDeleteError(""); };
   const closeDeleteModal = () => { if (isDeleting) return; setShowDeleteModal(false); setDeleteError(""); };
 
   const handleDeleteSelectedProducts = async () => {
@@ -125,10 +133,10 @@ export function InventoryListPage() {
   };
 
   const filters = [
-    { id: "all",       label: "All",           count: items.length },
-    { id: "low-stock", label: "⚠ Low stock",   count: lowStockCount },
-    { id: "tag",       label: "Tag ▾" },
-    { id: "location",  label: "Location ▾" },
+    { id: "all", label: "All", count: items.length },
+    { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
+    { id: "tag", label: "Tag ▾" },
+    { id: "location", label: "Location ▾" },
   ];
 
   if (loading) return <div className="inventory-list-container">Loading...</div>;
@@ -204,7 +212,7 @@ export function InventoryListPage() {
             </div>
             {filteredItems.map((item) => (
               <div key={item._id} className="table-row">
-                <ItemThumbnail photoUrl={item.photoUrl} name={item.name} />
+                <ItemThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
                 <span>
                   <Link to={`/inventory/${item._id}`} className="item-name-link">{item.name}</Link>
                 </span>

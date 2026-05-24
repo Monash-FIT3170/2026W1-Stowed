@@ -76,7 +76,7 @@ export function EditProductPage() {
       setBrand(product.brand);
       setTotalQuantity(String(product.totalQuantity));
       setUnitCost(String(product.unitCost));
-      setImageUrls(product.imageUrls || []);
+      setImageUrls(product.images || product.imageUrls || product.catalogImages || []);
       setMainImageIndex(product.mainImageIndex || 0);
       setAssignments(
         originalRecords.map((r) => ({
@@ -113,7 +113,7 @@ export function EditProductPage() {
     if (parseFloat(unitCost) !== product.unitCost)
       result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
 
-    const originalImages = product.imageUrls || [];
+    const originalImages = product.images || product.imageUrls || product.catalogImages || [];
     const imagesChanged =
       imageUrls.length !== originalImages.length ||
       imageUrls.some((url, i) => url !== originalImages[i]);
@@ -199,7 +199,7 @@ export function EditProductPage() {
         brand,
         totalQuantity: parsedTotal,
         unitCost: unitCost ? parseFloat(unitCost) : 0,
-        catalogImages: imageUrls,
+        images: imageUrls,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity: parseInt(a.quantity, 10),

@@ -1,3 +1,5 @@
+import "../Global.css";
+
 /**
  * FORECAST
  * Demand forecasting — predict future stock needs based on usage history.
@@ -12,8 +14,17 @@
 
 export function ForecastPage() {
   return (
-    <div>
-      Forecast Page
+    <div className="item-detail-container">
+      <div className="item-detail-header">
+        <div className="breadcrumb">
+          <span className="breadcrumb-link">Tools</span>
+          <span className="breadcrumb-separator">/</span>
+          <span className="breadcrumb-current">Forecast</span>
+        </div>
+        <div className="header-top">
+          <h1 className="header-title">Demand <em>Forecast</em></h1>
+        </div>
+      </div>
     </div>
   );
 }

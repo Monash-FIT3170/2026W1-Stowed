@@ -1,20 +1,28 @@
 import { Layer, Group, Rect, Text } from "react-konva";
-import { CANVAS_CONFIG }            from "../../CanvasConfig";
-import { snapToGrid }               from "../../editor/utils/Snapping";
+import { CANVAS_CONFIG } from "../../CanvasConfig";
+import { snapToGrid } from "../../editor/utils/Snapping";
+import { COLOURS } from "../../../FloorMapStyles";
 
 /**
  * Renders a Konva Layer containing ghost previews of units being dragged on canvas
- * 
- * @param {Object|null}                                             ghostUnit                                               
- * @param {{ unitId: string|null, deltaX: number, deltaY: number }} dragOffsets 
- * @param {Set<string>}                                             selectedIds                                             
- * @param {Object[]}                                                units                                                   
- * @param {boolean}                                                 snapEnabled                                             
- * @param {number}                                                  gridSizePx                                              
+ *
+ * @param {Object|null}                                             ghostUnit
+ * @param {{ unitId: string|null, deltaX: number, deltaY: number }} dragOffsets
+ * @param {Set<string>}                                             selectedIds
+ * @param {Object[]}                                                units
+ * @param {boolean}                                                 snapEnabled
+ * @param {number}                                                  gridSizePx
  *
  * @returns {JSX.Element} A Konva <Layer> containing zero or more ghost groups.
  */
-export function GhostLayer({ ghostUnit, dragOffsets, selectedIds, units, snapEnabled, gridSizePx}) {
+export function GhostLayer({
+  ghostUnit,
+  dragOffsets,
+  selectedIds,
+  units,
+  snapEnabled,
+  gridSizePx,
+}) {
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
   return (
@@ -22,13 +30,32 @@ export function GhostLayer({ ghostUnit, dragOffsets, selectedIds, units, snapEna
       {/* SINGLE DROP GHOST */}
       {ghostUnit && (
         <Group x={ghostUnit.x} y={ghostUnit.y}>
-          <Rect width={ghostUnit.width} height={ghostUnit.height} fill={ghostUnit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
-          <Text width={ghostUnit.width} height={ghostUnit.height} align="center" verticalAlign="middle" text={ghostUnit.name} fontSize={12} fill="white" opacity={0.7}/>
+          <Rect
+            width={ghostUnit.width}
+            height={ghostUnit.height}
+            fill={ghostUnit.fill}
+            stroke={COLOURS.ACCENT}
+            strokeWidth={2}
+            dash={[6, 4]}
+            cornerRadius={4}
+            opacity={0.45}
+          />
+          <Text
+            width={ghostUnit.width}
+            height={ghostUnit.height}
+            align="center"
+            verticalAlign="middle"
+            text={ghostUnit.name}
+            fontSize={12}
+            fill="white"
+            opacity={0.7}
+          />
         </Group>
       )}
 
       {/* MULTI-DRAG GHOSTS */}
-      {dragOffsets.unitId && [...selectedIds].map((id) => {
+      {dragOffsets.unitId &&
+        [...selectedIds].map((id) => {
           const unit = units.find((u) => u.id === id);
           if (!unit) return null;
 
@@ -42,11 +69,29 @@ export function GhostLayer({ ghostUnit, dragOffsets, selectedIds, units, snapEna
 
           return (
             <Group key={`ghost-${id}`} x={ghostX} y={ghostY}>
-              <Rect width={unit.width * px} height={unit.height * px} fill={unit.fill} stroke="white" strokeWidth={2} dash={[6, 4]} cornerRadius={4} opacity={0.45}/>
-              <Text width={unit.width * px} height={unit.height * px} align="center" verticalAlign="middle" text={unit.name} fontSize={12} fill="white" opacity={0.7}/>
+              <Rect
+                width={unit.width * px}
+                height={unit.height * px}
+                fill={unit.fill}
+                stroke={COLOURS.ACCENT}
+                strokeWidth={2}
+                dash={[6, 4]}
+                cornerRadius={4}
+                opacity={0.45}
+              />
+              <Text
+                width={unit.width * px}
+                height={unit.height * px}
+                align="center"
+                verticalAlign="middle"
+                text={unit.name}
+                fontSize={12}
+                fill="white"
+                opacity={0.7}
+              />
             </Group>
           );
-      })}
+        })}
     </Layer>
   );
 }

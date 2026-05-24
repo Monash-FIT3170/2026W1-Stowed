@@ -213,7 +213,7 @@ export function CreateProductPage() {
         totalQuantity: parsedTotal,
         reorderAt: reorderAt ? parseInt(reorderAt, 10) : undefined,
         location,
-        catalogImages: imageUrls,           
+        images: imageUrls,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity: parseInt(a.quantity, 10),
@@ -236,10 +236,10 @@ export function CreateProductPage() {
         <div className="item-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-            <span className="breadcrumb-link">Inventory</span>
-            {" "}&nbsp;/{" "}&nbsp;
-            <span className="breadcrumb-current">Create product</span>
-          </div>
+              <span className="breadcrumb-link">Inventory</span>
+              {" "}&nbsp;/{" "}&nbsp;
+              <span className="breadcrumb-current">Create product</span>
+            </div>
           </div>
           <h1 className="header-title">
             Create <em>Product</em>

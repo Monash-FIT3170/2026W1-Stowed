@@ -66,7 +66,7 @@ export function InventoryPage() {
 
         {recentItems.map((item) => (
           <div key={item._id} className="table-row">
-            <ItemThumbnail photoUrl={item.photoUrl} name={item.name} />
+            <ItemThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
             <span>
               <Link to={`/inventory/${item._id}`} className="item-name-link">
                 {item.name}

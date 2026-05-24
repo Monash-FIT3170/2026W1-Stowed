@@ -45,6 +45,9 @@ export function CanvasToolbar({
 
   const toolButtonStyle = (tool) => ({
     ...buttonStyles.base,
+    padding: "6px 10px",
+    fontSize: 11,
+    borderRadius: 8,
     ...(activeTool === tool ? buttonStyles.active : buttonStyles.secondary),
   });
 
