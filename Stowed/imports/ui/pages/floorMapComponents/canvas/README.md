@@ -28,6 +28,7 @@ src/
 |   |   |__ UnitLayer.jsx        
 |   |   |__ TransformerLayer.jsx 
 |   |   |__ GhostLayer.jsx       
+|   |   |__ LowStockLayer.jsx    - Hover, Click handlers, colour overlay
 |   |__ units/
 |       |__ StorageUnit.jsx      
 |
@@ -43,15 +44,19 @@ src/
 FloorMapPage
 |   Wraps everything in EditorProvider
 |   Layout only and no local state
+|   Owns: tooltip state (hover popup)
+|   Renders: low stock slide-out panel
 |
 |__ EditorProvider  (EditorContext.jsx)
         Owns: units, activeTool, floorSize, canvasSettings, undo/redo history, pendingUnit
+              lowStockByUnitId, selectedUnit, isPanelOpen
         Exposes everything via useEditor()
         |
         |__ CanvasToolbar     - reads activeTool, undo/redo, save/load
         |__ StoragePanel      
         |__ Canvas
-                Reads from useEditor(): units, activeTool, floorSize, canvasSettings, etc.
+                Reads from useEditor(): units, activeTool, floorSize, canvasSettings,
+                                        lowStockByUnitId, selectedUnit, isPanelOpen
                 Owns via useReducer(): selectedIds, ghostUnit, dragOffsets,
                                        scale, stagePos, displaySize
                 |
@@ -61,6 +66,7 @@ FloorMapPage
                 |__ UnitLayer           
                 |__ TransformerLayer    
                 |__ GhostLayer          
+                |__ LowStockLayer       - colour overlay, hover callbacks, click to open panel
 ```
 
 ---
@@ -80,6 +86,9 @@ Shared across the whole page. Any component can read it via `useEditor()`.
 | `canvasSettings` | Grid interval, showGrid, snapToGrid toggles |
 | `pendingUnit` | Unit template armed for placement |
 | `historyRef` | Undo/redo stack (ref, not state, to avoid extra renders) |
+| `lowStockByUnitId` | Map of `unitId -> [{ product, quantity, threshold, isLow, locationName }]` derived from products/productRecords pub/sub |
+| `selectedUnit` | The unit clicked in view mode — triggers slide-out panel |
+| `isPanelOpen` | Whether the low stock slide-out panel is open |
 
 ### Canvas UI State - `editorReducer`
 Local to Canvas. Controls how the canvas looks and responds during interaction.
@@ -92,6 +101,7 @@ Local to Canvas. Controls how the canvas looks and responds during interaction.
 | `scale` | Current zoom level |
 | `stagePos` | Current pan position of the Stage |
 | `displaySize` | Measured pixel size of the canvas container |
+
 
 ---
 
@@ -144,3 +154,61 @@ node.x() / px
 ```
 
 `CANVAS_CONFIG` is exported from `components/Canvas.jsx` and imported wherever the conversion is needed.
+
+---
+
+## MVP Feature 5 — Low Stock Visual Alerts (Selena, Sprint 2)
+
+### Overview
+When in **view mode**, storage units on the canvas are colour coded based on their stock status, and users can hover or click to see more details.
+
+
+### Behaviour
+| Colour | Meaning |
+|---|---|
+| Red overlay | One or more products in this unit are below their reorder threshold |
+| Green overlay | All products in this unit are in stock |
+| Grey overlay | No products are assigned to this unit |
+
+**Hover tooltip** — appears next to the cursor when hovering over a unit:
+- Unit name
+- If low stock: list of low stock items with quantity left and location name
+- If all stocked: "All items on this shelf are stocked"
+- If empty: "No items on this shelf"
+
+**Click slide-out panel** — opens on the right side of the screen when a unit is clicked:
+- Storage unit name and status badge
+- Low stock items listed in red with quantity and minimum threshold
+- In stock items listed in green
+- "No products assigned" message if unit is empty
+- Close button (✕) to dismiss
+
+
+### Files Changed
+| File | What Changed |
+|---|---|
+| `editor/EditorContext.jsx` | Added `useTracker` subscriptions to `products`, `productRecords`, `locations.all`. Added `lowStockByUnitId` computed map. Added `selectedUnit` and `isPanelOpen` state exposed via `useEditor()` |
+| `components/layers/LowStockLayer.jsx` | **New file** — renders colour overlay `Rect` on each unit, fires `onHover`/`onHoverEnd` callbacks with item data, opens slide-out panel on click |
+| `components/Canvas.jsx` | Imported and added `<LowStockLayer />` to the Konva `<Stage>`. Added `onUnitHover` and `onUnitHoverEnd` props |
+| `hooks/UseCanvasHandlers.jsx` | Changed view mode unit click to call `setSelectedUnit` and `setIsPanelOpen` instead of navigating to `/storage-unit/:id` |
+| `FloorMapPage.jsx` | Added `tooltip` state, hover tooltip DOM element, and slide-out panel UI |
+| `FloorMapPage.css` | Added styles for `.low-stock-panel`, `.panel-header`, `.panel-item`, `.panel-status-badge` and all related classes |
+
+### Data Chain (MongoDB)
+Once integration is complete, the data will flow as follows:
+
+```
+StorageUnit (_id)
+  → StorageLocation (storageUnitId)
+    → ProductRecord (locationId)
+      → Product (totalQuantity, reorderAt)
+```
+
+### Mock Data Notice
+Canvas units are not yet linked to `StorageLocations` in MongoDB (pending Team 1/2 integration). A mock data fallback exists in `LowStockLayer.jsx` under `MOCK_LOW_STOCK` that maps unit names to simulated stock data.
+
+**To integrate real data once it is ready:**
+1. Remove `MOCK_LOW_STOCK` constant from `LowStockLayer.jsx`
+2. Remove the `getItemsForUnit` mock fallback — use `lowStockByUnitId[unit._id]` directly
+3. Remove `mockItems` from the `setSelectedUnit` call
+4. Update `FloorMapPage.jsx` — change `selectedUnit?.mockItems` back to `lowStockByUnitId?.[selectedUnit?._id]`

@@ -25,7 +25,6 @@ const LocationsPage = lazy(() =>
 );
 
 export function App() {
-  // automatically keeps track of the currently logged in user and updates whenever the login status changes
   const { user, loggingIn } = useTracker(() => {
     return {
       user: Meteor.user(),
@@ -35,25 +34,23 @@ export function App() {
 
   const isLoggedIn = !!user;
 
-  // gets the current user's role for route authorisation
   const role = user?.profile?.role ?? null;
   const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/inventory");
 
   return (
     <BrowserRouter>
-      <div className="flex h-screen overflow-hidden bg-white">
-        {/* only show navigation after authentication */}
+      <div
+        className="flex h-screen overflow-hidden"
+        style={{ backgroundColor: "var(--bg-primary)" }}
+      >
         {isLoggedIn && <Sidebar />}
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{ backgroundColor: "var(--bg-primary)" }}
+        >
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />
-            {/* protected routes:
-                - unauthenticated users are redirected to login
-                - authenticated users must also pass route permission checks
-                - unauthorised users are redirected back to login page
-            */}
-            {/* prevent logged-in users from revisiting the login page */}
             <Route
               path="/login"
               element={isLoggedIn ? <Navigate to="/" replace /> : <Login />}
@@ -75,12 +72,8 @@ export function App() {
             <Route
               path="/inventory/new"
               element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/create-item") ? (
-                    <CreateProductPage />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
+                canAccessInventory ? (
+                  <CreateProductPage />
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -89,12 +82,8 @@ export function App() {
             <Route
               path="/inventory/:productId/edit"
               element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/edit-item") ? (
-                    <EditProductPage />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
+                canAccessInventory ? (
+                  <EditProductPage />
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -103,12 +92,8 @@ export function App() {
             <Route
               path="/inventory/:productId"
               element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/item-detail") ? (
-                    <ItemDetailPage />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
+                canAccessInventory ? (
+                  <ItemDetailPage />
                 ) : (
                   <Navigate to="/" replace />
                 )
@@ -130,7 +115,7 @@ export function App() {
               }
             />
             <Route
-              path="/floor-map/:floorMapId"
+              path="/floor-map/:floorMapId?"
               element={
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/floor-map") ? (

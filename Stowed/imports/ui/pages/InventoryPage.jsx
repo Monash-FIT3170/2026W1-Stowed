@@ -6,6 +6,7 @@ import { Products } from "../../api/products/collections";
 import { ItemThumbnail } from "../components/ItemThumbnail";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryPage.css";
+import "../Global.css";
 
 export function InventoryPage() {
   const { items, loading } = useTracker(() => {
@@ -27,7 +28,11 @@ export function InventoryPage() {
 
   return (
     <div className="inventory-page-container">
-      Inventory Page
+      <div className="breadcrumb">
+        <span className="breadcrumb-link">Inventory</span>
+        {" "}&nbsp;/{" "}&nbsp;
+        <span className="breadcrumb-current">Dashboard</span>
+      </div>
       <h1 className="page-heading">Hello, User</h1>
       <h2 className="page-subheading">Here's what's stocked.</h2>
       <div className="stats-container">
@@ -61,7 +66,7 @@ export function InventoryPage() {
 
         {recentItems.map((item) => (
           <div key={item._id} className="table-row">
-            <ItemThumbnail photoUrl={item.photoUrl} name={item.name} />
+            <ItemThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
             <span>
               <Link to={`/inventory/${item._id}`} className="item-name-link">
                 {item.name}

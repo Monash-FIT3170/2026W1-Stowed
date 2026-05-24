@@ -1,5 +1,4 @@
-// imports/api/locations/schemas.js
-import SimpleSchema from 'simpl-schema';
+import SimpleSchema from "simpl-schema";
 
 export const ProductSchema = new SimpleSchema({
   orgId: {
@@ -88,11 +87,11 @@ export const ProductSchema = new SimpleSchema({
 
   images: {
     type: Array,
+    optional: true,
   },
   "images.$": {
-    type: String, 
+    type: String,
   },
-
 });
 
 export const ProductRecordSchema = new SimpleSchema({
