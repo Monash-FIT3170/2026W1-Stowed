@@ -50,7 +50,7 @@ export function Sidebar() {
   const currentUser = useTracker(() => Meteor.user());
   const role = currentUser?.profile?.role;
   const isLoggedIn = !!currentUser;
-  const username = currentUser?.username;
+  const username = currentUser?.profile?.username;
   const navigate = useNavigate();
 
   const [orgSubReady, setOrgSubReady] = useState(false);
