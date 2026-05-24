@@ -120,89 +120,118 @@ Meteor.methods({
     return userId;
   },
 
-  // user registration method, first user becomes owner
-  // can be modified to facilitate org id: e.g. backend automatically creates and assigns an organisation ID for 
-  // each registration (the user who registered becomes the owner), except when the user provides an existing known 
-  // organisation ID, in which case they become a standard user of that organisation
-  "users.register": async function ({ username, email, password, orgCode = null }) {
-    check(username, String);
-    check(email, String);
-    check(password, String);
-    if (orgCode !== null) check(orgCode, String);
-    // determine role based on existing users
-    const userCount = await Meteor.users.find().countAsync();
-    let organisationId;
-    let role;
-    
-    if (userCount === 0) {
-      // First user becomes owner and creates a default organisation
+// user registration method, first user becomes owner
+// can be modified to facilitate org id: e.g. backend automatically creates and assigns an organisation ID for 
+// each registration (the user who registered becomes the owner), except when the user provides an existing known 
+// organisation ID, in which case they become a standard user of that organisation
+"users.register": async function ({ username, email, password, orgCode = null }) {
+  check(username, String);
+  check(email, String);
+  check(password, String);
+  if (orgCode !== null) check(orgCode, String);
+
+  const userCount = await Meteor.users.find().countAsync();
+  let organisationId;
+  let role;
+
+  if (userCount === 0) {
+    // First user ever → Owner, creates organisation
+    role = ROLES.OWNER;
+    const code = (orgCode || 'default').toLowerCase();
+    const now = new Date();
+    organisationId = await Organisations.insertAsync({
+      name: code,
+      code: code,
+      createdAt: now,
+      updatedAt: now,
+    });
+  } else {
+    // Subsequent registrations
+    if (!orgCode) {
+      throw new Meteor.Error('org-required', 'Please provide an organisation code.');
+    }
+    const codeLower = orgCode.toLowerCase();
+    let org = await Organisations.findOneAsync({ code: codeLower });
+
+    if (org) {
+      // Existing organisation → join as Standard user
+      organisationId = org._id;
+      role = ROLES.STANDARD;
+    } else {
+      // New organisation → create it and become its Owner
       role = ROLES.OWNER;
-      const orgCodeToUse = (orgCode || 'default').toLowerCase();
       const now = new Date();
       organisationId = await Organisations.insertAsync({
-        name: orgCodeToUse,
-        code: orgCodeToUse,
+        name: codeLower,
+        code: codeLower,
         createdAt: now,
         updatedAt: now,
       });
-    } else {
-      // Subsequent self‑registrations must provide a valid orgCode
-      role = ROLES.STANDARD;
-      if (!orgCode) {
-        throw new Meteor.Error('org-required', 'Please provide an organisation code.');
-      }
-      const org = await Organisations.findOneAsync({ code: orgCode.toLowerCase() });
-      if (!org) {
-        throw new Meteor.Error('org-not-found', 'Organisation not found.');
-      }
-      organisationId = org._id;
     }
+  }
 
-    const userId = Accounts.createUser({
-      username,
-      email,
-      password,
-      profile: {
-        role,
-        organisationId,
-      },
-    });
-    return userId;
-  },
+  const userId = Accounts.createUser({
+    username,
+    email,
+    password,
+    profile: {
+      role,
+      organisationId,
+    },
+  });
+  return userId;
+},
 
   // delete accounts method for owner 
-  "users.delete": async function ({userId}) {
-    check(userId, String);
+"users.delete": async function ({ userId }) {
+  check(userId, String);
 
   await requirePermission(this.userId, "delete-users");
+
+ // fetch the caller's organisation
+  const caller = await Meteor.users.findOneAsync(
+    this.userId,
+    { fields: { 'profile.organisationId': 1 } }
+  );
+
+  const target = await Meteor.users.findOneAsync(
+    userId,
+    { fields: { 'profile.organisationId': 1 } }
+  );
+  if (!target || target.profile.organisationId !== caller.profile.organisationId) {
+    throw new Meteor.Error(
+      'forbidden',
+      'You can only delete users within your own organisation.'
+    );
+  }
+
   await Meteor.users.removeAsync(userId);
   return true;
-  },
+},
+// check organisation method
+"users.checkOrganisation": async function ({ orgCode, login }) {
+  check(orgCode, String);
+  check(login, String);
 
-  // check organisation method
-  "users.checkOrganisation": async function ({ orgCode, login }) {
-    check(orgCode, String);
-    check(login, String);
+  // find the organisation
+  const org = await Organisations.findOneAsync({ code: orgCode.toLowerCase() });
+  if (!org) {
+    throw new Meteor.Error('org-not-found', 'Organisation does not exist.');
+  }
 
-    // find the organisation
-    const org = await Organisations.findOneAsync({ code: orgCode.toLowerCase() });
-    if (!org) {
-      throw new Meteor.Error('org-not-found', 'Organisation does not exist.');
-    }
+  // Check that a user with this email/username exists in that organisation
+  const user = await Meteor.users.findOneAsync({
+    'profile.organisationId': org._id,
+    $or: [
+      { 'emails.address': login.toLowerCase() },
+      { username: login },
+    ],
+  });
 
-    // Check that a user with this email/username exists in that organisation
-    const user = await Meteor.users.findOneAsync({
-      'profile.organisationId': org._id,
-      $or: [
-        { 'emails.address': login.toLowerCase() },
-        { username: login },
-      ],
-    });
+  if (!user) {
+    throw new Meteor.Error('user-not-found', 'No account found in this organisation.');
+  }
 
-    if (!user) {
-      throw new Meteor.Error('user-not-found', 'No account found in this organisation.');
-    }
-
-    return true;
-  },
+  return true;
+},
 });

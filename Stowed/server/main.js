@@ -100,15 +100,20 @@ Meteor.startup(async () => {
 });
 
 Meteor.publish('allUsers', async function () {
-  // allow only if the logged-in user has owner role
   if (!this.userId) return this.ready();
-  const user = await Meteor.users.findOneAsync(
+
+  const currentUser = await Meteor.users.findOneAsync(
     this.userId,
-    { fields: { 'profile.role': 1 } }
+    { fields: { 'profile.role': 1, 'profile.organisationId': 1 } }
   );
-  
-  if (!user || user.profile.role < ROLES.OWNER) {
+
+  if (!currentUser || currentUser.profile.role < ROLES.OWNER) {
     throw new Meteor.Error('unauthorized', 'Owners only');
   }
-  return Meteor.users.find({}, { fields: { username: 1, emails: 1 } });
+
+  // Only users from the same organisation
+  return Meteor.users.find(
+    { 'profile.organisationId': currentUser.profile.organisationId },
+    { fields: { username: 1, emails: 1, 'profile.role': 1 } }
+  );
 });
