@@ -149,12 +149,12 @@ export function InventoryListPage() {
         <div className="breadcrumb">
           <Link to="/" className="breadcrumb-link">Inventory</Link>
           <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-current">All items</span>
+          <span className="breadcrumb-current">All products</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">All <em>Items</em></h1>
+          <h1 className="header-title">All <em>Products</em></h1>
           <Link to="/inventory/new">
-            <button className="btn-primary">+ Add item</button>
+            <button className="btn-primary">+ Add product</button>
           </Link>
         </div>
       </div>
