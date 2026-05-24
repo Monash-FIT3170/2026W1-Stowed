@@ -1,7 +1,7 @@
 import assert from "assert";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ItemThumbnail } from "../imports/ui/pages/InventoryListPage";
+import { ItemThumbnail } from "../imports/ui/components/ItemThumbnail";
 import { mockItems } from "../imports/api/mockItems";
 
 describe("item thumbnail", function () {
