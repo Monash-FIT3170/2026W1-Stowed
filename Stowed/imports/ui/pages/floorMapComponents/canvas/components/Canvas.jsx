@@ -5,24 +5,19 @@ import { useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
-import { CANVAS_CONFIG } from "../CanvasConfig"
+import { CANVAS_CONFIG } from "../CanvasConfig";
 
 import { GridLayer } from "./layers/GridLayer";
 import { UnitLayer } from "./layers/UnitLayer";
 import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
+import { LowStockLayer } from "./layers/LowStockLayer";
 
-/**
- * Root canvas comonent. Owns the Konva Stage and composes all layers.
- * Canvas local UI state (selection, drag, zoom, pan) is managed via canvasReducer,
- * while persistent data lives in EditorContext.
- * 
- * @param {React.CSSProperties} style - Forwarded to the Konva Stage element. 
- */
 export function Canvas({
   style,
   isCanvasEditMode,
   setSelectedStorageUnitId,
+  setTooltip,
 }) {
   const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
 
@@ -34,18 +29,14 @@ export function Canvas({
   const snapEnabled = canvasSettings?.snapToGrid ?? true;
   const gridSizePx = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
 
-  // REFS 
   const stageRef = useRef(null);
   const wrapperRef = useRef(null);
   const containerRef = useRef(null);
   const groupRefs = useRef({});
 
-  // REDUCER 
   const [state, dispatch] = useReducer(canvasReducer, initialCanvasState);
   const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize, clipboard } = state;
 
-
-  // HANDLERS - centralised in UseCanvasHandlers to keep this file focused on composition
   const {
     getGroupRef,
     handleDragOver,
@@ -76,70 +67,96 @@ export function Canvas({
     activeTool,
     wrapperRef,
     clipboard,
-    isCanvasEditMode
+    isCanvasEditMode,
   });
 
-  // ON MOUNT USE EFFECT
   useEffect(() => {
-    // MEASURE CONTAINER TO FILL SCREEN FULLY
     const el = containerRef.current;
     if (!el) return;
-    const { width, height } = el.getBoundingClientRect();
-    dispatch({ type: CANVAS_ACTIONS.SET_DISPLAY_SIZE, payload: { width, height } });
 
-    // CENTER CANVAS ON SCREEN
-    const centeredX = (width - floorSize.width * scale) / 2;
-    const centeredY = (height - floorSize.height * scale) / 2;
-    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: { x: centeredX, y: centeredY } })
+    function measure() {
+      const { width, height } = el.getBoundingClientRect();
+      if (width === 0 || height === 0) return; // guard — never dispatch zero dimensions
+      dispatch({ type: CANVAS_ACTIONS.SET_DISPLAY_SIZE, payload: { width, height } });
+      const centeredX = (width - floorSize.width * scale) / 2;
+      const centeredY = (height - floorSize.height * scale) / 2;
+      dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: { x: centeredX, y: centeredY } });
+    }
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
-  // EVERY CHANGE USE EFFECT
   useEffect(() => {
-    // MANAGE KEY BINDINGS
     function onKeyDown(e) {
       if (e.key === "c" && (e.ctrlKey || e.metaKey)) handleCopy();
       if (e.key === "v" && (e.ctrlKey || e.metaKey)) handlePaste();
       if (e.key.toLowerCase() === "delete" || e.key.toLowerCase() === "backspace") handleDelete();
     }
-
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleCopy, handlePaste, handleDelete]);
 
-
-  // RENDER 
   return (
     <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{ width: "100%", height: "100%" }}>
-
       <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
 
-        <Stage ref={stageRef} width={displaySize.width} height={displaySize.height} scaleX={scale} scaleY={scale} onWheel={handleWheel} style={style} draggable x={stagePos.x} y={stagePos.y} onDragEnd={handleDragEndGrid} onClick={handleStageClick}>
+        {/* Only mount Stage once we have real pixel dimensions */}
+        {displaySize.width > 0 && displaySize.height > 0 && (
+          <Stage
+            ref={stageRef}
+            width={displaySize.width}
+            height={displaySize.height}
+            scaleX={scale}
+            scaleY={scale}
+            onWheel={handleWheel}
+            style={style}
+            draggable
+            x={stagePos.x}
+            y={stagePos.y}
+            onDragEnd={handleDragEndGrid}
+            onClick={handleStageClick}
+          >
+            <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
-          <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
+            <UnitLayer
+              units={units}
+              selectedIds={selectedIds}
+              activeTool={activeTool}
+              getGroupRef={getGroupRef}
+              onUnitClick={(unit, e) => {
+                setSelectedStorageUnitId?.(unit._id || unit.id);
+                handleUnitClick(unit, e);
+              }}
+              onDragMove={handleDragMove}
+              onDragEnd={handleDragEnd}
+              onTransformEnd={handleTransformEnd}
+            />
 
-          <UnitLayer
-            units={units}
-            selectedIds={selectedIds}
-            activeTool={activeTool}
-            getGroupRef={getGroupRef}
-            onUnitClick={(unit, e) => {
-              setSelectedStorageUnitId?.(unit._id || unit.id);
-              console.log("Selected storage unit:", unit._id || unit.id);
-              handleUnitClick(unit, e);
-            }}
-            onDragMove={handleDragMove}
-            onDragEnd={handleDragEnd}
-            onTransformEnd={handleTransformEnd}
-          />
+            <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef} />
 
-          <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef} />
+            <GhostLayer
+              ghostUnit={ghostUnit}
+              dragOffsets={dragOffsets}
+              selectedIds={selectedIds}
+              units={units}
+              snapEnabled={snapEnabled}
+              gridSizePx={gridSizePx}
+            />
 
-          <GhostLayer ghostUnit={ghostUnit} dragOffsets={dragOffsets} selectedIds={selectedIds} units={units} snapEnabled={snapEnabled} gridSizePx={gridSizePx} />
-
-        </Stage>
+            <LowStockLayer
+              units={units}
+              isCanvasEditMode={isCanvasEditMode}
+              onHover={(data) => setTooltip?.(data)}
+              onHoverEnd={() => setTooltip?.(null)}
+              onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+            />
+          </Stage>
+        )}
 
       </div>
-
     </div>
   );
 }

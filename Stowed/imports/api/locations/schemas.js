@@ -172,12 +172,6 @@ export const StorageLocationSchema = new SimpleSchema({
     type: String,
   },
 
-  "storedItems.$.sku": {
-    type: String,
-    optional: true,
-    max: 50,
-  },
-
   storedItems: {
     type: Array,
     optional: true,
@@ -210,10 +204,21 @@ export const StorageLocationSchema = new SimpleSchema({
     max: 100,
   },
 
+  code: {
+    type: String,
+    optional: true,
+    max: 50
+  },
+
   imageUrl: {
     type: String,
     optional: true,
     max: 500,
+  },
+
+  fill: {
+    type: String,
+    optional: true,
   },
 
   createdAt: Date,

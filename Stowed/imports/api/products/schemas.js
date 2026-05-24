@@ -44,15 +44,6 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
   },
 
-  catalogImages: {
-    type: Array,
-    optional: true,
-  },
-
-  "catalogImages.$": {
-    type: String,
-  },
-
   qrCode: {
     type: String,
     optional: true,
@@ -66,11 +57,6 @@ export const ProductSchema = new SimpleSchema({
   status: {
     type: String,
     optional: true,
-  },
-  imageUrl: {
-    type: String,
-    optional: true,
-    max: 500,
   },
 
   totalQuantity: {
@@ -88,15 +74,10 @@ export const ProductSchema = new SimpleSchema({
 
   images: {
     type: Array,
+    optional: true,
   },
   "images.$": {
     type: String,
-  },
-
-  imageUrl: {
-    type: String,
-    optional: true,
-    max: 500,
   },
 });
 

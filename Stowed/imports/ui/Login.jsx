@@ -62,7 +62,7 @@ export const Login = () => {
       <section className="auth-shell" aria-label="Login">
         <div className="auth-brand-panel">
           <p className="auth-kicker">Stocktake / Floor maps</p>
-          <h1>Welcome back to <span>Stowed</span></h1>
+          <h1>Welcome back to <em>Stowed</em></h1>
           <p>
             Map your shop or home storage, scan QR labels, and keep every item easy to find.
           </p>
@@ -88,6 +88,7 @@ export const Login = () => {
                 value={orgCode}
                 onChange={(e) => setOrgCode(e.target.value)}
                 required
+                autoComplete="organization"
                 className="auth-input"
               />
             </label>
@@ -100,6 +101,7 @@ export const Login = () => {
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 required
+                autoComplete="username"
                 className="auth-input"
               />
             </label>
@@ -112,6 +114,7 @@ export const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="auth-input"
               />
             </label>
