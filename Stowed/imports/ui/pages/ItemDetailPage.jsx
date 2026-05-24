@@ -12,6 +12,8 @@ import {
 import "./ItemDetailPage.css";
 import "../Global.css";
 
+export const ITEM_DETAIL_BACK_PATH = "/inventory/list";
+
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
     Meteor.call(methodName, params, (error, result) => {
@@ -120,7 +122,7 @@ export function ItemDetailView({
         <div className="item-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              <Link to="/inventory/list" className="breadcrumb-link">
+              <Link to={ITEM_DETAIL_BACK_PATH} className="breadcrumb-link">
                 Inventory
               </Link>
               <span className="breadcrumb-separator">/</span>
@@ -311,7 +313,10 @@ export function ItemDetailView({
         </div>
 
         <div className="create-product-footer">
-          <button className="btn-secondary" onClick={() => navigate(-1)}>
+          <button
+            className="btn-secondary"
+            onClick={() => navigate(ITEM_DETAIL_BACK_PATH)}
+          >
             Back
           </button>
           <button
