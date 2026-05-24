@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { storagePanelStyles } from "./FloorMapStyles";
+import { modalStyles, storagePanelStyles } from "./FloorMapStyles";
 import { UnitCard } from "./UnitCard";
 
 // --- CONSTANTS ---
