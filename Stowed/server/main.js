@@ -34,11 +34,14 @@ async function seedProducts(seedOrgId) {
   if (count > 0) return;
 
   const now = new Date();
-  const add = ({ name, description, totalQuantity }) =>
+  const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
+      category,
+      brand,
+      unitCost,
       totalQuantity,
       images: [],
       createdAt: now,
@@ -48,51 +51,81 @@ async function seedProducts(seedOrgId) {
   await add({
     name: "Lab Safety Goggles",
     description: "ANSI-rated chemical splash goggles for laboratory use.",
+    category: "Lab Safety",
+    brand: "3M",
+    unitCost: 12.50,
     totalQuantity: 60,
   });
   await add({
     name: "Nitrile Gloves (Box of 100)",
     description: "Powder-free nitrile examination gloves, medium size.",
+    category: "Lab Safety",
+    brand: "Ansell",
+    unitCost: 18.90,
     totalQuantity: 40,
   });
   await add({
     name: "USB-A to USB-C Cable",
     description: "1.8m braided USB-A to USB-C charging and data cable.",
+    category: "IT Accessories",
+    brand: "Belkin",
+    unitCost: 14.95,
     totalQuantity: 35,
   });
   await add({
     name: "HDMI Cable (2m)",
     description: "High-speed HDMI 2.0 cable for display connections.",
+    category: "IT Accessories",
+    brand: "Belkin",
+    unitCost: 19.95,
     totalQuantity: 28,
   });
   await add({
     name: "Wireless Keyboard",
     description: "Compact wireless keyboard with USB receiver.",
+    category: "IT Equipment",
+    brand: "Logitech",
+    unitCost: 49.00,
     totalQuantity: 15,
   });
   await add({
     name: "Ethernet Patch Cable (Cat6)",
     description: "2m Cat6 RJ45 patch cable for network connections.",
+    category: "IT Accessories",
+    brand: "Belkin",
+    unitCost: 8.50,
     totalQuantity: 50,
   });
   await add({
     name: "Whiteboard Markers (Pack of 12)",
     description: "Assorted colour dry-erase markers with chisel tip.",
+    category: "Stationery",
+    brand: "Artline",
+    unitCost: 11.20,
     totalQuantity: 30,
   });
   await add({
     name: "A4 Copy Paper (Ream)",
     description: "80gsm A4 copy paper, 500 sheets per ream.",
+    category: "Stationery",
+    brand: "Reflex",
+    unitCost: 6.95,
     totalQuantity: 120,
   });
   await add({
     name: "Extension Power Board (6-outlet)",
     description: "6-outlet surge-protected power board with 1.8m cord.",
+    category: "Electrical",
+    brand: "HPM",
+    unitCost: 34.00,
     totalQuantity: 22,
   });
   await add({
     name: "First Aid Kit",
     description: "Workplace first aid kit compliant with AS2675 standards.",
+    category: "Health & Safety",
+    brand: "St John",
+    unitCost: 55.00,
     totalQuantity: 8,
   });
 }
