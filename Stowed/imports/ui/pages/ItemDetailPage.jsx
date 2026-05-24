@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products, ProductRecords } from "../../api/products/collections";
@@ -9,6 +9,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "../../api/locations/collections";
+import { uploadImageToServer } from "/imports/api/upload";
 import "./ItemDetailPage.css";
 import "../Global.css";
 
@@ -43,7 +44,7 @@ function buildLocationLabel(
 
   return [site?.name, floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
-    .join(" → ");
+    .join(" -> ");
 }
 
 export function ItemDetailView({
@@ -58,6 +59,10 @@ export function ItemDetailView({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageUrls, setImageUrls] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   if (!item) {
@@ -68,13 +73,15 @@ export function ItemDetailView({
   const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
   const reorderAt = item.reorderAt ?? 10;
   const galleryImages =
-    Array.isArray(item.images) && item.images.length
-      ? item.images
-      : Array.isArray(item.catalogImages) && item.catalogImages.length
-        ? item.catalogImages
-        : item.photoUrl
-          ? [item.photoUrl]
-          : [];
+    imageUrls.length > 0
+      ? imageUrls
+      : Array.isArray(item.images) && item.images.length
+        ? item.images
+        : Array.isArray(item.catalogImages) && item.catalogImages.length
+          ? item.catalogImages
+          : item.photoUrl
+            ? [item.photoUrl]
+            : [];
   const qrCode = item.qrCode || item.photoUrl || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
@@ -99,6 +106,21 @@ export function ItemDetailView({
       ]
       : [];
 
+  useEffect(() => {
+    const initialImages =
+      item?.images?.length
+        ? item.images
+        : Array.isArray(item.catalogImages) && item.catalogImages.length
+          ? item.catalogImages
+          : item.photoUrl
+            ? [item.photoUrl]
+            : [];
+    setImageUrls(initialImages);
+    if (initialImages.length > 0) {
+      setSelectedImageIndex(0);
+    }
+  }, [item]);
+
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
@@ -109,6 +131,79 @@ export function ItemDetailView({
       setIsDeleting(false);
     }
   };
+
+  function imagesHaveChanged() {
+    const sourceImages =
+      item?.images?.length
+        ? item.images
+        : Array.isArray(item.catalogImages) && item.catalogImages.length
+          ? item.catalogImages
+          : item.photoUrl
+            ? [item.photoUrl]
+            : [];
+    if (sourceImages.length !== imageUrls.length) return true;
+    return imageUrls.some((url, index) => url !== sourceImages[index]);
+  }
+
+  async function saveImageChanges() {
+    if (!imagesHaveChanged()) return;
+    try {
+      await callMethod("products.setImages", {
+        productId,
+        images: imageUrls,
+      });
+    } catch (error) {
+      console.error("Failed to save product images:", error);
+      throw error;
+    }
+  }
+
+  async function handleUpdateClick() {
+    if (imagesHaveChanged()) {
+      await saveImageChanges();
+    }
+    navigate(`/inventory/${productId}/edit`);
+  }
+
+  async function handleImageSelect(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file.");
+      return;
+    }
+
+    setUploadError("");
+    setUploadingImage(true);
+    try {
+      const url = await uploadImageToServer(file);
+      setImageUrls((prev) => {
+        const next = [...prev, url];
+        if (prev.length === 0) {
+          setSelectedImageIndex(0);
+        }
+        return next;
+      });
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  function removeImage(index) {
+    setImageUrls((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      setSelectedImageIndex((current) => {
+        if (index === current) return 0;
+        if (index < current) return current - 1;
+        return current;
+      });
+      return next;
+    });
+  }
 
   const isLowStock = item.status && item.status.includes("CRITICAL");
   const statusLabel = isLowStock ? "Low stock" : "In stock";
@@ -197,7 +292,7 @@ export function ItemDetailView({
                     <label>Unit cost</label>
                     <input
                       type="text"
-                      value={hasUnitCost ? `$${unitCost.toFixed(2)}` : "—"}
+                      value={hasUnitCost ? `$${unitCost.toFixed(2)}` : "-"}
                       readOnly
                       className="form-input"
                     />
@@ -224,7 +319,7 @@ export function ItemDetailView({
                   </div>
                   <div className="form-group">
                     <label>Location</label>
-                    <div className="form-tag">{item.location || "—"}</div>
+                    <div className="form-tag">{item.location || "-"}</div>
                   </div>
                 </div>
               </div>
@@ -274,23 +369,53 @@ export function ItemDetailView({
               </h2>
               <div className="section-content">
                 <div className="main-image-container">
-                  <img
-                    src={galleryImages[selectedImageIndex]}
-                    alt={item.name}
-                    className="main-image"
-                  />
+                  {galleryImages.length > 0 ? (
+                    <img
+                      src={galleryImages[selectedImageIndex]}
+                      alt={item.name}
+                      className="main-image"
+                    />
+                  ) : (
+                    <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                      {uploadingImage ? "Uploading..." : "No image uploaded"}
+                    </span>
+                  )}
                 </div>
                 <div className="thumbnail-gallery">
                   {galleryImages.map((img, index) => (
-                    <button
-                      key={index}
-                      className={`thumbnail ${selectedImageIndex === index ? "active" : ""}`}
-                      onClick={() => setSelectedImageIndex(index)}
-                    >
-                      <img src={img} alt={`${item.name} ${index + 1}`} />
-                    </button>
+                    <div key={index} className="thumbnail-wrapper">
+                      <button
+                        type="button"
+                        className={`thumbnail ${selectedImageIndex === index ? "active" : ""}`}
+                        onClick={() => setSelectedImageIndex(index)}
+                      >
+                        <img src={img} alt={`${item.name} ${index + 1}`} />
+                      </button>
+                      <button
+                        type="button"
+                        className="thumbnail-remove"
+                        onClick={() => removeImage(index)}
+                        aria-label="Remove image"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
-                  <button className="thumbnail add-btn">+</button>
+                  <button
+                    type="button"
+                    className="thumbnail add-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                  >
+                    {uploadingImage ? "..." : "+"}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    style={{ display: "none" }}
+                  />
                 </div>
               </div>
             </div>
@@ -318,7 +443,8 @@ export function ItemDetailView({
           </button>
           <button
             className="btn-primary"
-            onClick={() => navigate(`/inventory/${productId}/edit`)}
+            onClick={handleUpdateClick}
+            disabled={uploadingImage}
           >
             Update
           </button>
@@ -352,7 +478,7 @@ export function ItemDetailView({
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
-                {isDeleting ? "Deleting…" : "Confirm Delete"}
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
               </button>
             </div>
           </div>

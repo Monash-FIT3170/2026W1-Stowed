@@ -8,7 +8,7 @@ import { Products, ProductRecords } from "./collections";
  * layer is always consistent regardless of how the method was called.
  *
  * e.g. [{ locationId: 'A', quantity: 7 }, { locationId: 'A', quantity: 6 }]
- *      → [{ locationId: 'A', quantity: 13 }]
+ *      -> [{ locationId: 'A', quantity: 13 }]
  */
 function mergeAssignments(assignments) {
   const map = new Map();
@@ -423,6 +423,36 @@ Meteor.methods({
       {
         $push: { images: imagePath },
         $set: { updatedAt: new Date() },
+      },
+    );
+  },
+
+  async "products.setImages"({ productId, images }) {
+    check(productId, String);
+    check(images, [String]);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    const product = await Products.findOneAsync(productId);
+    if (!product) {
+      throw new Meteor.Error("product-not-found", "No product found with that ID.");
+    }
+
+    const primaryPhotoUrl =
+      images.length > 0 && !images.includes(product.photoUrl)
+        ? images[0]
+        : product.photoUrl || images[0] || "";
+
+    await Products.updateAsync(
+      { _id: productId },
+      {
+        $set: {
+          images,
+          photoUrl: primaryPhotoUrl,
+          updatedAt: new Date(),
+        },
       },
     );
   },
