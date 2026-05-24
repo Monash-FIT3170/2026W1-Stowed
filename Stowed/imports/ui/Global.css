@@ -243,6 +243,10 @@
   color: var(--tag-text);
   border: 1px solid var(--border-subtle);
   font-size: 13px;
+  min-height: 37px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .warning-text {

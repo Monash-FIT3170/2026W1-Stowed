@@ -9,11 +9,12 @@ import "./InventoryPage.css";
 import "../Global.css";
 
 export function InventoryPage() {
-  const { items, loading } = useTracker(() => {
+  const { items, loading, username } = useTracker(() => {
     const sub = Meteor.subscribe("products");
     return {
       items: Products.find().fetch(),
       loading: !sub.ready(),
+      username: Meteor.user()?.profile?.username,
     };
   }, []);
 
@@ -22,7 +23,7 @@ export function InventoryPage() {
   }
 
   const totalItems = items.length;
-  const lowStockCount = items.filter((item) => item.totalQuantity <= 10).length;
+  const lowStockCount = items.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt).length;
   const totalValue = items.reduce((sum, item) => sum + (item.unitCost * item.totalQuantity || 0), 0);
   const recentItems = items.slice(0, 5);
 
@@ -33,7 +34,7 @@ export function InventoryPage() {
         {" "}&nbsp;/{" "}&nbsp;
         <span className="breadcrumb-current">Dashboard</span>
       </div>
-      <h1 className="page-heading">Hello, User</h1>
+      <h1 className="page-heading">Hello, {username || "User"}</h1>
       <h2 className="page-subheading">Here's what's stocked.</h2>
       <div className="stats-container">
         <div className="stat-card stat-card-green">
@@ -73,15 +74,11 @@ export function InventoryPage() {
               </Link>
             </span>
             <span>
-              <span className="item-tag">{item.tag || "—"}</span>
-            </span>
-            <span className="item-location">{item.location}</span>
-            <span>
-              {item.totalQuantity}/{10}
+              {item.totalQuantity}
             </span>
             <StatusBadge
               quantity={item.totalQuantity}
-              threshold={10}
+              threshold={item.reorderAt != null ? item.reorderAt : null}
             />
           </div>
         ))}

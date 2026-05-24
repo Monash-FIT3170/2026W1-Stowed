@@ -51,6 +51,7 @@ export function InventoryListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 15;
   const [deleteError, setDeleteError] = useState("");
+  const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
 
   const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
     const sub1 = Meteor.subscribe("products");
@@ -80,7 +81,16 @@ export function InventoryListPage() {
     setCurrentPage(1);
     let result = items;
     if (activeFilter === "low-stock") {
-      result = result.filter((item) => item.totalQuantity <= (item.reorderAt ?? 10));
+      result = result.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt);
+    }
+    if (activeFilter === "location" && locationFilterUnitId) {
+      const unitLocationIds = new Set(
+        storageLocations.filter((l) => l.storageUnitId === locationFilterUnitId).map((l) => l._id)
+      );
+      const productIdsInUnit = new Set(
+        productRecords.filter((r) => unitLocationIds.has(r.locationId)).map((r) => r.productId)
+      );
+      result = result.filter((item) => productIdsInUnit.has(item._id));
     }
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -93,12 +103,12 @@ export function InventoryListPage() {
       });
     }
     return result;
-  }, [items, activeFilter, searchQuery]);
+  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const lowStockCount = items.filter((item) => item.totalQuantity <= (item.reorderAt ?? 10)).length;
+  const lowStockCount = items.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt).length;
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedProductIds.includes(item._id)),
@@ -172,7 +182,23 @@ export function InventoryListPage() {
           />
         </div>
 
-        <FilterChips filters={filters} activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+        <FilterChips filters={filters} activeFilter={activeFilter} onFilterChange={(f) => { setActiveFilter(f); if (f !== "location") setLocationFilterUnitId(""); }} />
+
+        {activeFilter === "location" && (
+          <div style={{ marginBottom: "12px" }}>
+            <select
+              value={locationFilterUnitId}
+              onChange={(e) => setLocationFilterUnitId(e.target.value)}
+              className="form-input"
+              style={{ maxWidth: "360px", background: "var(--card-bg)" }}
+            >
+              <option value="">All locations</option>
+              {storageUnits.map((unit) => (
+                <option key={unit._id} value={unit._id}>{unit.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {filteredItems.length === 0 ? (
           <div className="empty-state">No items match the current filters.</div>
@@ -218,7 +244,7 @@ export function InventoryListPage() {
                   <span><span className="item-tag">{item.tag || "—"}</span></span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
-                  <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? 10} />
+                  <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />
                   <label className="row-select">
                     <input
                       type="checkbox"

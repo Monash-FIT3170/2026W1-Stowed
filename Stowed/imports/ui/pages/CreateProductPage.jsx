@@ -95,7 +95,6 @@ export function CreateProductPage() {
   const [unitCost, setUnitCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [reorderAt, setReorderAt] = useState("");
-  const [location, setLocation] = useState("");
   const [assignments, setAssignments] = useState([]);
   const [imageUrls, setImageUrls] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -212,7 +211,6 @@ export function CreateProductPage() {
         unitCost: unitCost ? parseFloat(unitCost) : undefined,
         totalQuantity: parsedTotal,
         reorderAt: reorderAt ? parseInt(reorderAt, 10) : undefined,
-        location,
         images: imageUrls,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
@@ -261,7 +259,7 @@ export function CreateProductPage() {
               </div>
               <div className="section-content">
                 <div className="form-group">
-                  <label>Item name</label>
+                  <label>Product name</label>
                   <input
                     type="text"
                     value={name}
@@ -337,38 +335,16 @@ export function CreateProductPage() {
                     />
                   </div>
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Reorder at</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={reorderAt}
-                      onChange={(e) => setReorderAt(e.target.value)}
-                      className="form-input"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Location</label>
-                    <select
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className={`form-input ${location ? "selected" : ""}`}
-                    >
-                      <option value="">Select a location...</option>
-                      {storageLocations.map((loc) => (
-                        <option key={loc._id} value={loc._id}>
-                          {buildLocationLabel(
-                            loc,
-                            storageUnits,
-                            floorMaps,
-                            sites,
-                          )}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="form-group">
+                  <label>Reorder at</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reorderAt}
+                    onChange={(e) => setReorderAt(e.target.value)}
+                    className="form-input"
+                    placeholder="Leave blank for no threshold"
+                  />
                 </div>
               </div>
             </div>

@@ -13,7 +13,10 @@ export function StatusBadge({ quantity, threshold }) {
   let style;
   let icon = "";
 
-  if (quantity <= threshold) {
+  if (threshold == null) {
+    label = "In stock";
+    style = { background: "#D5E5D0", color: "#4A7A5C" };
+  } else if (quantity <= threshold) {
     label = "Low!";
     icon = "⚠ ";
     style = { background: "#F8DDD2", color: "#B5532A" };

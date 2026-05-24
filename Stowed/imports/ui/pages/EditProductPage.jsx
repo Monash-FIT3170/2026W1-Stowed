@@ -46,6 +46,7 @@ export function EditProductPage() {
   const [initialised, setInitialised] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const [imageUrls, setImageUrls] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -72,12 +73,12 @@ export function EditProductPage() {
 
   useEffect(() => {
     if (!loading && product && !initialised) {
-      setName(product.name);
-      setCategory(product.category);
-      setBrand(product.brand);
-      setTotalQuantity(String(product.totalQuantity));
-      setUnitCost(String(product.unitCost));
-      setReorderAt(String(product.reorderAt ?? 10));
+      setName(product.name ?? "");
+      setCategory(product.category ?? "");
+      setBrand(product.brand ?? "");
+      setTotalQuantity(String(product.totalQuantity ?? ""));
+      setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
+      setReorderAt(product.reorderAt != null ? String(product.reorderAt) : "");
       setImageUrls(product.images || product.imageUrls || product.catalogImages || []);
       setMainImageIndex(product.mainImageIndex || 0);
       setAssignments(
@@ -197,6 +198,7 @@ export function EditProductPage() {
 
   async function confirmSave() {
     setIsSaving(true);
+    setSaveError("");
     try {
       await callMethod("products.update", {
         productId,
@@ -204,7 +206,7 @@ export function EditProductPage() {
         category,
         brand,
         totalQuantity: parsedTotal,
-        unitCost: unitCost ? parseFloat(unitCost) : 0,
+        unitCost: unitCost !== "" ? parseFloat(unitCost) : 0,
         reorderAt: reorderAt !== "" ? parseInt(reorderAt, 10) : undefined,
         images: imageUrls,
         assignments: validAssignments.map((a) => ({
@@ -215,6 +217,7 @@ export function EditProductPage() {
       navigate(`/inventory/${productId}`);
     } catch (error) {
       console.error("Failed to update product:", error);
+      setSaveError(error.reason || error.message || "Failed to save changes.");
       setIsSaving(false);
     }
   }
@@ -550,6 +553,7 @@ export function EditProductPage() {
               )}
             </div>
 
+            {saveError && <div className="warning-text">{saveError}</div>}
             <div className="modal-actions">
               <button className="btn-secondary" disabled={isSaving} onClick={() => setShowSaveModal(false)}>
                 Cancel
