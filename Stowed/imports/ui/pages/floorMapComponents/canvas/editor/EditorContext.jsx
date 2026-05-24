@@ -145,17 +145,28 @@ export function EditorProvider({ children, floorMapId }) {
       });
     }
 
-    const canvasUnits = savedUnits.map((unit) => ({
-      id:     unit._id,
-      _id:    unit._id,
-      name:   unit.name,
-      type:   unit.type,
-      x:      unit.position.x,
-      y:      unit.position.y,
-      width:  unit.position.width,
-      height: unit.position.height,
-      fill:   unit.fill || "lightblue",
-    }));
+    // Normalise coordinates — units created via Locations page may be stored
+    // in pixels (large values), while floor map editor stores in meters.
+    // Threshold: if x or y or w or h > 20, assume pixels and convert to meters.
+    const PX_PER_M = 50;
+    const canvasUnits = savedUnits.map((unit) => {
+      const x = unit.position.x;
+      const y = unit.position.y;
+      const w = unit.position.width;
+      const h = unit.position.height;
+      const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
+      return {
+        id:     unit._id,
+        _id:    unit._id,
+        name:   unit.name,
+        type:   unit.type,
+        x:      isPixels ? x / PX_PER_M : x,
+        y:      isPixels ? y / PX_PER_M : y,
+        width:  isPixels ? w / PX_PER_M : w,
+        height: isPixels ? h / PX_PER_M : h,
+        fill:   unit.fill || "lightblue",
+      };
+    });
 
     setUnits(canvasUnits);
     historyRef.current = { stack: [canvasUnits], index: 0 };
@@ -216,6 +227,7 @@ export function EditorProvider({ children, floorMapId }) {
             name:          unit.name,
             type:          unit.type || "other",
             position,
+            fill:          unit.fill || "lightblue",
           });
         } else {
           const newId = await callMethod("storageUnits.create", {
@@ -223,6 +235,7 @@ export function EditorProvider({ children, floorMapId }) {
             name:       unit.name,
             type:       unit.type || "other",
             position,
+            fill:       unit.fill || "lightblue",
           });
 
           unit._id = newId;
@@ -254,17 +267,25 @@ export function EditorProvider({ children, floorMapId }) {
       });
     }
 
-    const canvasUnits = savedUnits.map((unit) => ({
-      id:     unit._id,
-      _id:    unit._id,
-      name:   unit.name,
-      type:   unit.type,
-      x:      unit.position.x,
-      y:      unit.position.y,
-      width:  unit.position.width,
-      height: unit.position.height,
-      fill:   unit.fill || "lightblue",
-    }));
+    const PX_PER_M = 50;
+    const canvasUnits = savedUnits.map((unit) => {
+      const x = unit.position.x;
+      const y = unit.position.y;
+      const w = unit.position.width;
+      const h = unit.position.height;
+      const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
+      return {
+        id:     unit._id,
+        _id:    unit._id,
+        name:   unit.name,
+        type:   unit.type,
+        x:      isPixels ? x / PX_PER_M : x,
+        y:      isPixels ? y / PX_PER_M : y,
+        width:  isPixels ? w / PX_PER_M : w,
+        height: isPixels ? h / PX_PER_M : h,
+        fill:   unit.fill || "lightblue",
+      };
+    });
 
     commitUnits(canvasUnits);
     alert("Layout loaded from database!");
