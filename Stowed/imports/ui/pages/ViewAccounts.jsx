@@ -14,7 +14,7 @@ export function ViewAccounts(){
 
     const {users, currentUser} = useTracker(() => {
         const subscription = Meteor.subscribe('allUsers');
-        const users = Meteor.users.find({}, {fields: {username: 1, emails: 1, 'profile.role': 1} }).fetch();
+        const users = Meteor.users.find({}, {fields: {emails: 1, 'profile.role': 1, 'profile.username': 1} }).fetch();
         return {users, currentUser: Meteor.user(), ready: subscription.ready() };
     }, []);
 
@@ -22,7 +22,7 @@ export function ViewAccounts(){
       if (!searchQuery.trim()) return users;
       const query = searchQuery.toLowerCase();
       return users.filter((user) => {
-        const username = (user.username || '').toLowerCase();
+        const username = (user.profile?.username || '').toLowerCase();
         const email = ((user.emails && user.emails[0]?.address) || '').toLowerCase();
         return username.includes(query) || email.includes(query);
       });
@@ -89,7 +89,7 @@ export function ViewAccounts(){
 
       {filteredUsers.map((user) => (
         <div key={user._id} className="table-row">
-          <span>{user.username}</span>
+          <span>{user.profile?.username}</span>
           <span className="cell-email">{getEmail(user)}</span>
           <span>{roleLabel(user.profile?.role)}</span>
           <span>

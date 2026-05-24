@@ -2,6 +2,10 @@
 import SimpleSchema from 'simpl-schema';
 
 export const ProductSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   name: {
     type: String,
     min: 1,

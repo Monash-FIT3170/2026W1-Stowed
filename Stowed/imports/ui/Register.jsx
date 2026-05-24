@@ -177,12 +177,12 @@ const Register = () => {
 
                 <div className="auth-segmented-control">
                   <button type="button" onClick={() => setRoleState(ROLES.ADMIN)}
-                    className={role === ROLES.ADMIN ? 'active' : ''}>
+                    className={roleState === ROLES.ADMIN ? 'active' : ''}>
                     Admin
                   </button>
 
-                  <button type="button" onClick={() => setroleState(ROLES.STANDARD)}
-                    className={role === ROLES.STANDARD ? 'active' : ''}>
+                  <button type="button" onClick={() => setRoleState(ROLES.STANDARD)}
+                    className={roleState === ROLES.STANDARD ? 'active' : ''}>
                     Standard
                   </button>
                 </div>

@@ -8,6 +8,10 @@ import SimpleSchema from 'simpl-schema';
  * Examples include a warehouse, office, shop, or home.
  */
 export const SiteSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   name: {
     type: String,
     min: 1,
@@ -36,6 +40,7 @@ export const SiteSchema = new SimpleSchema({
  * within that site. It may optionally reference an uploaded floor map image.
  */
 export const FloorMapSchema = new SimpleSchema({
+  orgId: String,
   siteId: String,
   name: {
     type: String,
@@ -59,6 +64,10 @@ export const FloorMapSchema = new SimpleSchema({
  * The position field is used by the floor map UI to place and size the unit.
  */
 export const StorageUnitSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   floorMapId: {
     type: String,
   },
@@ -120,6 +129,10 @@ export const StorageUnitSchema = new SimpleSchema({
  * "Drawer 3", or "Bin 4".
  */
 export const StorageLocationSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   storageUnitId: {
     type: String,
   },
