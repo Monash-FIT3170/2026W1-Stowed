@@ -45,9 +45,19 @@ function FloorMapPageInner() {
     handlePlaceUnit,
     handleUnitPlaced,
     handleCanvasSettingsSave,
+    selectedUnit, setIsPanelOpen, isPanelOpen,
+    lowStockByUnitId,
   } = useEditor();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [selectedStorageUnitId, setSelectedStorageUnitId] = useState(null);
+
+  const [tooltip, setTooltip] = useState(null);
+
+  const items    = selectedUnit?.mockItems ?? (lowStockByUnitId?.[selectedUnit?._id] ?? []);
+  const lowItems = items.filter((i) => i.isLow);
+  const okItems  = items.filter((i) => !i.isLow);
+  const hasLow   = lowItems.length > 0;
+  const isEmpty  = items.length === 0;
 
   return (
     <div style={pageStyles.page}>
@@ -125,6 +135,73 @@ function FloorMapPageInner() {
           </div>
         )}
       </div>
+
+      {/* HOVER TOOLTIP */}
+      {tooltip && (() => {
+        const tipItems  = tooltip.items ?? [];
+        const tipLow    = tipItems.filter((i) => i.isLow);
+        const tipHasLow = tipLow.length > 0;
+
+        return (
+          <div style={{
+            position:      "fixed",
+            left:          tooltip.x,
+            top:           tooltip.y,
+            background:    "white",
+            border:        `1px solid ${tipHasLow ? "#fca5a5" : tipItems.length === 0 ? "#d9cfc0" : "#86efac"}`,
+            borderRadius:  "8px",
+            padding:       "10px 14px",
+            minWidth:      "160px",
+            maxWidth:      "240px",
+            boxShadow:     "0 4px 12px rgba(0,0,0,0.12)",
+            fontSize:      "12px",
+            fontFamily:    "Inter, sans-serif",
+            color:         "#1a1a1a",
+            pointerEvents: "none",
+            zIndex:        200,
+          }}>
+            <div style={{
+              fontWeight:   700,
+              marginBottom: "6px",
+              color: tipItems.length === 0 ? "#998874" : tipHasLow ? "#991b1b" : "#166534",
+            }}>
+              {tooltip.unit.name}
+            </div>
+
+            {tipItems.length === 0 ? (
+              <div style={{ color: "#998874", fontSize: "11px" }}>
+                No items on this shelf
+              </div>
+            ) : tipHasLow ? (
+              <>
+                <div style={{ fontSize: "11px", color: "#991b1b", marginBottom: "4px", fontWeight: 600 }}>
+                  Low stock items:
+                </div>
+                {tipLow.map((item, i) => (
+                  <div key={i} style={{
+                    display:       "flex",
+                    flexDirection: "column",
+                    padding:       "4px 0",
+                    borderBottom:  "0.5px solid #f5efe6",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontWeight: 600 }}>{item.product.name}</span>
+                      <span style={{ color: "#991b1b", fontWeight: 600, marginLeft: "8px" }}>
+                        {item.quantity} left
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "10px", color: "#998874" }}>{item.locationName}</span>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div style={{ color: "#166534", fontSize: "11px" }}>
+                All items on this shelf are stocked
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* CANVAS SETTINGS MODAL */}
       {isCanvasSettingsOpen && (
