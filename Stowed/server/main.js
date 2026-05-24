@@ -68,6 +68,7 @@ async function seedLocations(seedOrgId) {
   });
 
   const floorMapId = await FloorMaps.insertAsync({
+    orgId: seedOrgId,
     siteId,
     name: 'Ground Floor',
     imageUrl: '',
@@ -76,6 +77,7 @@ async function seedLocations(seedOrgId) {
   });
 
   const shelfAId = await StorageUnits.insertAsync({
+    orgId: seedOrgId,
     floorMapId,
     name: 'Shelf A',
     type: 'shelf',
@@ -85,6 +87,7 @@ async function seedLocations(seedOrgId) {
   });
 
   const shelfBId = await StorageUnits.insertAsync({
+    orgId: seedOrgId,
     floorMapId,
     name: 'Shelf B',
     type: 'shelf',
@@ -93,10 +96,10 @@ async function seedLocations(seedOrgId) {
     updatedAt: now,
   });
 
-  await StorageLocations.insertAsync({ storageUnitId: shelfAId, name: 'Bay 1', code: 'SA-B1', createdAt: now, updatedAt: now });
-  await StorageLocations.insertAsync({ storageUnitId: shelfAId, name: 'Bay 2', code: 'SA-B2', createdAt: now, updatedAt: now });
-  await StorageLocations.insertAsync({ storageUnitId: shelfBId, name: 'Bay 1', code: 'SB-B1', createdAt: now, updatedAt: now });
-  await StorageLocations.insertAsync({ storageUnitId: shelfBId, name: 'Bay 2', code: 'SB-B2', createdAt: now, updatedAt: now });
+  await StorageLocations.insertAsync({ orgId: seedOrgId, storageUnitId: shelfAId, name: 'Bay 1', code: 'SA-B1', createdAt: now, updatedAt: now });
+  await StorageLocations.insertAsync({ orgId: seedOrgId, storageUnitId: shelfAId, name: 'Bay 2', code: 'SA-B2', createdAt: now, updatedAt: now });
+  await StorageLocations.insertAsync({ orgId: seedOrgId, storageUnitId: shelfBId, name: 'Bay 1', code: 'SB-B1', createdAt: now, updatedAt: now });
+  await StorageLocations.insertAsync({ orgId: seedOrgId, storageUnitId: shelfBId, name: 'Bay 2', code: 'SB-B2', createdAt: now, updatedAt: now });
 }
 
 Meteor.startup(async () => {
