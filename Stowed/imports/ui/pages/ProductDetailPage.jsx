@@ -91,7 +91,6 @@ export function ProductDetailView({
     if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
     return false;
   });
-  const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
     ? records.map((record) => ({
@@ -242,7 +241,7 @@ export function ProductDetailView({
               <span className="breadcrumb-current">Product</span>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button className="btn-secondary" onClick={() => navigate(-1)}>
+              <button className="btn-secondary" onClick={() => navigate("/inventory/list")}>
                 Back
               </button>
               <button
@@ -460,20 +459,6 @@ export function ProductDetailView({
               </div>
             </div>
 
-            <div className="detail-section">
-              <h2 className="section-title">
-                <span className="section-badge qr">QR</span>
-                QR & label
-              </h2>
-              <div className="section-content qr-section">
-                <div className="qr-container">
-                  <img src={qrCode} alt="QR Code" className="qr-code" />
-                  <p className="qr-label">SKU: {item.sku}</p>
-                  <p className="qr-label">{item.location}</p>
-                </div>
-                <button className="btn-print">Print label</button>
-              </div>
-            </div>
           </div>
         </div>
 

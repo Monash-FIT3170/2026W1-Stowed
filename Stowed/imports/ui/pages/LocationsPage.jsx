@@ -8,6 +8,7 @@ import {
   StorageLocations,
   StorageUnits,
 } from "/imports/api/locations/collections";
+import { ProductRecords } from "/imports/api/products/collections";
 import "../Global.css";
 import "./LocationsPage.css";
 
@@ -147,16 +148,19 @@ export function LocationsPage() {
   const [editingStorageLocationId, setEditingStorageLocationId] = useState(null);
   const [editStorageLocationForm, setEditStorageLocationForm] = useState({ name: "", code: "" });
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id, name }
+  const [deleteBlockedMessage, setDeleteBlockedMessage] = useState(""); // non-empty = show error modal
 
-  const { isLoading, sites, floorMaps, storageUnits, storageLocations } =
+  const { isLoading, sites, floorMaps, storageUnits, storageLocations, productRecords } =
     useTracker(() => {
       const handle = Meteor.subscribe("locations.all");
+      Meteor.subscribe("productRecords");
       return {
         isLoading: !handle.ready(),
         sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
         floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
         storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
         storageLocations: StorageLocations.find({}, { sort: { createdAt: 1 } }).fetch(),
+        productRecords: ProductRecords.find().fetch(),
       };
     }, []);
 
@@ -322,6 +326,24 @@ export function LocationsPage() {
     setSelectedLocation(null);
   }
 
+  function tryDeleteItem(type, id, name) {
+    let blocked = "";
+    if (type === "site") {
+      if (floorMaps.some((f) => f.siteId === id)) blocked = "This site still has floor maps. Delete all floor maps in this site first.";
+    } else if (type === "floorMap") {
+      if (storageUnits.some((u) => u.floorMapId === id)) blocked = "This floor map still has storage units. Delete all storage units first.";
+    } else if (type === "storageUnit") {
+      if (storageLocations.some((l) => l.storageUnitId === id)) blocked = "This storage unit still has storage locations. Delete all storage locations first.";
+    } else if (type === "storageLocation") {
+      if (productRecords.some((r) => r.locationId === id)) blocked = "This location still has products assigned to it. Move or remove all products from this location first.";
+    }
+    if (blocked) {
+      setDeleteBlockedMessage(blocked);
+    } else {
+      setDeleteConfirm({ type, id, name });
+    }
+  }
+
   function startEditSite(site) {
     setEditingSiteId(site._id);
     setEditSiteForm({ name: site.name, description: site.description || "" });
@@ -402,37 +424,6 @@ export function LocationsPage() {
     });
   }
 
-  // Scale all units to fit within the preview container
-  function getPreviewLayout(units) {
-    if (!units.length) return { units: [], scale: 1 };
-
-    const PX = 50;
-    const PREVIEW_W = 280;
-    const PREVIEW_H = 300;
-
-    // Convert all to pixels first
-    const converted = units.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
-      const isMeters = x <= 20 && y <= 20 && w <= 20 && h <= 20;
-      return {
-        ...unit,
-        px: { left: isMeters ? x * PX : x, top: isMeters ? y * PX : y, width: isMeters ? w * PX : w, height: isMeters ? h * PX : h },
-      };
-    });
-
-    // Find bounding box
-    const maxRight  = Math.max(...converted.map((u) => u.px.left + u.px.width));
-    const maxBottom = Math.max(...converted.map((u) => u.px.top  + u.px.height));
-
-    // Scale to fit with padding
-    const scale = Math.min((PREVIEW_W - 8) / maxRight, (PREVIEW_H - 8) / maxBottom, 1);
-
-    return { units: converted, scale };
-  }
-
   return (
     <div className="product-detail-container">
       <div className="product-detail-header">
@@ -500,7 +491,7 @@ export function LocationsPage() {
                           <div className="selection-item-description">{site.description || "No description"}</div>
                         </button>
                         <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditSite(site)}>Edit</button>
-                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "site", id: site._id, name: site.name })}>Delete</button>
+                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("site", site._id, site.name)}>Delete</button>
                       </div>
                     )}
                   </div>
@@ -512,19 +503,12 @@ export function LocationsPage() {
           </Panel>
 
           <Panel title="Floor Maps" subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}>
-            <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
+            <form className="form-grid" onSubmit={handleFloorMapSubmit}>
               <Field label="Name">
                 <TextInput
                   value={floorMapForm.name}
                   onChange={(e) => setFloorMapForm((cur) => ({ ...cur, name: e.target.value }))}
                   placeholder="Ground Floor"
-                />
-              </Field>
-              <Field label="Image URL">
-                <TextInput
-                  value={floorMapForm.imageUrl}
-                  onChange={(e) => setFloorMapForm((cur) => ({ ...cur, imageUrl: e.target.value }))}
-                  placeholder="https://example.com/floor-map.png"
                 />
               </Field>
               <button type="submit" disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
@@ -538,7 +522,6 @@ export function LocationsPage() {
                     {editingFloorMapId === floorMap._id ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         <input className="form-input" value={editFloorMapForm.name} onChange={(e) => setEditFloorMapForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
-                        <input className="form-input" value={editFloorMapForm.imageUrl} onChange={(e) => setEditFloorMapForm((f) => ({ ...f, imageUrl: e.target.value }))} placeholder="Image URL" />
                         <div style={{ display: "flex", gap: "6px" }}>
                           <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditFloorMap(floorMap._id)} disabled={submitting || !editFloorMapForm.name.trim()}>Save</button>
                           <button type="button" className="btn-secondary" onClick={() => setEditingFloorMapId(null)}>Cancel</button>
@@ -548,10 +531,9 @@ export function LocationsPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <button type="button" onClick={() => setSelectedFloorMapId(floorMap._id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
                           <div className="selection-item-name">{floorMap.name}</div>
-                          <div className="selection-item-description">{floorMap.imageUrl || "No image URL"}</div>
                         </button>
                         <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditFloorMap(floorMap)}>Edit</button>
-                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "floorMap", id: floorMap._id, name: floorMap.name })}>Delete</button>
+                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("floorMap", floorMap._id, floorMap.name)}>Delete</button>
                       </div>
                     )}
                   </div>
@@ -609,7 +591,7 @@ export function LocationsPage() {
                           <div className="unit-list-item-meta">{`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}</div>
                         </button>
                         <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageUnit(unit)}>Edit</button>
-                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "storageUnit", id: unit._id, name: unit.name })}>Delete</button>
+                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("storageUnit", unit._id, unit.name)}>Delete</button>
                       </div>
                     )}
                   </div>
@@ -655,7 +637,7 @@ export function LocationsPage() {
                         <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
                           <button className="location-list-item-view-image" onClick={() => { setSelectedLocation(location); setImageModalOpen(true); }}>Image</button>
                           <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageLocation(location)}>Edit</button>
-                          <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "storageLocation", id: location._id, name: location.name })}>Delete</button>
+                          <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("storageLocation", location._id, location.name)}>Delete</button>
                         </div>
                       </>
                     )}
@@ -690,36 +672,20 @@ export function LocationsPage() {
             </dl>
           </Panel>
 
-          <Panel badge="lc" title="Floor Map Preview" subtitle="Simple visual check for storage-unit position values.">
-            <div className="floor-map-preview-container">
-              <div className="floor-map-preview-canvas" style={{ position: "relative", width: "100%", height: "300px", overflow: "hidden" }}>
-                {(() => {
-                  const { units: laid, scale } = getPreviewLayout(storageUnitsForFloorMap);
-                  return laid.length ? laid.map((unit) => (
-                    <button
-                      key={unit._id}
-                      type="button"
-                      onClick={() => setSelectedStorageUnitId(unit._id)}
-                      className={`floor-map-unit-button ${unit._id === selectedStorageUnitId ? "floor-map-unit-selected" : "floor-map-unit-unselected"}`}
-                      style={{
-                        left:   `${unit.px.left   * scale}px`,
-                        top:    `${unit.px.top    * scale}px`,
-                        width:  `${unit.px.width  * scale}px`,
-                        height: `${unit.px.height * scale}px`,
-                      }}
-                    >
-                      <div className="floor-map-unit-name" style={{ fontSize: `${Math.max(8, 11 * scale)}px` }}>{unit.name}</div>
-                      <div className="floor-map-unit-type" style={{ fontSize: `${Math.max(7, 10 * scale)}px` }}>{unit.type}</div>
-                    </button>
-                  )) : (
-                    <div className="floor-map-empty-state">Add a storage unit to see it plotted here.</div>
-                  );
-                })()}
-              </div>
-            </div>
-          </Panel>
         </div>
       </div>
+
+      {deleteBlockedMessage && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 className="modal-title">Cannot Delete</h3>
+            <p className="modal-text">{deleteBlockedMessage}</p>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setDeleteBlockedMessage("")}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteConfirm && (
         <div className="modal-overlay">
