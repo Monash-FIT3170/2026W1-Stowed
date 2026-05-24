@@ -82,6 +82,15 @@ export function ItemDetailView({
           : item.photoUrl
             ? [item.photoUrl]
             : [];
+  // For each gallery image, determine whether it originates from the
+  // uploaded images (so it can be removed). We treat `imageUrls` (current
+  // edited/uploaded images) and `item.images` (persisted uploads) as
+  // removable sources. Fallback `photoUrl` or `catalogImages` are not removable.
+  const removableFlags = galleryImages.map((img) => {
+    if (imageUrls.length > 0) return imageUrls.includes(img);
+    if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
+    return false;
+  });
   const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
@@ -178,13 +187,22 @@ export function ItemDetailView({
     setUploadingImage(true);
     try {
       const url = await uploadImageToServer(file);
+      let nextImages;
       setImageUrls((prev) => {
         const next = [...prev, url];
+        nextImages = next;
         if (prev.length === 0) {
           setSelectedImageIndex(0);
         }
         return next;
       });
+
+      // Auto-save uploaded image list to server so it appears in lists.
+      try {
+        await callMethod("products.setImages", { productId, images: nextImages });
+      } catch (err) {
+        console.error("Failed to auto-save uploaded images:", err);
+      }
     } catch (error) {
       console.error("Image upload failed:", error);
       setUploadError("Upload failed. Please try again.");
@@ -231,11 +249,7 @@ export function ItemDetailView({
 
           <div className="header-content">
             <div className="header-icon-section">
-              <img
-                src={item.photoUrl}
-                alt={item.name}
-                className="header-icon"
-              />
+              <img className="header-icon" src={galleryImages[0] || item.photoUrl || ""} alt="Product" />
             </div>
             <div className="header-info">
               <div className={statusClass}>{statusLabel}</div>
@@ -260,8 +274,9 @@ export function ItemDetailView({
               </h2>
               <div className="section-content">
                 <div className="form-group">
-                  <label>Item name</label>
+                  <label htmlFor="item-name">Item name</label>
                   <input
+                    id="item-name"
                     type="text"
                     value={item.name}
                     readOnly
@@ -289,8 +304,9 @@ export function ItemDetailView({
               <div className="section-content">
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Unit cost</label>
+                    <label htmlFor="unit-cost">Unit cost</label>
                     <input
+                      id="unit-cost"
                       type="text"
                       value={hasUnitCost ? `$${unitCost.toFixed(2)}` : "-"}
                       readOnly
@@ -298,8 +314,9 @@ export function ItemDetailView({
                     />
                   </div>
                   <div className="form-group">
-                    <label>Current stock</label>
+                    <label htmlFor="current-stock">Current stock</label>
                     <input
+                      id="current-stock"
                       type="text"
                       value={currentStock}
                       readOnly
@@ -309,8 +326,9 @@ export function ItemDetailView({
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Reorder at</label>
+                    <label htmlFor="reorder-at">Reorder at</label>
                     <input
+                      id="reorder-at"
                       type="text"
                       value={reorderAt}
                       readOnly
@@ -391,14 +409,16 @@ export function ItemDetailView({
                       >
                         <img src={img} alt={`${item.name} ${index + 1}`} />
                       </button>
-                      <button
-                        type="button"
-                        className="thumbnail-remove"
-                        onClick={() => removeImage(index)}
-                        aria-label="Remove image"
-                      >
-                        ×
-                      </button>
+                      {removableFlags[index] && (
+                        <button
+                          type="button"
+                          className="thumbnail-remove"
+                          onClick={() => removeImage(index)}
+                          aria-label="Remove image"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                   ))}
                   <button

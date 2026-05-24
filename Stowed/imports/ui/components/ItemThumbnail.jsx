@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 
-export function ItemThumbnail({ photoUrl, name }) {
+export function ItemThumbnail({ photoUrl, name, images }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
     ? name
-        .split(" ")
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
     : "?";
 
-  if (!photoUrl || imgError) {
+  const src = Array.isArray(images) && images.length > 0 ? images[0] : photoUrl;
+
+  if (!src || imgError) {
     return (
       <div
         style={{
@@ -36,7 +38,7 @@ export function ItemThumbnail({ photoUrl, name }) {
 
   return (
     <img
-      src={photoUrl}
+      src={src}
       alt={name}
       onError={() => setImgError(true)}
       style={{
