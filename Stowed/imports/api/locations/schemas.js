@@ -151,6 +151,12 @@ export const StorageUnitSchema = new SimpleSchema({
     min: 1,
   },
 
+  fill: {
+    type: String,
+    optional: true,
+    max: 50,
+  },
+
   createdAt: {
     type: Date,
   },

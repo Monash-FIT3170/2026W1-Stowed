@@ -397,11 +397,15 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
 
   function handleDelete(e) {
     const idsToDelete = selectedIds;
-    const currUnits = units;
+    if (idsToDelete.size === 0) return;
 
     let unitsAsString = "";
-    idsToDelete.forEach((id) => unitsAsString += units.find((u) => u.id === id).name + " (" + id + ")\n");
+    idsToDelete.forEach((id) => {
+      const unit = units.find((u) => u.id === id);
+      if (unit) unitsAsString += unit.name + " (" + id + ")\n";
+    });
     unitsAsString = unitsAsString.slice(0, -1);
+    if (!unitsAsString) return;
 
     const proceed = confirm("Are you sure you want to delete the selected units: \n" + unitsAsString);
 
