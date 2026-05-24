@@ -27,7 +27,15 @@
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-dark);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial;
 }
 
 .item-detail-header {
@@ -56,7 +64,6 @@
   font-style: italic;
 }
 
-
 /* -- Breadcrumb -- */
 
 .breadcrumb {
@@ -65,7 +72,6 @@
   font-weight: 400;
   margin-bottom: 8px;
 }
-
 
 .breadcrumb-link {
   color: var(--text-muted);
@@ -112,6 +118,52 @@
   padding: 20px;
 }
 
+.section-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.storage-location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.storage-location-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+}
+
+.storage-location-name {
+  font-weight: 700;
+  color: var(--text-dark);
+  font-size: 14px;
+}
+
+.storage-location-meta {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.storage-location-quantity {
+  flex-shrink: 0;
+  min-width: 48px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: var(--tag-bg);
+  border: 1px solid var(--border-subtle);
+}
+
 /* -- Section badges -- */
 
 .section-badge {
@@ -123,11 +175,26 @@
   letter-spacing: 0.4px;
 }
 
-.section-badge.id { background: #d6ede8; color: #4a8c78; }
-.section-badge.op { background: #fde8d8; color: var(--accent-primary); }
-.section-badge.im { background: #d6ede8; color: #4a8c78; }
-.section-badge.qr { background: var(--tag-bg); color: var(--text-muted); }
-.section-badge.lc { background: var(--tag-bg); color: var(--text-muted); }
+.section-badge.id {
+  background: #d6ede8;
+  color: #4a8c78;
+}
+.section-badge.op {
+  background: #fde8d8;
+  color: var(--accent-primary);
+}
+.section-badge.im {
+  background: #d6ede8;
+  color: #4a8c78;
+}
+.section-badge.qr {
+  background: var(--tag-bg);
+  color: var(--text-muted);
+}
+.section-badge.lc {
+  background: var(--tag-bg);
+  color: var(--text-muted);
+}
 
 /* -- Form elements -- */
 

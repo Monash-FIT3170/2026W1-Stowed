@@ -1,26 +1,17 @@
-/* Item Detail Page styles aligned to Design_System.pdf (v3-bloom) */
-:root {
-  --bg-primary: #f5efe6;
-  --text-dark: #1a1a1a;
-  --text-muted: #998874;
-  --accent-primary: #b5532a;
-  --accent-secondary: #e89b6f;
-  --border-light: #efe7da;
-  --border-subtle: #d9cfc0;
-  --card-bg: #ffffff;
-  --input-bg: #fdf7f2;
-  --tag-bg: #f5efe6;
-  --tag-text: #5c4f3f;
-  --danger: #c00;
-  --dark: #2b1f1a;
-  --cream: #fff6ef;
-}
-
 .item-detail-container {
   width: 100%;
+  min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-dark);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial;
 }
 
 .item-detail-header {

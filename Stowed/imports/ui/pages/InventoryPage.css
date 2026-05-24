@@ -1,7 +1,7 @@
 /* InventoryPage Styles */
 
 :root {
-  --bg-primary: #ffffff;
+  --bg-primary: #f5efe6;
   --bg-light: #f5efe6;
   --text-dark: #1a1a1a;
   --text-muted: #998874;
@@ -15,7 +15,10 @@
 }
 
 .inventory-page-container {
+  min-height: 100%;
   padding: 24px;
+  background: var(--bg-primary);
+  color: var(--text-dark);
 }
 
 .page-heading {
@@ -82,6 +85,9 @@
 .recent-items-card {
   border-radius: 16px;
   padding: 20px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
 }
 
 .recent-items-header {

@@ -2,7 +2,13 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { Products } from "../../api/products/collections";
+import { Products, ProductRecords } from "../../api/products/collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+} from "../../api/locations/collections";
 import "./ItemDetailPage.css";
 import "../Global.css";
 
@@ -15,7 +21,40 @@ function callMethod(methodName, params) {
   });
 }
 
-export function ItemDetailView({ item, productId }) {
+function buildLocationLabel(
+  locationId,
+  storageLocations,
+  storageUnits,
+  floorMaps,
+  sites,
+) {
+  const location = storageLocations.find((loc) => loc._id === locationId);
+  if (!location) return locationId;
+
+  const unit = storageUnits.find(
+    (candidate) => candidate._id === location.storageUnitId,
+  );
+  const floorMap = unit
+    ? floorMaps.find((candidate) => candidate._id === unit.floorMapId)
+    : null;
+  const site = floorMap
+    ? sites.find((candidate) => candidate._id === floorMap.siteId)
+    : null;
+
+  return [site?.name, floorMap?.name, unit?.name, location.name]
+    .filter(Boolean)
+    .join(" → ");
+}
+
+export function ItemDetailView({
+  item,
+  productId,
+  records = [],
+  sites = [],
+  floorMaps = [],
+  storageUnits = [],
+  storageLocations = [],
+}) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -36,6 +75,27 @@ export function ItemDetailView({ item, productId }) {
         : [];
   const qrCode = item.qrCode || item.photoUrl || "";
   const hasUnitCost = Number.isFinite(unitCost);
+  const storageAssignments = records.length
+    ? records.map((record) => ({
+        key: record._id,
+        label: buildLocationLabel(
+          record.locationId,
+          storageLocations,
+          storageUnits,
+          floorMaps,
+          sites,
+        ),
+        quantity: record.quantity,
+      }))
+    : item.location
+      ? [
+          {
+            key: "legacy-location",
+            label: item.location,
+            quantity: currentStock,
+          },
+        ]
+      : [];
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -68,7 +128,9 @@ export function ItemDetailView({ item, productId }) {
             </div>
           </div>
 
-          <h1 className="header-title">Item <em>Details</em></h1>
+          <h1 className="header-title">
+            Item <em>Details</em>
+          </h1>
 
           <div className="header-content">
             <div className="header-icon-section">
@@ -160,9 +222,44 @@ export function ItemDetailView({ item, productId }) {
                   </div>
                   <div className="form-group">
                     <label>Location</label>
-                    <div className="form-tag">{item.location}</div>
+                    <div className="form-tag">{item.location || "—"}</div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="detail-section">
+              <h2 className="section-title">
+                <span className="section-badge lc">LC</span>
+                Storage locations
+              </h2>
+              <div className="section-content">
+                {storageAssignments.length ? (
+                  <div className="storage-location-list">
+                    {storageAssignments.map((assignment) => (
+                      <div
+                        key={assignment.key}
+                        className="storage-location-item"
+                      >
+                        <div>
+                          <div className="storage-location-name">
+                            {assignment.label}
+                          </div>
+                          <div className="storage-location-meta">
+                            Assigned stock
+                          </div>
+                        </div>
+                        <div className="storage-location-quantity">
+                          {assignment.quantity}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="section-empty">
+                    No stock assigned to a storage location yet.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -266,11 +363,32 @@ export function ItemDetailView({ item, productId }) {
 export function ItemDetailPage() {
   const { productId } = useParams();
 
-  const { item, isLoading } = useTracker(() => {
-    const handle = Meteor.subscribe("products");
+  const {
+    item,
+    isLoading,
+    records,
+    sites,
+    floorMaps,
+    storageUnits,
+    storageLocations,
+  } = useTracker(() => {
+    const handleProducts = Meteor.subscribe("products");
+    const handleRecords = Meteor.subscribe("productRecords");
+    const handleLocations = Meteor.subscribe("locations.all");
     return {
-      isLoading: !handle.ready(),
+      isLoading:
+        !handleProducts.ready() ||
+        !handleRecords.ready() ||
+        !handleLocations.ready(),
       item: Products.findOne(productId),
+      records: ProductRecords.find(
+        { productId },
+        { sort: { quantity: -1 } },
+      ).fetch(),
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
     };
   }, [productId]);
 
@@ -278,5 +396,15 @@ export function ItemDetailPage() {
     return <div className="p-8 text-center">Loading...</div>;
   }
 
-  return <ItemDetailView item={item} productId={productId} />;
+  return (
+    <ItemDetailView
+      item={item}
+      productId={productId}
+      records={records}
+      sites={sites}
+      floorMaps={floorMaps}
+      storageUnits={storageUnits}
+      storageLocations={storageLocations}
+    />
+  );
 }
