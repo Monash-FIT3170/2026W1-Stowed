@@ -82,41 +82,43 @@ export function ViewAccounts() {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by username or email"
             className="search-input"
-            style={{ background: "#ffffff" }}
+            style={{ background: "var(--card-bg)" }}
           />
         </div>
 
-        <div className="filter-count">
-          Showing {filteredUsers.length} of {users.length}
-        </div>
-
-        <div className="table-header" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
-          <span>Username</span>
-          <span>Email</span>
-          <span>Role</span>
-          <span>Actions</span>
-        </div>
-
-        {filteredUsers.length === 0 ? (
-          <div className="empty-state">No accounts found.</div>
-        ) : filteredUsers.map((user) => (
-          <div key={user._id} className="table-row" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
-            <span style={{ fontWeight: 500 }}>{user.profile?.username}</span>
-            <span style={{ color: "var(--text-muted)" }}>{getEmail(user)}</span>
-            <span>{roleLabel(user.profile?.role)}</span>
-            <span>
-              {user._id !== currentUser?._id && (
-                <button
-                  onClick={() => openDeleteModal(user._id)}
-                  disabled={deleting === user._id}
-                  className="btn-danger"
-                >
-                  {deleting === user._id ? "Deleting..." : "Delete"}
-                </button>
-              )}
-            </span>
+        <div className="detail-section">
+          <div style={{ padding: "16px 20px 0", marginBottom: "8px" }}>
+            <div className="recent-items-title">All Accounts</div>
+            <div className="recent-items-subtitle">{filteredUsers.length} of {users.length} accounts shown</div>
           </div>
-        ))}
+          <div className="table-header" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
+            <span>Username</span>
+            <span>Email</span>
+            <span>Role</span>
+            <span></span>
+          </div>
+
+          {filteredUsers.length === 0 ? (
+            <div className="empty-state">No accounts found.</div>
+          ) : filteredUsers.map((user) => (
+            <div key={user._id} className="table-row" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
+              <span style={{ fontWeight: 500 }}>{user.profile?.username}</span>
+              <span style={{ color: "var(--text-muted)" }}>{getEmail(user)}</span>
+              <span>{roleLabel(user.profile?.role)}</span>
+              <span>
+                {user._id !== currentUser?._id && (
+                  <button
+                    onClick={() => openDeleteModal(user._id)}
+                    disabled={deleting === user._id}
+                    className="btn-danger"
+                  >
+                    {deleting === user._id ? "Deleting..." : "Delete"}
+                  </button>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {showDeleteModal && (
           <div className="modal-overlay">

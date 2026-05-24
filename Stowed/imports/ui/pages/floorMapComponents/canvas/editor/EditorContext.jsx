@@ -350,6 +350,24 @@ export function EditorProvider({ children, floorMapId }) {
     return true;
   }
 
+  async function handleDeleteSelectedUnit() {
+    if (!selectedUnit) return;
+    const unitId = selectedUnit._id || selectedUnit.id;
+    if (!unitId) {
+      // Unit not saved to DB yet — just remove from canvas
+      commitUnits((prev) => prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id));
+      setSelectedUnit(null);
+      return;
+    }
+    try {
+      await callMethod("storageUnits.delete", { storageUnitId: unitId });
+      commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
+      setSelectedUnit(null);
+    } catch (error) {
+      alert(error.reason || "Cannot delete this unit. Make sure all storage locations within it are removed first.");
+    }
+  }
+
   const value = {
     // Tool
     activeTool, setActiveTool,
@@ -382,6 +400,9 @@ export function EditorProvider({ children, floorMapId }) {
     // Slide-out panel
     selectedUnit, setSelectedUnit,
     isPanelOpen,  setIsPanelOpen,
+
+    // Delete selected unit
+    handleDeleteSelectedUnit,
   };
 
   return (

@@ -71,7 +71,7 @@ export function ProductDetailView({
 
   const unitCost = Number(item.unitCost);
   const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
-  const reorderAt = item.reorderAt ?? 10;
+  const reorderAt = item.reorderAt ?? null;
   const galleryImages =
     imageUrls.length > 0
       ? imageUrls
@@ -241,6 +241,24 @@ export function ProductDetailView({
               <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-current">Product</span>
             </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="btn-secondary" onClick={() => navigate(-1)}>
+                Back
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleUpdateClick}
+                disabled={uploadingImage}
+              >
+                Update
+              </button>
+              <button
+                className="btn-danger"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                Delete
+              </button>
+            </div>
           </div>
 
           <h1 className="header-title">
@@ -249,7 +267,11 @@ export function ProductDetailView({
 
           <div className="header-content">
             <div className="header-icon-section">
-              <img className="header-icon" src={galleryImages[0] || item.photoUrl || ""} alt="Product" />
+              {galleryImages.length > 0 ? (
+                <img className="header-icon" src={galleryImages[0]} alt="Product" />
+              ) : (
+                <div className="header-icon header-icon-placeholder">No photo</div>
+              )}
             </div>
             <div className="header-info">
               <div className={statusClass}>{statusLabel}</div>
@@ -257,9 +279,7 @@ export function ProductDetailView({
               <div className="header-meta">
                 <span>{currentStock} in stock</span>
                 <span></span>
-                <span>Reorder at {reorderAt}</span>
-                <span></span>
-                <span className="sku">SKU: {item.sku}</span>
+                <span>{reorderAt != null ? `Reorder at ${reorderAt}` : "No reorder threshold"}</span>
               </div>
             </div>
           </div>
@@ -286,11 +306,11 @@ export function ProductDetailView({
                 <div className="form-row">
                   <div className="form-group">
                     <label>Category</label>
-                    <div className="form-tag">{item.category}</div>
+                    <div className="form-tag">{item.category || "—"}</div>
                   </div>
                   <div className="form-group">
                     <label>Brand</label>
-                    <div className="form-tag">{item.brand}</div>
+                    <div className="form-tag">{item.brand || "—"}</div>
                   </div>
                 </div>
               </div>
@@ -330,15 +350,15 @@ export function ProductDetailView({
                     <input
                       id="reorder-at"
                       type="text"
-                      value={reorderAt}
+                      value={reorderAt != null ? reorderAt : "Not set"}
                       readOnly
                       className="form-input"
                     />
                   </div>
-                  <div className="form-group">
+                  {/* <div className="form-group">
                     <label>Location</label>
                     <div className="form-tag">{item.location || "-"}</div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -457,24 +477,6 @@ export function ProductDetailView({
           </div>
         </div>
 
-        <div className="create-product-footer">
-          <button className="btn-secondary" onClick={() => navigate(-1)}>
-            Back
-          </button>
-          <button
-            className="btn-primary"
-            onClick={handleUpdateClick}
-            disabled={uploadingImage}
-          >
-            Update
-          </button>
-          <button
-            className="btn-danger"
-            onClick={() => setShowDeleteModal(true)}
-          >
-            Delete
-          </button>
-        </div>
       </div>
 
       {showDeleteModal && (

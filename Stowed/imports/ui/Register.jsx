@@ -141,16 +141,18 @@ const Register = () => {
           {success && <div className="auth-status auth-status-success">{success}</div>}
 
           <form onSubmit={onSubmit} className="auth-form">
-            
-           <label  className="auth-field">
-             <span>Organisation Code</span>
-              <input
-                type="text"
-                value={orgCode}
-                onChange={(e) => setOrgCode(e.target.value)}
-                className="auth-input"
-              />
-           </label>
+
+           {!isPrivileged && (
+             <label className="auth-field">
+               <span>Organisation Code</span>
+                <input
+                  type="text"
+                  value={orgCode}
+                  onChange={(e) => setOrgCode(e.target.value)}
+                  className="auth-input"
+                />
+             </label>
+           )}
             <label className="auth-field">
               <span>Username</span>
               <input className="auth-input" name="username" value={username} onChange={onChange} required />

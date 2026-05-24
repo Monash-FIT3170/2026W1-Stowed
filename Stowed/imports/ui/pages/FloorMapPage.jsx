@@ -35,6 +35,7 @@ function FloorMapPageInner() {
     handleCanvasSettingsSave,
     selectedUnit, setSelectedUnit, setIsPanelOpen, isPanelOpen,
     lowStockByUnitId,
+    handleDeleteSelectedUnit,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -245,6 +246,19 @@ function FloorMapPageInner() {
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                     <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
                   </div>
+                  <div style={{ height: "1px", background: "var(--border-light)" }} />
+                  {selectedUnit && (
+                    <div style={{ padding: "12px", boxSizing: "border-box" }}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        style={{ width: "100%" }}
+                        onClick={handleDeleteSelectedUnit}
+                      >
+                        Delete "{selectedUnit.name}"
+                      </button>
+                    </div>
+                  )}
                   <div style={{ height: "1px", background: "var(--border-light)" }} />
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                     <CanvasToolbar
