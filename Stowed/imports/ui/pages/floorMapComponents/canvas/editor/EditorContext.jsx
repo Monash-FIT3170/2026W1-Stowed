@@ -208,17 +208,27 @@ export function EditorProvider({ children, floorMapId }) {
           height: unit.height,
         };
 
-        const currentUnitIds = units
-          .filter((unit) => unit._id)
-          .map((unit) => unit._id);
+      const currentUnitIds = units
+        .filter((unit) => unit._id)
+        .map((unit) => unit._id);
 
-        for (const savedUnit of savedUnits) {
-          if (!currentUnitIds.includes(savedUnit._id)) {
-            await callMethod("storageUnits.delete", {
-              storageUnitId: savedUnit._id,
-            });
-          }
+      for (const savedUnit of savedUnits) {
+        if (!currentUnitIds.includes(savedUnit._id)) {
+          await callMethod("storageUnits.delete", {
+            storageUnitId: savedUnit._id,
+          });
         }
+      }
+
+      const savedCanvasUnits = [];
+
+      for (const unit of units) {
+        const position = {
+          x: unit.x,
+          y: unit.y,
+          width: unit.width,
+          height: unit.height,
+        };
 
         if (unit._id) {
           await callMethod("storageUnits.update", {
@@ -229,6 +239,8 @@ export function EditorProvider({ children, floorMapId }) {
             position,
             fill:          unit.fill || "lightblue",
           });
+
+          savedCanvasUnits.push(unit);
         } else {
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
@@ -238,12 +250,18 @@ export function EditorProvider({ children, floorMapId }) {
             fill:       unit.fill || "lightblue",
           });
 
-          unit._id = newId;
-          unit.id  = newId;
+          savedCanvasUnits.push({
+            ...unit,
+            _id: newId,
+            id: newId,
+          });
         }
       }
 
+      setUnits(savedCanvasUnits);
+      historyRef.current = { stack: [savedCanvasUnits], index: 0 };
       alert("Layout saved to database!");
+    }
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
@@ -304,8 +322,32 @@ export function EditorProvider({ children, floorMapId }) {
 
   // --- CANVAS SETTINGS ---
   function handleCanvasSettingsSave({ floorSize: newFloorSize, gridInterval, showGrid, snapToGrid }) {
+    const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+    const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+    const unitsInsideFloor = units.filter(
+      (unit) =>
+        unit.x >= 0 &&
+        unit.y >= 0 &&
+        unit.x + unit.width <= floorWidthMeters &&
+        unit.y + unit.height <= floorHeightMeters
+    );
+    const removedUnits = units.filter(
+      (unit) => !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id)
+    );
+
+    if (removedUnits.length > 0) {
+      const unitNames = removedUnits.map((unit) => unit.name || unit.id).join(", ");
+      const proceed = confirm(
+        `The resized floor is too small for ${removedUnits.length} unit(s): ${unitNames}.\n\nDelete these unit(s) from the floor map?\n\nChoose Cancel to keep editing the floor size.`
+      );
+
+      if (!proceed) return false;
+      commitUnits(unitsInsideFloor);
+    }
+
     setFloorSize(newFloorSize);
     setCanvasSettings({ gridInterval, showGrid, snapToGrid });
+    return true;
   }
 
   const value = {

@@ -176,11 +176,12 @@ Meteor.methods({
   /**
    * Creates a new StorageUnit under an existing FloorMap.
    */
-  async "storageUnits.create"({ floorMapId, name, type, position }) {
+  async 'storageUnits.create'({ floorMapId, name, type, position, fill }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
     check(position, Object);
+    if (fill !== undefined) check(fill, String);
 
     // Prevent orphaned storage units by ensuring the parent FloorMap exists first.
     const floorMap = await FloorMaps.findOneAsync(floorMapId);
@@ -198,6 +199,7 @@ Meteor.methods({
       name,
       type,
       position,
+      ...(fill !== undefined ? { fill } : {}),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -206,18 +208,13 @@ Meteor.methods({
   /**
    * Updates an existing StorageUnit.
    */
-  async "storageUnits.update"({
-    storageUnitId,
-    floorMapId,
-    name,
-    type,
-    position,
-  }) {
+  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, position, fill }) {
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
     check(type, String);
     check(position, Object);
+    if (fill !== undefined) check(fill, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -251,6 +248,7 @@ Meteor.methods({
         name,
         type,
         position,
+        ...(fill !== undefined ? { fill } : {}),
         updatedAt: new Date(),
       },
     });
