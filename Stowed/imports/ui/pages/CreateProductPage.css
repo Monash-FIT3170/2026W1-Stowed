@@ -21,3 +21,11 @@
     padding: 18px;
   }
 }
+
+select.form-input {
+  color: var(--text-muted);
+}
+
+select.form-input.selected {
+  color: var(--text-dark);
+}

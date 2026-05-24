@@ -4,6 +4,8 @@ import { hasClientPermission } from "/imports/api/userMethods";
 import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
+import { Organisations } from "/imports/api/organisations";
+import React, { useEffect, useRef, useState } from "react";
 import "./Global.css";
 import "./Sidebar.css";
 
@@ -44,8 +46,27 @@ export function Sidebar() {
   const currentUser = useTracker(() => Meteor.user());
   const role = currentUser?.profile?.role;
   const isLoggedIn = !!currentUser;
-  const username = currentUser?.username;
+  const username = currentUser?.profile?.username;
   const navigate = useNavigate();
+
+  const [orgSubReady, setOrgSubReady] = useState(false);
+  useEffect(() => {
+    if (!currentUser) return;
+    const sub = Meteor.subscribe("currentOrganisation");
+    sub.ready() ? setOrgSubReady(true) : setOrgSubReady(false);
+    const interval = setInterval(() => {
+      setOrgSubReady(sub.ready());
+    }, 100);
+    return () => {
+      sub.stop();
+      clearInterval(interval);
+    };
+  }, [currentUser?._id]);
+
+  const organisation = useTracker(() => {
+    if (!currentUser || !orgSubReady) return null;
+    return Organisations.findOne(currentUser.profile.organisationId);
+  }, [currentUser?.profile?.organisationId, orgSubReady]);
 
   const handleLogout = () => {
     logoutUser();
@@ -67,6 +88,12 @@ export function Sidebar() {
           </div>
           <div className="sidebar-logo-tagline">a place for everything</div>
         </div>
+
+        {isLoggedIn && organisation && (
+          <div className="sidebar-org">
+            {organisation.name}
+          </div>
+        )}
 
         <nav className="sidebar-nav">
           <section className="sidebar-section">

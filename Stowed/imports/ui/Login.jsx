@@ -39,15 +39,16 @@ export const Login = () => {
       login: login.trim(),
     });
 
+    // Compound the username with the org code so Meteor can find the globally-unique account
+    const identifier = login.includes('@')
+      ? login
+      : { username: `${orgCode.trim().toLowerCase()}~${login.trim()}` };
+
     await new Promise((resolve, reject) => {
-      Meteor.loginWithPassword(
-        login.includes('@') ? login : { username: login },
-        password,
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
+      Meteor.loginWithPassword(identifier, password, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
     });
       navigate('/');
     } catch (err) {

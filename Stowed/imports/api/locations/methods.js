@@ -10,24 +10,11 @@ import {
   StorageLocations,
 } from "./collections";
 import { ProductRecords } from "../products/collections";
+import { getCallerOrgId, assertOrgAccess } from "../userMethods";
 
 Meteor.methods({
   /**
    * Creates a new Site.
-   *
-   * A Site represents the highest-level physical storage area, such as a
-   * warehouse, office, shop, or home storage space.
-   *
-   * @param {Object} params
-   * @param {string} params.name - Name of the site.
-   * @param {string} [params.description=''] - Optional description of the site.
-   * @returns {string} The ID of the created site document.
-   *
-   *
-   * In development, unauthenticated access is allowed so the location UI can be
-   * exercised without wiring a full auth flow first.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
    */
   async "sites.create"({ name, description = "" }) {
     check(name, String);
@@ -37,7 +24,11 @@ Meteor.methods({
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
+    const orgId = await getCallerOrgId(this.userId);
+    if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
     return Sites.insertAsync({
+      orgId,
       name,
       description,
       createdAt: new Date(),
@@ -47,59 +38,26 @@ Meteor.methods({
 
   /**
    * Updates an existing Site.
-   *
-   * @param {Object} params
-   * @param {string} params.siteId - ID of the site to update.
-   * @param {string} params.name - Name of the site.
-   * @param {string} [params.description=''] - Optional description of the site.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} site-not-found if no site exists for the provided ID.
    */
   async "sites.update"({ siteId, name, description = "" }) {
     check(siteId, String);
     check(name, String);
     check(description, String);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
-
-    const site = await Sites.findOneAsync(siteId);
-    if (!site) {
-      throw new Meteor.Error("site-not-found", "No site found with that ID.");
-    }
+    await assertOrgAccess(Sites, siteId, this.userId);
 
     await Sites.updateAsync(siteId, {
-      $set: {
-        name,
-        description,
-        updatedAt: new Date(),
-      },
+      $set: { name, description, updatedAt: new Date() },
     });
   },
 
   /**
    * Deletes an existing Site when it has no child FloorMaps.
-   *
-   * @param {Object} params
-   * @param {string} params.siteId - ID of the site to delete.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} site-not-found if no site exists for the provided ID.
-   * @throws {Meteor.Error} site-not-empty if the site still contains floor maps.
    */
   async "sites.delete"({ siteId }) {
     check(siteId, String);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
-
-    const site = await Sites.findOneAsync(siteId);
-    if (!site) {
-      throw new Meteor.Error("site-not-found", "No site found with that ID.");
-    }
+    await assertOrgAccess(Sites, siteId, this.userId);
 
     const floorMap = await FloorMaps.findOneAsync({ siteId });
     if (floorMap) {
@@ -114,18 +72,6 @@ Meteor.methods({
 
   /**
    * Creates a new FloorMap under an existing Site.
-   *
-   * A FloorMap represents a visual or logical layout within a Site. For example,
-   * a site may have a ground floor, storage room, or warehouse zone.
-   *
-   * @param {Object} params
-   * @param {string} params.siteId - ID of the parent Site.
-   * @param {string} params.name - Name of the floor map.
-   * @param {string} [params.imageUrl=''] - Optional URL/path for the floor map image.
-   * @returns {string} The ID of the created floor map document.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} invalid-site if the parent Site does not exist.
    */
   async "floorMaps.create"({
     siteId,
@@ -140,18 +86,13 @@ Meteor.methods({
     check(floorSize, Object);
     check(settings, Object);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
+    // assertOrgAccess covers both "site not found" and org ownership
+    await assertOrgAccess(Sites, siteId, this.userId);
 
-    // Prevent orphaned floor maps by ensuring the parent Site exists first.
-    const site = await Sites.findOneAsync(siteId);
-
-    if (!site) {
-      throw new Meteor.Error("invalid-site", "Site does not exist.");
-    }
+    const orgId = await getCallerOrgId(this.userId);
 
     return FloorMaps.insertAsync({
+      orgId,
       siteId,
       name,
       imageUrl,
@@ -164,16 +105,6 @@ Meteor.methods({
 
   /**
    * Updates an existing FloorMap.
-   *
-   * @param {Object} params
-   * @param {string} params.floorMapId - ID of the floor map to update.
-   * @param {string} params.siteId - ID of the parent Site.
-   * @param {string} params.name - Name of the floor map.
-   * @param {string} [params.imageUrl=''] - Optional URL/path for the floor map image.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} floor-map-not-found if no floor map exists for the provided ID.
-   * @throws {Meteor.Error} invalid-site if the parent Site does not exist.
    */
   async "floorMaps.update"({
     floorMapId,
@@ -190,10 +121,6 @@ Meteor.methods({
     check(floorSize, Object);
     check(settings, Object);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
-
     const floorMap = await FloorMaps.findOneAsync(floorMapId);
     if (!floorMap) {
       throw new Meteor.Error(
@@ -202,10 +129,10 @@ Meteor.methods({
       );
     }
 
-    const site = await Sites.findOneAsync(siteId);
-    if (!site) {
-      throw new Meteor.Error("invalid-site", "Site does not exist.");
-    }
+    // Verify ownership via current parent site
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    // Verify new parent site also belongs to same org (covers "site not found" too)
+    await assertOrgAccess(Sites, siteId, this.userId);
 
     await FloorMaps.updateAsync(floorMapId, {
       $set: {
@@ -221,20 +148,9 @@ Meteor.methods({
 
   /**
    * Deletes an existing FloorMap when it has no child StorageUnits.
-   *
-   * @param {Object} params
-   * @param {string} params.floorMapId - ID of the floor map to delete.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} floor-map-not-found if no floor map exists for the provided ID.
-   * @throws {Meteor.Error} floor-map-not-empty if the floor map still contains storage units.
    */
   async "floorMaps.delete"({ floorMapId }) {
     check(floorMapId, String);
-
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
 
     const floorMap = await FloorMaps.findOneAsync(floorMapId);
     if (!floorMap) {
@@ -243,6 +159,8 @@ Meteor.methods({
         "No floor map found with that ID.",
       );
     }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
 
     const storageUnit = await StorageUnits.findOneAsync({ floorMapId });
     if (storageUnit) {
@@ -257,23 +175,6 @@ Meteor.methods({
 
   /**
    * Creates a new StorageUnit under an existing FloorMap.
-   *
-   * A StorageUnit represents a physical storage structure shown on the floor map,
-   * such as a shelf, cabinet, rack, drawer set, fridge, or other storage unit.
-   *
-   * @param {Object} params
-   * @param {string} params.floorMapId - ID of the parent FloorMap.
-   * @param {string} params.name - Name of the storage unit.
-   * @param {string} params.type - Type of storage unit.
-   * @param {Object} params.position - Position and size of the unit on the map.
-   * @param {number} params.position.x - X-coordinate on the floor map.
-   * @param {number} params.position.y - Y-coordinate on the floor map.
-   * @param {number} params.position.width - Width of the unit on the floor map.
-   * @param {number} params.position.height - Height of the unit on the floor map.
-   * @returns {string} The ID of the created storage unit document.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} invalid-floor-map if the parent FloorMap does not exist.
    */
   async 'storageUnits.create'({ floorMapId, name, type, position, fill }) {
     check(floorMapId, String);
@@ -282,18 +183,18 @@ Meteor.methods({
     check(position, Object);
     if (fill !== undefined) check(fill, String);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
-
     // Prevent orphaned storage units by ensuring the parent FloorMap exists first.
     const floorMap = await FloorMaps.findOneAsync(floorMapId);
-
     if (!floorMap) {
       throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
     }
 
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+
+    const orgId = await getCallerOrgId(this.userId);
+
     return StorageUnits.insertAsync({
+      orgId,
       floorMapId,
       name,
       type,
@@ -306,17 +207,6 @@ Meteor.methods({
 
   /**
    * Updates an existing StorageUnit.
-   *
-   * @param {Object} params
-   * @param {string} params.storageUnitId - ID of the storage unit to update.
-   * @param {string} params.floorMapId - ID of the parent FloorMap.
-   * @param {string} params.name - Name of the storage unit.
-   * @param {string} params.type - Type of storage unit.
-   * @param {Object} params.position - Position and size of the unit on the map.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} storage-unit-not-found if no storage unit exists for the provided ID.
-   * @throws {Meteor.Error} invalid-floor-map if the parent FloorMap does not exist.
    */
   async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, position, fill }) {
     check(storageUnitId, String);
@@ -338,10 +228,19 @@ Meteor.methods({
       );
     }
 
-    const floorMap = await FloorMaps.findOneAsync(floorMapId);
-    if (!floorMap) {
+    const currentFloorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+    if (!currentFloorMap) {
       throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
     }
+
+    await assertOrgAccess(Sites, currentFloorMap.siteId, this.userId);
+
+    // Verify new parent floor map also belongs to same org
+    const newFloorMap = await FloorMaps.findOneAsync(floorMapId);
+    if (!newFloorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+    await assertOrgAccess(Sites, newFloorMap.siteId, this.userId);
 
     await StorageUnits.updateAsync(storageUnitId, {
       $set: {
@@ -357,13 +256,6 @@ Meteor.methods({
 
   /**
    * Deletes an existing StorageUnit when it has no child StorageLocations.
-   *
-   * @param {Object} params
-   * @param {string} params.storageUnitId - ID of the storage unit to delete.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} storage-unit-not-found if no storage unit exists for the provided ID.
-   * @throws {Meteor.Error} storage-unit-not-empty if the storage unit still contains storage locations.
    */
   async "storageUnits.delete"({ storageUnitId }) {
     check(storageUnitId, String);
@@ -380,6 +272,13 @@ Meteor.methods({
       );
     }
 
+    const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+
     const storageLocation = await StorageLocations.findOneAsync({
       storageUnitId,
     });
@@ -395,19 +294,6 @@ Meteor.methods({
 
   /**
    * Creates a new StorageLocation under an existing StorageUnit.
-   *
-   * A StorageLocation is the lowest-level fixed physical location where
-   * products can later be assigned. For example, "Shelf A - Rack 1",
-   * "Drawer 3", or "Bin 4".
-   *
-   * @param {Object} params
-   * @param {string} params.storageUnitId - ID of the parent StorageUnit.
-   * @param {string} params.name - Display name of the storage location.
-   * @param {string} params.code - Short code for the storage location.
-   * @returns {string} The ID of the created storage location document.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} invalid-storage-unit if the parent StorageUnit does not exist.
    */
   async "storageLocations.create"({
     storageUnitId,
@@ -420,13 +306,8 @@ Meteor.methods({
     check(code, String);
     check(imageUrl, String);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
-
     // Prevent orphaned storage locations by ensuring the parent StorageUnit exists first.
     const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
-
     if (!storageUnit) {
       throw new Meteor.Error(
         "invalid-storage-unit",
@@ -434,7 +315,17 @@ Meteor.methods({
       );
     }
 
+    const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+
+    const orgId = await getCallerOrgId(this.userId);
+
     return StorageLocations.insertAsync({
+      orgId,
       storageUnitId,
       name,
       code,
@@ -447,16 +338,6 @@ Meteor.methods({
 
   /**
    * Updates an existing StorageLocation.
-   *
-   * @param {Object} params
-   * @param {string} params.storageLocationId - ID of the storage location to update.
-   * @param {string} params.storageUnitId - ID of the parent StorageUnit.
-   * @param {string} params.name - Display name of the storage location.
-   * @param {string} params.code - Short unique/code-style label for the location.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} storage-location-not-found if no storage location exists for the provided ID.
-   * @throws {Meteor.Error} invalid-storage-unit if the parent StorageUnit does not exist.
    */
   async "storageLocations.update"({
     storageLocationId,
@@ -484,13 +365,28 @@ Meteor.methods({
       );
     }
 
-    const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
-    if (!storageUnit) {
-      throw new Meteor.Error(
-        "invalid-storage-unit",
-        "Storage unit does not exist.",
-      );
+    const currentStorageUnit = await StorageUnits.findOneAsync(storageLocation.storageUnitId);
+    if (!currentStorageUnit) {
+      throw new Meteor.Error("invalid-storage-unit", "Storage unit does not exist.");
     }
+
+    const floorMap = await FloorMaps.findOneAsync(currentStorageUnit.floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+
+    // Verify new parent storage unit also belongs to same org
+    const newStorageUnit = await StorageUnits.findOneAsync(storageUnitId);
+    if (!newStorageUnit) {
+      throw new Meteor.Error("invalid-storage-unit", "Storage unit does not exist.");
+    }
+    const newFloorMap = await FloorMaps.findOneAsync(newStorageUnit.floorMapId);
+    if (!newFloorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+    await assertOrgAccess(Sites, newFloorMap.siteId, this.userId);
 
     await StorageLocations.updateAsync(storageLocationId, {
       $set: {
@@ -505,13 +401,6 @@ Meteor.methods({
 
   /**
    * Deletes an existing StorageLocation when no ProductRecords still reference it.
-   *
-   * @param {Object} params
-   * @param {string} params.storageLocationId - ID of the storage location to delete.
-   *
-   * @throws {Meteor.Error} not-authorised if the user is not logged in outside development.
-   * @throws {Meteor.Error} storage-location-not-found if no storage location exists for the provided ID.
-   * @throws {Meteor.Error} storage-location-in-use if products are still assigned to the storage location.
    */
   async "storageLocations.delete"({ storageLocationId }) {
     check(storageLocationId, String);
@@ -528,6 +417,21 @@ Meteor.methods({
         "No storage location found with that ID.",
       );
     }
+
+    const storageUnit = await StorageUnits.findOneAsync(storageLocation.storageUnitId);
+    if (!storageUnit) {
+      throw new Meteor.Error(
+        "invalid-storage-unit",
+        "Storage unit does not exist.",
+      );
+    }
+
+    const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
 
     const productRecord = await ProductRecords.findOneAsync({
       locationId: storageLocationId,

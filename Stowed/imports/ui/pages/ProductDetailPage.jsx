@@ -4,6 +4,8 @@ import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Products, ProductRecords } from '/imports/api/products/collections';
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
+import { hasClientPermission } from "../../api/userMethods";
+import { useAuth } from "../../api/useAuth";
 
 // Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
@@ -108,6 +110,10 @@ export function ProductDetailPage() {
   const [restockQty, setRestockQty]             = useState('');
   const [restockAssignments, setRestockAssignments] = useState([]);
   const [isRestocking, setIsRestocking]         = useState(false);
+  const { isLoggedIn, role } = useAuth();
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canRestock = hasClientPermission(role, "products.restock");
+  const canEdit = hasClientPermission(role, "products.update");
 
   const { loading, product, records, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -241,19 +247,22 @@ export function ProductDetailPage() {
       </div>
 
       <div style={{ ...sectionStyle, display: 'flex', gap: '8px' }}>
+        {canEdit && (
         <button style={buttonStyle} onClick={() => navigate(`/inventory/${productId}/edit`)}>
           Edit
-        </button>
+        </button>)}
+        {canRestock && (
         <button style={buttonStyle} onClick={openRestockModal}>
           Restock
-        </button>
+        </button>)}
+        {canDelete && (
         <button style={dangerButtonStyle} onClick={() => setShowDeleteModal(true)}>
           Delete
-        </button>
+        </button>)}
       </div>
 
       {/* Restock modal */}
-      {showRestockModal && (
+      {showRestockModal && canRestock && (
         <div style={overlayStyle}>
           <div style={{ ...modalStyle, maxWidth: '500px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
@@ -384,7 +393,7 @@ export function ProductDetailPage() {
       )}
 
       {/* Delete modal */}
-      {showDeleteModal && (
+      {showDeleteModal && canDelete && (
         <div style={overlayStyle}>
           <div style={modalStyle}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>

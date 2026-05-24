@@ -12,20 +12,30 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
+import { Organisations } from "/imports/api/organisations";
 
-// await Products.removeAsync({});  // TEMP: force reseed
-// await ProductRecords.removeAsync({});
-// await Products.removeAsync({});
+async function seedOrg() {
+  let org = await Organisations.findOneAsync({ name: "Seed Organisation" });
+  if (!org) {
+    const orgId = await Organisations.insertAsync({
+      name: "Seed Organisation",
+      code: "seed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    org = { _id: orgId };
+  }
+  return org._id;
+}
 
-// These functions pre populate fields if empty, however can be removed later if needed
-
-async function seedProducts() {
+async function seedProducts(seedOrgId) {
   const count = await Products.find().countAsync();
   if (count > 0) return;
 
   const now = new Date();
   const add = ({ name, description, totalQuantity }) =>
     Products.insertAsync({
+      orgId: seedOrgId,
       name,
       description,
       totalQuantity,
@@ -77,7 +87,7 @@ async function seedProductRecords() {
     createdAt: now,
     updatedAt: now,
   });
-  // Hand Tools: 15 at SA-B1, 8 at SB-B1 (total: 23)
+  // Cable Ties: 15 at SA-B1, 8 at SB-B1 (total: 23)
   await ProductRecords.insertAsync({
     productId: handTools._id,
     locationId: sab1._id,
@@ -94,13 +104,14 @@ async function seedProductRecords() {
   });
 }
 
-async function seedLocations() {
+async function seedLocations(seedOrgId) {
   const count = await Sites.find().countAsync();
   if (count > 0) return;
 
   const now = new Date();
 
   const siteId = await Sites.insertAsync({
+    orgId: seedOrgId,
     name: "Main Warehouse",
     description: "Primary storage facility.",
     createdAt: now,
@@ -108,6 +119,7 @@ async function seedLocations() {
   });
 
   const floorMapId = await FloorMaps.insertAsync({
+    orgId: seedOrgId,
     siteId,
     name: "Ground Floor",
     imageUrl: "",
@@ -116,6 +128,7 @@ async function seedLocations() {
   });
 
   const shelfAId = await StorageUnits.insertAsync({
+    orgId: seedOrgId,
     floorMapId,
     name: "Shelf A",
     type: "shelf",
@@ -125,6 +138,7 @@ async function seedLocations() {
   });
 
   const shelfBId = await StorageUnits.insertAsync({
+    orgId: seedOrgId,
     floorMapId,
     name: "Shelf B",
     type: "shelf",
@@ -134,6 +148,7 @@ async function seedLocations() {
   });
 
   await StorageLocations.insertAsync({
+    orgId: seedOrgId,
     storageUnitId: shelfAId,
     name: "Bay 1",
     code: "SA-B1",
@@ -141,6 +156,7 @@ async function seedLocations() {
     updatedAt: now,
   });
   await StorageLocations.insertAsync({
+    orgId: seedOrgId,
     storageUnitId: shelfAId,
     name: "Bay 2",
     code: "SA-B2",
@@ -148,6 +164,7 @@ async function seedLocations() {
     updatedAt: now,
   });
   await StorageLocations.insertAsync({
+    orgId: seedOrgId,
     storageUnitId: shelfBId,
     name: "Bay 1",
     code: "SB-B1",
@@ -155,6 +172,7 @@ async function seedLocations() {
     updatedAt: now,
   });
   await StorageLocations.insertAsync({
+    orgId: seedOrgId,
     storageUnitId: shelfBId,
     name: "Bay 2",
     code: "SB-B2",
@@ -163,23 +181,31 @@ async function seedLocations() {
   });
 }
 
-// Publications
-
 Meteor.startup(async () => {
-  await seedProducts();
-  await seedLocations();
+  await Sites.rawCollection().createIndex({ orgId: 1 });
+  await Products.rawCollection().createIndex({ orgId: 1 });
+
+  const seedOrgId = await seedOrg();
+  await seedProducts(seedOrgId);
+  await seedLocations(seedOrgId);
   await seedProductRecords();
 });
 
 Meteor.publish("allUsers", async function () {
-  // allow only if the logged-in user has owner role
   if (!this.userId) return this.ready();
-  const user = await Meteor.users.findOneAsync(this.userId, {
-    fields: { "profile.role": 1 },
-  });
 
-  if (!user || user.profile.role < ROLES.OWNER) {
-    throw new Meteor.Error("unauthorized", "Owners only");
+  const currentUser = await Meteor.users.findOneAsync(
+    this.userId,
+    { fields: { 'profile.role': 1, 'profile.organisationId': 1 } }
+  );
+
+  if (!currentUser || currentUser.profile.role < ROLES.OWNER) {
+    throw new Meteor.Error('unauthorized', 'Owners only');
   }
-  return Meteor.users.find({}, { fields: { username: 1, emails: 1 } });
+
+  // Only users from the same organisation
+  return Meteor.users.find(
+    { 'profile.organisationId': currentUser.profile.organisationId },
+    { fields: { username: 1, emails: 1, 'profile.role': 1 } }
+  );
 });
