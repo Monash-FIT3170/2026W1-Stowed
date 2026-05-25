@@ -343,6 +343,22 @@ export function LocationsPage() {
     });
   }
 
+  function startEditSite(site) {
+    setEditingSiteId(site._id);
+    setEditSiteForm({ name: site.name, description: site.description || "" });
+  }
+
+  async function saveEditSite(siteId) {
+    const name = editSiteForm.name.trim();
+    if (!name) return;
+    const duplicate = sites.some((s) => s._id !== siteId && s.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) { setStatus({ type: "error", message: "A site with that name already exists." }); return; }
+    await runSubmit(async () => {
+      await submitMeteorMethod("sites.update", { siteId, name, description: editSiteForm.description.trim() });
+      setEditingSiteId(null);
+    });
+  }
+
   function startEditFloorMap(fm) {
     setEditingFloorMapId(fm._id);
     setEditFloorMapForm({ name: fm.name, imageUrl: fm.imageUrl || "" });
@@ -568,7 +584,7 @@ export function LocationsPage() {
                 ))}
               </div>
             ) : (
-              <EmptyState>No floor maps yet. Create one to get started.</EmptyState>
+              <EmptyState>No floor maps for this site yet.</EmptyState>
             )}
           </Panel>
 
@@ -681,6 +697,10 @@ export function LocationsPage() {
         <div className="right-column">
           <Panel badge="qr" title="Relationship Summary" subtitle="Quick sanity check of what is currently selected.">
             <dl className="relationship-summary-list">
+              <div className="relationship-summary-item">
+                <dt className="relationship-summary-label">Site</dt>
+                <dd className="relationship-summary-value">{selectedSite?.name || "None selected"}</dd>
+              </div>
               <div className="relationship-summary-item">
                 <dt className="relationship-summary-label">Floor Map</dt>
                 <dd className="relationship-summary-value">{selectedFloorMap?.name || "None selected"}</dd>

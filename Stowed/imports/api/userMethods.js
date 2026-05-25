@@ -204,16 +204,6 @@ Meteor.methods({
       },
     });
 
-    // Auto-create a default site so the locations hierarchy is ready
-    // without the owner needing to create one manually.
-    await Sites.insertAsync({
-      orgId: organisationId,
-      name: "Main Site",
-      description: "",
-      createdAt: now,
-      updatedAt: now,
-    });
-
     return userId;
   } catch (err) {
     // Roll back the org we just created — no user means no org

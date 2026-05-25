@@ -25,10 +25,11 @@ function callMethod(methodName, params) {
   });
 }
 
-function buildLocationLabel(location, storageUnits, floorMaps, sites) { // sites kept for call-site compatibility
+function buildLocationLabel(location, storageUnits, floorMaps, sites) {
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
   const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
-  return [floorMap?.name, unit?.name, location.name]
+  const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
+  return [site?.name, floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
     .join(" → ");
 }
