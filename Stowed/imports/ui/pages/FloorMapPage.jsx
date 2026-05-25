@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
@@ -23,6 +25,9 @@ function callMethod(methodName, params) {
 }
 
 function FloorMapPageInner() {
+  const { role } = useAuth();
+  const canManage = hasClientPermission(role, "locations.manage");
+
   const {
     activeTool, setActiveTool,
     floorSize, canvasSettings,
@@ -220,8 +225,8 @@ function FloorMapPageInner() {
           </div>
         )}
 
-        {/* EDIT MODE SIDEBAR */}
-        {isCanvasEditMode && (
+        {/* EDIT MODE SIDEBAR — only accessible to admins/owners */}
+        {isCanvasEditMode && canManage && (
           <>
             {isSidebarOpen ? (
               <div style={{
@@ -364,8 +369,8 @@ function FloorMapPageInner() {
         />
       )}
 
-      {/* FLOATING EDIT BUTTON */}
-      {!isCanvasEditMode && (
+      {/* FLOATING EDIT BUTTON — admins and owners only */}
+      {!isCanvasEditMode && canManage && (
         <button onClick={() => setCanvasEditMode(true)} className="btn-primary" style={{ ...pageStyles.floatingButton }}>
           Edit Floor Map
         </button>

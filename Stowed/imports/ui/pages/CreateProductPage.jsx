@@ -1,7 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products } from "/imports/api/products/collections";
 import {
   Sites,
@@ -84,6 +86,13 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) { // sites
 
 export function CreateProductPage() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  useEffect(() => {
+    if (role !== null && !hasClientPermission(role, "products.create")) {
+      navigate("/inventory/list", { replace: true });
+    }
+  }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

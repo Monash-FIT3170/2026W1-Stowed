@@ -2,6 +2,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
 import {
   Sites,
@@ -61,6 +63,10 @@ export function ProductDetailView({
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const canUpdate = hasClientPermission(role, "products.update");
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canUploadImage = hasClientPermission(role, "products.uploadImage");
 
   if (!item) {
     return <div className="p-8 text-center">Product not found.</div>;
@@ -241,19 +247,23 @@ export function ProductDetailView({
               <button className="btn-secondary" onClick={() => navigate("/inventory/list")}>
                 Back
               </button>
-              <button
-                className="btn-primary"
-                onClick={handleUpdateClick}
-                disabled={uploadingImage}
-              >
-                Update
-              </button>
-              <button
-                className="btn-danger"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                Delete
-              </button>
+              {canUpdate && (
+                <button
+                  className="btn-primary"
+                  onClick={handleUpdateClick}
+                  disabled={uploadingImage}
+                >
+                  Update
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  className="btn-danger"
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
 
@@ -437,21 +447,25 @@ export function ProductDetailView({
                       )}
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    className="thumbnail add-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingImage}
-                  >
-                    {uploadingImage ? "..." : "+"}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    style={{ display: "none" }}
-                  />
+                  {canUploadImage && (
+                    <>
+                      <button
+                        type="button"
+                        className="thumbnail add-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? "..." : "+"}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: "none" }}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             </div>

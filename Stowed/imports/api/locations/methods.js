@@ -10,7 +10,7 @@ import {
   StorageLocations,
 } from "./collections";
 import { ProductRecords } from "../products/collections";
-import { getCallerOrgId, assertOrgAccess } from "../userMethods";
+import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 
 Meteor.methods({
   /**
@@ -23,6 +23,8 @@ Meteor.methods({
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
+
+    await requirePermission(this.userId, "locations.manage");
 
     const orgId = await getCallerOrgId(this.userId);
     if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
@@ -45,6 +47,7 @@ Meteor.methods({
     check(description, String);
 
     await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     await Sites.updateAsync(siteId, {
       $set: { name, description, updatedAt: new Date() },
@@ -58,6 +61,7 @@ Meteor.methods({
     check(siteId, String);
 
     await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     const floorMap = await FloorMaps.findOneAsync({ siteId });
     if (floorMap) {
@@ -88,6 +92,7 @@ Meteor.methods({
 
     // assertOrgAccess covers both "site not found" and org ownership
     await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     const orgId = await getCallerOrgId(this.userId);
 
@@ -131,6 +136,7 @@ Meteor.methods({
 
     // Verify ownership via current parent site
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
     // Verify new parent site also belongs to same org (covers "site not found" too)
     await assertOrgAccess(Sites, siteId, this.userId);
 
@@ -161,6 +167,7 @@ Meteor.methods({
     }
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     const storageUnit = await StorageUnits.findOneAsync({ floorMapId });
     if (storageUnit) {
@@ -190,6 +197,7 @@ Meteor.methods({
     }
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     const orgId = await getCallerOrgId(this.userId);
 
@@ -234,6 +242,7 @@ Meteor.methods({
     }
 
     await assertOrgAccess(Sites, currentFloorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     // Verify new parent floor map also belongs to same org
     const newFloorMap = await FloorMaps.findOneAsync(floorMapId);
@@ -278,6 +287,7 @@ Meteor.methods({
     }
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     const storageLocation = await StorageLocations.findOneAsync({
       storageUnitId,
@@ -321,6 +331,7 @@ Meteor.methods({
     }
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     const orgId = await getCallerOrgId(this.userId);
 
@@ -376,6 +387,7 @@ Meteor.methods({
     }
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     // Verify new parent storage unit also belongs to same org
     const newStorageUnit = await StorageUnits.findOneAsync(storageUnitId);
@@ -432,6 +444,7 @@ Meteor.methods({
     }
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
 
     const productRecord = await ProductRecords.findOneAsync({
       locationId: storageLocationId,

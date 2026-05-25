@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import "../Global.css";
 import "./InventoryListPage.css";
 import { ROLES } from "/imports/api/roles";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 
 export function ViewAccounts() {
   const navigate = useNavigate();
@@ -12,6 +14,10 @@ export function ViewAccounts() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { role } = useAuth();
+  const canDeleteUsers = hasClientPermission(role, "delete-users");
+  const canCreateUsers = hasClientPermission(role, "create-users");
 
   const { users, currentUser } = useTracker(() => {
     const subscription = Meteor.subscribe("allUsers");
@@ -68,9 +74,11 @@ export function ViewAccounts() {
         </div>
         <div className="header-top">
           <h1 className="header-title">Manage <em>Accounts</em></h1>
-          <button onClick={() => navigate("/register")} className="btn-primary">
-            + Create Account
-          </button>
+          {canCreateUsers && (
+            <button onClick={() => navigate("/register")} className="btn-primary">
+              + Create Account
+            </button>
+          )}
         </div>
       </div>
 
@@ -106,7 +114,7 @@ export function ViewAccounts() {
               <span style={{ color: "var(--text-muted)" }}>{getEmail(user)}</span>
               <span>{roleLabel(user.profile?.role)}</span>
               <span>
-                {user._id !== currentUser?._id && (
+                {canDeleteUsers && user._id !== currentUser?._id && (
                   <button
                     onClick={() => openDeleteModal(user._id)}
                     disabled={deleting === user._id}
