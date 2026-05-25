@@ -36,7 +36,6 @@ function FloorMapPageInner() {
     units, commitUnits,
     canUndo, canRedo, handleUndo, handleRedo,
     handleSaveLayout, handleLoadLayout,
-    handlePlaceUnit, handleUnitPlaced,
     handleCanvasSettingsSave,
     selectedUnit, setSelectedUnit, setIsPanelOpen, isPanelOpen,
     lowStockByUnitId,
@@ -245,7 +244,7 @@ function FloorMapPageInner() {
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                    <StoragePanel onSelectUnit={handlePlaceUnit} />
+                    <StoragePanel floorMapId={currentFloorMap?._id} />
                   </div>
                   <div style={{ height: "1px", background: "var(--border-light)" }} />
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
