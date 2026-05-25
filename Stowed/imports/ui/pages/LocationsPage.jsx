@@ -128,7 +128,6 @@ export function LocationsPage() {
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedFloorMapId, setSelectedFloorMapId] = useState("");
   const [selectedStorageUnitId, setSelectedStorageUnitId] = useState("");
-  const [siteForm, setSiteForm] = useState({ name: "", description: "" });
   const [floorMapForm, setFloorMapForm] = useState({ name: "", imageUrl: "" });
   const [unitForm, setUnitForm] = useState(DEFAULT_UNIT_FORM);
   const [locationForm, setLocationForm] = useState(DEFAULT_LOCATION_FORM);
@@ -139,8 +138,6 @@ export function LocationsPage() {
   const fileInputRef = useRef(null);
 
   // Edit state for each level
-  const [editingSiteId, setEditingSiteId] = useState(null);
-  const [editSiteForm, setEditSiteForm] = useState({ name: "", description: "" });
   const [editingFloorMapId, setEditingFloorMapId] = useState(null);
   const [editFloorMapForm, setEditFloorMapForm] = useState({ name: "", imageUrl: "" });
   const [editingStorageUnitId, setEditingStorageUnitId] = useState(null);
@@ -229,17 +226,6 @@ export function LocationsPage() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function handleSiteSubmit(event) {
-    event.preventDefault();
-    await runSubmit(async () => {
-      await submitMeteorMethod("sites.create", {
-        name: siteForm.name.trim(),
-        description: siteForm.description.trim(),
-      });
-      setSiteForm({ name: "", description: "" });
-    });
   }
 
   async function handleFloorMapSubmit(event) {
@@ -344,22 +330,6 @@ export function LocationsPage() {
     }
   }
 
-  function startEditSite(site) {
-    setEditingSiteId(site._id);
-    setEditSiteForm({ name: site.name, description: site.description || "" });
-  }
-
-  async function saveEditSite(siteId) {
-    const name = editSiteForm.name.trim();
-    if (!name) return;
-    const duplicate = sites.some((s) => s._id !== siteId && s.name.toLowerCase() === name.toLowerCase());
-    if (duplicate) { setStatus({ type: "error", message: "A site with that name already exists." }); return; }
-    await runSubmit(async () => {
-      await submitMeteorMethod("sites.update", { siteId, name, description: editSiteForm.description.trim() });
-      setEditingSiteId(null);
-    });
-  }
-
   function startEditFloorMap(fm) {
     setEditingFloorMapId(fm._id);
     setEditFloorMapForm({ name: fm.name, imageUrl: fm.imageUrl || "" });
@@ -451,58 +421,7 @@ export function LocationsPage() {
 
       <div className="product-detail-grid">
         <div className="left-column">
-          <Panel title="Site" subtitle="Create and select the top-level physical area.">
-            <form className="form-grid" onSubmit={handleSiteSubmit}>
-              <Field label="Name">
-                <TextInput
-                  value={siteForm.name}
-                  onChange={(e) => setSiteForm((cur) => ({ ...cur, name: e.target.value }))}
-                  placeholder="Warehouse"
-                />
-              </Field>
-              <Field label="Description">
-                <TextArea
-                  value={siteForm.description}
-                  onChange={(e) => setSiteForm((cur) => ({ ...cur, description: e.target.value }))}
-                  placeholder="Optional note"
-                />
-              </Field>
-              <button type="submit" disabled={submitting || !siteForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
-                Add Site
-              </button>
-            </form>
-            {sites.length ? (
-              <div className="selection-list">
-                {sites.map((site) => (
-                  <div key={site._id} className={`selection-item ${site._id === selectedSiteId ? "selection-item-selected" : "selection-item-unselected"}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {editingSiteId === site._id ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <input className="form-input" value={editSiteForm.name} onChange={(e) => setEditSiteForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
-                        <input className="form-input" value={editSiteForm.description} onChange={(e) => setEditSiteForm((f) => ({ ...f, description: e.target.value }))} placeholder="Description" />
-                        <div style={{ display: "flex", gap: "6px" }}>
-                          <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditSite(site._id)} disabled={submitting || !editSiteForm.name.trim()}>Save</button>
-                          <button type="button" className="btn-secondary" onClick={() => setEditingSiteId(null)}>Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <button type="button" onClick={() => setSelectedSiteId(site._id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
-                          <div className="selection-item-name">{site.name}</div>
-                          <div className="selection-item-description">{site.description || "No description"}</div>
-                        </button>
-                        <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditSite(site)}>Edit</button>
-                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("site", site._id, site.name)}>Delete</button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState>No sites yet. Create one to unlock the rest of the chain.</EmptyState>
-            )}
-          </Panel>
-
-          <Panel title="Floor Maps" subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}>
+          <Panel title="Floor Maps">
             <form className="form-grid" onSubmit={handleFloorMapSubmit}>
               <Field label="Name">
                 <TextInput
@@ -511,7 +430,7 @@ export function LocationsPage() {
                   placeholder="Ground Floor"
                 />
               </Field>
-              <button type="submit" disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
+              <button type="submit" disabled={submitting || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
                 Add Floor Map
               </button>
             </form>
@@ -540,7 +459,7 @@ export function LocationsPage() {
                 ))}
               </div>
             ) : (
-              <EmptyState>No floor maps for this site yet.</EmptyState>
+              <EmptyState>No floor maps yet. Create one to get started.</EmptyState>
             )}
           </Panel>
 
@@ -653,10 +572,6 @@ export function LocationsPage() {
         <div className="right-column">
           <Panel badge="qr" title="Relationship Summary" subtitle="Quick sanity check of what is currently selected.">
             <dl className="relationship-summary-list">
-              <div className="relationship-summary-item">
-                <dt className="relationship-summary-label">Site</dt>
-                <dd className="relationship-summary-value">{selectedSite?.name || "None selected"}</dd>
-              </div>
               <div className="relationship-summary-item">
                 <dt className="relationship-summary-label">Floor Map</dt>
                 <dd className="relationship-summary-value">{selectedFloorMap?.name || "None selected"}</dd>

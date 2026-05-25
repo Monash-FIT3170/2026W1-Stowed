@@ -71,14 +71,11 @@ function callMethod(methodName, params) {
 
 // Builds a full readable path for a StorageLocation, e.g.:
 // "Main Warehouse → Ground Floor → Shelf A → Bay 1"
-function buildLocationLabel(location, storageUnits, floorMaps, sites) {
+function buildLocationLabel(location, storageUnits, floorMaps, sites) { // sites kept for call-site compatibility
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit
-    ? floorMaps.find((f) => f._id === unit.floorMapId)
-    : null;
-  const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
+  const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
 
-  return [site?.name, floorMap?.name, unit?.name, location.name]
+  return [floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
     .join(" → ");
 }

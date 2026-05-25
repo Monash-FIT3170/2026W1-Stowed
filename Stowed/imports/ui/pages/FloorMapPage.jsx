@@ -106,36 +106,31 @@ function FloorMapPageInner() {
           flexShrink: 0,
           overflowX: "auto",
         }}>
-          {/* Group by site */}
-          {sites.map((site) => {
-            const siteMaps = floorMaps.filter((f) => f.siteId === site._id);
-            if (!siteMaps.length) return null;
-            return siteMaps.map((fm) => {
-              const isActive = fm._id === (floorMapId ?? floorMaps[0]?._id);
-              return (
-                <button
-                  key={fm._id}
-                  onClick={() => navigate(`/floor-map/${fm._id}`)}
-                  style={{
-                    padding: "10px 16px",
-                    border: "none",
-                    borderBottom: isActive
-                      ? "2px solid var(--accent-primary)"
-                      : "2px solid transparent",
-                    background: "transparent",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: isActive ? 700 : 400,
-                    color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
-                    whiteSpace: "nowrap",
-                    fontFamily: "inherit",
-                    flexShrink: 0,
-                  }}
-                >
-                  {site.name} — {fm.name}
-                </button>
-              );
-            });
+          {floorMaps.map((fm) => {
+            const isActive = fm._id === (floorMapId ?? floorMaps[0]?._id);
+            return (
+              <button
+                key={fm._id}
+                onClick={() => navigate(`/floor-map/${fm._id}`)}
+                style={{
+                  padding: "10px 16px",
+                  border: "none",
+                  borderBottom: isActive
+                    ? "2px solid var(--accent-primary)"
+                    : "2px solid transparent",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: isActive ? 700 : 400,
+                  color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
+                  whiteSpace: "nowrap",
+                  fontFamily: "inherit",
+                  flexShrink: 0,
+                }}
+              >
+                {fm.name}
+              </button>
+            );
           })}
         </div>
       )}

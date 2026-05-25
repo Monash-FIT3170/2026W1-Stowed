@@ -27,7 +27,7 @@ function buildLocationLabel(
   storageLocations,
   storageUnits,
   floorMaps,
-  sites,
+  sites, // kept for call-site compatibility; not used in label
 ) {
   const location = storageLocations.find((loc) => loc._id === locationId);
   if (!location) return locationId;
@@ -38,13 +38,10 @@ function buildLocationLabel(
   const floorMap = unit
     ? floorMaps.find((candidate) => candidate._id === unit.floorMapId)
     : null;
-  const site = floorMap
-    ? sites.find((candidate) => candidate._id === floorMap.siteId)
-    : null;
 
-  return [site?.name, floorMap?.name, unit?.name, location.name]
+  return [floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
-    .join(" -> ");
+    .join(" → ");
 }
 
 export function ProductDetailView({
