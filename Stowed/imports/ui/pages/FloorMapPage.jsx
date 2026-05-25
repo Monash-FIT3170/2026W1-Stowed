@@ -187,7 +187,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty low">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -204,7 +206,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty ok">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}

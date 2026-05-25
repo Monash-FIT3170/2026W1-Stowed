@@ -116,7 +116,7 @@ export function EditorProvider({ children, floorMapId }) {
       const location = storageLocations.find((l) => l._id === record.locationId);
       if (!location) return;
 
-      const threshold = product.reorderAt ?? 10;
+      const threshold = product.reorderAt ?? 0;
       const isLow     = product.totalQuantity <= threshold;
       const unitId    = location.storageUnitId;
 
@@ -126,6 +126,7 @@ export function EditorProvider({ children, floorMapId }) {
         product,
         quantity:     product.totalQuantity,
         threshold,
+        reorderAt:    threshold,
         isLow,
         locationName: location.name,
       });
