@@ -6,7 +6,7 @@ import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
-import { buttonStyles, pageStyles, COLOURS, modalStyles } from "./floorMapComponents/FloorMapStyles";
+import { buttonStyles, pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { Meteor } from "meteor/meteor";
@@ -40,7 +40,6 @@ function FloorMapPageInner() {
     selectedUnit, setSelectedUnit, setIsPanelOpen, isPanelOpen,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
-    unitDeleteError, setUnitDeleteError,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -340,21 +339,6 @@ function FloorMapPageInner() {
           </div>
         );
       })()}
-
-      {/* UNIT DELETE ERROR MODAL */}
-      {unitDeleteError && (
-        <div style={modalStyles.overlay}>
-          <div style={modalStyles.modal}>
-            <p style={modalStyles.title}>Cannot Delete Unit</p>
-            <p style={{ margin: 0, fontSize: 12, color: "#666" }}>{unitDeleteError}</p>
-            <div style={modalStyles.actions}>
-              <button style={modalStyles.buttonPrimary} onClick={() => setUnitDeleteError("")}>
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* CANVAS SETTINGS MODAL */}
       {isCanvasSettingsOpen && (

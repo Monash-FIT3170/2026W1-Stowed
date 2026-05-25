@@ -113,18 +113,16 @@ export function EditProductPage() {
     if (!initialised || !product) return {};
     const result = {};
 
-    if (name.trim() !== (product.name ?? ""))
+    if (name.trim() !== product.name)
       result.name = { from: product.name, to: name.trim() };
-    if (category !== (product.category ?? ""))
-      result.category = { from: product.category ?? "", to: category };
-    if (brand !== (product.brand ?? ""))
-      result.brand = { from: product.brand ?? "", to: brand };
+    if (category !== (product.category || ""))
+      result.category = { from: product.category || "", to: category };
+    if (brand !== (product.brand || ""))
+      result.brand = { from: product.brand || "", to: brand };
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
-    const parsedUnitCost = unitCost !== "" ? parseFloat(unitCost) : null;
-    const originalUnitCost = product.unitCost != null ? product.unitCost : null;
-    if (parsedUnitCost !== originalUnitCost)
-      result.unitCost = { from: originalUnitCost, to: parsedUnitCost };
+    if (parseFloat(unitCost) !== product.unitCost)
+      result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
     const parsedReorderAt = reorderAt !== "" ? parseInt(reorderAt, 10) : null;
     const originalReorderAt = product.reorderAt ?? null;
     if (parsedReorderAt !== originalReorderAt)
@@ -526,11 +524,7 @@ export function EditProductPage() {
               {changes.unitCost && (
                 <div>
                   <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Unit cost</div>
-                  <div style={{ color: "var(--text-muted)" }}>
-                    {changes.unitCost.from != null ? `$${Number(changes.unitCost.from).toFixed(2)}` : "—"}
-                    {" → "}
-                    {changes.unitCost.to != null ? `$${Number(changes.unitCost.to).toFixed(2)}` : "—"}
-                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>${changes.unitCost.from} → ${changes.unitCost.to}</div>
                 </div>
               )}
               {changes.reorderAt && (

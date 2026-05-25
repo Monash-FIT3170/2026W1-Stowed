@@ -59,7 +59,7 @@ export function InventoryListPage() {
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits, floorMaps } = useTracker(() => {
+  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
     const sub1 = Meteor.subscribe("products");
     Meteor.subscribe("productRecords");
     Meteor.subscribe("locations.all");
@@ -69,7 +69,6 @@ export function InventoryListPage() {
       productRecords: ProductRecords.find().fetch(),
       storageLocations: StorageLocations.find().fetch(),
       storageUnits: StorageUnits.find().fetch(),
-      floorMaps: FloorMaps.find().fetch(),
     };
   }, []);
 
@@ -154,6 +153,7 @@ export function InventoryListPage() {
   const filters = [
     { id: "all", label: "All", count: items.length },
     { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
+    { id: "tag", label: "Tag ▾" },
     { id: "location", label: "Location ▾" },
   ];
 
@@ -201,11 +201,9 @@ export function InventoryListPage() {
               style={{ maxWidth: "360px", background: "var(--card-bg)" }}
             >
               <option value="">All locations</option>
-              {storageUnits.map((unit) => {
-                const fm = floorMaps.find((f) => f._id === unit.floorMapId);
-                const label = fm ? `${fm.name} → ${unit.name}` : unit.name;
-                return <option key={unit._id} value={unit._id}>{label}</option>;
-              })}
+              {storageUnits.map((unit) => (
+                <option key={unit._id} value={unit._id}>{unit.name}</option>
+              ))}
             </select>
           </div>
         )}
@@ -241,6 +239,7 @@ export function InventoryListPage() {
               <div className="table-header">
                 <span />
                 <span>Product</span>
+                <span>Tag</span>
                 <span>Location</span>
                 <span>Stock</span>
                 <span>Status</span>
@@ -252,6 +251,7 @@ export function InventoryListPage() {
                   <span>
                     <Link to={`/inventory/${item._id}`} className="item-name-link">{item.name}</Link>
                   </span>
+                  <span><span className="item-tag">{item.tag || "—"}</span></span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
                   <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />

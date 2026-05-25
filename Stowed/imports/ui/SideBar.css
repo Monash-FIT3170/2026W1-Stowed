@@ -5,7 +5,7 @@
 .sidebar {
   width: 200px;
   min-height: 100vh;
-  background: #ede4d6;
+  background: var(--bg-primary);
   border-right: 1px solid var(--border-light);
   padding: 20px 16px;
   display: flex;
@@ -95,7 +95,7 @@
 /* -- User status -- */
 
 .sidebar-user {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
   padding-top: 16px;
   border-top: 1px solid var(--border-light);
@@ -174,24 +174,20 @@
 .sidebar-logout {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  padding: 9px 14px;
+  padding: 8px 10px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent-primary);
-  background: rgba(181, 83, 42, 0.08);
-  border: 1px solid rgba(181, 83, 42, 0.24);
+  font-size: 15px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
   cursor: pointer;
-  text-align: center;
+  text-align: left;
   width: 100%;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-  margin-top: 8px;
+  transition: background 120ms ease;
 }
 
 .sidebar-logout:hover {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: #fff;
+  background: var(--dark);
+  color: var(--card-bg);
 }

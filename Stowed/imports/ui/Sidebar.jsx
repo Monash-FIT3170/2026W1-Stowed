@@ -14,6 +14,13 @@ const WORKSPACE_LINKS = [
   { to: "/floor-map",  label: "Floor Map",      icon: "🗺" },
   { to: "/inventory",  label: "Inventory",      icon: "📦" },
   { to: "/",           label: "Inventory Page", icon: "✓"  },
+  { to: "/lists",      label: "Lists",          icon: "🛒" },
+];
+
+const TOOL_LINKS = [
+  { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
+  { to: "/forecast", label: "Forecast", icon: "🔮" },
+  { to: "/alerts",   label: "Alerts",   icon: "⚠️" },
 ];
 
 function SidebarLink({ to, label, icon, end }) {
@@ -126,18 +133,18 @@ export function Sidebar() {
             }).map((link) => (
               <SidebarLink key={link.to} to={link.to} label={link.label} />
             ))}
+            {isLoggedIn && (
+              <button className="sidebar-logout" onClick={handleLogout}>
+                Logout
+              </button>
+            )}
           </section>
         </nav>
       </div>
 
-      {/* Bottom — user info + logout */}
+      {/* Bottom — logged in as */}
       {isLoggedIn && (
-        <div className="sidebar-user">
-          <div style={{ marginBottom: "10px" }}>Logged in as <strong>{username}</strong></div>
-          <button className="sidebar-logout" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
+        <div className="sidebar-user">Logged in as {username}</div>
       )}
     </aside>
   );
