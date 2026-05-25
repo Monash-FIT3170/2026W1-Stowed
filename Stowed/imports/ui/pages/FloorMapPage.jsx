@@ -163,17 +163,17 @@ function FloorMapPageInner() {
               <div>
                 <div className="panel-header-label">{selectedUnit.name}</div>
                 <div className="panel-header-title">
-                  {isEmpty ? "No items" : hasLow ? "Low stock" : "All stocked"}
+                  {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
                 </div>
                 <div className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}>
-                  {isEmpty ? "Empty" : hasLow ? `${lowItems.length} need attention` : `${okItems.length} items OK`}
+                  {isEmpty ? "Empty" : hasLow ? `${lowItems.length} need attention` : `${okItems.length} products OK`}
                 </div>
               </div>
               <button className="panel-close-btn" onClick={() => setIsStockPanelOpen(false)} aria-label="Close panel">✕</button>
             </div>
             <div className="panel-content">
               {isEmpty ? (
-                <div className="panel-empty">No items assigned to this unit.</div>
+                <div className="panel-empty">No products assigned to this unit.</div>
               ) : (
                 <>
                   {lowItems.length > 0 && (
@@ -312,10 +312,10 @@ function FloorMapPageInner() {
               {tooltip.unit.name}
             </div>
             {tipItems.length === 0 ? (
-              <div style={{ color: "#998874", fontSize: "11px" }}>No items on this shelf</div>
+              <div style={{ color: "#998874", fontSize: "11px" }}>No products on this shelf</div>
             ) : tipHasLow ? (
               <>
-                <div style={{ fontSize: "11px", color: "#991b1b", marginBottom: "4px", fontWeight: 600 }}>Low stock items:</div>
+                <div style={{ fontSize: "11px", color: "#991b1b", marginBottom: "4px", fontWeight: 600 }}>Low stock products:</div>
                 {tipLow.map((item, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", padding: "4px 0", borderBottom: "0.5px solid #f5efe6" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -327,7 +327,7 @@ function FloorMapPageInner() {
                 ))}
               </>
             ) : (
-              <div style={{ color: "#166534", fontSize: "11px" }}>All items on this shelf are stocked</div>
+              <div style={{ color: "#166534", fontSize: "11px" }}>All products on this shelf are stocked</div>
             )}
           </div>
         );
