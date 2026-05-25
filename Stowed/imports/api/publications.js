@@ -1,44 +1,47 @@
 import { Meteor } from 'meteor/meteor';
 
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from './locations/collections';
-
 import { Products, ProductRecords } from './products/collections';
+import { getCallerOrgId } from './userMethods';
+import { Organisations } from '/imports/api/organisations';
 
-/**
- * Publishes all location-management data required by the client.
- *
- * This publication supports the location setup flow:
- * Site -> FloorMap -> StorageUnit -> StorageLocation
- *
- * In development, unauthenticated access is allowed so the location UI can be
- * exercised without wiring a full auth flow first.
- *
- * @returns {Mongo.Cursor[]|void} Location-related cursors.
- */
-Meteor.publish('locations.all', function () {
-  if (!this.userId && !Meteor.isDevelopment) {
-    return this.ready();
-  }
+Meteor.publish('locations.all', async function () {
+  if (!this.userId) return this.ready();
+  const orgId = await getCallerOrgId(this.userId);
+  if (!orgId) return this.ready();
 
   return [
-    Sites.find(),
-    FloorMaps.find(),
-    StorageUnits.find(),
-    StorageLocations.find(),
+    Sites.find({ orgId }),
+    FloorMaps.find({ orgId }),
+    StorageUnits.find({ orgId }),
+    StorageLocations.find({ orgId }),
   ];
 });
 
-Meteor.publish('products', function () {
-  if (!this.userId && !Meteor.isDevelopment) {
-    return this.ready();
-  }
+Meteor.publish('products', async function () {
+  if (!this.userId) return this.ready();
+  const orgId = await getCallerOrgId(this.userId);
+  if (!orgId) return this.ready();
 
-  return Products.find();
+  return Products.find({ orgId });
 });
 
-Meteor.publish('productRecords', function () {
-  if (!this.userId && !Meteor.isDevelopment) {
-    return this.ready();
-  }
-  return ProductRecords.find();
+Meteor.publish('productRecords', async function () {
+  if (!this.userId) return this.ready();
+  const orgId = await getCallerOrgId(this.userId);
+  if (!orgId) return this.ready();
+
+  const productIds = (await Products.find({ orgId }, { fields: { _id: 1 } }).fetchAsync()).map(p => p._id);
+
+  return ProductRecords.find({ productId: { $in: productIds } });
+});
+
+Meteor.publish('currentOrganisation', async function () {
+  if (!this.userId) return this.ready();
+  const user = await Meteor.users.findOneAsync(
+    this.userId,
+    { fields: { 'profile.organisationId': 1 } }
+  );
+  if (!user || !user.profile.organisationId) return this.ready();
+  return Organisations.find(user.profile.organisationId);
 });

@@ -262,7 +262,7 @@ export const storagePanelStyles = {
     color: COLOURS.TEXT_MUTED,
     fontSize: 11,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 0,
     margin: "10px 0 4px",
   },
 
@@ -284,7 +284,7 @@ export const storagePanelStyles = {
     height: 28,
     borderRadius: 6,
     flexShrink: 0,
-    border: "1px solid #ddd",
+    border: `1px solid ${COLOURS.BORDER_SUBTLE}`,
   },
 
   cardName: {
@@ -328,7 +328,7 @@ export const storagePanelStyles = {
     color: COLOURS.TEXT_MUTED,
     fontSize: 11,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
 
   input: {

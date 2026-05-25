@@ -79,7 +79,7 @@
 .view-accounts-container .table-header,
 .view-accounts-container .table-row {
   display: grid;
-  grid-template-columns: 2fr 3fr 100px;
+  grid-template-columns: 2fr 3fr 1fr 100px;
   gap: 16px;
   align-items: center;
   padding: 12px 0;

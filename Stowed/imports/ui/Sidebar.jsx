@@ -1,133 +1,150 @@
 import { NavLink } from "react-router-dom";
-//import { useAuth } from "/imports/api/useAuth";
 import { logoutUser } from "/imports/api/userMethods";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
+import { Organisations } from "/imports/api/organisations";
+import React, { useEffect, useRef, useState } from "react";
+import "./Global.css";
+import "./Sidebar.css";
 
 const WORKSPACE_LINKS = [
-  { to: "/locations", label: "Locations" },
-  { to: "/floor-map", label: "Floor Map" },
-  { to: "/inventory", label: "Inventory" },
-  { to: "/", label: "Inventory Page" },
-  { to: "/lists", label: "Lists" },
+  { to: "/locations",  label: "Locations",      icon: "📍" },
+  { to: "/floor-map",  label: "Floor Map",      icon: "🗺" },
+  { to: "/inventory",  label: "Inventory",      icon: "📦" },
+  { to: "/",           label: "Inventory Page", icon: "✓"  },
+  { to: "/lists",      label: "Lists",          icon: "🛒" },
 ];
 
 const TOOL_LINKS = [
-  { to: "/qr-codes", label: "QR Codes" },
-  { to: "/forecast", label: "Forecast" },
-  { to: "/alerts", label: "Alerts" },
+  { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
+  { to: "/forecast", label: "Forecast", icon: "🔮" },
+  { to: "/alerts",   label: "Alerts",   icon: "⚠️" },
 ];
 
-const ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
-
-function SidebarLink({ to, label, end }) {
+function SidebarLink({ to, label, icon, end }) {
   return (
     <NavLink
       to={to}
       end={end}
       className={({ isActive }) =>
-        `flex items-center text-base ${isActive ? "bg-black text-white" : "text-black"}`
+        `sidebar-link${isActive ? " active" : ""}`
       }
     >
+      {icon && <span className="sidebar-link-icon">{icon}</span>}
       <span>{label}</span>
     </NavLink>
   );
 }
 
 function SectionLabel({ label }) {
-  return (
-    <p className="text-xs text-gray-400 font-medium uppercase tracking-wide px-3 mb-1">
-      {label}
-    </p>
-  );
+  return <p className="sidebar-section-label">{label}</p>;
 }
 
 export function Sidebar() {
   const currentUser = useTracker(() => Meteor.user());
   const role = currentUser?.profile?.role;
   const isLoggedIn = !!currentUser;
-  const username = currentUser?.username;
+  const username = currentUser?.profile?.username;
   const navigate = useNavigate();
+
+  const [orgSubReady, setOrgSubReady] = useState(false);
+  useEffect(() => {
+    if (!currentUser) return;
+    const sub = Meteor.subscribe("currentOrganisation");
+    sub.ready() ? setOrgSubReady(true) : setOrgSubReady(false);
+    const interval = setInterval(() => {
+      setOrgSubReady(sub.ready());
+    }, 100);
+    return () => {
+      sub.stop();
+      clearInterval(interval);
+    };
+  }, [currentUser?._id]);
+
+  const organisation = useTracker(() => {
+    if (!currentUser || !orgSubReady) return null;
+    return Organisations.findOne(currentUser.profile.organisationId);
+  }, [currentUser?.profile?.organisationId, orgSubReady]);
 
   const handleLogout = () => {
     logoutUser();
     navigate("/login");
   };
-  //const { username, isLoggedIn, role } = useAuth();
 
-  const ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
+  const ALL_ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
   if (role >= ROLES.OWNER) {
-    ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
+    ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
+  const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
+    link.to === "/register"
+      ? hasClientPermission(role, "create-users")
+      : true
+  );
 
   return (
-    <aside className="w-48 border-r border-gray-200 bg-white p-4 flex flex-col gap-6">
-      <div style={{ marginBottom: "8px" }}>
-        <div
-          style={{
-            fontSize: "24px",
-            fontWeight: 500,
-            fontFamily: "Georgia, serif",
-          }}
-        >
-          <em>Stowed</em>
-          <em style={{ color: "#B5532A" }}>.</em>
+    <aside className="sidebar">
+      {/* Top — logo + nav */}
+      <div className="sidebar-top">
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-title">
+            Stowed<span className="sidebar-logo-dot">.</span>
+          </div>
+          <div className="sidebar-logo-tagline">a place for everything</div>
         </div>
-        <div style={{ fontSize: "12px", color: "#998874" }}>
-          a place for everything
-        </div>
-      </div>
-      {/* Username */}
-      <div className="mb-6 text-sm text-gray-600">
-        {isLoggedIn ? `Logged in as ${username}` : "Not logged in"}
-      </div>
 
-      <nav className="flex flex-col gap-4">
-        <section>
-          <SectionLabel label="Workspace" />
-          <div className="flex flex-col gap-0.5">
-            {/* Workspace + tool links
-            - checks the user's role before showing each link
-            - users only see pages they have permission to access
-        */}
+        {isLoggedIn && organisation && (
+          <div className="sidebar-org">
+            <div className="sidebar-org-avatar">
+              {organisation.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="sidebar-org-info">
+              <div className="sidebar-org-label">Organisation</div>
+              <div className="sidebar-org-name">{organisation.name}</div>
+            </div>
+          </div>
+        )}
+
+        <nav className="sidebar-nav">
+          <section className="sidebar-section">
+            <SectionLabel label="Workspace" />
             {WORKSPACE_LINKS.filter((link) =>
-              hasClientPermission(role, `route:${link.to}`),
+              hasClientPermission(role, `route:${link.to}`)
             ).map((link) => (
               <SidebarLink key={link.to} {...link} end={link.to === "/"} />
             ))}
+          </section>
+
+          <section className="sidebar-section">
+            <SectionLabel label="Tools" />
             {TOOL_LINKS.map((link) => (
               <SidebarLink key={link.to} {...link} />
             ))}
-          </div>
-        </section>
-        {/* Account section */}
-        <section>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
-            Account
-          </h3>
-          {/* Account links */}
-          {ACCOUNT_LINKS.filter((link) => {
-            if (link.to === "/register") {
-              return hasClientPermission(role, "create-users");
-            }
+          </section>
 
-            return true;
-          }).map((link) => (
-            <SidebarLink key={link.to} {...link} />
-          ))}
-          {/* logout button */}
-          {isLoggedIn && (
-            <button
-              onClick={handleLogout}
-              className="text-left text-base text-black"
-            >
-              Logout
-            </button>
-          )}
-        </section>
-      </nav>
+          <section className="sidebar-section">
+            <SectionLabel label="Account" />
+            {ACCOUNT_LINKS.filter((link) => {
+              if (link.to === "/register") {
+                return hasClientPermission(role, "create-users");
+              }
+              return true;
+            }).map((link) => (
+              <SidebarLink key={link.to} to={link.to} label={link.label} />
+            ))}
+          </section>
+        </nav>
+      </div>
+
+      {/* Bottom — logged in as */}
+      {isLoggedIn && (
+        <div className="sidebar-user">Logged in as {username}</div>
+        
+      )}
+                <button className="sidebar-logout" onClick={handleLogout}>
+            Logout
+          </button>
     </aside>
   );
 }

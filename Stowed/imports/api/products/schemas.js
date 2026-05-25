@@ -1,6 +1,10 @@
 import SimpleSchema from "simpl-schema";
 
 export const ProductSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   name: {
     type: String,
     min: 1,
@@ -63,18 +67,25 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
   },
 
+  reorderAt: {
+    type: SimpleSchema.Integer,
+    optional: true,
+    min: 0,
+  },
+
   status: {
     type: String,
     optional: true,
   },
-  imageUrl: {
-    type: String,
-    optional: true,
-    max: 500,
-  },
 
   totalQuantity: {
     type: SimpleSchema.Integer,
+    min: 0,
+  },
+
+  reorderAt: {
+    type: SimpleSchema.Integer,
+    optional: true,
     min: 0,
   },
 
@@ -88,15 +99,10 @@ export const ProductSchema = new SimpleSchema({
 
   images: {
     type: Array,
+    optional: true,
   },
   "images.$": {
     type: String,
-  },
-
-  imageUrl: {
-    type: String,
-    optional: true,
-    max: 500,
   },
 });
 

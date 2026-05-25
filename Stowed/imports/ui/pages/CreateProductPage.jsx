@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products } from "/imports/api/products/collections";
 import {
   Sites,
@@ -10,7 +12,8 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import "./CreateProductPage.css";
-import "./Breadcrumb.css";
+import "../Global.css";
+import { uploadImageToServer } from "/imports/api/upload";
 
 const inputStyle = {
   padding: "6px 8px",
@@ -86,6 +89,13 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 
 export function CreateProductPage() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  useEffect(() => {
+    if (role !== null && !hasClientPermission(role, "products.create")) {
+      navigate("/inventory/list", { replace: true });
+    }
+  }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -94,8 +104,12 @@ export function CreateProductPage() {
   const [unitCost, setUnitCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [reorderAt, setReorderAt] = useState("");
-  const [location, setLocation] = useState("");
   const [assignments, setAssignments] = useState([]);
+  const [imageUrls, setImageUrls] = useState([]);
+  const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef(null);
 
   const { products, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -154,6 +168,44 @@ export function CreateProductPage() {
     );
   }
 
+  async function handleImageSelect(event) {
+    const file = event.target.files?.[0];
+    // Reset so picking the same file twice still fires onChange.
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file.");
+      return;
+    }
+
+    setUploadError("");
+    setUploadingImage(true);
+    try {
+      const url = await uploadImageToServer(file);
+      setImageUrls((prev) => {
+        const next = [...prev, url];
+        // If this is the first image, make it the main one.
+        if (prev.length === 0) setMainImageIndex(0);
+        return next;
+      });
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  function removeImage(index) {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+    setMainImageIndex((current) => {
+      if (index === current) return 0;
+      if (index < current) return current - 1;
+      return current;
+    });
+  }
+
   // Submit
 
   async function handleSubmit(event) {
@@ -168,7 +220,7 @@ export function CreateProductPage() {
         unitCost: unitCost ? parseFloat(unitCost) : undefined,
         totalQuantity: parsedTotal,
         reorderAt: reorderAt ? parseInt(reorderAt, 10) : undefined,
-        location,
+        images: imageUrls,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
           quantity: parseInt(a.quantity, 10),
@@ -187,11 +239,13 @@ export function CreateProductPage() {
 
   return (
     <>
-      <div className="item-detail-container">
-        <div className="item-detail-header">
+      <div className="product-detail-container">
+        <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              Inventory &nbsp;/&nbsp; Create item
+              <span className="breadcrumb-link">Inventory</span>
+              {" "}&nbsp;/{" "}&nbsp;
+              <span className="breadcrumb-current">Create product</span>
             </div>
           </div>
           <h1 className="header-title">
@@ -199,7 +253,7 @@ export function CreateProductPage() {
           </h1>
         </div>
 
-        <div className="item-detail-grid">
+        <div className="product-detail-grid">
           <div className="left-column">
             {/* Core identification */}
             <div className="detail-section">
@@ -214,7 +268,7 @@ export function CreateProductPage() {
               </div>
               <div className="section-content">
                 <div className="form-group">
-                  <label>Item name</label>
+                  <label>Product name</label>
                   <input
                     type="text"
                     value={name}
@@ -290,38 +344,16 @@ export function CreateProductPage() {
                     />
                   </div>
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Reorder at</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={reorderAt}
-                      onChange={(e) => setReorderAt(e.target.value)}
-                      className="form-input"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Location</label>
-                    <select
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className={`form-input ${location ? "selected" : ""}`}
-                    >
-                      <option value="">Select a location...</option>
-                      {storageLocations.map((loc) => (
-                        <option key={loc._id} value={loc._id}>
-                          {buildLocationLabel(
-                            loc,
-                            storageUnits,
-                            floorMaps,
-                            sites,
-                          )}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="form-group">
+                  <label>Reorder at</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reorderAt}
+                    onChange={(e) => setReorderAt(e.target.value)}
+                    className="form-input"
+                    placeholder="Leave blank for no threshold"
+                  />
                 </div>
               </div>
             </div>
@@ -437,32 +469,88 @@ export function CreateProductPage() {
               </div>
               <div className="section-content">
                 <div className="main-image-container">
-                  <span style={{ fontSize: "13px", color: "#998874" }}>
-                    No image uploaded
-                  </span>
+                  {imageUrls.length > 0 ? (
+                    <img
+                      src={imageUrls[mainImageIndex]}
+                      alt="Product preview"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: "13px", color: "#998874" }}>
+                      {uploadingImage ? "Uploading..." : "No image uploaded"}
+                    </span>
+                  )}
                 </div>
-                <div className="thumbnail-gallery">
-                  <button className="thumbnail add-btn">+</button>
-                </div>
-              </div>
-            </div>
 
-            {/* QR & label */}
-            <div className="detail-section">
-              <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#f5efe6", color: "#998874" }}
-                >
-                  QR
-                </span>
-                QR & label
-              </div>
-              <div className="section-content qr-section">
-                <div className="qr-container">
-                  <div className="qr-code" />
-                  <p className="qr-label">QR Code</p>
+                <div className="thumbnail-gallery">
+                  {imageUrls.map((url, index) => (
+                    <div
+                      key={url}
+                      style={{ position: "relative", display: "inline-block" }}
+                    >
+                      <button
+                        type="button"
+                        className={`thumbnail ${index === mainImageIndex ? "active" : ""}`}
+                        onClick={() => setMainImageIndex(index)}
+                        title="Set as main image"
+                      >
+                        <img
+                          src={url}
+                          alt=""
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        title="Remove image"
+                        style={{
+                          position: "absolute",
+                          top: "-6px",
+                          right: "-6px",
+                          width: "18px",
+                          height: "18px",
+                          borderRadius: "50%",
+                          border: "1px solid #999",
+                          background: "#fff",
+                          cursor: "pointer",
+                          fontSize: "11px",
+                          lineHeight: "1",
+                          padding: 0,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="thumbnail add-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                  >
+                    {uploadingImage ? "..." : "+"}
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    style={{ display: "none" }}
+                  />
                 </div>
+
+                {uploadError && (
+                  <p className="warning-text" style={{ marginTop: "8px" }}>
+                    {uploadError}
+                  </p>
+                )}
               </div>
             </div>
           </div>

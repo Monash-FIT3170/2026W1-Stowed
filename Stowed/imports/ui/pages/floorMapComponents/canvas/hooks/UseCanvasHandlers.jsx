@@ -1,3 +1,4 @@
+import { useEditor } from "../editor/EditorContext";
 import { useNavigate }    from "react-router-dom";
 import { useCallback }    from "react";
 import { CANVAS_ACTIONS } from "../editor/Actions";
@@ -31,6 +32,7 @@ import { CANVAS_CONFIG }  from "../CanvasConfig";
 */
 export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stageRef, groupRefs, snapEnabled, gridSizePx, gridInterval, width, height, activeTool, wrapperRef, clipboard, isCanvasEditMode }) {
   const navigate = useNavigate();
+  const { setSelectedUnit, setIsPanelOpen } = useEditor();
 
   // INTERNAL HELPERS 
   function getGroupRef(id) {
@@ -153,7 +155,8 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
 
   function handleUnitClick(unit, e) {
     if (!isCanvasEditMode) {
-      navigate(`/storage-unit/${unit._id}`);
+      setSelectedUnit(unit);
+      setIsPanelOpen(true);
       return;
     }
 
@@ -394,11 +397,15 @@ export function useCanvasHandlers({ dispatch, units, setUnits, selectedIds, stag
 
   function handleDelete(e) {
     const idsToDelete = selectedIds;
-    const currUnits = units;
+    if (idsToDelete.size === 0) return;
 
     let unitsAsString = "";
-    idsToDelete.forEach((id) => unitsAsString += units.find((u) => u.id === id).name + " (" + id + ")\n");
+    idsToDelete.forEach((id) => {
+      const unit = units.find((u) => u.id === id);
+      if (unit) unitsAsString += unit.name + " (" + id + ")\n";
+    });
     unitsAsString = unitsAsString.slice(0, -1);
+    if (!unitsAsString) return;
 
     const proceed = confirm("Are you sure you want to delete the selected units: \n" + unitsAsString);
 

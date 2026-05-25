@@ -1,4 +1,4 @@
-export const mockItems = [
+export const mockProducts = [
   {
     _id: "1",
     name: "AAA Battery Pack",
@@ -16,7 +16,7 @@ export const mockItems = [
     category: "electrical",
     brand: "Duracell",
     unitCost: 4.5,
-    catalogImages: ["https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png"],
+    images: ["https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png"],
     qrCode: "",
   },
   {
@@ -36,7 +36,7 @@ export const mockItems = [
     category: "safety",
     brand: "SafeGear",
     unitCost: 22.0,
-    catalogImages: ["https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1"],
+    images: ["https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1"],
     qrCode: "",
   },
   {
@@ -56,7 +56,7 @@ export const mockItems = [
     category: "safety",
     brand: "SafeGear",
     unitCost: 3.5,
-    catalogImages: ["https://www.example.com/images/liner.png"],
+    images: ["https://www.example.com/images/liner.png"],
     qrCode: "",
   },
   {
@@ -76,7 +76,7 @@ export const mockItems = [
     category: "safety",
     brand: "Handy",
     unitCost: 6.0,
-    catalogImages: ["https://www.example.com/images/gloves.png"],
+    images: ["https://www.example.com/images/gloves.png"],
     qrCode: "",
   },
   {
@@ -84,7 +84,7 @@ export const mockItems = [
     name: "Steel Toe Boots",
     tag: "safety",
     description: "Durable steel-toe work boots.",
-    photoUrl: "https://www.example.com/images/boots.png",
+    photoUrl: "/boots.png",
     updatedAt: new Date("2026-04-22"),
     quantity: 100,
     currentStock: 100,
@@ -96,7 +96,7 @@ export const mockItems = [
     category: "safety",
     brand: "BootWorks",
     unitCost: 85.0,
-    catalogImages: ["https://www.example.com/images/boots.png"],
+    images: ["/boots.png"],
     qrCode: "",
   },
   {
@@ -116,7 +116,7 @@ export const mockItems = [
     category: "fasteners",
     brand: "FastenRight",
     unitCost: 0.12,
-    catalogImages: ["https://www.example.com/images/bolts.png"],
+    images: ["https://www.example.com/images/bolts.png"],
     qrCode: "",
   },
   {
@@ -136,7 +136,7 @@ export const mockItems = [
     category: "fasteners",
     brand: "FastenRight",
     unitCost: 0.05,
-    catalogImages: ["https://www.example.com/images/screws.png"],
+    images: ["https://www.example.com/images/screws.png"],
     qrCode: "",
   },
   {
@@ -156,32 +156,32 @@ export const mockItems = [
     category: "misc",
     brand: "TiePro",
     unitCost: 2.5,
-    catalogImages: ["https://www.example.com/images/ties.png"],
+    images: ["https://www.example.com/images/ties.png"],
     qrCode: "",
   },
 ];
 
-export function getMockItemById(itemId) {
-  return mockItems.find((item) => item._id === itemId);
+export function getMockProductById(productId) {
+  return mockProducts.find((product) => product._id === productId);
 }
 
-export function getLowStockItems(items) {
-  return items.filter(
-    (i) =>
-      typeof i.quantity === "number" &&
-      typeof i.lowStockThreshold === "number" &&
-      i.quantity <= i.lowStockThreshold,
+export function getLowStockProducts(products) {
+  return products.filter(
+    (p) =>
+      typeof p.quantity === "number" &&
+      typeof p.lowStockThreshold === "number" &&
+      p.quantity <= p.lowStockThreshold,
   );
 }
 
-export function getTotalValue(items) {
-  return items.reduce((total, item) => {
-    return total + (item.unitCost * item.quantity || 0);
+export function getTotalValue(products) {
+  return products.reduce((total, product) => {
+    return total + (product.unitCost * product.quantity || 0);
   }, 0);
 }
 
-export function getRecentlyUpdatedItems(items, limit = 5) {
-  return [...items]
+export function getRecentlyUpdatedProducts(products, limit = 5) {
+  return [...products]
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
     .slice(0, limit);
 }

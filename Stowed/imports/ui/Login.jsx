@@ -39,19 +39,29 @@ export const Login = () => {
       login: login.trim(),
     });
 
+    // Compound the username with the org code so Meteor can find the globally-unique account
+    const identifier = login.includes('@')
+      ? login
+      : { username: `${orgCode.trim().toLowerCase()}~${login.trim()}` };
+
     await new Promise((resolve, reject) => {
-      Meteor.loginWithPassword(
-        login.includes('@') ? login : { username: login },
-        password,
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
+      Meteor.loginWithPassword(identifier, password, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
     });
       navigate('/');
     } catch (err) {
-      setError(err.reason || err.message || 'Login failed.');
+      const reason = err.reason || err.message || '';
+      if (reason.toLowerCase().includes('incorrect password')) {
+        setError('Incorrect password. Please try again.');
+      } else if (reason.toLowerCase().includes('user not found') || reason.toLowerCase().includes('no user')) {
+        setError('No account found with those details.');
+      } else if (err.error === 'too-many-requests') {
+        setError('Too many attempts. Please wait a moment before trying again.');
+      } else {
+        setError('Login failed. Please check your details and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -62,14 +72,14 @@ export const Login = () => {
       <section className="auth-shell" aria-label="Login">
         <div className="auth-brand-panel">
           <p className="auth-kicker">Stocktake / Floor maps</p>
-          <h1>Welcome back to <span>Stowed</span></h1>
+          <h1>Welcome back to <em>Stowed</em></h1>
           <p>
-            Map your shop or home storage, scan QR labels, and keep every item easy to find.
+            Map your shop or home storage, scan QR labels, and keep every product easy to find.
           </p>
           <ul className="auth-feature-list">
-            <li>Storage units and item locations</li>
+            <li>Storage units and product locations</li>
             <li>Low-stock visual alerts</li>
-            <li>Photo-based item catalogue</li>
+            <li>Photo-based product catalogue</li>
           </ul>
         </div>
 
@@ -88,6 +98,7 @@ export const Login = () => {
                 value={orgCode}
                 onChange={(e) => setOrgCode(e.target.value)}
                 required
+                autoComplete="organization"
                 className="auth-input"
               />
             </label>
@@ -100,6 +111,7 @@ export const Login = () => {
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 required
+                autoComplete="username"
                 className="auth-input"
               />
             </label>
@@ -112,6 +124,7 @@ export const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="auth-input"
               />
             </label>
@@ -124,7 +137,7 @@ export const Login = () => {
             </button>
 
             <p className="auth-switch">
-              Need an account? <Link to="/register">Create Account</Link>
+              New to Stowed? <Link to="/register">Set up your organisation</Link>
             </p>
           </form>
         </div>

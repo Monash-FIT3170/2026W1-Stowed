@@ -1,14 +1,25 @@
 import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
 import { Products, ProductRecords } from "./collections";
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
+import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+
+// Traverses StorageLocation → StorageUnit → FloorMap → Site and asserts org access.
+async function assertLocationOrgAccess(locationId, userId) {
+  const storageLocation = await StorageLocations.findOneAsync(locationId);
+  if (!storageLocation) throw new Meteor.Error("not-found", "Storage location not found.");
+  const storageUnit = await StorageUnits.findOneAsync(storageLocation.storageUnitId);
+  if (!storageUnit) throw new Meteor.Error("not-found", "Storage unit not found.");
+  const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+  if (!floorMap) throw new Meteor.Error("not-found", "Floor map not found.");
+  await assertOrgAccess(Sites, floorMap.siteId, userId);
+}
 
 /**
- * Merges any duplicate locationIds in an assignments array by summing their
- * quantities. The UI already prevents this, but we do it here too so the data
- * layer is always consistent regardless of how the method was called.
+ * Merges any duplicate locationIds in an assignments array by summing their quantities.
  *
  * e.g. [{ locationId: 'A', quantity: 7 }, { locationId: 'A', quantity: 6 }]
- *      → [{ locationId: 'A', quantity: 13 }]
+ *      -> [{ locationId: 'A', quantity: 13 }]
  */
 function mergeAssignments(assignments) {
   const map = new Map();
@@ -24,40 +35,21 @@ function mergeAssignments(assignments) {
 Meteor.methods({
   /**
    * Creates a new Product along with its location assignments (ProductRecords).
-   *
-   * Validates that:
-   *  - No existing product shares the same name (case-insensitive).
-   *  - The sum of all assignment quantities equals totalQuantity.
-   *
-   * @param {Object}   params
-   * @param {string}   params.name
-   * @param {string}   [params.description='']
-   * @param {number}   params.totalQuantity
-   * @param {Object[]} params.assignments
-   * @param {string}   params.assignments[].locationId
-   * @param {number}   params.assignments[].quantity
-   * @returns {string} The _id of the newly created product document.
-   *
-   * @throws {Meteor.Error} not-authorised    - Not logged in outside development.
-   * @throws {Meteor.Error} duplicate-name    - A product with this name already exists.
-   * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
    */
   async "products.createWithAssignments"({
     name,
-
     description = "",
     tag = "",
     category = "",
     sku = "",
     brand = "",
     unitCost = 0,
+    reorderAt,
     photoUrl = "",
+    images = [],
     catalogImages = [],
     qrCode = "",
-
-    imageUrl = "",
     totalQuantity,
-
     assignments,
   }) {
     check(name, String);
@@ -67,16 +59,23 @@ Meteor.methods({
     check(sku, String);
     check(brand, String);
     check(unitCost, Number);
+    if (reorderAt !== undefined) check(reorderAt, Match.Integer);
     check(photoUrl, String);
+    check(images, [String]);
     check(catalogImages, [String]);
     check(qrCode, String);
     check(totalQuantity, Match.Integer);
+    check(reorderAt, Match.Maybe(Match.Integer));
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
-    check(imageUrl, String);
 
-    if (!this.userId && !Meteor.isDevelopment) {
+    if (!this.userId) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
+
+    const orgId = await getCallerOrgId(this.userId);
+    if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+    await requirePermission(this.userId, "products.create");
 
     // Case-insensitive duplicate name check.
     const existing = await Products.findOneAsync({
@@ -105,7 +104,10 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const galleryImages = images.length ? images : catalogImages;
+    const primaryPhotoUrl = photoUrl || galleryImages[0] || "";
     const productId = await Products.insertAsync({
+      orgId,
       name,
       description,
       tag,
@@ -113,17 +115,19 @@ Meteor.methods({
       sku,
       brand,
       unitCost,
-      photoUrl,
+      reorderAt,
+      photoUrl: primaryPhotoUrl,
+      images: galleryImages,
       catalogImages,
       qrCode,
-      imageUrl,
       totalQuantity,
-      images: [],
+      ...(reorderAt != null && { reorderAt }),
       createdAt: now,
       updatedAt: now,
     });
 
     for (const { locationId, quantity } of mergedAssignments) {
+      await assertLocationOrgAccess(locationId, this.userId);
       await ProductRecords.insertAsync({
         productId,
         locationId,
@@ -138,33 +142,21 @@ Meteor.methods({
 
   /**
    * Updates a Product's details and replaces its location assignments.
-   *
-   * All existing ProductRecords for the product are removed and recreated
-   * from the new assignments array, keeping the data model consistent.
-   *
-   * Validates that:
-   *  - The product exists.
-   *  - No other product shares the new name (case-insensitive).
-   *  - The sum of all assignment quantities equals totalQuantity.
-   *
-   * @param {Object}   params
-   * @param {string}   params.productId
-   * @param {string}   params.name
-   * @param {string}   [params.description='']
-   * @param {number}   params.totalQuantity
-   * @param {Object[]} params.assignments
-   * @param {string}   params.assignments[].locationId
-   * @param {number}   params.assignments[].quantity
-   *
-   * @throws {Meteor.Error} not-authorised    - Not logged in outside development.
-   * @throws {Meteor.Error} product-not-found - No product with this _id exists.
-   * @throws {Meteor.Error} duplicate-name    - Another product already has this name.
-   * @throws {Meteor.Error} quantity-mismatch - Assigned total not equal to totalQuantity.
    */
   async "products.update"({
     productId,
     name,
     description = "",
+    tag = "",
+    category = "",
+    sku = "",
+    brand = "",
+    unitCost = 0,
+    reorderAt,
+    photoUrl = "",
+    images = [],
+    catalogImages = [],
+    qrCode = "",
     totalQuantity,
     assignments,
   }) {
@@ -176,26 +168,21 @@ Meteor.methods({
     check(sku, String);
     check(brand, String);
     check(unitCost, Number);
+    if (reorderAt !== undefined) check(reorderAt, Match.Integer);
     check(photoUrl, String);
+    check(images, [String]);
     check(catalogImages, [String]);
     check(qrCode, String);
     check(totalQuantity, Match.Integer);
+    check(reorderAt, Match.Maybe(Match.Integer));
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
-    check(imageUrl, String);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
+    await assertOrgAccess(Products, productId, this.userId);
+
+    await requirePermission(this.userId, "products.update");
 
     const product = await Products.findOneAsync(productId);
-    if (!product) {
-      throw new Meteor.Error(
-        "product-not-found",
-        "No product found with that ID.",
-      );
-    }
 
-    // Duplicate name check excluding this product.
     const existing = await Products.findOneAsync({
       _id: { $ne: productId },
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
@@ -207,7 +194,6 @@ Meteor.methods({
       );
     }
 
-    // Merge any duplicate locationIds by summing their quantities.
     const mergedAssignments = mergeAssignments(assignments);
 
     const assignedTotal = mergedAssignments.reduce(
@@ -222,22 +208,31 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const galleryImages = images.length ? images : catalogImages;
+    const primaryPhotoUrl = photoUrl || product?.photoUrl || galleryImages[0] || "";
 
     await Products.updateAsync(productId, {
       $set: {
         name,
+        description,
+        tag,
         category,
+        sku,
         brand,
-        imageUrl,
-        totalQuantity,
         unitCost,
+        reorderAt,
+        photoUrl: primaryPhotoUrl,
+        images: galleryImages,
+        qrCode,
+        totalQuantity,
+        ...(reorderAt != null && { reorderAt }),
         updatedAt: now,
       },
     });
 
-    // Replace all records for this product with the merged assignments.
     await ProductRecords.removeAsync({ productId });
     for (const { locationId, quantity } of mergedAssignments) {
+      await assertLocationOrgAccess(locationId, this.userId);
       await ProductRecords.insertAsync({
         productId,
         locationId,
@@ -250,15 +245,6 @@ Meteor.methods({
 
   /**
    * Deletes a Product and all of its associated ProductRecords.
-   *
-   * Records are removed first so there is no window where the product exists
-   * without its records being cleaned up.
-   *
-   * @param {Object} params
-   * @param {string} params.productId - The _id of the product to delete.
-   *
-   * @throws {Meteor.Error} not-authorised  - Not logged in outside development.
-   * @throws {Meteor.Error} product-not-found - No product with this _id exists.
    */
   async "products.delete"({ productId }) {
     check(productId, String);
@@ -267,13 +253,8 @@ Meteor.methods({
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
-    const product = await Products.findOneAsync(productId);
-    if (!product) {
-      throw new Meteor.Error(
-        "product-not-found",
-        "No product found with that ID.",
-      );
-    }
+    await assertOrgAccess(Products, productId, this.userId);
+    await requirePermission(this.userId, "products.delete");
 
     await ProductRecords.removeAsync({ productId });
     await Products.removeAsync(productId);
@@ -282,23 +263,6 @@ Meteor.methods({
   /**
    * Restocks a Product by increasing its total quantity and replacing its
    * location assignments with the updated distribution.
-   *
-   * The caller supplies the number of units being added and the full new
-   * assignment list (existing locations with adjusted quantities + any new
-   * locations). The sum of all assignments must equal the current totalQuantity
-   * plus additionalQuantity.
-   *
-   * @param {Object}   params
-   * @param {string}   params.productId
-   * @param {number}   params.additionalQuantity - Must be a positive integer.
-   * @param {Object[]} params.assignments        - Full replacement assignment list.
-   * @param {string}   params.assignments[].locationId
-   * @param {number}   params.assignments[].quantity
-   *
-   * @throws {Meteor.Error} not-authorised     - Not logged in outside development.
-   * @throws {Meteor.Error} product-not-found  - No product with this _id exists.
-   * @throws {Meteor.Error} invalid-quantity   - additionalQuantity is not > 0.
-   * @throws {Meteor.Error} quantity-mismatch  - Assignments do not sum to new total.
    */
   async "products.restock"({ productId, additionalQuantity, assignments }) {
     check(productId, String);
@@ -308,6 +272,9 @@ Meteor.methods({
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await requirePermission(this.userId, "products.restock");
 
     const product = await Products.findOneAsync(productId);
     if (!product) {
@@ -324,7 +291,6 @@ Meteor.methods({
       );
     }
 
-    // Merge any duplicate locationIds by summing their quantities.
     const mergedAssignments = mergeAssignments(assignments);
 
     const newTotal = product.totalQuantity + additionalQuantity;
@@ -345,7 +311,6 @@ Meteor.methods({
       $set: { totalQuantity: newTotal, updatedAt: now },
     });
 
-    // Replace all records with the merged new assignments.
     await ProductRecords.removeAsync({ productId });
     for (const { locationId, quantity } of mergedAssignments) {
       await ProductRecords.insertAsync({
@@ -359,24 +324,17 @@ Meteor.methods({
   },
 
   /**
-   * Creates a new ProductRecord, assigning a quantity of a product to a location.
-   *
-   * @param {Object} params
-   * @param {string} params.productId   - ID of the parent Product.
-   * @param {string} params.locationId  - ID of the StorageLocation.
-   * @param {number} params.quantity    - Quantity of the product at this location.
-   * @returns {string} The _id of the newly created ProductRecord document.
-   *
-   * @throws {Meteor.Error} not-authorised - If the user is not logged in outside development.
+   * Creates a new ProductRecord.
    */
   async "productRecords.create"({ productId, locationId, quantity }) {
     check(productId, String);
     check(locationId, String);
     check(quantity, Match.Integer);
 
-    if (!this.userId && !Meteor.isDevelopment) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.");
-    }
+    await assertOrgAccess(Products, productId, this.userId);
+    await assertLocationOrgAccess(locationId, this.userId);
+
+    await requirePermission(this.userId, "products.create");
 
     const now = new Date();
     return await ProductRecords.insertAsync({
@@ -390,14 +348,6 @@ Meteor.methods({
 
   /**
    * Adds an image path/URL to a Product document.
-   *
-   * @param {Object} params
-   * @param {string} params.productId  - ID of the Product to update.
-   * @param {string} params.imagePath  - Path or URL of the uploaded image.
-   *
-   * @returns {void}
-   *
-   * @throws {Meteor.Error} not-authorised - If the user is not logged in outside development.
    */
   async "products.uploadImage"({ productId, imagePath }) {
     check(productId, String);
@@ -406,13 +356,48 @@ Meteor.methods({
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
-    const now = new Date();
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await requirePermission(this.userId, "products.uploadImage");
 
     await Products.updateAsync(
       { _id: productId },
       {
         $push: { images: imagePath },
         $set: { updatedAt: new Date() },
+      },
+    );
+  },
+
+  async "products.setImages"({ productId, images }) {
+    check(productId, String);
+    check(images, [String]);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await requirePermission(this.userId, "products.update");
+
+    const product = await Products.findOneAsync(productId);
+    if (!product) {
+      throw new Meteor.Error("product-not-found", "No product found with that ID.");
+    }
+
+    const primaryPhotoUrl =
+      images.length > 0 && !images.includes(product.photoUrl)
+        ? images[0]
+        : product.photoUrl || images[0] || "";
+
+    await Products.updateAsync(
+      { _id: productId },
+      {
+        $set: {
+          images,
+          photoUrl: primaryPhotoUrl,
+          updatedAt: new Date(),
+        },
       },
     );
   },
