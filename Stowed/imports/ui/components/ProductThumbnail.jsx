@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 
-export function ItemThumbnail({ photoUrl, name, images }) {
+export function ProductThumbnail({ photoUrl, name, images }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
     ? name
-      .split(" ")
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase()
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
     : "?";
 
   const src = Array.isArray(images) && images.length > 0 ? images[0] : photoUrl;

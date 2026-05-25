@@ -1,7 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products } from "/imports/api/products/collections";
 import {
   Sites,
@@ -87,6 +89,13 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 
 export function CreateProductPage() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  useEffect(() => {
+    if (role !== null && !hasClientPermission(role, "products.create")) {
+      navigate("/inventory/list", { replace: true });
+    }
+  }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -95,7 +104,6 @@ export function CreateProductPage() {
   const [unitCost, setUnitCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [reorderAt, setReorderAt] = useState("");
-  const [location, setLocation] = useState("");
   const [assignments, setAssignments] = useState([]);
   const [imageUrls, setImageUrls] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -212,7 +220,6 @@ export function CreateProductPage() {
         unitCost: unitCost ? parseFloat(unitCost) : undefined,
         totalQuantity: parsedTotal,
         reorderAt: reorderAt ? parseInt(reorderAt, 10) : undefined,
-        location,
         images: imageUrls,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
@@ -232,8 +239,8 @@ export function CreateProductPage() {
 
   return (
     <>
-      <div className="item-detail-container">
-        <div className="item-detail-header">
+      <div className="product-detail-container">
+        <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
               <span className="breadcrumb-link">Inventory</span>
@@ -246,7 +253,7 @@ export function CreateProductPage() {
           </h1>
         </div>
 
-        <div className="item-detail-grid">
+        <div className="product-detail-grid">
           <div className="left-column">
             {/* Core identification */}
             <div className="detail-section">
@@ -261,7 +268,7 @@ export function CreateProductPage() {
               </div>
               <div className="section-content">
                 <div className="form-group">
-                  <label>Item name</label>
+                  <label>Product name</label>
                   <input
                     type="text"
                     value={name}
@@ -337,38 +344,16 @@ export function CreateProductPage() {
                     />
                   </div>
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Reorder at</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={reorderAt}
-                      onChange={(e) => setReorderAt(e.target.value)}
-                      className="form-input"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Location</label>
-                    <select
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className={`form-input ${location ? "selected" : ""}`}
-                    >
-                      <option value="">Select a location...</option>
-                      {storageLocations.map((loc) => (
-                        <option key={loc._id} value={loc._id}>
-                          {buildLocationLabel(
-                            loc,
-                            storageUnits,
-                            floorMaps,
-                            sites,
-                          )}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="form-group">
+                  <label>Reorder at</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reorderAt}
+                    onChange={(e) => setReorderAt(e.target.value)}
+                    className="form-input"
+                    placeholder="Leave blank for no threshold"
+                  />
                 </div>
               </div>
             </div>
@@ -566,25 +551,6 @@ export function CreateProductPage() {
                     {uploadError}
                   </p>
                 )}
-              </div>
-            </div>
-
-            {/* QR & label */}
-            <div className="detail-section">
-              <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#f5efe6", color: "#998874" }}
-                >
-                  QR
-                </span>
-                QR & label
-              </div>
-              <div className="section-content qr-section">
-                <div className="qr-container">
-                  <div className="qr-code" />
-                  <p className="qr-label">QR Code</p>
-                </div>
               </div>
             </div>
           </div>

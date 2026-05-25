@@ -2,16 +2,14 @@ import { Meteor } from 'meteor/meteor';
 import './Register.css';
 import { ROLES } from 'imports/api/roles';
 import React, { useState } from 'react';
-import { useTracker } from 'meteor/react-meteor-data';
 import { useNavigate } from 'react-router-dom';
+import { hasClientPermission } from '../api/userMethods';
+import { useAuth } from '../api/useAuth';
 
 /**
- * Registration Page
+ * Registration Page 
  */
 const Register = () => {
-  // gets currently logged in user reactively
-  const currentUser = useTracker(() => Meteor.user());
-
   const navigate = useNavigate();
 
   // stores all form input values
@@ -25,11 +23,13 @@ const Register = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState(ROLES.STANDARD);
+  const [roleState, setRoleState] = useState(ROLES.STANDARD);
   const [orgCode, setOrgCode] = useState('');
+  const [orgName, setOrgName] = useState('');
 
-  const isLoggedIn = !!currentUser;
-  const isPrivileged = currentUser?.profile?.role >= ROLES.ADMIN;
+  // get details of current user
+  const { isLoggedIn, role } = useAuth();
+  const isPrivileged = hasClientPermission(role, "create-users");
 
   const { username, email, password, confirmPassword } = formData;
 
@@ -56,6 +56,11 @@ const Register = () => {
       return;
     }
 
+    if (!isPrivileged && !orgName.trim()) {
+      setError('Organisation name is required');
+      return;
+    }
+
     setError('');
     setSuccess('');
     setLoading(true);
@@ -70,7 +75,7 @@ const Register = () => {
           username,
           email,
           password,
-          role,
+          role: roleState,
         });
 
         setSuccess(`User created: ${username}`);
@@ -83,9 +88,13 @@ const Register = () => {
           email,
           password,
           orgCode: orgCode.trim() || null,
+          orgName: orgName.trim(),
         });
 
         setSuccess(`Account created for ${username}`);
+
+        // redirect to login page
+        navigate('/login');
       }
 
       setFormData({
@@ -102,18 +111,18 @@ const Register = () => {
     }
   };
 
-  return (
+   return (
     <div className="auth-page">
       <section className="auth-shell" aria-label="Create account">
         <div className="auth-brand-panel">
           <p className="auth-kicker">Stocktake / Users</p>
           <h1>{isPrivileged ? 'Add a team member' : 'Start mapping with Stowed'}</h1>
           <p>
-            Give people access to manage items, update stock counts, and maintain storage locations.
+            Give people access to manage products, update stock counts, and maintain storage locations.
           </p>
           <ul className="auth-feature-list">
             <li>Shop and home floor layouts</li>
-            <li>QR labels for fast item lookup</li>
+            <li>QR labels for fast product lookup</li>
             <li>Shopping lists from stock needs</li>
           </ul>
         </div>
@@ -121,11 +130,11 @@ const Register = () => {
         <div className="auth-card">
           <div className="auth-card-header">
             <div>
-              <p className="auth-kicker">Account setup</p>
-              <h2>Create Account</h2>
+              <p className="auth-kicker">Account setup</p> 
+              <h2>Setup your Organisation</h2>
             </div>
 
-            {!isLoggedIn && (
+        {!isLoggedIn && (
               <button
                 type="button"
                 onClick={() => navigate('/login')}
@@ -139,16 +148,30 @@ const Register = () => {
           {success && <div className="auth-status auth-status-success">{success}</div>}
 
           <form onSubmit={onSubmit} className="auth-form">
-            
-           <label  className="auth-field">
-             <span>Organisation Code</span>
-              <input
-                type="text"
-                value={orgCode}
-                onChange={(e) => setOrgCode(e.target.value)}
-                className="auth-input"
-              />
-           </label>
+
+           {!isPrivileged && (
+             <>
+               <label className="auth-field">
+                 <span>Organisation Name</span>
+                 <input
+                   type="text"
+                   value={orgName}
+                   onChange={(e) => setOrgName(e.target.value)}
+                   className="auth-input"
+                   required
+                 />
+               </label>
+               <label className="auth-field">
+                 <span>Organisation Code</span>
+                 <input
+                   type="text"
+                   value={orgCode}
+                   onChange={(e) => setOrgCode(e.target.value)}
+                   className="auth-input"
+                 />
+               </label>
+             </>
+           )}
             <label className="auth-field">
               <span>Username</span>
               <input className="auth-input" name="username" value={username} onChange={onChange} required />
@@ -174,13 +197,13 @@ const Register = () => {
                 <p>User Type</p>
 
                 <div className="auth-segmented-control">
-                  <button type="button" onClick={() => setRole(ROLES.ADMIN)}
-                    className={role === ROLES.ADMIN ? 'active' : ''}>
+                  <button type="button" onClick={() => setRoleState(ROLES.ADMIN)}
+                    className={roleState === ROLES.ADMIN ? 'active' : ''}>
                     Admin
                   </button>
 
-                  <button type="button" onClick={() => setRole(ROLES.STANDARD)}
-                    className={role === ROLES.STANDARD ? 'active' : ''}>
+                  <button type="button" onClick={() => setRoleState(ROLES.STANDARD)}
+                    className={roleState === ROLES.STANDARD ? 'active' : ''}>
                     Standard
                   </button>
                 </div>

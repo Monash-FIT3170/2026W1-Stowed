@@ -1,11 +1,20 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Meteor } from 'meteor/meteor';
-import { useTracker } from 'meteor/react-meteor-data';
-import { Products, ProductRecords } from '/imports/api/products/collections';
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from '/imports/api/locations/collections';
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
+import { Products, ProductRecords } from "../../api/products/collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+} from "../../api/locations/collections";
+import { uploadImageToServer } from "/imports/api/upload";
+import "./ProductDetailPage.css";
+import "../Global.css";
 
-// Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
     Meteor.call(methodName, params, (error, result) => {
@@ -15,168 +24,101 @@ function callMethod(methodName, params) {
   });
 }
 
-// brief styling to be fixed later
-
-const buttonStyle = {
-  padding: '6px 14px',
-  border: '1px solid #333',
-  borderRadius: '3px',
-  cursor: 'pointer',
-  background: 'transparent',
-  fontSize: '14px',
-};
-
-const dangerButtonStyle = {
-  ...buttonStyle,
-  border: '1px solid #c00',
-  color: '#c00',
-};
-
-const overlayStyle = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.4)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 100,
-};
-
-const modalStyle = {
-  background: '#fff',
-  border: '1px solid #ccc',
-  borderRadius: '6px',
-  padding: '28px',
-  maxWidth: '400px',
-  width: '100%',
-};
-
-const sectionStyle = {
-  borderTop: '1px solid #ccc',
-  marginTop: '24px',
-  paddingTop: '16px',
-};
-
-const thStyle = {
-  padding: '8px 16px',
-  textAlign: 'left',
-  borderBottom: '1px solid #ccc',
-};
-
-const tdStyle = {
-  padding: '8px 16px',
-};
-
-const inputStyle = {
-  padding: '6px 8px',
-  border: '1px solid #999',
-  borderRadius: '3px',
-  fontSize: '14px',
-  width: '100%',
-  boxSizing: 'border-box',
-};
-
-const assignmentRowStyle = {
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'center',
-  marginBottom: '8px',
-};
-
-const warningStyle = {
-  marginTop: '4px',
-  fontStyle: 'italic',
-  fontSize: '13px',
-};
-
-function buildLocationLabel(locationId, storageLocations, storageUnits, floorMaps, sites) {
-  const location = storageLocations.find((l) => l._id === locationId);
+function buildLocationLabel(
+  locationId,
+  storageLocations,
+  storageUnits,
+  floorMaps,
+  sites,
+) {
+  const location = storageLocations.find((loc) => loc._id === locationId);
   if (!location) return locationId;
-  const unit     = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit     ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
-  const site     = floorMap ? sites.find((s) => s._id === floorMap.siteId)     : null;
-  return [site?.name, floorMap?.name, unit?.name, location.name].filter(Boolean).join(' → ');
+
+  const unit = storageUnits.find(
+    (candidate) => candidate._id === location.storageUnitId,
+  );
+  const floorMap = unit
+    ? floorMaps.find((candidate) => candidate._id === unit.floorMapId)
+    : null;
+  const site = floorMap
+    ? sites.find((candidate) => candidate._id === floorMap.siteId)
+    : null;
+
+  return [site?.name, floorMap?.name, unit?.name, location.name]
+    .filter(Boolean)
+    .join(" → ");
 }
 
-export function ProductDetailPage() {
-  const { productId } = useParams();
-  const navigate = useNavigate();
+export function ProductDetailView({
+  item,
+  productId,
+  records = [],
+  sites = [],
+  floorMaps = [],
+  storageUnits = [],
+  storageLocations = [],
+}) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isDeleting, setIsDeleting]           = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [imageUrls, setImageUrls] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef(null);
+  const navigate = useNavigate();
+  const { role } = useAuth();
+  const canUpdate = hasClientPermission(role, "products.update");
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canUploadImage = hasClientPermission(role, "products.uploadImage");
+  const canRestock = hasClientPermission(role, "products.restock");
 
+  // ── Restock modal state ──
   const [showRestockModal, setShowRestockModal] = useState(false);
-  const [restockQty, setRestockQty]             = useState('');
+  const [restockQty, setRestockQty] = useState("");
   const [restockAssignments, setRestockAssignments] = useState([]);
-  const [isRestocking, setIsRestocking]         = useState(false);
+  const [isRestocking, setIsRestocking] = useState(false);
+  const [restockError, setRestockError] = useState("");
 
-  const { loading, product, records, sites, floorMaps, storageUnits, storageLocations } =
-    useTracker(() => {
-      const subProducts  = Meteor.subscribe('products');
-      const subRecords   = Meteor.subscribe('productRecords');
-      const subLocations = Meteor.subscribe('locations.all');
+  if (!item) {
+    return <div className="p-8 text-center">Product not found.</div>;
+  }
 
-      const loading = !subProducts.ready() || !subRecords.ready() || !subLocations.ready();
-
-      return {
-        loading,
-        product:          Products.findOne(productId),
-        records:          ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
-        sites:            Sites.find().fetch(),
-        floorMaps:        FloorMaps.find().fetch(),
-        storageUnits:     StorageUnits.find().fetch(),
-        storageLocations: StorageLocations.find().fetch(),
-      };
-    }, [productId]);
-
-  if (loading) return <div style={{ padding: '24px' }}>Loading…</div>;
-  if (!product) return <div style={{ padding: '24px' }}>Product not found.</div>;
-
-  // Restock modal helpers
-
+  // ── Restock helpers ──
   function openRestockModal() {
-    setRestockQty('');
-    // Pre-populate with the current location assignments so the user can see
-    // where stock already sits and decide where to put the new units.
+    setRestockQty("");
     setRestockAssignments(
       records.map((r) => ({ locationId: r.locationId, quantity: String(r.quantity) }))
     );
     setIsRestocking(false);
+    setRestockError("");
     setShowRestockModal(true);
   }
-
   function addRestockAssignment() {
-    setRestockAssignments([...restockAssignments, { locationId: '', quantity: '' }]);
+    setRestockAssignments((prev) => [...prev, { locationId: "", quantity: "" }]);
   }
-
   function removeRestockAssignment(index) {
-    setRestockAssignments(restockAssignments.filter((_, i) => i !== index));
+    setRestockAssignments((prev) => prev.filter((_, i) => i !== index));
   }
-
   function updateRestockAssignment(index, field, value) {
-    setRestockAssignments(
-      restockAssignments.map((a, i) => (i === index ? { ...a, [field]: value } : a))
+    setRestockAssignments((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
     );
   }
-
-  // Derived validation for the restock modal.
-  const parsedRestockQty    = parseInt(restockQty, 10);
-  const restockQtyIsValid   = restockQty !== '' && !isNaN(parsedRestockQty) && parsedRestockQty > 0;
-  const restockTargetTotal  = restockQtyIsValid ? product.totalQuantity + parsedRestockQty : null;
-
-  const validRestockAssignments = restockAssignments.filter(
-    (a) => a.locationId && a.quantity !== ''
-  );
-  const restockAssignedTotal = validRestockAssignments.reduce(
-    (sum, a) => sum + parseInt(a.quantity, 10), 0
-  );
-  const restockRemaining = restockTargetTotal !== null ? restockTargetTotal - restockAssignedTotal : null;
-  const restockIsBalanced = restockTargetTotal !== null && restockRemaining === 0;
-  const canRestock = restockQtyIsValid && restockIsBalanced;
+  const parsedRestockQty   = parseInt(restockQty, 10);
+  const restockQtyIsValid  = restockQty !== "" && !isNaN(parsedRestockQty) && parsedRestockQty > 0;
+  const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
+  const restockTargetTotal = restockQtyIsValid ? currentStock + parsedRestockQty : null;
+  const validRestockAssignments = restockAssignments.filter((a) => a.locationId && a.quantity !== "");
+  const restockAssignedTotal = validRestockAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
+  const restockRemaining   = restockTargetTotal !== null ? restockTargetTotal - restockAssignedTotal : null;
+  const restockIsBalanced  = restockTargetTotal !== null && restockRemaining === 0;
+  const restockCanSubmit   = restockQtyIsValid && restockIsBalanced;
 
   async function confirmRestock() {
     setIsRestocking(true);
+    setRestockError("");
     try {
-      await callMethod('products.restock', {
+      await callMethod("products.restock", {
         productId,
         additionalQuantity: parsedRestockQty,
         assignments: validRestockAssignments.map((a) => ({
@@ -185,247 +127,611 @@ export function ProductDetailPage() {
         })),
       });
       setShowRestockModal(false);
-    } catch (error) {
-      console.error('Failed to restock product:', error);
+    } catch (err) {
+      setRestockError(err.reason || err.message || "Restock failed.");
       setIsRestocking(false);
     }
   }
 
+  const unitCost = Number(item.unitCost);
+  const reorderAt = item.reorderAt ?? null;
+  const galleryImages =
+    imageUrls.length > 0
+      ? imageUrls
+      : Array.isArray(item.images) && item.images.length
+        ? item.images
+        : Array.isArray(item.catalogImages) && item.catalogImages.length
+          ? item.catalogImages
+          : item.photoUrl
+            ? [item.photoUrl]
+            : [];
+  // For each gallery image, determine whether it originates from the
+  // uploaded images (so it can be removed). We treat `imageUrls` (current
+  // edited/uploaded images) and `item.images` (persisted uploads) as
+  // removable sources. Fallback `photoUrl` or `catalogImages` are not removable.
+  const removableFlags = galleryImages.map((img) => {
+    if (imageUrls.length > 0) return imageUrls.includes(img);
+    if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
+    return false;
+  });
+  const qrCode = item.qrCode || "";
+  const hasUnitCost = Number.isFinite(unitCost);
+  const storageAssignments = records.length
+    ? records.map((record) => ({
+      key: record._id,
+      label: buildLocationLabel(
+        record.locationId,
+        storageLocations,
+        storageUnits,
+        floorMaps,
+        sites,
+      ),
+      quantity: record.quantity,
+    }))
+    : item.location
+      ? [
+        {
+          key: "legacy-location",
+          label: item.location,
+          quantity: currentStock,
+        },
+      ]
+      : [];
+
+  useEffect(() => {
+    const initialImages =
+      item?.images?.length
+        ? item.images
+        : Array.isArray(item.catalogImages) && item.catalogImages.length
+          ? item.catalogImages
+          : item.photoUrl
+            ? [item.photoUrl]
+            : [];
+    setImageUrls(initialImages);
+    if (initialImages.length > 0) {
+      setSelectedImageIndex(0);
+    }
+  }, [item]);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await callMethod("products.delete", { productId });
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+      setIsDeleting(false);
+    }
+  };
+
+  function imagesHaveChanged() {
+    const sourceImages =
+      item?.images?.length
+        ? item.images
+        : Array.isArray(item.catalogImages) && item.catalogImages.length
+          ? item.catalogImages
+          : item.photoUrl
+            ? [item.photoUrl]
+            : [];
+    if (sourceImages.length !== imageUrls.length) return true;
+    return imageUrls.some((url, index) => url !== sourceImages[index]);
+  }
+
+  async function saveImageChanges() {
+    if (!imagesHaveChanged()) return;
+    try {
+      await callMethod("products.setImages", {
+        productId,
+        images: imageUrls,
+      });
+    } catch (error) {
+      console.error("Failed to save product images:", error);
+      throw error;
+    }
+  }
+
+  async function handleUpdateClick() {
+    if (imagesHaveChanged()) {
+      await saveImageChanges();
+    }
+    navigate(`/inventory/${productId}/edit`);
+  }
+
+  async function handleImageSelect(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file.");
+      return;
+    }
+
+    setUploadError("");
+    setUploadingImage(true);
+    try {
+      const url = await uploadImageToServer(file);
+      let nextImages;
+      setImageUrls((prev) => {
+        const next = [...prev, url];
+        nextImages = next;
+        if (prev.length === 0) {
+          setSelectedImageIndex(0);
+        }
+        return next;
+      });
+
+      // Auto-save uploaded image list to server so it appears in lists.
+      try {
+        await callMethod("products.setImages", { productId, images: nextImages });
+      } catch (err) {
+        console.error("Failed to auto-save uploaded images:", err);
+      }
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  function removeImage(index) {
+    setImageUrls((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      setSelectedImageIndex((current) => {
+        if (index === current) return 0;
+        if (index < current) return current - 1;
+        return current;
+      });
+      return next;
+    });
+  }
+
+  const isLowStock = item.status && item.status.includes("CRITICAL");
+  const statusLabel = isLowStock ? "Low stock" : "In stock";
+  const statusClass = isLowStock
+    ? "panel-status-badge low"
+    : "panel-status-badge ok";
+
   return (
-    <div style={{ padding: '24px', maxWidth: '560px' }}>
-      <button onClick={() => navigate('/')} style={buttonStyle}>← Back</button>
+    <>
+      <div className="product-detail-container">
+        <div className="product-detail-header">
+          <div className="header-top">
+            <div className="breadcrumb">
+              <Link to="/inventory/list" className="breadcrumb-link">
+                Inventory
+              </Link>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">Product</span>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="btn-secondary" onClick={() => navigate(-1)}>
+                Back
+              </button>
+              {canRestock && (
+                <button className="btn-secondary" onClick={openRestockModal}>
+                  Restock
+                </button>
+              )}
+              {canUpdate && (
+                <button
+                  className="btn-primary"
+                  onClick={handleUpdateClick}
+                  disabled={uploadingImage}
+                >
+                  Update
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  className="btn-danger"
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          </div>
 
-      <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginTop: '16px', marginBottom: '4px' }}>
-        {product.name}
-      </h1>
+          <h1 className="header-title">
+            Product <em>Details</em>
+          </h1>
 
-      {product.description && (
-        <p style={{ color: '#555', marginBottom: '16px' }}>{product.description}</p>
-      )}
+          <div className="header-content">
+            <div className="header-icon-section">
+              {galleryImages.length > 0 ? (
+                <img className="header-icon" src={galleryImages[0]} alt="Product" />
+              ) : (
+                <div className="header-icon header-icon-placeholder">No photo</div>
+              )}
+            </div>
+            <div className="header-info">
+              <div className={statusClass}>{statusLabel}</div>
+              <h1 className="header-title">{item.name}</h1>
+              <div className="header-meta">
+                <span>{currentStock} in stock</span>
+                <span></span>
+                <span>{reorderAt != null ? `Reorder at ${reorderAt}` : "No reorder threshold"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <p><strong>Total Stock:</strong> {product.totalQuantity}</p>
+        <div className="product-detail-grid">
+          <div className="left-column">
+            <div className="detail-section">
+              <h2 className="section-title">
+                <span className="section-badge id">ID</span>
+                Core identification
+              </h2>
+              <div className="section-content">
+                <div className="form-group">
+                  <label htmlFor="product-name">Product name</label>
+                  <input
+                    id="product-name"
+                    type="text"
+                    value={item.name}
+                    readOnly
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Category</label>
+                    <div className="form-tag">{item.category || "—"}</div>
+                  </div>
+                  <div className="form-group">
+                    <label>Brand</label>
+                    <div className="form-tag">{item.brand || "—"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <div style={sectionStyle}>
-        <h2 style={{ fontSize: '17px', fontWeight: 'bold', marginBottom: '12px' }}>
-          Storage Locations
-        </h2>
+            <div className="detail-section">
+              <h2 className="section-title">
+                <span className="section-badge op">OP</span>
+                Operational details
+              </h2>
+              <div className="section-content">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="unit-cost">Unit cost</label>
+                    <input
+                      id="unit-cost"
+                      type="text"
+                      value={hasUnitCost ? `$${unitCost.toFixed(2)}` : "-"}
+                      readOnly
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="current-stock">Current stock</label>
+                    <input
+                      id="current-stock"
+                      type="text"
+                      value={currentStock}
+                      readOnly
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="reorder-at">Reorder at</label>
+                    <input
+                      id="reorder-at"
+                      type="text"
+                      value={reorderAt != null ? reorderAt : "Not set"}
+                      readOnly
+                      className="form-input"
+                    />
+                  </div>
+                  {/* <div className="form-group">
+                    <label>Location</label>
+                    <div className="form-tag">{item.location || "-"}</div>
+                  </div> */}
+                </div>
+              </div>
+            </div>
 
-        {records.length === 0 ? (
-          <p style={{ color: '#555' }}>No stock assigned to any location.</p>
-        ) : (
-          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Location</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Quantity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((record) => (
-                <tr key={record._id}>
-                  <td style={tdStyle}>
-                    {buildLocationLabel(
-                      record.locationId,
-                      storageLocations,
-                      storageUnits,
-                      floorMaps,
-                      sites
-                    )}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' }}>{record.quantity}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            <div className="detail-section">
+              <h2 className="section-title">
+                <span className="section-badge lc">LC</span>
+                Storage locations
+              </h2>
+              <div className="section-content">
+                {storageAssignments.length ? (
+                  <div className="storage-location-list">
+                    {storageAssignments.map((assignment) => (
+                      <div
+                        key={assignment.key}
+                        className="storage-location-item"
+                      >
+                        <div>
+                          <div className="storage-location-name">
+                            {assignment.label}
+                          </div>
+                          <div className="storage-location-meta">
+                            Assigned stock
+                          </div>
+                        </div>
+                        <div className="storage-location-quantity">
+                          {assignment.quantity}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="section-empty">
+                    No stock assigned to a storage location yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="right-column">
+            <div className="detail-section">
+              <h2 className="section-title">
+                <span className="section-badge im">IM</span>
+                Visual catalogue
+              </h2>
+              <div className="section-content">
+                <div className="main-image-container">
+                  {galleryImages.length > 0 ? (
+                    <img
+                      src={galleryImages[selectedImageIndex]}
+                      alt={item.name}
+                      className="main-image"
+                    />
+                  ) : (
+                    <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                      {uploadingImage ? "Uploading..." : "No image uploaded"}
+                    </span>
+                  )}
+                </div>
+                <div className="thumbnail-gallery">
+                  {galleryImages.map((img, index) => (
+                    <div key={index} className="thumbnail-wrapper">
+                      <button
+                        type="button"
+                        className={`thumbnail ${selectedImageIndex === index ? "active" : ""}`}
+                        onClick={() => setSelectedImageIndex(index)}
+                      >
+                        <img src={img} alt={`${item.name} ${index + 1}`} />
+                      </button>
+                      {removableFlags[index] && (
+                        <button
+                          type="button"
+                          className="thumbnail-remove"
+                          onClick={() => removeImage(index)}
+                          aria-label="Remove image"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {canUploadImage && (
+                    <>
+                      <button
+                        type="button"
+                        className="thumbnail add-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? "..." : "+"}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: "none" }}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="detail-section">
+              <h2 className="section-title">
+                <span className="section-badge qr">QR</span>
+                QR & label
+              </h2>
+              <div className="section-content qr-section">
+                <div className="qr-container">
+                  <img src={qrCode} alt="QR Code" className="qr-code" />
+                  <p className="qr-label">SKU: {item.sku}</p>
+                  <p className="qr-label">{item.location}</p>
+                </div>
+                <button className="btn-print">Print label</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div style={{ ...sectionStyle, display: 'flex', gap: '8px' }}>
-        <button style={buttonStyle} onClick={() => navigate(`/inventory/${productId}/edit`)}>
-          Edit
-        </button>
-        <button style={buttonStyle} onClick={openRestockModal}>
-          Restock
-        </button>
-        <button style={dangerButtonStyle} onClick={() => setShowDeleteModal(true)}>
-          Delete
-        </button>
-      </div>
-
-      {/* Restock modal */}
+      {/* ── RESTOCK MODAL ── */}
       {showRestockModal && (
-        <div style={overlayStyle}>
-          <div style={{ ...modalStyle, maxWidth: '500px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
-              Restock "{product.name}"
-            </h2>
-            <p style={{ marginBottom: '16px', color: '#555', fontSize: '14px' }}>
-              Current stock: <strong>{product.totalQuantity}</strong>. Enter how many units you are
-              adding, then assign all stock (existing + new) to locations before saving.
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: "480px", width: "100%" }}>
+            <h3 className="modal-title">Restock "{item.name}"</h3>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
+              Current stock: <strong>{currentStock}</strong>. Enter units being added, then
+              redistribute <em>all</em> stock across locations.
             </p>
 
             {/* Units being added */}
-            <div style={{ marginBottom: '16px' }}>
-              <label htmlFor="restockQty" style={{ display: 'block', marginBottom: '4px' }}>
-                <strong>Units being added</strong>
-              </label>
+            <div className="form-group" style={{ marginBottom: "16px" }}>
+              <label style={{ fontWeight: 600, fontSize: "13px" }}>Units being added</label>
               <input
-                id="restockQty"
                 type="number"
                 min="1"
+                className="form-input"
+                style={{ maxWidth: "140px", marginTop: "4px" }}
                 value={restockQty}
                 onChange={(e) => setRestockQty(e.target.value)}
-                style={{ ...inputStyle, maxWidth: '140px' }}
                 disabled={isRestocking}
               />
               {restockTargetTotal !== null && (
-                <p style={{ ...warningStyle, marginTop: '6px' }}>
+                <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--text-muted)" }}>
                   New total will be <strong>{restockTargetTotal}</strong> units.
                 </p>
               )}
             </div>
 
             {/* Location assignments */}
-            <div style={{ borderTop: '1px solid #eee', paddingTop: '14px' }}>
-              <p style={{ marginBottom: '10px', fontWeight: 'bold', fontSize: '14px' }}>
+            <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: "14px" }}>
+              <p style={{ fontWeight: 600, fontSize: "13px", marginBottom: "10px" }}>
                 Assign all stock to locations
               </p>
-
               {restockAssignments.map((assignment, index) => {
                 const usedElsewhere = new Set(
-                  restockAssignments
-                    .filter((_, i) => i !== index)
-                    .map((a) => a.locationId)
-                    .filter(Boolean)
+                  restockAssignments.filter((_, i) => i !== index).map((a) => a.locationId).filter(Boolean)
                 );
-                const availableLocations = storageLocations.filter(
-                  (loc) => !usedElsewhere.has(loc._id)
-                );
-
                 return (
-                  <div key={index} style={assignmentRowStyle}>
+                  <div key={index} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
                     <select
+                      className="form-input"
+                      style={{ flex: 2 }}
                       value={assignment.locationId}
-                      onChange={(e) => updateRestockAssignment(index, 'locationId', e.target.value)}
-                      style={{ ...inputStyle, flex: 2 }}
+                      onChange={(e) => updateRestockAssignment(index, "locationId", e.target.value)}
                       disabled={isRestocking}
                     >
                       <option value="">Select a location…</option>
-                      {availableLocations.map((loc) => (
-                        <option key={loc._id} value={loc._id}>
-                          {buildLocationLabel(loc._id, storageLocations, storageUnits, floorMaps, sites)}
-                        </option>
-                      ))}
+                      {storageLocations
+                        .filter((loc) => !usedElsewhere.has(loc._id))
+                        .map((loc) => (
+                          <option key={loc._id} value={loc._id}>
+                            {buildLocationLabel(loc._id, storageLocations, storageUnits, floorMaps, sites)}
+                          </option>
+                        ))}
                     </select>
-
                     <input
                       type="number"
                       min="0"
                       placeholder="Qty"
+                      className="form-input"
+                      style={{ maxWidth: "80px" }}
                       value={assignment.quantity}
-                      onChange={(e) => updateRestockAssignment(index, 'quantity', e.target.value)}
-                      style={{ ...inputStyle, flex: 1, maxWidth: '80px' }}
+                      onChange={(e) => updateRestockAssignment(index, "quantity", e.target.value)}
                       disabled={isRestocking}
                     />
-
-                    <button
-                      type="button"
-                      onClick={() => removeRestockAssignment(index)}
-                      style={buttonStyle}
-                      disabled={isRestocking}
-                    >
+                    <button type="button" className="btn-secondary" onClick={() => removeRestockAssignment(index)} disabled={isRestocking}>
                       Remove
                     </button>
                   </div>
                 );
               })}
-
-              <button
-                type="button"
-                onClick={addRestockAssignment}
-                style={{ ...buttonStyle, marginTop: '4px' }}
-                disabled={isRestocking}
-              >
+              <button type="button" className="btn-secondary" style={{ marginTop: "4px" }} onClick={addRestockAssignment} disabled={isRestocking}>
                 + Add Location
               </button>
 
-              {/* Stock balance indicator */}
               {restockRemaining !== null && (
-                <p style={{ ...warningStyle, marginTop: '10px' }}>
+                <p style={{ marginTop: "10px", fontSize: "12px", fontStyle: "italic", color: restockRemaining === 0 ? "var(--success)" : "var(--text-muted)" }}>
                   {restockRemaining === 0 && `All ${restockTargetTotal} units assigned.`}
                   {restockRemaining  > 0 && `${restockAssignedTotal} of ${restockTargetTotal} assigned — ${restockRemaining} remaining.`}
-                  {restockRemaining  < 0 && `Over-assigned by ${Math.abs(restockRemaining)} unit${Math.abs(restockRemaining) !== 1 ? 's' : ''}.`}
+                  {restockRemaining  < 0 && `Over-assigned by ${Math.abs(restockRemaining)} unit${Math.abs(restockRemaining) !== 1 ? "s" : ""}.`}
                 </p>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-              <button
-                style={{
-                  ...buttonStyle,
-                  opacity: canRestock && !isRestocking ? 1 : 0.4,
-                  cursor:  canRestock && !isRestocking ? 'pointer' : 'not-allowed',
-                }}
-                disabled={!canRestock || isRestocking}
-                onClick={confirmRestock}
-              >
-                {isRestocking ? 'Saving…' : 'Confirm Restock'}
-              </button>
-              <button
-                style={buttonStyle}
-                disabled={isRestocking}
-                onClick={() => setShowRestockModal(false)}
-              >
+            {restockError && (
+              <p style={{ marginTop: "10px", fontSize: "12px", color: "var(--danger, #b91c1c)" }}>{restockError}</p>
+            )}
+
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowRestockModal(false)} disabled={isRestocking}>
                 Cancel
+              </button>
+              <button className="btn-primary" onClick={confirmRestock} disabled={!restockCanSubmit || isRestocking}>
+                {isRestocking ? "Saving…" : "Confirm Restock"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete modal */}
       {showDeleteModal && (
-        <div style={overlayStyle}>
-          <div style={modalStyle}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>
-              Delete "{product.name}"?
-            </h2>
-            <p style={{ marginBottom: '8px' }}>
-              This will permanently delete the product and remove it from all{' '}
-              <strong>{records.length} storage location{records.length !== 1 ? 's' : ''}</strong>{' '}
-              it is currently assigned to.
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 className="modal-title">Delete "{item.name}"?</h3>
+            <p className="modal-text">
+              This will permanently delete the product and remove it from all
+              storage locations.
             </p>
-            <p style={{ marginBottom: '20px', fontStyle: 'italic', fontSize: '13px', color: '#555' }}>
-              This action cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="modal-actions">
               <button
-                style={{ ...dangerButtonStyle, opacity: isDeleting ? 0.4 : 1, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
-                disabled={isDeleting}
-                onClick={async () => {
-                  setIsDeleting(true);
-                  try {
-                    await callMethod('products.delete', { productId });
-                    navigate('/');
-                  } catch (error) {
-                    console.error('Failed to delete product:', error);
-                    setIsDeleting(false);
-                  }
-                }}
-              >
-                {isDeleting ? 'Deleting…' : 'Confirm Delete'}
-              </button>
-              <button
-                style={buttonStyle}
-                disabled={isDeleting}
+                className="btn-secondary"
                 onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
               >
                 Cancel
+              </button>
+              <button
+                className="btn-danger"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
+  );
+}
+
+export function ProductDetailPage() {
+  const { productId } = useParams();
+
+  const {
+    item,
+    isLoading,
+    records,
+    sites,
+    floorMaps,
+    storageUnits,
+    storageLocations,
+  } = useTracker(() => {
+    const handleProducts = Meteor.subscribe("products");
+    const handleRecords = Meteor.subscribe("productRecords");
+    const handleLocations = Meteor.subscribe("locations.all");
+    return {
+      isLoading:
+        !handleProducts.ready() ||
+        !handleRecords.ready() ||
+        !handleLocations.ready(),
+      item: Products.findOne(productId),
+      records: ProductRecords.find(
+        { productId },
+        { sort: { quantity: -1 } },
+      ).fetch(),
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+    };
+  }, [productId]);
+
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
+
+  return (
+    <ProductDetailView
+      item={item}
+      productId={productId}
+      records={records}
+      sites={sites}
+      floorMaps={floorMaps}
+      storageUnits={storageUnits}
+      storageLocations={storageLocations}
+    />
   );
 }

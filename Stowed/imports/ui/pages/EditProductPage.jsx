@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import {
   Sites,
@@ -35,16 +37,25 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 export function EditProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  useEffect(() => {
+    if (role !== null && !hasClientPermission(role, "products.update")) {
+      navigate("/inventory/list", { replace: true });
+    }
+  }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [reorderAt, setReorderAt] = useState("");
   const [assignments, setAssignments] = useState([]);
   const [initialised, setInitialised] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const [imageUrls, setImageUrls] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -71,11 +82,12 @@ export function EditProductPage() {
 
   useEffect(() => {
     if (!loading && product && !initialised) {
-      setName(product.name);
-      setCategory(product.category);
-      setBrand(product.brand);
-      setTotalQuantity(String(product.totalQuantity));
-      setUnitCost(String(product.unitCost));
+      setName(product.name ?? "");
+      setCategory(product.category ?? "");
+      setBrand(product.brand ?? "");
+      setTotalQuantity(String(product.totalQuantity ?? ""));
+      setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
+      setReorderAt(product.reorderAt != null ? String(product.reorderAt) : "");
       setImageUrls(product.images || product.imageUrls || product.catalogImages || []);
       setMainImageIndex(product.mainImageIndex || 0);
       setAssignments(
@@ -112,6 +124,10 @@ export function EditProductPage() {
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
     if (parseFloat(unitCost) !== product.unitCost)
       result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
+    const parsedReorderAt = reorderAt !== "" ? parseInt(reorderAt, 10) : null;
+    const originalReorderAt = product.reorderAt ?? null;
+    if (parsedReorderAt !== originalReorderAt)
+      result.reorderAt = { from: originalReorderAt, to: parsedReorderAt };
 
     const originalImages = product.images || product.imageUrls || product.catalogImages || [];
     const imagesChanged =
@@ -135,7 +151,7 @@ export function EditProductPage() {
     if (assignmentsChanged) result.assignments = true;
 
     return result;
-  }, [initialised, product, name, category, brand, parsedTotal, unitCost, imageUrls, validAssignments, originalRecords]);
+  }, [initialised, product, name, category, brand, parsedTotal, unitCost, reorderAt, imageUrls, validAssignments, originalRecords]);
 
   function addAssignment() {
     setAssignments([...assignments, { locationId: "", quantity: "" }]);
@@ -191,6 +207,7 @@ export function EditProductPage() {
 
   async function confirmSave() {
     setIsSaving(true);
+    setSaveError("");
     try {
       await callMethod("products.update", {
         productId,
@@ -198,7 +215,8 @@ export function EditProductPage() {
         category,
         brand,
         totalQuantity: parsedTotal,
-        unitCost: unitCost ? parseFloat(unitCost) : 0,
+        unitCost: unitCost !== "" ? parseFloat(unitCost) : 0,
+        reorderAt: reorderAt !== "" ? parseInt(reorderAt, 10) : undefined,
         images: imageUrls,
         assignments: validAssignments.map((a) => ({
           locationId: a.locationId,
@@ -208,6 +226,7 @@ export function EditProductPage() {
       navigate(`/inventory/${productId}`);
     } catch (error) {
       console.error("Failed to update product:", error);
+      setSaveError(error.reason || error.message || "Failed to save changes.");
       setIsSaving(false);
     }
   }
@@ -216,12 +235,12 @@ export function EditProductPage() {
   if (!product) return <div className="p-8 text-center">Product not found.</div>;
 
   return (
-    <div className="item-detail-container">
-      <div className="item-detail-header">
+    <div className="product-detail-container">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <Link to="/inventory/list" className="breadcrumb-link">Inventory</Link>
           <span className="breadcrumb-separator">/</span>
-          <Link to={`/inventory/${productId}`} className="breadcrumb-link">Item</Link>
+          <Link to={`/inventory/${productId}`} className="breadcrumb-link">Product</Link>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Edit</span>
         </div>
@@ -230,7 +249,7 @@ export function EditProductPage() {
         </div>
       </div>
 
-      <div className="item-detail-grid">
+      <div className="product-detail-grid">
         <div className="left-column">
           <div className="detail-section">
             <h2 className="section-title">
@@ -239,7 +258,7 @@ export function EditProductPage() {
             </h2>
             <div className="section-content">
               <div className="form-group">
-                <label>Item name</label>
+                <label>Product name</label>
                 <input
                   type="text"
                   value={name}
@@ -277,6 +296,18 @@ export function EditProductPage() {
             </h2>
             <div className="section-content">
               <div className="form-row">
+                  <div className="form-group">
+                  <label>Unit cost</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={unitCost}
+                    onChange={(e) => setUnitCost(e.target.value)}
+                    className="form-input"
+                    placeholder="$0.00"
+                  />
+                </div>
                 <div className="form-group">
                   <label>Total stock</label>
                   <input
@@ -287,16 +318,17 @@ export function EditProductPage() {
                     min="0"
                   />
                 </div>
+              </div>
+              <div className="form-row">
                 <div className="form-group">
-                  <label>Unit cost</label>
+                  <label>Reorder at</label>
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
-                    value={unitCost}
-                    onChange={(e) => setUnitCost(e.target.value)}
+                    value={reorderAt}
+                    onChange={(e) => setReorderAt(e.target.value)}
                     className="form-input"
-                    placeholder="$0.00"
+                    placeholder="e.g. 10"
                   />
                 </div>
               </div>
@@ -496,6 +528,14 @@ export function EditProductPage() {
                   <div style={{ color: "var(--text-muted)" }}>${changes.unitCost.from} → ${changes.unitCost.to}</div>
                 </div>
               )}
+              {changes.reorderAt && (
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Reorder at</div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    {changes.reorderAt.from ?? "—"} → {changes.reorderAt.to ?? "—"}
+                  </div>
+                </div>
+              )}
               {changes.images && (
                 <div>
                   <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Images</div>
@@ -522,6 +562,7 @@ export function EditProductPage() {
               )}
             </div>
 
+            {saveError && <div className="warning-text">{saveError}</div>}
             <div className="modal-actions">
               <button className="btn-secondary" disabled={isSaving} onClick={() => setShowSaveModal(false)}>
                 Cancel

@@ -18,7 +18,7 @@
     "postcss-load-config": "^6.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-konva": "^18.2.14",
+    "react-konva": "^18.2.16",
     "react-router-dom": "^7.9.5",
     "simpl-schema": "^3.4.7",
     "tailwindcss": "^4.2.2"
@@ -30,7 +30,9 @@
     "@rspack/core": "^1.7.1",
     "@rspack/plugin-react-refresh": "^1.4.3",
     "@svgr/webpack": "^8.1.0",
-    "react-refresh": "^0.17.0"
+    "css-loader": "^7.1.4",
+    "react-refresh": "^0.17.0",
+    "style-loader": "^4.0.0"
   },
   "meteor": {
     "mainModule": {

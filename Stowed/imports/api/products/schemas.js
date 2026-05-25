@@ -1,6 +1,10 @@
 import SimpleSchema from "simpl-schema";
 
 export const ProductSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   name: {
     type: String,
     min: 1,
@@ -44,6 +48,15 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
   },
 
+  catalogImages: {
+    type: Array,
+    optional: true,
+  },
+
+  "catalogImages.$": {
+    type: String,
+  },
+
   qrCode: {
     type: String,
     optional: true,
@@ -67,6 +80,12 @@ export const ProductSchema = new SimpleSchema({
 
   totalQuantity: {
     type: SimpleSchema.Integer,
+    min: 0,
+  },
+
+  reorderAt: {
+    type: SimpleSchema.Integer,
+    optional: true,
     min: 0,
   },
 

@@ -11,7 +11,7 @@ import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
-import { ItemDetailPage } from "./pages/ItemDetailPage";
+import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -25,7 +25,6 @@ const LocationsPage = lazy(() =>
 );
 
 export function App() {
-  // automatically keeps track of the currently logged in user and updates whenever the login status changes
   const { user, loggingIn } = useTracker(() => {
     return {
       user: Meteor.user(),
@@ -35,9 +34,8 @@ export function App() {
 
   const isLoggedIn = !!user;
 
-  // gets the current user's role for route authorisation
   const role = user?.profile?.role ?? null;
-  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/");
+  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/inventory");
 
   return (
     <BrowserRouter>
@@ -45,7 +43,6 @@ export function App() {
         className="flex h-screen overflow-hidden"
         style={{ backgroundColor: "var(--bg-primary)" }}
       >
-        {/* only show navigation after authentication */}
         {isLoggedIn && <Sidebar />}
         <main
           className="flex-1 overflow-y-auto"
@@ -54,12 +51,6 @@ export function App() {
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />
-            {/* protected routes:
-                - unauthenticated users are redirected to login
-                - authenticated users must also pass route permission checks
-                - unauthorised users are redirected back to login page
-            */}
-            {/* prevent logged-in users from revisiting the login page */}
             <Route
               path="/login"
               element={isLoggedIn ? <Navigate to="/" replace /> : <Login />}
@@ -68,7 +59,11 @@ export function App() {
               path="/"
               element={
                 isLoggedIn ? (
-                  <InventoryPage />
+                  hasClientPermission(role, "route:/inventory") ? (
+                    <InventoryPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -98,7 +93,7 @@ export function App() {
               path="/inventory/:productId"
               element={
                 canAccessInventory ? (
-                  <ItemDetailPage />
+                  <ProductDetailPage />
                 ) : (
                   <Navigate to="/" replace />
                 )

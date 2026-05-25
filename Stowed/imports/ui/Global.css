@@ -23,7 +23,7 @@
 
 /* -- Page shell —- */
 
-.item-detail-container {
+.product-detail-container {
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-dark);
@@ -38,7 +38,7 @@
     Arial;
 }
 
-.item-detail-header {
+.product-detail-header {
   padding: 20px 28px 8px 28px;
 }
 
@@ -243,6 +243,10 @@
   color: var(--tag-text);
   border: 1px solid var(--border-subtle);
   font-size: 13px;
+  min-height: 37px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .warning-text {

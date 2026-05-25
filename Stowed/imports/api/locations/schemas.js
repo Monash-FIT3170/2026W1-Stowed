@@ -3,11 +3,12 @@ import SimpleSchema from "simpl-schema";
 
 /**
  * Schema for a Site.
- *
- * A Site represents the highest-level physical storage area in the system.
- * Examples include a warehouse, office, shop, or home.
  */
 export const SiteSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   name: {
     type: String,
     min: 1,
@@ -31,11 +32,9 @@ export const SiteSchema = new SimpleSchema({
 
 /**
  * Schema for a FloorMap.
- *
- * A FloorMap belongs to a Site and represents a visual or logical layout
- * within that site. It may optionally reference an uploaded floor map image.
  */
 export const FloorMapSchema = new SimpleSchema({
+  orgId: String,
   siteId: String,
 
   name: {
@@ -97,13 +96,12 @@ export const FloorMapSchema = new SimpleSchema({
 
 /**
  * Schema for a StorageUnit.
- *
- * A StorageUnit represents the larger physical block on a FloorMap, such as
- * "CAB-01", a shelf bay, cabinet, rack, drawer set, fridge, or other unit.
- *
- * The position field is used by the floor map UI to place and size the unit.
  */
 export const StorageUnitSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   floorMapId: {
     type: String,
   },
@@ -151,6 +149,12 @@ export const StorageUnitSchema = new SimpleSchema({
     min: 1,
   },
 
+  fill: {
+    type: String,
+    optional: true,
+    max: 50,
+  },
+
   createdAt: {
     type: Date,
   },
@@ -158,16 +162,21 @@ export const StorageUnitSchema = new SimpleSchema({
   updatedAt: {
     type: Date,
   },
+
+  photoUrl: {
+    type: String,
+    optional: true,
+  },
 });
 
 /**
  * Schema for a StorageLocation.
- *
- * A StorageLocation is the lowest-level fixed physical location where
- * products can later be assigned. For example, "Shelf A - Rack 1",
- * "Drawer 3", or "Bin 4".
  */
 export const StorageLocationSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
   storageUnitId: {
     type: String,
   },
@@ -198,6 +207,17 @@ export const StorageLocationSchema = new SimpleSchema({
     max: 50,
   },
 
+  "storedItems.$.quantity": {
+    type: SimpleSchema.Integer,
+    min: 0,
+  },
+
+  "storedItems.$.status": {
+    type: String,
+    optional: true,
+    allowedValues: ["OK", "LOW", "CRITICAL"],
+  },
+
   name: {
     type: String,
     optional: true,
@@ -207,7 +227,7 @@ export const StorageLocationSchema = new SimpleSchema({
   code: {
     type: String,
     optional: true,
-    max: 50
+    max: 50,
   },
 
   imageUrl: {
@@ -221,7 +241,11 @@ export const StorageLocationSchema = new SimpleSchema({
     optional: true,
   },
 
-  createdAt: Date,
+  createdAt: {
+    type: Date,
+  },
 
-  updatedAt: Date,
+  updatedAt: {
+    type: Date,
+  },
 });

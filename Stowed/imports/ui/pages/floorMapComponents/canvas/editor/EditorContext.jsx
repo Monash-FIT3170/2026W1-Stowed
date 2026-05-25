@@ -113,7 +113,7 @@ export function EditorProvider({ children, floorMapId }) {
       const location = storageLocations.find((l) => l._id === record.locationId);
       if (!location) return;
 
-      const threshold = product.reorderAt ?? 10;
+      const threshold = product.reorderAt ?? 0;
       const isLow     = product.totalQuantity <= threshold;
       const unitId    = location.storageUnitId;
 
@@ -123,6 +123,7 @@ export function EditorProvider({ children, floorMapId }) {
         product,
         quantity:     product.totalQuantity,
         threshold,
+        reorderAt:    threshold,
         isLow,
         locationName: location.name,
       });
@@ -134,8 +135,10 @@ export function EditorProvider({ children, floorMapId }) {
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const fw = Number(floorMap.floorSize?.width);
+    const fh = Number(floorMap.floorSize?.height);
+    if (fw > 0 && fh > 0) {
+      setFloorSize({ width: fw, height: fh });
     }
 
     if (floorMap.settings) {
@@ -208,17 +211,27 @@ export function EditorProvider({ children, floorMapId }) {
           height: unit.height,
         };
 
-        const currentUnitIds = units
-          .filter((unit) => unit._id)
-          .map((unit) => unit._id);
+      const currentUnitIds = units
+        .filter((unit) => unit._id)
+        .map((unit) => unit._id);
 
-        for (const savedUnit of savedUnits) {
-          if (!currentUnitIds.includes(savedUnit._id)) {
-            await callMethod("storageUnits.delete", {
-              storageUnitId: savedUnit._id,
-            });
-          }
+      for (const savedUnit of savedUnits) {
+        if (!currentUnitIds.includes(savedUnit._id)) {
+          await callMethod("storageUnits.delete", {
+            storageUnitId: savedUnit._id,
+          });
         }
+      }
+
+      const savedCanvasUnits = [];
+
+      for (const unit of units) {
+        const position = {
+          x: unit.x,
+          y: unit.y,
+          width: unit.width,
+          height: unit.height,
+        };
 
         if (unit._id) {
           await callMethod("storageUnits.update", {
@@ -229,6 +242,8 @@ export function EditorProvider({ children, floorMapId }) {
             position,
             fill:          unit.fill || "lightblue",
           });
+
+          savedCanvasUnits.push(unit);
         } else {
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
@@ -238,12 +253,18 @@ export function EditorProvider({ children, floorMapId }) {
             fill:       unit.fill || "lightblue",
           });
 
-          unit._id = newId;
-          unit.id  = newId;
+          savedCanvasUnits.push({
+            ...unit,
+            _id: newId,
+            id: newId,
+          });
         }
       }
 
+      setUnits(savedCanvasUnits);
+      historyRef.current = { stack: [savedCanvasUnits], index: 0 };
       alert("Layout saved to database!");
+    }
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
@@ -256,8 +277,10 @@ export function EditorProvider({ children, floorMapId }) {
       return;
     }
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const lfw = Number(floorMap.floorSize?.width);
+    const lfh = Number(floorMap.floorSize?.height);
+    if (lfw > 0 && lfh > 0) {
+      setFloorSize({ width: lfw, height: lfh });
     }
 
     if (floorMap.settings) {
@@ -304,8 +327,50 @@ export function EditorProvider({ children, floorMapId }) {
 
   // --- CANVAS SETTINGS ---
   function handleCanvasSettingsSave({ floorSize: newFloorSize, gridInterval, showGrid, snapToGrid }) {
+    const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+    const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+    const unitsInsideFloor = units.filter(
+      (unit) =>
+        unit.x >= 0 &&
+        unit.y >= 0 &&
+        unit.x + unit.width <= floorWidthMeters &&
+        unit.y + unit.height <= floorHeightMeters
+    );
+    const removedUnits = units.filter(
+      (unit) => !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id)
+    );
+
+    if (removedUnits.length > 0) {
+      const unitNames = removedUnits.map((unit) => unit.name || unit.id).join(", ");
+      const proceed = confirm(
+        `The resized floor is too small for ${removedUnits.length} unit(s): ${unitNames}.\n\nDelete these unit(s) from the floor map?\n\nChoose Cancel to keep editing the floor size.`
+      );
+
+      if (!proceed) return false;
+      commitUnits(unitsInsideFloor);
+    }
+
     setFloorSize(newFloorSize);
     setCanvasSettings({ gridInterval, showGrid, snapToGrid });
+    return true;
+  }
+
+  async function handleDeleteSelectedUnit() {
+    if (!selectedUnit) return;
+    const unitId = selectedUnit._id || selectedUnit.id;
+    if (!unitId) {
+      // Unit not saved to DB yet — just remove from canvas
+      commitUnits((prev) => prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id));
+      setSelectedUnit(null);
+      return;
+    }
+    try {
+      await callMethod("storageUnits.delete", { storageUnitId: unitId });
+      commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
+      setSelectedUnit(null);
+    } catch (error) {
+      alert(error.reason || "Cannot delete this unit. Make sure all storage locations within it are removed first.");
+    }
   }
 
   const value = {
@@ -340,6 +405,9 @@ export function EditorProvider({ children, floorMapId }) {
     // Slide-out panel
     selectedUnit, setSelectedUnit,
     isPanelOpen,  setIsPanelOpen,
+
+    // Delete selected unit
+    handleDeleteSelectedUnit,
   };
 
   return (

@@ -91,9 +91,18 @@ export function Canvas({
 
   useEffect(() => {
     function onKeyDown(e) {
+      const target = e.target;
+      const isTyping =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+
+      if (isTyping) return;
+
       if (e.key === "c" && (e.ctrlKey || e.metaKey)) handleCopy();
       if (e.key === "v" && (e.ctrlKey || e.metaKey)) handlePaste();
-      if (e.key.toLowerCase() === "delete" || e.key.toLowerCase() === "backspace") handleDelete();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);

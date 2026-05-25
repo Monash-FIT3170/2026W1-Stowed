@@ -1,4 +1,4 @@
-export const mockItems = [
+export const mockProducts = [
   {
     _id: "1",
     name: "AAA Battery Pack",
@@ -161,27 +161,27 @@ export const mockItems = [
   },
 ];
 
-export function getMockItemById(itemId) {
-  return mockItems.find((item) => item._id === itemId);
+export function getMockProductById(productId) {
+  return mockProducts.find((product) => product._id === productId);
 }
 
-export function getLowStockItems(items) {
-  return items.filter(
-    (i) =>
-      typeof i.quantity === "number" &&
-      typeof i.lowStockThreshold === "number" &&
-      i.quantity <= i.lowStockThreshold,
+export function getLowStockProducts(products) {
+  return products.filter(
+    (p) =>
+      typeof p.quantity === "number" &&
+      typeof p.lowStockThreshold === "number" &&
+      p.quantity <= p.lowStockThreshold,
   );
 }
 
-export function getTotalValue(items) {
-  return items.reduce((total, item) => {
-    return total + (item.unitCost * item.quantity || 0);
+export function getTotalValue(products) {
+  return products.reduce((total, product) => {
+    return total + (product.unitCost * product.quantity || 0);
   }, 0);
 }
 
-export function getRecentlyUpdatedItems(items, limit = 5) {
-  return [...items]
+export function getRecentlyUpdatedProducts(products, limit = 5) {
+  return [...products]
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
     .slice(0, limit);
 }

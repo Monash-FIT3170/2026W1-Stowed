@@ -3,17 +3,18 @@ import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Products } from "../../api/products/collections";
-import { ItemThumbnail } from "../components/ItemThumbnail";
+import { ProductThumbnail } from "../components/ProductThumbnail";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryPage.css";
 import "../Global.css";
 
 export function InventoryPage() {
-  const { items, loading } = useTracker(() => {
+  const { items, loading, username } = useTracker(() => {
     const sub = Meteor.subscribe("products");
     return {
       items: Products.find().fetch(),
       loading: !sub.ready(),
+      username: Meteor.user()?.profile?.username,
     };
   }, []);
 
@@ -22,7 +23,7 @@ export function InventoryPage() {
   }
 
   const totalItems = items.length;
-  const lowStockCount = items.filter((item) => item.totalQuantity <= 10).length;
+  const lowStockCount = items.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt).length;
   const totalValue = items.reduce((sum, item) => sum + (item.unitCost * item.totalQuantity || 0), 0);
   const recentItems = items.slice(0, 5);
 
@@ -33,12 +34,12 @@ export function InventoryPage() {
         {" "}&nbsp;/{" "}&nbsp;
         <span className="breadcrumb-current">Dashboard</span>
       </div>
-      <h1 className="page-heading">Hello, User</h1>
+      <h1 className="page-heading">Hello, {username || "User"}</h1>
       <h2 className="page-subheading">Here's what's stocked.</h2>
       <div className="stats-container">
         <div className="stat-card stat-card-green">
           <div className="stat-value">{totalItems}</div>
-          <div className="stat-label stat-label-green">Items tracked</div>
+          <div className="stat-label stat-label-green">Products tracked</div>
         </div>
 
         <div className="stat-card stat-card-orange">
@@ -56,7 +57,7 @@ export function InventoryPage() {
           <div>
             <div className="recent-items-title">Recently updated</div>
             <div className="recent-items-subtitle">
-              {recentItems.length} of {totalItems} items shown
+              {recentItems.length} of {totalItems} products shown
             </div>
           </div>
           <Link to="/inventory/list" className="view-all-link">
@@ -66,22 +67,18 @@ export function InventoryPage() {
 
         {recentItems.map((item) => (
           <div key={item._id} className="table-row">
-            <ItemThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
+            <ProductThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
             <span>
               <Link to={`/inventory/${item._id}`} className="item-name-link">
                 {item.name}
               </Link>
             </span>
             <span>
-              <span className="item-tag">{item.tag || "—"}</span>
-            </span>
-            <span className="item-location">{item.location}</span>
-            <span>
-              {item.totalQuantity}/{10}
+              {item.totalQuantity}
             </span>
             <StatusBadge
               quantity={item.totalQuantity}
-              threshold={10}
+              threshold={item.reorderAt != null ? item.reorderAt : null}
             />
           </div>
         ))}

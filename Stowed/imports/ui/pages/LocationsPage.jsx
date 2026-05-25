@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 
 import {
   FloorMaps,
@@ -124,6 +126,9 @@ function submitMeteorMethod(methodName, params) {
 }
 
 export function LocationsPage() {
+  const { role } = useAuth();
+  const canManage = hasClientPermission(role, "locations.manage");
+
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedFloorMapId, setSelectedFloorMapId] = useState("");
   const [selectedStorageUnitId, setSelectedStorageUnitId] = useState("");
@@ -136,6 +141,17 @@ export function LocationsPage() {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Edit state for each level
+  const [editingSiteId, setEditingSiteId] = useState(null);
+  const [editSiteForm, setEditSiteForm] = useState({ name: "", description: "" });
+  const [editingFloorMapId, setEditingFloorMapId] = useState(null);
+  const [editFloorMapForm, setEditFloorMapForm] = useState({ name: "", imageUrl: "" });
+  const [editingStorageUnitId, setEditingStorageUnitId] = useState(null);
+  const [editStorageUnitForm, setEditStorageUnitForm] = useState({ name: "", type: "shelf" });
+  const [editingStorageLocationId, setEditingStorageLocationId] = useState(null);
+  const [editStorageLocationForm, setEditStorageLocationForm] = useState({ name: "", code: "" });
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id, name }
 
   const { isLoading, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
@@ -311,6 +327,102 @@ export function LocationsPage() {
     setSelectedLocation(null);
   }
 
+  function startEditSite(site) {
+    setEditingSiteId(site._id);
+    setEditSiteForm({ name: site.name, description: site.description || "" });
+  }
+
+  async function saveEditSite(siteId) {
+    const name = editSiteForm.name.trim();
+    if (!name) return;
+    const duplicate = sites.some((s) => s._id !== siteId && s.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) { setStatus({ type: "error", message: "A site with that name already exists." }); return; }
+    await runSubmit(async () => {
+      await submitMeteorMethod("sites.update", { siteId, name, description: editSiteForm.description.trim() });
+      setEditingSiteId(null);
+    });
+  }
+
+  function startEditSite(site) {
+    setEditingSiteId(site._id);
+    setEditSiteForm({ name: site.name, description: site.description || "" });
+  }
+
+  async function saveEditSite(siteId) {
+    const name = editSiteForm.name.trim();
+    if (!name) return;
+    const duplicate = sites.some((s) => s._id !== siteId && s.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) { setStatus({ type: "error", message: "A site with that name already exists." }); return; }
+    await runSubmit(async () => {
+      await submitMeteorMethod("sites.update", { siteId, name, description: editSiteForm.description.trim() });
+      setEditingSiteId(null);
+    });
+  }
+
+  function startEditFloorMap(fm) {
+    setEditingFloorMapId(fm._id);
+    setEditFloorMapForm({ name: fm.name, imageUrl: fm.imageUrl || "" });
+  }
+
+  async function saveEditFloorMap(floorMapId) {
+    const name = editFloorMapForm.name.trim();
+    if (!name) return;
+    const duplicate = floorMapsForSite.some((f) => f._id !== floorMapId && f.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) { setStatus({ type: "error", message: "A floor map with that name already exists in this site." }); return; }
+    const fm = floorMaps.find((f) => f._id === floorMapId);
+    await runSubmit(async () => {
+      await submitMeteorMethod("floorMaps.update", { floorMapId, siteId: fm.siteId, name, imageUrl: editFloorMapForm.imageUrl.trim(), floorSize: fm.floorSize || {}, settings: fm.settings || {} });
+      setEditingFloorMapId(null);
+    });
+  }
+
+  function startEditStorageUnit(unit) {
+    setEditingStorageUnitId(unit._id);
+    setEditStorageUnitForm({ name: unit.name, type: unit.type });
+  }
+
+  async function saveEditStorageUnit(unitId) {
+    const name = editStorageUnitForm.name.trim();
+    if (!name) return;
+    const duplicate = storageUnitsForFloorMap.some((u) => u._id !== unitId && u.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) { setStatus({ type: "error", message: "A storage unit with that name already exists on this floor map." }); return; }
+    const unit = storageUnits.find((u) => u._id === unitId);
+    await runSubmit(async () => {
+      await submitMeteorMethod("storageUnits.update", { storageUnitId: unitId, floorMapId: unit.floorMapId, name, type: editStorageUnitForm.type, position: unit.position });
+      setEditingStorageUnitId(null);
+    });
+  }
+
+  function startEditStorageLocation(loc) {
+    setEditingStorageLocationId(loc._id);
+    setEditStorageLocationForm({ name: loc.name, code: loc.code || "" });
+  }
+
+  async function saveEditStorageLocation(locationId) {
+    const name = editStorageLocationForm.name.trim();
+    const code = editStorageLocationForm.code.trim();
+    if (!name || !code) return;
+    const duplicate = locationsForStorageUnit.some((l) => l._id !== locationId && l.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) { setStatus({ type: "error", message: "A location with that name already exists in this storage unit." }); return; }
+    const loc = storageLocations.find((l) => l._id === locationId);
+    await runSubmit(async () => {
+      await submitMeteorMethod("storageLocations.update", { storageLocationId: locationId, storageUnitId: loc.storageUnitId, name, code, imageUrl: loc.imageUrl || "" });
+      setEditingStorageLocationId(null);
+    });
+  }
+
+  async function handleDeleteConfirmed() {
+    if (!deleteConfirm) return;
+    const { type, id } = deleteConfirm;
+    setDeleteConfirm(null);
+    await runSubmit(async () => {
+      if (type === "site") await submitMeteorMethod("sites.delete", { siteId: id });
+      else if (type === "floorMap") await submitMeteorMethod("floorMaps.delete", { floorMapId: id });
+      else if (type === "storageUnit") await submitMeteorMethod("storageUnits.delete", { storageUnitId: id });
+      else if (type === "storageLocation") await submitMeteorMethod("storageLocations.delete", { storageLocationId: id });
+    });
+  }
+
   // Scale all units to fit within the preview container
   function getPreviewLayout(units) {
     if (!units.length) return { units: [], scale: 1 };
@@ -343,8 +455,8 @@ export function LocationsPage() {
   }
 
   return (
-    <div className="item-detail-container">
-      <div className="item-detail-header">
+    <div className="product-detail-container">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Locations</span>
           <span className="breadcrumb-separator">/</span>
@@ -367,40 +479,55 @@ export function LocationsPage() {
         </div>
       )}
 
-      <div className="item-detail-grid">
+      <div className="product-detail-grid">
         <div className="left-column">
+
           <Panel title="Site" subtitle="Create and select the top-level physical area.">
-            <form className="form-grid" onSubmit={handleSiteSubmit}>
-              <Field label="Name">
-                <TextInput
-                  value={siteForm.name}
-                  onChange={(e) => setSiteForm((cur) => ({ ...cur, name: e.target.value }))}
-                  placeholder="Warehouse"
-                />
-              </Field>
-              <Field label="Description">
-                <TextArea
-                  value={siteForm.description}
-                  onChange={(e) => setSiteForm((cur) => ({ ...cur, description: e.target.value }))}
-                  placeholder="Optional note"
-                />
-              </Field>
-              <button type="submit" disabled={submitting || !siteForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
-                Add Site
-              </button>
-            </form>
+            {canManage && (
+              <form className="form-grid" onSubmit={handleSiteSubmit}>
+                <Field label="Name">
+                  <TextInput
+                    value={siteForm.name}
+                    onChange={(e) => setSiteForm((cur) => ({ ...cur, name: e.target.value }))}
+                    placeholder="Warehouse"
+                  />
+                </Field>
+                <Field label="Description">
+                  <TextArea
+                    value={siteForm.description}
+                    onChange={(e) => setSiteForm((cur) => ({ ...cur, description: e.target.value }))}
+                    placeholder="Optional note"
+                  />
+                </Field>
+                <button type="submit" disabled={submitting || !siteForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
+                  Add Site
+                </button>
+              </form>
+            )}
             {sites.length ? (
               <div className="selection-list">
                 {sites.map((site) => (
-                  <button
-                    key={site._id}
-                    type="button"
-                    onClick={() => setSelectedSiteId(site._id)}
-                    className={`selection-item ${site._id === selectedSiteId ? "selection-item-selected" : "selection-item-unselected"}`}
-                  >
-                    <div className="selection-item-name">{site.name}</div>
-                    <div className="selection-item-description">{site.description || "No description"}</div>
-                  </button>
+                  <div key={site._id} className={`selection-item ${site._id === selectedSiteId ? "selection-item-selected" : "selection-item-unselected"}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {editingSiteId === site._id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <input className="form-input" value={editSiteForm.name} onChange={(e) => setEditSiteForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
+                        <input className="form-input" value={editSiteForm.description} onChange={(e) => setEditSiteForm((f) => ({ ...f, description: e.target.value }))} placeholder="Description" />
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditSite(site._id)} disabled={submitting || !editSiteForm.name.trim()}>Save</button>
+                          <button type="button" className="btn-secondary" onClick={() => setEditingSiteId(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <button type="button" onClick={() => setSelectedSiteId(site._id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
+                          <div className="selection-item-name">{site.name}</div>
+                          <div className="selection-item-description">{site.description || "No description"}</div>
+                        </button>
+                        {canManage && <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditSite(site)}>Edit</button>}
+                        {canManage && <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "site", id: site._id, name: site.name })}>Delete</button>}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -409,37 +536,51 @@ export function LocationsPage() {
           </Panel>
 
           <Panel title="Floor Maps" subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}>
-            <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
-              <Field label="Name">
-                <TextInput
-                  value={floorMapForm.name}
-                  onChange={(e) => setFloorMapForm((cur) => ({ ...cur, name: e.target.value }))}
-                  placeholder="Ground Floor"
-                />
-              </Field>
-              <Field label="Image URL">
-                <TextInput
-                  value={floorMapForm.imageUrl}
-                  onChange={(e) => setFloorMapForm((cur) => ({ ...cur, imageUrl: e.target.value }))}
-                  placeholder="https://example.com/floor-map.png"
-                />
-              </Field>
-              <button type="submit" disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
-                Add Floor Map
-              </button>
-            </form>
+            {canManage && (
+              <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
+                <Field label="Name">
+                  <TextInput
+                    value={floorMapForm.name}
+                    onChange={(e) => setFloorMapForm((cur) => ({ ...cur, name: e.target.value }))}
+                    placeholder="Ground Floor"
+                  />
+                </Field>
+                <Field label="Image URL">
+                  <TextInput
+                    value={floorMapForm.imageUrl}
+                    onChange={(e) => setFloorMapForm((cur) => ({ ...cur, imageUrl: e.target.value }))}
+                    placeholder="https://example.com/floor-map.png"
+                  />
+                </Field>
+                <button type="submit" disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
+                  Add Floor Map
+                </button>
+              </form>
+            )}
             {floorMapsForSite.length ? (
               <div className="selection-list">
                 {floorMapsForSite.map((floorMap) => (
-                  <button
-                    key={floorMap._id}
-                    type="button"
-                    onClick={() => setSelectedFloorMapId(floorMap._id)}
-                    className={`selection-item ${floorMap._id === selectedFloorMapId ? "selection-item-selected" : "selection-item-unselected"}`}
-                  >
-                    <div className="selection-item-name">{floorMap.name}</div>
-                    <div className="selection-item-description">{floorMap.imageUrl || "No image URL"}</div>
-                  </button>
+                  <div key={floorMap._id} className={`selection-item ${floorMap._id === selectedFloorMapId ? "selection-item-selected" : "selection-item-unselected"}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {editingFloorMapId === floorMap._id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <input className="form-input" value={editFloorMapForm.name} onChange={(e) => setEditFloorMapForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
+                        <input className="form-input" value={editFloorMapForm.imageUrl} onChange={(e) => setEditFloorMapForm((f) => ({ ...f, imageUrl: e.target.value }))} placeholder="Image URL" />
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditFloorMap(floorMap._id)} disabled={submitting || !editFloorMapForm.name.trim()}>Save</button>
+                          <button type="button" className="btn-secondary" onClick={() => setEditingFloorMapId(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <button type="button" onClick={() => setSelectedFloorMapId(floorMap._id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
+                          <div className="selection-item-name">{floorMap.name}</div>
+                          <div className="selection-item-description">{floorMap.imageUrl || "No image URL"}</div>
+                        </button>
+                        {canManage && <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditFloorMap(floorMap)}>Edit</button>}
+                        {canManage && <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "floorMap", id: floorMap._id, name: floorMap.name })}>Delete</button>}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -448,7 +589,7 @@ export function LocationsPage() {
           </Panel>
 
           <Panel title="Storage Units" subtitle={selectedFloorMap ? `Placed on ${selectedFloorMap.name}.` : "Select a floor map first."}>
-            <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
+            {canManage && <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
               <TextInput label="Name" value={unitForm.name} onChange={(e) => setUnitForm((cur) => ({ ...cur, name: e.target.value }))} placeholder="Shelf A" />
               <SelectInput
                 label="Type"
@@ -468,24 +609,36 @@ export function LocationsPage() {
               >
                 Add Storage Unit
               </button>
-            </form>
+            </form>}
             {storageUnitsForFloorMap.length ? (
               <div className="selection-list">
                 {storageUnitsForFloorMap.map((unit) => (
-                  <button
-                    key={unit._id}
-                    type="button"
-                    onClick={() => setSelectedStorageUnitId(unit._id)}
-                    className={`selection-item ${unit._id === selectedStorageUnitId ? "selection-item-selected" : "selection-item-unselected"}`}
-                  >
-                    <div className="unit-list-item-flex">
-                      <span className="selection-item-name">{unit.name}</span>
-                      <span className={`unit-type-badge ${unit._id === selectedStorageUnitId ? "unit-type-badge-selected" : ""}`}>{unit.type}</span>
-                    </div>
-                    <div className="unit-list-item-meta">
-                      {`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}
-                    </div>
-                  </button>
+                  <div key={unit._id} className={`selection-item ${unit._id === selectedStorageUnitId ? "selection-item-selected" : "selection-item-unselected"}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {editingStorageUnitId === unit._id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <input className="form-input" value={editStorageUnitForm.name} onChange={(e) => setEditStorageUnitForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
+                        <select className="form-input" value={editStorageUnitForm.type} onChange={(e) => setEditStorageUnitForm((f) => ({ ...f, type: e.target.value }))}>
+                          {STORAGE_UNIT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditStorageUnit(unit._id)} disabled={submitting || !editStorageUnitForm.name.trim()}>Save</button>
+                          <button type="button" className="btn-secondary" onClick={() => setEditingStorageUnitId(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <button type="button" onClick={() => setSelectedStorageUnitId(unit._id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
+                          <div className="unit-list-item-flex">
+                            <span className="selection-item-name">{unit.name}</span>
+                            <span className={`unit-type-badge ${unit._id === selectedStorageUnitId ? "unit-type-badge-selected" : ""}`}>{unit.type}</span>
+                          </div>
+                          <div className="unit-list-item-meta">{`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}</div>
+                        </button>
+                        {canManage && <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageUnit(unit)}>Edit</button>}
+                        {canManage && <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "storageUnit", id: unit._id, name: unit.name })}>Delete</button>}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -494,7 +647,7 @@ export function LocationsPage() {
           </Panel>
 
           <Panel badge="lc" title="Storage Locations" subtitle={selectedStorageUnit ? `Attached to ${selectedStorageUnit.name}.` : "Select a storage unit first."}>
-            <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageLocation}>
+            {canManage && <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageLocation}>
               <TextInput label="Name" value={locationForm.name} onChange={(e) => setLocationForm((cur) => ({ ...cur, name: e.target.value }))} placeholder="Top Shelf" />
               <TextInput label="Code" value={locationForm.code} onChange={(e) => setLocationForm((cur) => ({ ...cur, code: e.target.value }))} placeholder="SH-A-01" />
               <button
@@ -505,21 +658,33 @@ export function LocationsPage() {
               >
                 Add Storage Location
               </button>
-            </form>
+            </form>}
             {locationsForStorageUnit.length ? (
               <div className="selection-list">
                 {locationsForStorageUnit.map((location) => (
                   <div key={location._id} className="location-list-item">
-                    <div className="location-list-details">
-                      <div className="location-list-item-name">{location.name}</div>
-                      <div className="location-list-item-code">{location.code}</div>
-                    </div>
-                    <button
-                      className="location-list-item-view-image"
-                      onClick={() => { setSelectedLocation(location); setImageModalOpen(true); }}
-                    >
-                      See Image
-                    </button>
+                    {editingStorageLocationId === location._id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+                        <input className="form-input" value={editStorageLocationForm.name} onChange={(e) => setEditStorageLocationForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
+                        <input className="form-input" value={editStorageLocationForm.code} onChange={(e) => setEditStorageLocationForm((f) => ({ ...f, code: e.target.value }))} placeholder="Code" />
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditStorageLocation(location._id)} disabled={submitting || !editStorageLocationForm.name.trim() || !editStorageLocationForm.code.trim()}>Save</button>
+                          <button type="button" className="btn-secondary" onClick={() => setEditingStorageLocationId(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="location-list-details">
+                          <div className="location-list-item-name">{location.name}</div>
+                          <div className="location-list-item-code">{location.code}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                          {canManage && <button className="location-list-item-view-image" onClick={() => { setSelectedLocation(location); setImageModalOpen(true); }}>Image</button>}
+                          {canManage && <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageLocation(location)}>Edit</button>}
+                          {canManage && <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => setDeleteConfirm({ type: "storageLocation", id: location._id, name: location.name })}>Delete</button>}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -581,6 +746,21 @@ export function LocationsPage() {
           </Panel>
         </div>
       </div>
+
+      {deleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 className="modal-title">Delete "{deleteConfirm.name}"?</h3>
+            <p className="modal-text">This will permanently remove this item. This cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setDeleteConfirm(null)} disabled={submitting}>Cancel</button>
+              <button className="btn-danger" onClick={handleDeleteConfirmed} disabled={submitting}>
+                {submitting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {imageModalOpen && currentLocation && (
         <div className="modal-overlay location-image-modal" onClick={closeModal}>

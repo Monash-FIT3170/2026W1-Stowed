@@ -4,6 +4,8 @@ import { hasClientPermission } from "/imports/api/userMethods";
 import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
+import { Organisations } from "/imports/api/organisations";
+import React, { useEffect, useRef, useState } from "react";
 import "./Global.css";
 import "./Sidebar.css";
 
@@ -44,18 +46,42 @@ export function Sidebar() {
   const currentUser = useTracker(() => Meteor.user());
   const role = currentUser?.profile?.role;
   const isLoggedIn = !!currentUser;
-  const username = currentUser?.username;
+  const username = currentUser?.profile?.username;
   const navigate = useNavigate();
+
+  const [orgSubReady, setOrgSubReady] = useState(false);
+  useEffect(() => {
+    if (!currentUser) return;
+    const sub = Meteor.subscribe("currentOrganisation");
+    sub.ready() ? setOrgSubReady(true) : setOrgSubReady(false);
+    const interval = setInterval(() => {
+      setOrgSubReady(sub.ready());
+    }, 100);
+    return () => {
+      sub.stop();
+      clearInterval(interval);
+    };
+  }, [currentUser?._id]);
+
+  const organisation = useTracker(() => {
+    if (!currentUser || !orgSubReady) return null;
+    return Organisations.findOne(currentUser.profile.organisationId);
+  }, [currentUser?.profile?.organisationId, orgSubReady]);
 
   const handleLogout = () => {
     logoutUser();
     navigate("/login");
   };
 
-  const ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
+  const ALL_ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
   if (role >= ROLES.OWNER) {
-    ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
+    ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
+  const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
+    link.to === "/register"
+      ? hasClientPermission(role, "create-users")
+      : true
+  );
 
   return (
     <aside className="sidebar">
@@ -67,6 +93,18 @@ export function Sidebar() {
           </div>
           <div className="sidebar-logo-tagline">a place for everything</div>
         </div>
+
+        {isLoggedIn && organisation && (
+          <div className="sidebar-org">
+            <div className="sidebar-org-avatar">
+              {organisation.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="sidebar-org-info">
+              <div className="sidebar-org-label">Organisation</div>
+              <div className="sidebar-org-name">{organisation.name}</div>
+            </div>
+          </div>
+        )}
 
         <nav className="sidebar-nav">
           <section className="sidebar-section">
@@ -95,11 +133,6 @@ export function Sidebar() {
             }).map((link) => (
               <SidebarLink key={link.to} to={link.to} label={link.label} />
             ))}
-            {isLoggedIn && (
-              <button className="sidebar-logout" onClick={handleLogout}>
-                Logout
-              </button>
-            )}
           </section>
         </nav>
       </div>
@@ -107,7 +140,11 @@ export function Sidebar() {
       {/* Bottom — logged in as */}
       {isLoggedIn && (
         <div className="sidebar-user">Logged in as {username}</div>
+        
       )}
+                <button className="sidebar-logout" onClick={handleLogout}>
+            Logout
+          </button>
     </aside>
   );
 }

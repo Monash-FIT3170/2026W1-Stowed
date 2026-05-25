@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
@@ -18,7 +20,7 @@ function callMethod(methodName, params) {
   });
 }
 
-export function ItemThumbnail({ photoUrl, catalogImages, images, name }) {
+export function ProductThumbnail({ photoUrl, catalogImages, images, name }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
@@ -43,14 +45,21 @@ export function ItemThumbnail({ photoUrl, catalogImages, images, name }) {
 }
 
 export function InventoryListPage() {
+  const { role } = useAuth();
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canCreate = hasClientPermission(role, "products.create");
+
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
   const [deleteError, setDeleteError] = useState("");
+  const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
+  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
     const sub1 = Meteor.subscribe("products");
     Meteor.subscribe("productRecords");
     Meteor.subscribe("locations.all");
@@ -60,16 +69,12 @@ export function InventoryListPage() {
       productRecords: ProductRecords.find().fetch(),
       storageLocations: StorageLocations.find().fetch(),
       storageUnits: StorageUnits.find().fetch(),
-      floorMaps: FloorMaps.find().fetch(),
-      sites: Sites.find().fetch(),
     };
   }, []);
 
-  // Build a short location label for each product from its ProductRecords
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
     if (!records.length) return "—";
-    // Show first location's path, + N more if multiple
     const first = records[0];
     const loc = storageLocations.find((l) => l._id === first.locationId);
     if (!loc) return "—";
@@ -79,9 +84,19 @@ export function InventoryListPage() {
   }
 
   const filteredItems = useMemo(() => {
+    setCurrentPage(1);
     let result = items;
     if (activeFilter === "low-stock") {
-      result = result.filter((item) => item.totalQuantity <= 10);
+      result = result.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt);
+    }
+    if (activeFilter === "location" && locationFilterUnitId) {
+      const unitLocationIds = new Set(
+        storageLocations.filter((l) => l.storageUnitId === locationFilterUnitId).map((l) => l._id)
+      );
+      const productIdsInUnit = new Set(
+        productRecords.filter((r) => unitLocationIds.has(r.locationId)).map((r) => r.productId)
+      );
+      result = result.filter((item) => productIdsInUnit.has(item._id));
     }
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -94,9 +109,12 @@ export function InventoryListPage() {
       });
     }
     return result;
-  }, [items, activeFilter, searchQuery]);
+  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
 
-  const lowStockCount = items.filter((item) => item.totalQuantity <= 10).length;
+  const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
+  const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const lowStockCount = items.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt).length;
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedProductIds.includes(item._id)),
@@ -126,7 +144,7 @@ export function InventoryListPage() {
       setShowDeleteModal(false);
     } catch (error) {
       console.error("Failed to delete selected products:", error);
-      setDeleteError(error.reason || error.message || "Could not delete selected items.");
+      setDeleteError(error.reason || error.message || "Could not delete selected products.");
     } finally {
       setIsDeleting(false);
     }
@@ -143,23 +161,24 @@ export function InventoryListPage() {
 
   return (
     <div className="inventory-list-container">
-      <div className="item-detail-header">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <Link to="/" className="breadcrumb-link">Inventory</Link>
           <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-current">All items</span>
+          <span className="breadcrumb-current">All products</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">All <em>Items</em></h1>
-          <Link to="/inventory/new">
-            <button className="btn-primary">+ Add item</button>
-          </Link>
+          <h1 className="header-title">All <em>Products</em></h1>
+          {canCreate && (
+            <Link to="/inventory/new">
+              <button className="btn-primary">+ Add product</button>
+            </Link>
+          )}
         </div>
       </div>
 
       <div style={{ padding: "0 28px 48px" }}>
 
-        {/* Search bar */}
         <div className="search-bar-container">
           <input
             type="text"
@@ -171,65 +190,106 @@ export function InventoryListPage() {
           />
         </div>
 
-        <FilterChips filters={filters} activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+        <FilterChips filters={filters} activeFilter={activeFilter} onFilterChange={(f) => { setActiveFilter(f); if (f !== "location") setLocationFilterUnitId(""); }} />
 
-        <div className="filter-count">
-          Showing {filteredItems.length} of {items.length}
-          {activeFilter !== "all" && ` · Filter: ${activeFilter.replace("-", " ")}`}
-        </div>
+        {activeFilter === "location" && (
+          <div style={{ marginBottom: "12px" }}>
+            <select
+              value={locationFilterUnitId}
+              onChange={(e) => setLocationFilterUnitId(e.target.value)}
+              className="form-input"
+              style={{ maxWidth: "360px", background: "var(--card-bg)" }}
+            >
+              <option value="">All locations</option>
+              {storageUnits.map((unit) => (
+                <option key={unit._id} value={unit._id}>{unit.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        <div className="selected-actions">
-          <span>{selectedProductIds.length} selected</span>
-          <button
-            type="button"
-            className="btn-selected-delete"
-            onClick={openDeleteModal}
-            disabled={selectedProductIds.length === 0}
-            aria-label="Delete selected items"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
-              <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
-              <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
-            </svg>
-            <span className="sr-only">Delete selected items</span>
-          </button>
-          <span className="selected-count">{selectedProductIds.length}</span>
-        </div>
-
-        {/* Items card */}
         {filteredItems.length === 0 ? (
-          <div className="empty-state">No items match the current filters.</div>
+          <div className="empty-state">No products match the current filters.</div>
         ) : (
           <>
-            <div className="table-header">
-              <span />
-              <span>Item</span>
-              <span>Tag</span>
-              <span>Location</span>
-              <span>Stock</span>
-              <span>Status</span>
-              <span />
-            </div>
-            {filteredItems.map((item) => (
-              <div key={item._id} className="table-row">
-                <ItemThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
-                <span>
-                  <Link to={`/inventory/${item._id}`} className="item-name-link">{item.name}</Link>
-                </span>
-                <span><span className="item-tag">{item.tag || "—"}</span></span>
-                <span className="item-location">{getLocationLabel(item._id)}</span>
-                <span>{item.totalQuantity}</span>
-                <StatusBadge quantity={item.totalQuantity} threshold={10} />
-                <label className="row-select">
-                  <input
-                    type="checkbox"
-                    checked={selectedProductIds.includes(item._id)}
-                    onChange={() => toggleSelectedProduct(item._id)}
-                    aria-label={`Select ${item.name}`}
-                  />
-                </label>
+            <div className="detail-section">
+              <div style={{ padding: "16px 20px 0", marginBottom: "8px" }}>
+                <div className="recent-items-title">Inventory List</div>
+                <div className="recent-items-subtitle">{filteredItems.length} of {items.length} products shown</div>
               </div>
-            ))}
+              {canDelete && (
+                <div className="selected-actions">
+                  <span>{selectedProductIds.length} selected</span>
+                  <button
+                    type="button"
+                    className="btn-selected-delete"
+                    onClick={openDeleteModal}
+                    disabled={selectedProductIds.length === 0}
+                    aria-label="Delete selected products"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
+                      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+                      <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+                    </svg>
+                    <span className="sr-only">Delete selected products</span>
+                  </button>
+                  <span className="selected-count">{selectedProductIds.length}</span>
+                </div>
+              )}
+              <div className="table-header">
+                <span />
+                <span>Product</span>
+                <span>Tag</span>
+                <span>Location</span>
+                <span>Stock</span>
+                <span>Status</span>
+                <span />
+              </div>
+              {pagedItems.map((item) => (
+                <div key={item._id} className="table-row">
+                  <ProductThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
+                  <span>
+                    <Link to={`/inventory/${item._id}`} className="item-name-link">{item.name}</Link>
+                  </span>
+                  <span><span className="item-tag">{item.tag || "—"}</span></span>
+                  <span className="item-location">{getLocationLabel(item._id)}</span>
+                  <span>{item.totalQuantity}</span>
+                  <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />
+                  <label className="row-select">
+                    <input
+                      type="checkbox"
+                      checked={selectedProductIds.includes(item._id)}
+                      onChange={() => toggleSelectedProduct(item._id)}
+                      aria-label={`Select ${item.name}`}
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display: "flex", gap: "6px", marginTop: "12px", justifyContent: "center" }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    style={{
+                      width: "32px", height: "32px",
+                      borderRadius: "8px",
+                      border: page === currentPage ? "none" : "1px solid var(--border-subtle)",
+                      background: page === currentPage ? "var(--accent-primary)" : "var(--card-bg)",
+                      color: page === currentPage ? "#fff" : "var(--text-muted)",
+                      fontWeight: page === currentPage ? 700 : 400,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
 

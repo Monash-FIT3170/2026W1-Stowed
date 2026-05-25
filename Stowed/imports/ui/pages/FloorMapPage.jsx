@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
@@ -23,6 +25,9 @@ function callMethod(methodName, params) {
 }
 
 function FloorMapPageInner() {
+  const { role } = useAuth();
+  const canManage = hasClientPermission(role, "locations.manage");
+
   const {
     activeTool, setActiveTool,
     floorSize, canvasSettings,
@@ -31,10 +36,10 @@ function FloorMapPageInner() {
     units, commitUnits,
     canUndo, canRedo, handleUndo, handleRedo,
     handleSaveLayout, handleLoadLayout,
-    handlePlaceUnit, handleUnitPlaced,
     handleCanvasSettingsSave,
     selectedUnit, setSelectedUnit, setIsPanelOpen, isPanelOpen,
     lowStockByUnitId,
+    handleDeleteSelectedUnit,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -74,10 +79,10 @@ function FloorMapPageInner() {
   const floorMapsForSite = floorMaps.filter((f) => f.siteId === currentSite?._id);
 
   return (
-    <div className="item-detail-container" style={{ height: "100vh", minHeight: "unset", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="product-detail-container" style={{ height: "100vh", minHeight: "unset", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* ── Header ── */}
-      <div className="item-detail-header">
+      <div className="product-detail-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Workspace</span>
           <span className="breadcrumb-separator">/</span>
@@ -166,17 +171,17 @@ function FloorMapPageInner() {
               <div>
                 <div className="panel-header-label">{selectedUnit.name}</div>
                 <div className="panel-header-title">
-                  {isEmpty ? "No items" : hasLow ? "Low stock" : "All stocked"}
+                  {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
                 </div>
                 <div className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}>
-                  {isEmpty ? "Empty" : hasLow ? `${lowItems.length} need attention` : `${okItems.length} items OK`}
+                  {isEmpty ? "Empty" : hasLow ? `${lowItems.length} need attention` : `${okItems.length} products OK`}
                 </div>
               </div>
               <button className="panel-close-btn" onClick={() => setIsStockPanelOpen(false)} aria-label="Close panel">✕</button>
             </div>
             <div className="panel-content">
               {isEmpty ? (
-                <div className="panel-empty">No items assigned to this unit.</div>
+                <div className="panel-empty">No products assigned to this unit.</div>
               ) : (
                 <>
                   {lowItems.length > 0 && (
@@ -190,7 +195,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty low">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -207,7 +214,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty ok">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -219,8 +228,8 @@ function FloorMapPageInner() {
           </div>
         )}
 
-        {/* EDIT MODE SIDEBAR */}
-        {isCanvasEditMode && (
+        {/* EDIT MODE SIDEBAR — only accessible to admins/owners */}
+        {isCanvasEditMode && canManage && (
           <>
             {isSidebarOpen ? (
               <div style={{
@@ -239,12 +248,25 @@ function FloorMapPageInner() {
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                    <StoragePanel onSelectUnit={handlePlaceUnit} />
+                    <StoragePanel floorMapId={currentFloorMap?._id} />
                   </div>
                   <div style={{ height: "1px", background: "var(--border-light)" }} />
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                     <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
                   </div>
+                  <div style={{ height: "1px", background: "var(--border-light)" }} />
+                  {selectedUnit && (
+                    <div style={{ padding: "12px", boxSizing: "border-box" }}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        style={{ width: "100%" }}
+                        onClick={handleDeleteSelectedUnit}
+                      >
+                        Delete "{selectedUnit.name}"
+                      </button>
+                    </div>
+                  )}
                   <div style={{ height: "1px", background: "var(--border-light)" }} />
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                     <CanvasToolbar
@@ -302,10 +324,10 @@ function FloorMapPageInner() {
               {tooltip.unit.name}
             </div>
             {tipItems.length === 0 ? (
-              <div style={{ color: "#998874", fontSize: "11px" }}>No items on this shelf</div>
+              <div style={{ color: "#998874", fontSize: "11px" }}>No products on this shelf</div>
             ) : tipHasLow ? (
               <>
-                <div style={{ fontSize: "11px", color: "#991b1b", marginBottom: "4px", fontWeight: 600 }}>Low stock items:</div>
+                <div style={{ fontSize: "11px", color: "#991b1b", marginBottom: "4px", fontWeight: 600 }}>Low stock products:</div>
                 {tipLow.map((item, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", padding: "4px 0", borderBottom: "0.5px solid #f5efe6" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -317,7 +339,7 @@ function FloorMapPageInner() {
                 ))}
               </>
             ) : (
-              <div style={{ color: "#166534", fontSize: "11px" }}>All items on this shelf are stocked</div>
+              <div style={{ color: "#166534", fontSize: "11px" }}>All products on this shelf are stocked</div>
             )}
           </div>
         );
@@ -335,8 +357,8 @@ function FloorMapPageInner() {
         />
       )}
 
-      {/* FLOATING EDIT BUTTON */}
-      {!isCanvasEditMode && (
+      {/* FLOATING EDIT BUTTON — admins and owners only */}
+      {!isCanvasEditMode && canManage && (
         <button onClick={() => setCanvasEditMode(true)} className="btn-primary" style={{ ...pageStyles.floatingButton }}>
           Edit Floor Map
         </button>
