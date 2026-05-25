@@ -139,7 +139,7 @@ export function InventoryListPage() {
       setShowDeleteModal(false);
     } catch (error) {
       console.error("Failed to delete selected products:", error);
-      setDeleteError(error.reason || error.message || "Could not delete selected items.");
+      setDeleteError(error.reason || error.message || "Could not delete selected products.");
     } finally {
       setIsDeleting(false);
     }
@@ -204,13 +204,13 @@ export function InventoryListPage() {
         )}
 
         {filteredItems.length === 0 ? (
-          <div className="empty-state">No items match the current filters.</div>
+          <div className="empty-state">No products match the current filters.</div>
         ) : (
           <>
             <div className="detail-section">
               <div style={{ padding: "16px 20px 0", marginBottom: "8px" }}>
                 <div className="recent-items-title">Inventory List</div>
-                <div className="recent-items-subtitle">{filteredItems.length} of {items.length} items shown</div>
+                <div className="recent-items-subtitle">{filteredItems.length} of {items.length} products shown</div>
               </div>
               <div className="selected-actions">
                 <span>{selectedProductIds.length} selected</span>
@@ -219,19 +219,19 @@ export function InventoryListPage() {
                   className="btn-selected-delete"
                   onClick={openDeleteModal}
                   disabled={selectedProductIds.length === 0}
-                  aria-label="Delete selected items"
+                  aria-label="Delete selected products"
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
                     <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
                     <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
                   </svg>
-                  <span className="sr-only">Delete selected items</span>
+                  <span className="sr-only">Delete selected products</span>
                 </button>
                 <span className="selected-count">{selectedProductIds.length}</span>
               </div>
               <div className="table-header">
                 <span />
-                <span>Item</span>
+                <span>Product</span>
                 <span>Tag</span>
                 <span>Location</span>
                 <span>Stock</span>

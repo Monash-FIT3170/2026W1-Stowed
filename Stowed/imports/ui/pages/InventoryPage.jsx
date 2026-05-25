@@ -39,7 +39,7 @@ export function InventoryPage() {
       <div className="stats-container">
         <div className="stat-card stat-card-green">
           <div className="stat-value">{totalItems}</div>
-          <div className="stat-label stat-label-green">Items tracked</div>
+          <div className="stat-label stat-label-green">Products tracked</div>
         </div>
 
         <div className="stat-card stat-card-orange">
@@ -57,7 +57,7 @@ export function InventoryPage() {
           <div>
             <div className="recent-items-title">Recently updated</div>
             <div className="recent-items-subtitle">
-              {recentItems.length} of {totalItems} items shown
+              {recentItems.length} of {totalItems} products shown
             </div>
           </div>
           <Link to="/inventory/list" className="view-all-link">
