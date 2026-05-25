@@ -289,17 +289,7 @@ export function EditProductPage() {
             </h2>
             <div className="section-content">
               <div className="form-row">
-                <div className="form-group">
-                  <label>Total stock</label>
-                  <input
-                    type="number"
-                    value={totalQuantity}
-                    onChange={(e) => setTotalQuantity(e.target.value)}
-                    className="form-input"
-                    min="0"
-                  />
-                </div>
-                <div className="form-group">
+                  <div className="form-group">
                   <label>Unit cost</label>
                   <input
                     type="number"
@@ -309,6 +299,16 @@ export function EditProductPage() {
                     onChange={(e) => setUnitCost(e.target.value)}
                     className="form-input"
                     placeholder="$0.00"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Total stock</label>
+                  <input
+                    type="number"
+                    value={totalQuantity}
+                    onChange={(e) => setTotalQuantity(e.target.value)}
+                    className="form-input"
+                    min="0"
                   />
                 </div>
               </div>
