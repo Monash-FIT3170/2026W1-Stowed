@@ -14,6 +14,15 @@ export function useAuth() {
     // publication context (e.g. server-side renderToStaticMarkup in tests).
     // Return safe logged-out defaults in that case.
     try {
+      if (Meteor.isServer) {
+        return {
+          isLoggedIn: false,
+          user: null,
+          username: "",
+          role: null,
+        };
+      }
+
       const user = Meteor.user();
       const userId = Meteor.userId();
       return {
