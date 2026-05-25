@@ -66,10 +66,15 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  const ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
+  const ALL_ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
   if (role >= ROLES.OWNER) {
-    ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
+    ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
+  const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
+    link.to === "/register"
+      ? hasClientPermission(role, "create-users")
+      : true
+  );
 
   return (
     <aside className="sidebar">
@@ -104,17 +109,14 @@ export function Sidebar() {
             ))}
           </section>
 
-          <section className="sidebar-section">
-            <SectionLabel label="Account" />
-            {ACCOUNT_LINKS.filter((link) => {
-              if (link.to === "/register") {
-                return hasClientPermission(role, "create-users");
-              }
-              return true;
-            }).map((link) => (
-              <SidebarLink key={link.to} to={link.to} label={link.label} />
-            ))}
-          </section>
+          {ACCOUNT_LINKS.length > 0 && (
+            <section className="sidebar-section">
+              <SectionLabel label="Account" />
+              {ACCOUNT_LINKS.map((link) => (
+                <SidebarLink key={link.to} to={link.to} label={link.label} />
+              ))}
+            </section>
+          )}
         </nav>
       </div>
 
