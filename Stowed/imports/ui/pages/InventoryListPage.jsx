@@ -53,7 +53,7 @@ export function InventoryListPage() {
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
+  const { items, loading, productRecords, storageLocations, storageUnits, floorMaps } = useTracker(() => {
     const sub1 = Meteor.subscribe("products");
     Meteor.subscribe("productRecords");
     Meteor.subscribe("locations.all");
@@ -63,6 +63,7 @@ export function InventoryListPage() {
       productRecords: ProductRecords.find().fetch(),
       storageLocations: StorageLocations.find().fetch(),
       storageUnits: StorageUnits.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
     };
   }, []);
 
@@ -193,9 +194,11 @@ export function InventoryListPage() {
               style={{ maxWidth: "360px", background: "var(--card-bg)" }}
             >
               <option value="">All locations</option>
-              {storageUnits.map((unit) => (
-                <option key={unit._id} value={unit._id}>{unit.name}</option>
-              ))}
+              {storageUnits.map((unit) => {
+                const fm = floorMaps.find((f) => f._id === unit.floorMapId);
+                const label = fm ? `${fm.name} → ${unit.name}` : unit.name;
+                return <option key={unit._id} value={unit._id}>{label}</option>;
+              })}
             </select>
           </div>
         )}

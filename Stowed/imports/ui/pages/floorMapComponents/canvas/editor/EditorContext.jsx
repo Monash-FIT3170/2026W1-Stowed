@@ -42,6 +42,9 @@ export function EditorProvider({ children, floorMapId }) {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isPanelOpen, setIsPanelOpen]   = useState(false);
 
+  // --- DELETE ERROR (replaces alert()) ---
+  const [unitDeleteError, setUnitDeleteError] = useState("");
+
   // --- UNDO / REDO HISTORY ---
   const [_, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
@@ -364,7 +367,7 @@ export function EditorProvider({ children, floorMapId }) {
       commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
       setSelectedUnit(null);
     } catch (error) {
-      alert(error.reason || "Cannot delete this unit. Make sure all storage locations within it are removed first.");
+      setUnitDeleteError(error.reason || "Cannot delete this unit. Make sure all storage locations within it are removed first.");
     }
   }
 
@@ -403,6 +406,7 @@ export function EditorProvider({ children, floorMapId }) {
 
     // Delete selected unit
     handleDeleteSelectedUnit,
+    unitDeleteError, setUnitDeleteError,
   };
 
   return (
