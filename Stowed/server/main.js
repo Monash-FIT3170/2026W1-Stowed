@@ -12,12 +12,21 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
+import { Organisations } from "/imports/api/organisations";
 
-// await Products.removeAsync({});  // TEMP: force reseed
-// await ProductRecords.removeAsync({});
-// await Products.removeAsync({});
-
-// These functions pre populate fields if empty, however can be removed later if needed
+async function seedOrg() {
+  let org = await Organisations.findOneAsync({ code: "monash" });
+  if (!org) {
+    const orgId = await Organisations.insertAsync({
+      name: "Monash University",
+      code: "monash",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    org = { _id: orgId };
+  }
+  return org._id;
+}
 
 async function seedProducts() {
   const count = await Products.find().countAsync();

@@ -6,6 +6,13 @@ module.exports = defineConfig(() => {
       css: true,
     },
 
+    ignoreWarnings: [
+      {
+        message:
+          /Critical dependency: the request of a dependency is an expression/,
+      },
+    ],
+
     module: {
       rules: [
         {
