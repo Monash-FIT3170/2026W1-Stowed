@@ -81,7 +81,7 @@ Meteor.methods({
     siteId,
     name,
     imageUrl = "",
-    floorSize = {},
+    floorSize = { width: 500, height: 500 },
     settings = {},
   }) {
     check(siteId, String);

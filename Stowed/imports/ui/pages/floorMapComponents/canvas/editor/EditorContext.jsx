@@ -138,8 +138,10 @@ export function EditorProvider({ children, floorMapId }) {
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const fw = Number(floorMap.floorSize?.width);
+    const fh = Number(floorMap.floorSize?.height);
+    if (fw > 0 && fh > 0) {
+      setFloorSize({ width: fw, height: fh });
     }
 
     if (floorMap.settings) {
@@ -278,8 +280,10 @@ export function EditorProvider({ children, floorMapId }) {
       return;
     }
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const lfw = Number(floorMap.floorSize?.width);
+    const lfh = Number(floorMap.floorSize?.height);
+    if (lfw > 0 && lfh > 0) {
+      setFloorSize({ width: lfw, height: lfh });
     }
 
     if (floorMap.settings) {
