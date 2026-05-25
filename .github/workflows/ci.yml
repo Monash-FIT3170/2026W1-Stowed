@@ -2,18 +2,39 @@ name: CI
 
 on:
   push:
-    branches: [develop]
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
 
 jobs:
   test:
+    name: Run product tests (Meteor + Mocha)
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Install dependencies and run tests
-        run: |
-          curl https://install.meteor.com/?release=3.0.4 | sh
-          export PATH="$HOME/.meteor:$PATH"
-          cd Stowed
-          npm ci
-          npm test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Meteor ${{ '3.0.4' }}
+        run: curl https://install.meteor.com/?release=3.0.4 | sh
+
+      - name: Add Meteor to PATH
+        run: echo "$HOME/.meteor" >> $GITHUB_PATH
+
+      - name: Cache Meteor packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.meteor/packages
+          key: meteor-packages-${{ hashFiles('Stowed/.meteor/versions') }}
+          restore-keys: |
+            meteor-packages-
+
+      - name: Install npm dependencies
+        working-directory: Stowed
+        run: npm ci
+
+      - name: Run product tests
+        working-directory: Stowed
+        run: npm test
+        env:
+          MOCHA_REPORTER: spec
