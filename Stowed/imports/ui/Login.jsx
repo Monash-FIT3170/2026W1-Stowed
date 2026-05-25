@@ -52,7 +52,16 @@ export const Login = () => {
     });
       navigate('/');
     } catch (err) {
-      setError(err.reason || err.message || 'Login failed.');
+      const reason = err.reason || err.message || '';
+      if (reason.toLowerCase().includes('incorrect password')) {
+        setError('Incorrect password. Please try again.');
+      } else if (reason.toLowerCase().includes('user not found') || reason.toLowerCase().includes('no user')) {
+        setError('No account found with those details.');
+      } else if (err.error === 'too-many-requests') {
+        setError('Too many attempts. Please wait a moment before trying again.');
+      } else {
+        setError('Login failed. Please check your details and try again.');
+      }
     } finally {
       setLoading(false);
     }

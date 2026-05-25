@@ -131,7 +131,7 @@ const Register = () => {
           <div className="auth-card-header">
             <div>
               <p className="auth-kicker">Account setup</p> 
-              <h2>Create Owner Account</h2>
+              <h2>Setup your Organisation</h2>
             </div>
 
         {!isLoggedIn && (

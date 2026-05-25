@@ -84,7 +84,13 @@ export function Sidebar() {
 
         {isLoggedIn && organisation && (
           <div className="sidebar-org">
-            {organisation.name}
+            <div className="sidebar-org-avatar">
+              {organisation.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="sidebar-org-info">
+              <div className="sidebar-org-label">Organisation</div>
+              <div className="sidebar-org-name">{organisation.name}</div>
+            </div>
           </div>
         )}
 
