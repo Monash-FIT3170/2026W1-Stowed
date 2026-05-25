@@ -1,7 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products } from "/imports/api/products/collections";
 import {
   Sites,
@@ -87,6 +89,13 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 
 export function CreateProductPage() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  useEffect(() => {
+    if (role !== null && !hasClientPermission(role, "products.create")) {
+      navigate("/inventory/list", { replace: true });
+    }
+  }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -542,25 +551,6 @@ export function CreateProductPage() {
                     {uploadError}
                   </p>
                 )}
-              </div>
-            </div>
-
-            {/* QR & label */}
-            <div className="detail-section">
-              <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#f5efe6", color: "#998874" }}
-                >
-                  QR
-                </span>
-                QR & label
-              </div>
-              <div className="section-content qr-section">
-                <div className="qr-container">
-                  <div className="qr-code" />
-                  <p className="qr-label">QR Code</p>
-                </div>
               </div>
             </div>
           </div>

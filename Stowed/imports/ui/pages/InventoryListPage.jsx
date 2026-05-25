@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
@@ -43,6 +45,10 @@ export function ProductThumbnail({ photoUrl, catalogImages, images, name }) {
 }
 
 export function InventoryListPage() {
+  const { role } = useAuth();
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canCreate = hasClientPermission(role, "products.create");
+
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState([]);
@@ -53,7 +59,7 @@ export function InventoryListPage() {
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits, floorMaps } = useTracker(() => {
+  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
     const sub1 = Meteor.subscribe("products");
     Meteor.subscribe("productRecords");
     Meteor.subscribe("locations.all");
@@ -63,7 +69,6 @@ export function InventoryListPage() {
       productRecords: ProductRecords.find().fetch(),
       storageLocations: StorageLocations.find().fetch(),
       storageUnits: StorageUnits.find().fetch(),
-      floorMaps: FloorMaps.find().fetch(),
     };
   }, []);
 
@@ -164,9 +169,11 @@ export function InventoryListPage() {
         </div>
         <div className="header-top">
           <h1 className="header-title">All <em>Products</em></h1>
-          <Link to="/inventory/new">
-            <button className="btn-primary">+ Add product</button>
-          </Link>
+          {canCreate && (
+            <Link to="/inventory/new">
+              <button className="btn-primary">+ Add product</button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -194,11 +201,9 @@ export function InventoryListPage() {
               style={{ maxWidth: "360px", background: "var(--card-bg)" }}
             >
               <option value="">All locations</option>
-              {storageUnits.map((unit) => {
-                const fm = floorMaps.find((f) => f._id === unit.floorMapId);
-                const label = fm ? `${fm.name} → ${unit.name}` : unit.name;
-                return <option key={unit._id} value={unit._id}>{label}</option>;
-              })}
+              {storageUnits.map((unit) => (
+                <option key={unit._id} value={unit._id}>{unit.name}</option>
+              ))}
             </select>
           </div>
         )}
@@ -212,23 +217,25 @@ export function InventoryListPage() {
                 <div className="recent-items-title">Inventory List</div>
                 <div className="recent-items-subtitle">{filteredItems.length} of {items.length} products shown</div>
               </div>
-              <div className="selected-actions">
-                <span>{selectedProductIds.length} selected</span>
-                <button
-                  type="button"
-                  className="btn-selected-delete"
-                  onClick={openDeleteModal}
-                  disabled={selectedProductIds.length === 0}
-                  aria-label="Delete selected products"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
-                    <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
-                    <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
-                  </svg>
-                  <span className="sr-only">Delete selected products</span>
-                </button>
-                <span className="selected-count">{selectedProductIds.length}</span>
-              </div>
+              {canDelete && (
+                <div className="selected-actions">
+                  <span>{selectedProductIds.length} selected</span>
+                  <button
+                    type="button"
+                    className="btn-selected-delete"
+                    onClick={openDeleteModal}
+                    disabled={selectedProductIds.length === 0}
+                    aria-label="Delete selected products"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
+                      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+                      <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+                    </svg>
+                    <span className="sr-only">Delete selected products</span>
+                  </button>
+                  <span className="selected-count">{selectedProductIds.length}</span>
+                </div>
+              )}
               <div className="table-header">
                 <span />
                 <span>Product</span>

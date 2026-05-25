@@ -16,10 +16,15 @@ import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
  * @returns {JSX.Element} Modal UI
  */
 export function CanvasSettingsModal({ floorSize, gridInterval, showGrid, snapToGrid, onSave, onClose }) {
+  const toMeters = (px) => {
+    const m = Number(px) / CANVAS_CONFIG.PIXELS_PER_METER;
+    return (m > 0 && isFinite(m)) ? m : 10;
+  };
+
   const [draft, setDraft] = useState({
-    widthMeters:  floorSize.width  / CANVAS_CONFIG.PIXELS_PER_METER,
-    heightMeters: floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER,
-    gridInterval,
+    widthMeters:  toMeters(floorSize.width),
+    heightMeters: toMeters(floorSize.height),
+    gridInterval: gridInterval > 0 ? gridInterval : 1,
     showGrid,
     snapToGrid,
   });

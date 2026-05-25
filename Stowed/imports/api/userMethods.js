@@ -3,6 +3,7 @@ import { check } from "meteor/check";
 import { ROLES } from "./roles";
 import { Organisations } from './organisations';
 import { Accounts } from 'meteor/accounts-base';
+import { Sites } from './locations/collections';
 
 /**
  * Helper methods
@@ -154,14 +155,20 @@ Meteor.methods({
 // Self-registration: always requires an org code.
 // If the code is new, a new organisation is created and the registrant becomes its Owner.
 // If the code already exists, registration is blocked — new members must be invited by the org owner.
-"users.register": async function ({ username, email, password, orgCode }) {
+"users.register": async function ({ username, email, password, orgCode, orgName }) {
   check(username, String);
   check(email, String);
   check(password, String);
   check(orgCode, String);
+  check(orgName, String);
 
   if (password.length < 6) {
     throw new Meteor.Error("invalid-password", "Password must be at least 6 characters.");
+  }
+
+  const orgName_used = orgName.trim();
+  if (!orgName_used) {
+    throw new Meteor.Error('org-name-required', 'Please provide an organisation name.');
   }
 
   const orgCode_used = orgCode.trim().toLowerCase();
@@ -176,7 +183,7 @@ Meteor.methods({
 
   const now = new Date();
   const organisationId = await Organisations.insertAsync({
-    name: orgCode_used,
+    name: orgName_used,
     code: orgCode_used,
     createdAt: now,
     updatedAt: now,
@@ -196,6 +203,7 @@ Meteor.methods({
         username,
       },
     });
+
     return userId;
   } catch (err) {
     // Roll back the org we just created — no user means no org

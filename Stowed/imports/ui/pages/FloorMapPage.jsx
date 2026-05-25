@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
-import { buttonStyles, pageStyles, COLOURS, modalStyles } from "./floorMapComponents/FloorMapStyles";
+import { buttonStyles, pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { Meteor } from "meteor/meteor";
@@ -23,6 +25,9 @@ function callMethod(methodName, params) {
 }
 
 function FloorMapPageInner() {
+  const { role } = useAuth();
+  const canManage = hasClientPermission(role, "locations.manage");
+
   const {
     activeTool, setActiveTool,
     floorSize, canvasSettings,
@@ -31,12 +36,10 @@ function FloorMapPageInner() {
     units, commitUnits,
     canUndo, canRedo, handleUndo, handleRedo,
     handleSaveLayout, handleLoadLayout,
-    handlePlaceUnit, handleUnitPlaced,
     handleCanvasSettingsSave,
     selectedUnit, setSelectedUnit, setIsPanelOpen, isPanelOpen,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
-    unitDeleteError, setUnitDeleteError,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -192,7 +195,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty low">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -209,7 +214,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty ok">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -221,8 +228,8 @@ function FloorMapPageInner() {
           </div>
         )}
 
-        {/* EDIT MODE SIDEBAR */}
-        {isCanvasEditMode && (
+        {/* EDIT MODE SIDEBAR — only accessible to admins/owners */}
+        {isCanvasEditMode && canManage && (
           <>
             {isSidebarOpen ? (
               <div style={{
@@ -241,7 +248,7 @@ function FloorMapPageInner() {
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                    <StoragePanel onSelectUnit={handlePlaceUnit} />
+                    <StoragePanel floorMapId={currentFloorMap?._id} />
                   </div>
                   <div style={{ height: "1px", background: "var(--border-light)" }} />
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
@@ -338,21 +345,6 @@ function FloorMapPageInner() {
         );
       })()}
 
-      {/* UNIT DELETE ERROR MODAL */}
-      {unitDeleteError && (
-        <div style={modalStyles.overlay}>
-          <div style={modalStyles.modal}>
-            <p style={modalStyles.title}>Cannot Delete Unit</p>
-            <p style={{ margin: 0, fontSize: 12, color: "#666" }}>{unitDeleteError}</p>
-            <div style={modalStyles.actions}>
-              <button style={modalStyles.buttonPrimary} onClick={() => setUnitDeleteError("")}>
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* CANVAS SETTINGS MODAL */}
       {isCanvasSettingsOpen && (
         <CanvasSettingsModal
@@ -365,8 +357,8 @@ function FloorMapPageInner() {
         />
       )}
 
-      {/* FLOATING EDIT BUTTON */}
-      {!isCanvasEditMode && (
+      {/* FLOATING EDIT BUTTON — admins and owners only */}
+      {!isCanvasEditMode && canManage && (
         <button onClick={() => setCanvasEditMode(true)} className="btn-primary" style={{ ...pageStyles.floatingButton }}>
           Edit Floor Map
         </button>

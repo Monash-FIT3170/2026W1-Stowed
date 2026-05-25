@@ -42,9 +42,6 @@ export function EditorProvider({ children, floorMapId }) {
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isPanelOpen, setIsPanelOpen]   = useState(false);
 
-  // --- DELETE ERROR (replaces alert()) ---
-  const [unitDeleteError, setUnitDeleteError] = useState("");
-
   // --- UNDO / REDO HISTORY ---
   const [_, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
@@ -116,7 +113,7 @@ export function EditorProvider({ children, floorMapId }) {
       const location = storageLocations.find((l) => l._id === record.locationId);
       if (!location) return;
 
-      const threshold = product.reorderAt ?? 10;
+      const threshold = product.reorderAt ?? 0;
       const isLow     = product.totalQuantity <= threshold;
       const unitId    = location.storageUnitId;
 
@@ -126,6 +123,7 @@ export function EditorProvider({ children, floorMapId }) {
         product,
         quantity:     product.totalQuantity,
         threshold,
+        reorderAt:    threshold,
         isLow,
         locationName: location.name,
       });
@@ -137,8 +135,10 @@ export function EditorProvider({ children, floorMapId }) {
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const fw = Number(floorMap.floorSize?.width);
+    const fh = Number(floorMap.floorSize?.height);
+    if (fw > 0 && fh > 0) {
+      setFloorSize({ width: fw, height: fh });
     }
 
     if (floorMap.settings) {
@@ -277,8 +277,10 @@ export function EditorProvider({ children, floorMapId }) {
       return;
     }
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const lfw = Number(floorMap.floorSize?.width);
+    const lfh = Number(floorMap.floorSize?.height);
+    if (lfw > 0 && lfh > 0) {
+      setFloorSize({ width: lfw, height: lfh });
     }
 
     if (floorMap.settings) {
@@ -367,7 +369,7 @@ export function EditorProvider({ children, floorMapId }) {
       commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
       setSelectedUnit(null);
     } catch (error) {
-      setUnitDeleteError(error.reason || "Cannot delete this unit. Make sure all storage locations within it are removed first.");
+      alert(error.reason || "Cannot delete this unit. Make sure all storage locations within it are removed first.");
     }
   }
 
@@ -406,7 +408,6 @@ export function EditorProvider({ children, floorMapId }) {
 
     // Delete selected unit
     handleDeleteSelectedUnit,
-    unitDeleteError, setUnitDeleteError,
   };
 
   return (
