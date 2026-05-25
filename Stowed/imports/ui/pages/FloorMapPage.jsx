@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
@@ -23,6 +25,9 @@ function callMethod(methodName, params) {
 }
 
 function FloorMapPageInner() {
+  const { role } = useAuth();
+  const canManage = hasClientPermission(role, "locations.manage");
+
   const {
     activeTool, setActiveTool,
     floorSize, canvasSettings,
@@ -31,7 +36,6 @@ function FloorMapPageInner() {
     units, commitUnits,
     canUndo, canRedo, handleUndo, handleRedo,
     handleSaveLayout, handleLoadLayout,
-    handlePlaceUnit, handleUnitPlaced,
     handleCanvasSettingsSave,
     selectedUnit, setSelectedUnit, setIsPanelOpen, isPanelOpen,
     lowStockByUnitId,
@@ -106,36 +110,31 @@ function FloorMapPageInner() {
           flexShrink: 0,
           overflowX: "auto",
         }}>
-          {/* Group by site */}
-          {sites.map((site) => {
-            const siteMaps = floorMaps.filter((f) => f.siteId === site._id);
-            if (!siteMaps.length) return null;
-            return siteMaps.map((fm) => {
-              const isActive = fm._id === (floorMapId ?? floorMaps[0]?._id);
-              return (
-                <button
-                  key={fm._id}
-                  onClick={() => navigate(`/floor-map/${fm._id}`)}
-                  style={{
-                    padding: "10px 16px",
-                    border: "none",
-                    borderBottom: isActive
-                      ? "2px solid var(--accent-primary)"
-                      : "2px solid transparent",
-                    background: "transparent",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: isActive ? 700 : 400,
-                    color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
-                    whiteSpace: "nowrap",
-                    fontFamily: "inherit",
-                    flexShrink: 0,
-                  }}
-                >
-                  {site.name} — {fm.name}
-                </button>
-              );
-            });
+          {floorMaps.map((fm) => {
+            const isActive = fm._id === (floorMapId ?? floorMaps[0]?._id);
+            return (
+              <button
+                key={fm._id}
+                onClick={() => navigate(`/floor-map/${fm._id}`)}
+                style={{
+                  padding: "10px 16px",
+                  border: "none",
+                  borderBottom: isActive
+                    ? "2px solid var(--accent-primary)"
+                    : "2px solid transparent",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: isActive ? 700 : 400,
+                  color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
+                  whiteSpace: "nowrap",
+                  fontFamily: "inherit",
+                  flexShrink: 0,
+                }}
+              >
+                {fm.name}
+              </button>
+            );
           })}
         </div>
       )}
@@ -192,7 +191,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty low">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -209,7 +210,9 @@ function FloorMapPageInner() {
                           </div>
                           <div>
                             <div className="panel-item-qty ok">{item.quantity}</div>
-                            <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            {item.reorderAt > 0 && (
+                              <div className="panel-item-threshold">min {item.reorderAt}</div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -221,8 +224,8 @@ function FloorMapPageInner() {
           </div>
         )}
 
-        {/* EDIT MODE SIDEBAR */}
-        {isCanvasEditMode && (
+        {/* EDIT MODE SIDEBAR — only accessible to admins/owners */}
+        {isCanvasEditMode && canManage && (
           <>
             {isSidebarOpen ? (
               <div style={{
@@ -241,7 +244,7 @@ function FloorMapPageInner() {
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                    <StoragePanel onSelectUnit={handlePlaceUnit} />
+                    <StoragePanel floorMapId={currentFloorMap?._id} />
                   </div>
                   <div style={{ height: "1px", background: "var(--border-light)" }} />
                   <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
@@ -365,8 +368,8 @@ function FloorMapPageInner() {
         />
       )}
 
-      {/* FLOATING EDIT BUTTON */}
-      {!isCanvasEditMode && (
+      {/* FLOATING EDIT BUTTON — admins and owners only */}
+      {!isCanvasEditMode && canManage && (
         <button onClick={() => setCanvasEditMode(true)} className="btn-primary" style={{ ...pageStyles.floatingButton }}>
           Edit Floor Map
         </button>

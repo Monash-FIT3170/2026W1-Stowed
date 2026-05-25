@@ -269,6 +269,7 @@ Meteor.methods({
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
+    await assertOrgAccess(Products, productId, this.userId);
     await requirePermission(this.userId, "products.restock");
 
     const product = await Products.findOneAsync(productId);
@@ -352,6 +353,7 @@ Meteor.methods({
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
+    await assertOrgAccess(Products, productId, this.userId);
     await requirePermission(this.userId, "products.uploadImage");
 
     await Products.updateAsync(
@@ -370,6 +372,9 @@ Meteor.methods({
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await requirePermission(this.userId, "products.update");
 
     const product = await Products.findOneAsync(productId);
     if (!product) {

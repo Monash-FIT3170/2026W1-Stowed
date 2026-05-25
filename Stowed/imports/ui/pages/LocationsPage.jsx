@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 
 import {
   FloorMaps,
@@ -125,10 +127,12 @@ function submitMeteorMethod(methodName, params) {
 }
 
 export function LocationsPage() {
+  const { role } = useAuth();
+  const canManage = hasClientPermission(role, "locations.manage");
+
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedFloorMapId, setSelectedFloorMapId] = useState("");
   const [selectedStorageUnitId, setSelectedStorageUnitId] = useState("");
-  const [siteForm, setSiteForm] = useState({ name: "", description: "" });
   const [floorMapForm, setFloorMapForm] = useState({ name: "", imageUrl: "" });
   const [unitForm, setUnitForm] = useState(DEFAULT_UNIT_FORM);
   const [locationForm, setLocationForm] = useState(DEFAULT_LOCATION_FORM);
@@ -139,8 +143,6 @@ export function LocationsPage() {
   const fileInputRef = useRef(null);
 
   // Edit state for each level
-  const [editingSiteId, setEditingSiteId] = useState(null);
-  const [editSiteForm, setEditSiteForm] = useState({ name: "", description: "" });
   const [editingFloorMapId, setEditingFloorMapId] = useState(null);
   const [editFloorMapForm, setEditFloorMapForm] = useState({ name: "", imageUrl: "" });
   const [editingStorageUnitId, setEditingStorageUnitId] = useState(null);
@@ -229,17 +231,6 @@ export function LocationsPage() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function handleSiteSubmit(event) {
-    event.preventDefault();
-    await runSubmit(async () => {
-      await submitMeteorMethod("sites.create", {
-        name: siteForm.name.trim(),
-        description: siteForm.description.trim(),
-      });
-      setSiteForm({ name: "", description: "" });
-    });
   }
 
   async function handleFloorMapSubmit(event) {
@@ -344,22 +335,6 @@ export function LocationsPage() {
     }
   }
 
-  function startEditSite(site) {
-    setEditingSiteId(site._id);
-    setEditSiteForm({ name: site.name, description: site.description || "" });
-  }
-
-  async function saveEditSite(siteId) {
-    const name = editSiteForm.name.trim();
-    if (!name) return;
-    const duplicate = sites.some((s) => s._id !== siteId && s.name.toLowerCase() === name.toLowerCase());
-    if (duplicate) { setStatus({ type: "error", message: "A site with that name already exists." }); return; }
-    await runSubmit(async () => {
-      await submitMeteorMethod("sites.update", { siteId, name, description: editSiteForm.description.trim() });
-      setEditingSiteId(null);
-    });
-  }
-
   function startEditFloorMap(fm) {
     setEditingFloorMapId(fm._id);
     setEditFloorMapForm({ name: fm.name, imageUrl: fm.imageUrl || "" });
@@ -424,37 +399,6 @@ export function LocationsPage() {
     });
   }
 
-  // Scale all units to fit within the preview container
-  function getPreviewLayout(units) {
-    if (!units.length) return { units: [], scale: 1 };
-
-    const PX = 50;
-    const PREVIEW_W = 280;
-    const PREVIEW_H = 300;
-
-    // Convert all to pixels first
-    const converted = units.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
-      const isMeters = x <= 20 && y <= 20 && w <= 20 && h <= 20;
-      return {
-        ...unit,
-        px: { left: isMeters ? x * PX : x, top: isMeters ? y * PX : y, width: isMeters ? w * PX : w, height: isMeters ? h * PX : h },
-      };
-    });
-
-    // Find bounding box
-    const maxRight  = Math.max(...converted.map((u) => u.px.left + u.px.width));
-    const maxBottom = Math.max(...converted.map((u) => u.px.top  + u.px.height));
-
-    // Scale to fit with padding
-    const scale = Math.min((PREVIEW_W - 8) / maxRight, (PREVIEW_H - 8) / maxBottom, 1);
-
-    return { units: converted, scale };
-  }
-
   return (
     <div className="product-detail-container">
       <div className="product-detail-header">
@@ -482,77 +426,21 @@ export function LocationsPage() {
 
       <div className="product-detail-grid">
         <div className="left-column">
-          <Panel title="Site" subtitle="Create and select the top-level physical area.">
-            <form className="form-grid" onSubmit={handleSiteSubmit}>
-              <Field label="Name">
-                <TextInput
-                  value={siteForm.name}
-                  onChange={(e) => setSiteForm((cur) => ({ ...cur, name: e.target.value }))}
-                  placeholder="Warehouse"
-                />
-              </Field>
-              <Field label="Description">
-                <TextArea
-                  value={siteForm.description}
-                  onChange={(e) => setSiteForm((cur) => ({ ...cur, description: e.target.value }))}
-                  placeholder="Optional note"
-                />
-              </Field>
-              <button type="submit" disabled={submitting || !siteForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
-                Add Site
-              </button>
-            </form>
-            {sites.length ? (
-              <div className="selection-list">
-                {sites.map((site) => (
-                  <div key={site._id} className={`selection-item ${site._id === selectedSiteId ? "selection-item-selected" : "selection-item-unselected"}`} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {editingSiteId === site._id ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <input className="form-input" value={editSiteForm.name} onChange={(e) => setEditSiteForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
-                        <input className="form-input" value={editSiteForm.description} onChange={(e) => setEditSiteForm((f) => ({ ...f, description: e.target.value }))} placeholder="Description" />
-                        <div style={{ display: "flex", gap: "6px" }}>
-                          <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditSite(site._id)} disabled={submitting || !editSiteForm.name.trim()}>Save</button>
-                          <button type="button" className="btn-secondary" onClick={() => setEditingSiteId(null)}>Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <button type="button" onClick={() => setSelectedSiteId(site._id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
-                          <div className="selection-item-name">{site.name}</div>
-                          <div className="selection-item-description">{site.description || "No description"}</div>
-                        </button>
-                        <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditSite(site)}>Edit</button>
-                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("site", site._id, site.name)}>Delete</button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState>No sites yet. Create one to unlock the rest of the chain.</EmptyState>
+          <Panel title="Floor Maps">
+            {canManage && (
+              <form className="form-grid" onSubmit={handleFloorMapSubmit}>
+                <Field label="Name">
+                  <TextInput
+                    value={floorMapForm.name}
+                    onChange={(e) => setFloorMapForm((cur) => ({ ...cur, name: e.target.value }))}
+                    placeholder="Ground Floor"
+                  />
+                </Field>
+                <button type="submit" disabled={submitting || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
+                  Add Floor Map
+                </button>
+              </form>
             )}
-          </Panel>
-
-          <Panel title="Floor Maps" subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}>
-            <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
-              <Field label="Name">
-                <TextInput
-                  value={floorMapForm.name}
-                  onChange={(e) => setFloorMapForm((cur) => ({ ...cur, name: e.target.value }))}
-                  placeholder="Ground Floor"
-                />
-              </Field>
-              <Field label="Image URL">
-                <TextInput
-                  value={floorMapForm.imageUrl}
-                  onChange={(e) => setFloorMapForm((cur) => ({ ...cur, imageUrl: e.target.value }))}
-                  placeholder="https://example.com/floor-map.png"
-                />
-              </Field>
-              <button type="submit" disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()} className="btn-primary" style={{ width: "100%" }}>
-                Add Floor Map
-              </button>
-            </form>
             {floorMapsForSite.length ? (
               <div className="selection-list">
                 {floorMapsForSite.map((floorMap) => (
@@ -560,7 +448,6 @@ export function LocationsPage() {
                     {editingFloorMapId === floorMap._id ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         <input className="form-input" value={editFloorMapForm.name} onChange={(e) => setEditFloorMapForm((f) => ({ ...f, name: e.target.value }))} placeholder="Name" />
-                        <input className="form-input" value={editFloorMapForm.imageUrl} onChange={(e) => setEditFloorMapForm((f) => ({ ...f, imageUrl: e.target.value }))} placeholder="Image URL" />
                         <div style={{ display: "flex", gap: "6px" }}>
                           <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => saveEditFloorMap(floorMap._id)} disabled={submitting || !editFloorMapForm.name.trim()}>Save</button>
                           <button type="button" className="btn-secondary" onClick={() => setEditingFloorMapId(null)}>Cancel</button>
@@ -570,22 +457,21 @@ export function LocationsPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <button type="button" onClick={() => setSelectedFloorMapId(floorMap._id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
                           <div className="selection-item-name">{floorMap.name}</div>
-                          <div className="selection-item-description">{floorMap.imageUrl || "No image URL"}</div>
                         </button>
-                        <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditFloorMap(floorMap)}>Edit</button>
-                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("floorMap", floorMap._id, floorMap.name)}>Delete</button>
+                        {canManage && <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditFloorMap(floorMap)}>Edit</button>}
+                        {canManage && <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("floorMap", floorMap._id, floorMap.name)}>Delete</button>}
                       </div>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <EmptyState>No floor maps for this site yet.</EmptyState>
+              <EmptyState>No floor maps yet. Create one to get started.</EmptyState>
             )}
           </Panel>
 
           <Panel title="Storage Units" subtitle={selectedFloorMap ? `Placed on ${selectedFloorMap.name}.` : "Select a floor map first."}>
-            <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
+            {canManage && <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
               <TextInput label="Name" value={unitForm.name} onChange={(e) => setUnitForm((cur) => ({ ...cur, name: e.target.value }))} placeholder="Shelf A" />
               <SelectInput
                 label="Type"
@@ -605,7 +491,7 @@ export function LocationsPage() {
               >
                 Add Storage Unit
               </button>
-            </form>
+            </form>}
             {storageUnitsForFloorMap.length ? (
               <div className="selection-list">
                 {storageUnitsForFloorMap.map((unit) => (
@@ -630,8 +516,8 @@ export function LocationsPage() {
                           </div>
                           <div className="unit-list-item-meta">{`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}</div>
                         </button>
-                        <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageUnit(unit)}>Edit</button>
-                        <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("storageUnit", unit._id, unit.name)}>Delete</button>
+                        {canManage && <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageUnit(unit)}>Edit</button>}
+                        {canManage && <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("storageUnit", unit._id, unit.name)}>Delete</button>}
                       </div>
                     )}
                   </div>
@@ -643,7 +529,7 @@ export function LocationsPage() {
           </Panel>
 
           <Panel badge="lc" title="Storage Locations" subtitle={selectedStorageUnit ? `Attached to ${selectedStorageUnit.name}.` : "Select a storage unit first."}>
-            <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageLocation}>
+            {canManage && <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageLocation}>
               <TextInput label="Name" value={locationForm.name} onChange={(e) => setLocationForm((cur) => ({ ...cur, name: e.target.value }))} placeholder="Top Shelf" />
               <TextInput label="Code" value={locationForm.code} onChange={(e) => setLocationForm((cur) => ({ ...cur, code: e.target.value }))} placeholder="SH-A-01" />
               <button
@@ -654,7 +540,7 @@ export function LocationsPage() {
               >
                 Add Storage Location
               </button>
-            </form>
+            </form>}
             {locationsForStorageUnit.length ? (
               <div className="selection-list">
                 {locationsForStorageUnit.map((location) => (
@@ -675,9 +561,9 @@ export function LocationsPage() {
                           <div className="location-list-item-code">{location.code}</div>
                         </div>
                         <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-                          <button className="location-list-item-view-image" onClick={() => { setSelectedLocation(location); setImageModalOpen(true); }}>Image</button>
-                          <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageLocation(location)}>Edit</button>
-                          <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("storageLocation", location._id, location.name)}>Delete</button>
+                          {canManage && <button className="location-list-item-view-image" onClick={() => { setSelectedLocation(location); setImageModalOpen(true); }}>Image</button>}
+                          {canManage && <button type="button" className="btn-secondary" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => startEditStorageLocation(location)}>Edit</button>}
+                          {canManage && <button type="button" className="btn-danger" style={{ padding: "3px 8px", fontSize: "11px" }} onClick={() => tryDeleteItem("storageLocation", location._id, location.name)}>Delete</button>}
                         </div>
                       </>
                     )}
@@ -694,10 +580,6 @@ export function LocationsPage() {
           <Panel badge="qr" title="Relationship Summary" subtitle="Quick sanity check of what is currently selected.">
             <dl className="relationship-summary-list">
               <div className="relationship-summary-item">
-                <dt className="relationship-summary-label">Site</dt>
-                <dd className="relationship-summary-value">{selectedSite?.name || "None selected"}</dd>
-              </div>
-              <div className="relationship-summary-item">
                 <dt className="relationship-summary-label">Floor Map</dt>
                 <dd className="relationship-summary-value">{selectedFloorMap?.name || "None selected"}</dd>
               </div>
@@ -710,35 +592,6 @@ export function LocationsPage() {
                 <dd className="relationship-summary-value">{locationsForStorageUnit.length}</dd>
               </div>
             </dl>
-          </Panel>
-
-          <Panel badge="lc" title="Floor Map Preview" subtitle="Simple visual check for storage-unit position values.">
-            <div className="floor-map-preview-container">
-              <div className="floor-map-preview-canvas" style={{ position: "relative", width: "100%", height: "300px", overflow: "hidden" }}>
-                {(() => {
-                  const { units: laid, scale } = getPreviewLayout(storageUnitsForFloorMap);
-                  return laid.length ? laid.map((unit) => (
-                    <button
-                      key={unit._id}
-                      type="button"
-                      onClick={() => setSelectedStorageUnitId(unit._id)}
-                      className={`floor-map-unit-button ${unit._id === selectedStorageUnitId ? "floor-map-unit-selected" : "floor-map-unit-unselected"}`}
-                      style={{
-                        left:   `${unit.px.left   * scale}px`,
-                        top:    `${unit.px.top    * scale}px`,
-                        width:  `${unit.px.width  * scale}px`,
-                        height: `${unit.px.height * scale}px`,
-                      }}
-                    >
-                      <div className="floor-map-unit-name" style={{ fontSize: `${Math.max(8, 11 * scale)}px` }}>{unit.name}</div>
-                      <div className="floor-map-unit-type" style={{ fontSize: `${Math.max(7, 10 * scale)}px` }}>{unit.type}</div>
-                    </button>
-                  )) : (
-                    <div className="floor-map-empty-state">Add a storage unit to see it plotted here.</div>
-                  );
-                })()}
-              </div>
-            </div>
           </Panel>
 
         </div>

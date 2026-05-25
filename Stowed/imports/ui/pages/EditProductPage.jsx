@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import {
   Sites,
@@ -23,11 +25,10 @@ function callMethod(methodName, params) {
   });
 }
 
-function buildLocationLabel(location, storageUnits, floorMaps, sites) {
+function buildLocationLabel(location, storageUnits, floorMaps, sites) { // sites kept for call-site compatibility
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
   const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
-  const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
-  return [site?.name, floorMap?.name, unit?.name, location.name]
+  return [floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
     .join(" → ");
 }
@@ -35,6 +36,13 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 export function EditProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  useEffect(() => {
+    if (role !== null && !hasClientPermission(role, "products.update")) {
+      navigate("/inventory/list", { replace: true });
+    }
+  }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");

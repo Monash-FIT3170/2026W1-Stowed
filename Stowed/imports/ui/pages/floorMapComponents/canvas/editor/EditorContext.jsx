@@ -116,7 +116,7 @@ export function EditorProvider({ children, floorMapId }) {
       const location = storageLocations.find((l) => l._id === record.locationId);
       if (!location) return;
 
-      const threshold = product.reorderAt ?? 10;
+      const threshold = product.reorderAt ?? 0;
       const isLow     = product.totalQuantity <= threshold;
       const unitId    = location.storageUnitId;
 
@@ -126,6 +126,7 @@ export function EditorProvider({ children, floorMapId }) {
         product,
         quantity:     product.totalQuantity,
         threshold,
+        reorderAt:    threshold,
         isLow,
         locationName: location.name,
       });
@@ -137,8 +138,10 @@ export function EditorProvider({ children, floorMapId }) {
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const fw = Number(floorMap.floorSize?.width);
+    const fh = Number(floorMap.floorSize?.height);
+    if (fw > 0 && fh > 0) {
+      setFloorSize({ width: fw, height: fh });
     }
 
     if (floorMap.settings) {
@@ -277,8 +280,10 @@ export function EditorProvider({ children, floorMapId }) {
       return;
     }
 
-    if (floorMap.floorSize) {
-      setFloorSize(floorMap.floorSize);
+    const lfw = Number(floorMap.floorSize?.width);
+    const lfh = Number(floorMap.floorSize?.height);
+    if (lfw > 0 && lfh > 0) {
+      setFloorSize({ width: lfw, height: lfh });
     }
 
     if (floorMap.settings) {

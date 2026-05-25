@@ -1,7 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products } from "/imports/api/products/collections";
 import {
   Sites,
@@ -71,14 +73,11 @@ function callMethod(methodName, params) {
 
 // Builds a full readable path for a StorageLocation, e.g.:
 // "Main Warehouse → Ground Floor → Shelf A → Bay 1"
-function buildLocationLabel(location, storageUnits, floorMaps, sites) {
+function buildLocationLabel(location, storageUnits, floorMaps, sites) { // sites kept for call-site compatibility
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit
-    ? floorMaps.find((f) => f._id === unit.floorMapId)
-    : null;
-  const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
+  const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
 
-  return [site?.name, floorMap?.name, unit?.name, location.name]
+  return [floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
     .join(" → ");
 }
@@ -87,6 +86,13 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 
 export function CreateProductPage() {
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  useEffect(() => {
+    if (role !== null && !hasClientPermission(role, "products.create")) {
+      navigate("/inventory/list", { replace: true });
+    }
+  }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -542,25 +548,6 @@ export function CreateProductPage() {
                     {uploadError}
                   </p>
                 )}
-              </div>
-            </div>
-
-            {/* QR & label */}
-            <div className="detail-section">
-              <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#f5efe6", color: "#998874" }}
-                >
-                  QR
-                </span>
-                QR & label
-              </div>
-              <div className="section-content qr-section">
-                <div className="qr-container">
-                  <div className="qr-code" />
-                  <p className="qr-label">QR Code</p>
-                </div>
               </div>
             </div>
           </div>

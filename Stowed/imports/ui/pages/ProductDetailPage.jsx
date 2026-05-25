@@ -2,6 +2,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
 import {
   Sites,
@@ -27,7 +29,7 @@ function buildLocationLabel(
   storageLocations,
   storageUnits,
   floorMaps,
-  sites,
+  sites, // kept for call-site compatibility; not used in label
 ) {
   const location = storageLocations.find((loc) => loc._id === locationId);
   if (!location) return locationId;
@@ -38,13 +40,10 @@ function buildLocationLabel(
   const floorMap = unit
     ? floorMaps.find((candidate) => candidate._id === unit.floorMapId)
     : null;
-  const site = floorMap
-    ? sites.find((candidate) => candidate._id === floorMap.siteId)
-    : null;
 
-  return [site?.name, floorMap?.name, unit?.name, location.name]
+  return [floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
-    .join(" -> ");
+    .join(" → ");
 }
 
 export function ProductDetailView({
@@ -64,13 +63,74 @@ export function ProductDetailView({
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const canUpdate = hasClientPermission(role, "products.update");
+  const canDelete = hasClientPermission(role, "products.delete");
+  const canUploadImage = hasClientPermission(role, "products.uploadImage");
+  const canRestock = hasClientPermission(role, "products.restock");
+
+  // ── Restock modal state ──
+  const [showRestockModal, setShowRestockModal] = useState(false);
+  const [restockQty, setRestockQty] = useState("");
+  const [restockAssignments, setRestockAssignments] = useState([]);
+  const [isRestocking, setIsRestocking] = useState(false);
+  const [restockError, setRestockError] = useState("");
 
   if (!item) {
     return <div className="p-8 text-center">Product not found.</div>;
   }
 
-  const unitCost = Number(item.unitCost);
+  // ── Restock helpers ──
+  function openRestockModal() {
+    setRestockQty("");
+    setRestockAssignments(
+      records.map((r) => ({ locationId: r.locationId, quantity: String(r.quantity) }))
+    );
+    setIsRestocking(false);
+    setRestockError("");
+    setShowRestockModal(true);
+  }
+  function addRestockAssignment() {
+    setRestockAssignments((prev) => [...prev, { locationId: "", quantity: "" }]);
+  }
+  function removeRestockAssignment(index) {
+    setRestockAssignments((prev) => prev.filter((_, i) => i !== index));
+  }
+  function updateRestockAssignment(index, field, value) {
+    setRestockAssignments((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
+    );
+  }
+  const parsedRestockQty   = parseInt(restockQty, 10);
+  const restockQtyIsValid  = restockQty !== "" && !isNaN(parsedRestockQty) && parsedRestockQty > 0;
   const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
+  const restockTargetTotal = restockQtyIsValid ? currentStock + parsedRestockQty : null;
+  const validRestockAssignments = restockAssignments.filter((a) => a.locationId && a.quantity !== "");
+  const restockAssignedTotal = validRestockAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
+  const restockRemaining   = restockTargetTotal !== null ? restockTargetTotal - restockAssignedTotal : null;
+  const restockIsBalanced  = restockTargetTotal !== null && restockRemaining === 0;
+  const restockCanSubmit   = restockQtyIsValid && restockIsBalanced;
+
+  async function confirmRestock() {
+    setIsRestocking(true);
+    setRestockError("");
+    try {
+      await callMethod("products.restock", {
+        productId,
+        additionalQuantity: parsedRestockQty,
+        assignments: validRestockAssignments.map((a) => ({
+          locationId: a.locationId,
+          quantity:   parseInt(a.quantity, 10),
+        })),
+      });
+      setShowRestockModal(false);
+    } catch (err) {
+      setRestockError(err.reason || err.message || "Restock failed.");
+      setIsRestocking(false);
+    }
+  }
+
+  const unitCost = Number(item.unitCost);
   const reorderAt = item.reorderAt ?? null;
   const galleryImages =
     imageUrls.length > 0
@@ -91,7 +151,6 @@ export function ProductDetailView({
     if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
     return false;
   });
-  const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
     ? records.map((record) => ({
@@ -245,19 +304,28 @@ export function ProductDetailView({
               <button className="btn-secondary" onClick={() => navigate("/inventory/list")}>
                 Back
               </button>
-              <button
-                className="btn-primary"
-                onClick={handleUpdateClick}
-                disabled={uploadingImage}
-              >
-                Update
-              </button>
-              <button
-                className="btn-danger"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                Delete
-              </button>
+              {canRestock && (
+                <button className="btn-secondary" onClick={openRestockModal}>
+                  Restock
+                </button>
+              )}
+              {canUpdate && (
+                <button
+                  className="btn-primary"
+                  onClick={handleUpdateClick}
+                  disabled={uploadingImage}
+                >
+                  Update
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  className="btn-danger"
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
 
@@ -441,37 +509,26 @@ export function ProductDetailView({
                       )}
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    className="thumbnail add-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingImage}
-                  >
-                    {uploadingImage ? "..." : "+"}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    style={{ display: "none" }}
-                  />
+                  {canUploadImage && (
+                    <>
+                      <button
+                        type="button"
+                        className="thumbnail add-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? "..." : "+"}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: "none" }}
+                      />
+                    </>
+                  )}
                 </div>
-              </div>
-            </div>
-
-            <div className="detail-section">
-              <h2 className="section-title">
-                <span className="section-badge qr">QR</span>
-                QR &amp; label
-              </h2>
-              <div className="section-content qr-section">
-                <div className="qr-container">
-                  <img src={qrCode} alt="QR Code" className="qr-code" />
-                  <p className="qr-label">SKU: {item.sku}</p>
-                  <p className="qr-label">{item.location}</p>
-                </div>
-                <button className="btn-print">Print label</button>
               </div>
             </div>
 
@@ -479,6 +536,107 @@ export function ProductDetailView({
         </div>
 
       </div>
+
+      {/* ── RESTOCK MODAL ── */}
+      {showRestockModal && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: "480px", width: "100%" }}>
+            <h3 className="modal-title">Restock "{item.name}"</h3>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
+              Current stock: <strong>{currentStock}</strong>. Enter units being added, then
+              redistribute <em>all</em> stock across locations.
+            </p>
+
+            {/* Units being added */}
+            <div className="form-group" style={{ marginBottom: "16px" }}>
+              <label style={{ fontWeight: 600, fontSize: "13px" }}>Units being added</label>
+              <input
+                type="number"
+                min="1"
+                className="form-input"
+                style={{ maxWidth: "140px", marginTop: "4px" }}
+                value={restockQty}
+                onChange={(e) => setRestockQty(e.target.value)}
+                disabled={isRestocking}
+              />
+              {restockTargetTotal !== null && (
+                <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--text-muted)" }}>
+                  New total will be <strong>{restockTargetTotal}</strong> units.
+                </p>
+              )}
+            </div>
+
+            {/* Location assignments */}
+            <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: "14px" }}>
+              <p style={{ fontWeight: 600, fontSize: "13px", marginBottom: "10px" }}>
+                Assign all stock to locations
+              </p>
+              {restockAssignments.map((assignment, index) => {
+                const usedElsewhere = new Set(
+                  restockAssignments.filter((_, i) => i !== index).map((a) => a.locationId).filter(Boolean)
+                );
+                return (
+                  <div key={index} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
+                    <select
+                      className="form-input"
+                      style={{ flex: 2 }}
+                      value={assignment.locationId}
+                      onChange={(e) => updateRestockAssignment(index, "locationId", e.target.value)}
+                      disabled={isRestocking}
+                    >
+                      <option value="">Select a location…</option>
+                      {storageLocations
+                        .filter((loc) => !usedElsewhere.has(loc._id))
+                        .map((loc) => (
+                          <option key={loc._id} value={loc._id}>
+                            {buildLocationLabel(loc._id, storageLocations, storageUnits, floorMaps, sites)}
+                          </option>
+                        ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Qty"
+                      className="form-input"
+                      style={{ maxWidth: "80px" }}
+                      value={assignment.quantity}
+                      onChange={(e) => updateRestockAssignment(index, "quantity", e.target.value)}
+                      disabled={isRestocking}
+                    />
+                    <button type="button" className="btn-secondary" onClick={() => removeRestockAssignment(index)} disabled={isRestocking}>
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
+              <button type="button" className="btn-secondary" style={{ marginTop: "4px" }} onClick={addRestockAssignment} disabled={isRestocking}>
+                + Add Location
+              </button>
+
+              {restockRemaining !== null && (
+                <p style={{ marginTop: "10px", fontSize: "12px", fontStyle: "italic", color: restockRemaining === 0 ? "var(--success)" : "var(--text-muted)" }}>
+                  {restockRemaining === 0 && `All ${restockTargetTotal} units assigned.`}
+                  {restockRemaining  > 0 && `${restockAssignedTotal} of ${restockTargetTotal} assigned — ${restockRemaining} remaining.`}
+                  {restockRemaining  < 0 && `Over-assigned by ${Math.abs(restockRemaining)} unit${Math.abs(restockRemaining) !== 1 ? "s" : ""}.`}
+                </p>
+              )}
+            </div>
+
+            {restockError && (
+              <p style={{ marginTop: "10px", fontSize: "12px", color: "var(--danger, #b91c1c)" }}>{restockError}</p>
+            )}
+
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowRestockModal(false)} disabled={isRestocking}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={confirmRestock} disabled={!restockCanSubmit || isRestocking}>
+                {isRestocking ? "Saving…" : "Confirm Restock"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDeleteModal && (
         <div className="modal-overlay">

@@ -14,13 +14,6 @@ const WORKSPACE_LINKS = [
   { to: "/floor-map",  label: "Floor Map",      icon: "🗺" },
   { to: "/inventory",  label: "Inventory",      icon: "📦" },
   { to: "/",           label: "Inventory Page", icon: "✓"  },
-  { to: "/lists",      label: "Lists",          icon: "🛒" },
-];
-
-const TOOL_LINKS = [
-  { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
-  { to: "/forecast", label: "Forecast", icon: "🔮" },
-  { to: "/alerts",   label: "Alerts",   icon: "⚠️" },
 ];
 
 function SidebarLink({ to, label, icon, end }) {
@@ -73,10 +66,15 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  const ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
+  const ALL_ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
   if (role >= ROLES.OWNER) {
-    ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
+    ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
+  const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
+    link.to === "/register"
+      ? hasClientPermission(role, "create-users")
+      : true
+  );
 
   return (
     <aside className="sidebar">
@@ -91,7 +89,13 @@ export function Sidebar() {
 
         {isLoggedIn && organisation && (
           <div className="sidebar-org">
-            {organisation.name}
+            <div className="sidebar-org-avatar">
+              {organisation.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="sidebar-org-info">
+              <div className="sidebar-org-label">Organisation</div>
+              <div className="sidebar-org-name">{organisation.name}</div>
+            </div>
           </div>
         )}
 
