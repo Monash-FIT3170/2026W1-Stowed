@@ -78,7 +78,7 @@ export function CanvasToolbar({
           Move
         </button>
       </div>
-{/* 
+
       <div style={toolbarStyles.row}>
         <button
           onClick={onSaveLayout}
@@ -100,7 +100,7 @@ export function CanvasToolbar({
         >
           Load Layout
         </button>
-      </div> */}
+      </div>
 
       <div style={toolbarStyles.row}>
         <button
