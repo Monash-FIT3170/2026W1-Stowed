@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ProductThumbnail } from "../imports/ui/components/ProductThumbnail";
 import { mockProducts } from "../imports/api/mockProducts";
 
-describe("item thumbnail", function () {
+describe("product thumbnail", function () {
   it("renders an img tag when photoUrl is provided", function () {
     mockProducts.forEach((item) => {
       if (!item.photoUrl) return;
