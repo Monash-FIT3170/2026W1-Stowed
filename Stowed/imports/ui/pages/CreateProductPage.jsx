@@ -544,25 +544,6 @@ export function CreateProductPage() {
                 )}
               </div>
             </div>
-
-            {/* QR & label */}
-            <div className="detail-section">
-              <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#f5efe6", color: "#998874" }}
-                >
-                  QR
-                </span>
-                QR & label
-              </div>
-              <div className="section-content qr-section">
-                <div className="qr-container">
-                  <div className="qr-code" />
-                  <p className="qr-label">QR Code</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
