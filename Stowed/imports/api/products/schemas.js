@@ -67,6 +67,12 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
   },
 
+  reorderAt: {
+    type: SimpleSchema.Integer,
+    optional: true,
+    min: 0,
+  },
+
   status: {
     type: String,
     optional: true,

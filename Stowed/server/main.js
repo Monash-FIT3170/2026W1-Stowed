@@ -16,15 +16,23 @@ import { Products, ProductRecords } from "/imports/api/products/collections";
 import { Organisations } from "/imports/api/organisations";
 
 async function seedOrg() {
-  let org = await Organisations.findOneAsync({ name: "Monash University" });
+  let org = await Organisations.findOneAsync({ code: "monash" });
   if (!org) {
-    const orgId = await Organisations.insertAsync({
-      name: "Monash University",
-      code: "monash",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    org = { _id: orgId };
+    try {
+      const orgId = await Organisations.insertAsync({
+        name: "Monash University",
+        code: "monash",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      org = { _id: orgId };
+    } catch (err) {
+      if (err && err.code === 11000) {
+        org = await Organisations.findOneAsync({ code: "monash" });
+      } else {
+        throw err;
+      }
+    }
   }
   return org._id;
 }

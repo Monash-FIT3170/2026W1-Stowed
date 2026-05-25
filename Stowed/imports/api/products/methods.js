@@ -44,12 +44,12 @@ Meteor.methods({
     sku = "",
     brand = "",
     unitCost = 0,
+    reorderAt,
     photoUrl = "",
     images = [],
     catalogImages = [],
     qrCode = "",
     totalQuantity,
-    reorderAt,
     assignments,
   }) {
     check(name, String);
@@ -59,6 +59,7 @@ Meteor.methods({
     check(sku, String);
     check(brand, String);
     check(unitCost, Number);
+    if (reorderAt !== undefined) check(reorderAt, Match.Integer);
     check(photoUrl, String);
     check(images, [String]);
     check(catalogImages, [String]);
@@ -114,6 +115,7 @@ Meteor.methods({
       sku,
       brand,
       unitCost,
+      reorderAt,
       photoUrl: primaryPhotoUrl,
       images: galleryImages,
       catalogImages,
@@ -150,12 +152,12 @@ Meteor.methods({
     sku = "",
     brand = "",
     unitCost = 0,
+    reorderAt,
     photoUrl = "",
     images = [],
     catalogImages = [],
     qrCode = "",
     totalQuantity,
-    reorderAt,
     assignments,
   }) {
     check(productId, String);
@@ -166,6 +168,7 @@ Meteor.methods({
     check(sku, String);
     check(brand, String);
     check(unitCost, Number);
+    if (reorderAt !== undefined) check(reorderAt, Match.Integer);
     check(photoUrl, String);
     check(images, [String]);
     check(catalogImages, [String]);
@@ -217,6 +220,7 @@ Meteor.methods({
         sku,
         brand,
         unitCost,
+        reorderAt,
         photoUrl: primaryPhotoUrl,
         images: galleryImages,
         qrCode,
