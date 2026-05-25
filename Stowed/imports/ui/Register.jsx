@@ -25,6 +25,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [roleState, setRoleState] = useState(ROLES.STANDARD);
   const [orgCode, setOrgCode] = useState('');
+  const [orgName, setOrgName] = useState('');
 
   // get details of current user
   const { isLoggedIn, role } = useAuth();
@@ -55,6 +56,11 @@ const Register = () => {
       return;
     }
 
+    if (!isPrivileged && !orgName.trim()) {
+      setError('Organisation name is required');
+      return;
+    }
+
     setError('');
     setSuccess('');
     setLoading(true);
@@ -82,6 +88,7 @@ const Register = () => {
           email,
           password,
           orgCode: orgCode.trim() || null,
+          orgName: orgName.trim(),
         });
 
         setSuccess(`Account created for ${username}`);
@@ -124,7 +131,7 @@ const Register = () => {
           <div className="auth-card-header">
             <div>
               <p className="auth-kicker">Account setup</p> 
-              <h2>Create Account</h2>
+              <h2>Create Owner Account</h2>
             </div>
 
         {!isLoggedIn && (
@@ -143,15 +150,27 @@ const Register = () => {
           <form onSubmit={onSubmit} className="auth-form">
 
            {!isPrivileged && (
-             <label className="auth-field">
-               <span>Organisation Code</span>
-                <input
-                  type="text"
-                  value={orgCode}
-                  onChange={(e) => setOrgCode(e.target.value)}
-                  className="auth-input"
-                />
-             </label>
+             <>
+               <label className="auth-field">
+                 <span>Organisation Name</span>
+                 <input
+                   type="text"
+                   value={orgName}
+                   onChange={(e) => setOrgName(e.target.value)}
+                   className="auth-input"
+                   required
+                 />
+               </label>
+               <label className="auth-field">
+                 <span>Organisation Code</span>
+                 <input
+                   type="text"
+                   value={orgCode}
+                   onChange={(e) => setOrgCode(e.target.value)}
+                   className="auth-input"
+                 />
+               </label>
+             </>
            )}
             <label className="auth-field">
               <span>Username</span>

@@ -128,7 +128,7 @@ export const Login = () => {
             </button>
 
             <p className="auth-switch">
-              Need an account? <Link to="/register">Create Account</Link>
+              New to Stowed? <Link to="/register">Set up your organisation</Link>
             </p>
           </form>
         </div>
