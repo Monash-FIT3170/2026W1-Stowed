@@ -133,11 +133,6 @@ export function Sidebar() {
             }).map((link) => (
               <SidebarLink key={link.to} to={link.to} label={link.label} />
             ))}
-            {isLoggedIn && (
-              <button className="sidebar-logout" onClick={handleLogout}>
-                Logout
-              </button>
-            )}
           </section>
         </nav>
       </div>
@@ -145,7 +140,11 @@ export function Sidebar() {
       {/* Bottom — logged in as */}
       {isLoggedIn && (
         <div className="sidebar-user">Logged in as {username}</div>
+        
       )}
+                <button className="sidebar-logout" onClick={handleLogout}>
+            Logout
+          </button>
     </aside>
   );
 }

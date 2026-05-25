@@ -174,19 +174,21 @@
 .sidebar-logout {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 9px 14px;
   border-radius: 8px;
-  font-size: 15px;
-  color: var(--text-muted);
-  background: none;
-  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: rgba(181, 83, 42, 0.08);
+  border: 1px solid rgba(181, 83, 42, 0.24);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   width: 100%;
-  transition: background 120ms ease;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  margin-top: 8px
 }
-
 .sidebar-logout:hover {
   background: var(--dark);
   color: var(--card-bg);
