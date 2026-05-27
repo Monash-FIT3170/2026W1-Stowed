@@ -105,7 +105,7 @@ export function StoragePanel({ floorMapId }) {
       });
       setSuccess(
         `"${form.name.trim()}" added at ` +
-        `(${freePos.x.toFixed(1)} m, ${freePos.y.toFixed(1)} m) — drag to reposition.`
+        `(${freePos.x.toFixed(1)} m, ${freePos.y.toFixed(1)} m) - drag to reposition.`
       );
       setForm(EMPTY_FORM);
       setShowForm(false);
@@ -230,7 +230,7 @@ export function StoragePanel({ floorMapId }) {
             disabled={!isValid || submitting || !floorMapId}
             onClick={handleCreate}
           >
-            {submitting ? "Creating…" : "Create Storage Unit"}
+            {submitting ? "Creating..." : "Create Storage Unit"}
           </button>
 
         </div>

@@ -18,9 +18,9 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
         const items       = getItemsForUnit(unit);
         const hasLowStock = items.some((i) => i.isLow);
 
-        // No data — show unit's own colour (transparent overlay)
-        // Has low stock — red tint
-        // All ok — subtle green tint
+        // No data - show unit's own colour (transparent overlay)
+        // Has low stock - red tint
+        // All ok - subtle green tint
         const fill = items.length === 0
           ? "rgba(0, 0, 0, 0)"
           : hasLowStock

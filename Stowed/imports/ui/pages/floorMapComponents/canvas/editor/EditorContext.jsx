@@ -148,7 +148,7 @@ export function EditorProvider({ children, floorMapId }) {
       });
     }
 
-    // Normalise coordinates — units created via Locations page may be stored
+    // Normalise coordinates - units created via Locations page may be stored
     // in pixels (large values), while floor map editor stores in meters.
     // Threshold: if x or y or w or h > 20, assume pixels and convert to meters.
     const PX_PER_M = 50;
@@ -359,7 +359,7 @@ export function EditorProvider({ children, floorMapId }) {
     if (!selectedUnit) return;
     const unitId = selectedUnit._id || selectedUnit.id;
     if (!unitId) {
-      // Unit not saved to DB yet — just remove from canvas
+      // Unit not saved to DB yet - just remove from canvas
       commitUnits((prev) => prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id));
       setSelectedUnit(null);
       return;

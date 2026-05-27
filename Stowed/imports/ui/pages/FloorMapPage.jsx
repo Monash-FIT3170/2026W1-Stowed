@@ -81,7 +81,7 @@ function FloorMapPageInner() {
   return (
     <div className="product-detail-container" style={{ height: "100vh", minHeight: "unset", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-      {/* ── Header ── */}
+      {/* -- Header -- */}
       <div className="product-detail-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Workspace</span>
@@ -97,7 +97,7 @@ function FloorMapPageInner() {
         </div>
       </div>
 
-      {/* ── Floor map tabs — only render once data is ready and there are multiple maps ── */}
+      {/* -- Floor map tabs - only render once data is ready and there are multiple maps -- */}
       {locationsReady && floorMaps.length > 1 && (
         <div style={{
           display: "flex",
@@ -135,7 +135,7 @@ function FloorMapPageInner() {
                     flexShrink: 0,
                   }}
                 >
-                  {site.name} — {fm.name}
+                  {site.name} - {fm.name}
                 </button>
               );
             });
@@ -143,10 +143,10 @@ function FloorMapPageInner() {
         </div>
       )}
 
-      {/* ── Map row ── */}
+      {/* -- Map row -- */}
       <div style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden", position: "relative" }}>
 
-        {/* CANVAS — only render once data is ready */}
+        {/* CANVAS - only render once data is ready */}
         <div style={{ ...pageStyles.canvasArea, flex: 1, minHeight: 0, minWidth: 0, overflow: "hidden", background: COLOURS.PAGE_BG }}>
           {locationsReady && (
             <Canvas
@@ -161,10 +161,10 @@ function FloorMapPageInner() {
           )}
         </div>
 
-        {/* RIGHT COLUMN — stock panel + edit sidebar stacked */}
+        {/* RIGHT COLUMN - stock panel + edit sidebar stacked */}
         <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, height: "100%", borderLeft: "1px solid var(--border-light)" }}>
 
-        {/* STOCK SLIDE-OUT PANEL — view mode only */}
+        {/* STOCK SLIDE-OUT PANEL - view mode only */}
         {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
           <div className="low-stock-panel" style={{ borderLeft: "none", flex: "0 0 auto" }}>
             <div className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}>
@@ -228,7 +228,7 @@ function FloorMapPageInner() {
           </div>
         )}
 
-        {/* EDIT MODE SIDEBAR — only accessible to admins/owners */}
+        {/* EDIT MODE SIDEBAR - only accessible to admins/owners */}
         {isCanvasEditMode && canManage && (
           <>
             {isSidebarOpen ? (
@@ -357,7 +357,7 @@ function FloorMapPageInner() {
         />
       )}
 
-      {/* FLOATING EDIT BUTTON — admins and owners only */}
+      {/* FLOATING EDIT BUTTON - admins and owners only */}
       {!isCanvasEditMode && canManage && (
         <button onClick={() => setCanvasEditMode(true)} className="btn-primary" style={{ ...pageStyles.floatingButton }}>
           Edit Floor Map

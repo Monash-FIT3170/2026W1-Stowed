@@ -85,7 +85,7 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar">
-      {/* Top — logo + nav */}
+      {/* Top - logo + nav */}
       <div className="sidebar-top">
         <div className="sidebar-logo">
           <div className="sidebar-logo-title">
@@ -137,14 +137,14 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* Bottom — logged in as */}
+      {/* Bottom - logged in as */}
       {isLoggedIn && (
         <div className="sidebar-user">Logged in as {username}</div>
         
       )}
-                <button className="sidebar-logout" onClick={handleLogout}>
+        <button className="sidebar-logout" onClick={handleLogout}>
             Logout
-          </button>
+         </button>
     </aside>
   );
 }
