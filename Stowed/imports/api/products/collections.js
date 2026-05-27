@@ -12,7 +12,7 @@ export const Products = new Mongo.Collection('products');
 
 /**
  * A ProductRecord represents the quantity of a specific Product stored at a
- * specific StorageLocation. A single Product may have many ProductRecords —
+ * specific StorageLocation. A single Product may have many ProductRecords -
  * one per location where stock is held.
  *
  * The sum of all ProductRecord quantities for a product should equal

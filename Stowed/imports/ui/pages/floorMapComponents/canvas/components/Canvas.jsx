@@ -76,7 +76,7 @@ export function Canvas({
 
     function measure() {
       const { width, height } = el.getBoundingClientRect();
-      if (width === 0 || height === 0) return; // guard — never dispatch zero dimensions
+      if (width === 0 || height === 0) return; // guard - never dispatch zero dimensions
       dispatch({ type: CANVAS_ACTIONS.SET_DISPLAY_SIZE, payload: { width, height } });
       const centeredX = (width - floorSize.width * scale) / 2;
       const centeredY = (height - floorSize.height * scale) / 2;

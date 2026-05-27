@@ -231,7 +231,7 @@ export function EditProductPage() {
     }
   }
 
-  if (loading || !initialised) return <div className="p-8 text-center">Loading…</div>;
+  if (loading || !initialised) return <div className="p-8 text-center">Loading...</div>;
   if (!product) return <div className="p-8 text-center">Product not found.</div>;
 
   return (
@@ -356,7 +356,7 @@ export function EditProductPage() {
                     className="form-input"
                     style={{ flex: 2 }}
                   >
-                    <option value="">Select a location…</option>
+                    <option value="">Select a location...</option>
                     {storageLocations.map((location) => (
                       <option key={location._id} value={location._id}>
                         {buildLocationLabel(location, storageUnits, floorMaps, sites)}
@@ -391,7 +391,7 @@ export function EditProductPage() {
               {remaining !== null && (
                 <p className="warning-text" style={{ marginTop: "12px" }}>
                   {remaining === 0 && `All ${parsedTotal} units assigned.`}
-                  {remaining > 0 && `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
+                  {remaining > 0 && `${assignedTotal} of ${parsedTotal} assigned - ${remaining} remaining.`}
                   {remaining < 0 && `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? "s" : ""}.`}
                 </p>
               )}
@@ -486,7 +486,7 @@ export function EditProductPage() {
           Cancel
         </button>
         <button className="btn-primary" onClick={handleSave} disabled={!canSave}>
-          {isSaving ? "Saving…" : "Save changes"}
+          {isSaving ? "Saving..." : "Save changes"}
         </button>
       </div>
 
@@ -532,7 +532,7 @@ export function EditProductPage() {
                 <div>
                   <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Reorder at</div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {changes.reorderAt.from ?? "—"} → {changes.reorderAt.to ?? "—"}
+                    {changes.reorderAt.from ?? "-"} → {changes.reorderAt.to ?? "-"}
                   </div>
                 </div>
               )}
@@ -568,7 +568,7 @@ export function EditProductPage() {
                 Cancel
               </button>
               <button className="btn-primary" disabled={isSaving} onClick={confirmSave}>
-                {isSaving ? "Saving…" : "Confirm save"}
+                {isSaving ? "Saving..." : "Confirm save"}
               </button>
             </div>
           </div>

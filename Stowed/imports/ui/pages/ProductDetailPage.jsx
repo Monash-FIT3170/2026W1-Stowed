@@ -72,7 +72,7 @@ export function ProductDetailView({
   const canUploadImage = hasClientPermission(role, "products.uploadImage");
   const canRestock = hasClientPermission(role, "products.restock");
 
-  // ── Restock modal state ──
+  // -- Restock modal state --
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [restockQty, setRestockQty] = useState("");
   const [restockAssignments, setRestockAssignments] = useState([]);
@@ -83,7 +83,7 @@ export function ProductDetailView({
     return <div className="p-8 text-center">Product not found.</div>;
   }
 
-  // ── Restock helpers ──
+  // -- Restock helpers --
   function openRestockModal() {
     setRestockQty("");
     setRestockAssignments(
@@ -378,11 +378,11 @@ export function ProductDetailView({
                 <div className="form-row">
                   <div className="form-group">
                     <label>Category</label>
-                    <div className="form-tag">{item.category || "—"}</div>
+                    <div className="form-tag">{item.category || "-"}</div>
                   </div>
                   <div className="form-group">
                     <label>Brand</label>
-                    <div className="form-tag">{item.brand || "—"}</div>
+                    <div className="form-tag">{item.brand || "-"}</div>
                   </div>
                 </div>
               </div>
@@ -555,7 +555,7 @@ export function ProductDetailView({
 
       </div>
 
-      {/* ── RESTOCK MODAL ── */}
+      {/* -- RESTOCK MODAL -- */}
       {showRestockModal && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: "480px", width: "100%" }}>
@@ -602,7 +602,7 @@ export function ProductDetailView({
                       onChange={(e) => updateRestockAssignment(index, "locationId", e.target.value)}
                       disabled={isRestocking}
                     >
-                      <option value="">Select a location…</option>
+                      <option value="">Select a location...</option>
                       {storageLocations
                         .filter((loc) => !usedElsewhere.has(loc._id))
                         .map((loc) => (
@@ -634,7 +634,7 @@ export function ProductDetailView({
               {restockRemaining !== null && (
                 <p style={{ marginTop: "10px", fontSize: "12px", fontStyle: "italic", color: restockRemaining === 0 ? "var(--success)" : "var(--text-muted)" }}>
                   {restockRemaining === 0 && `All ${restockTargetTotal} units assigned.`}
-                  {restockRemaining  > 0 && `${restockAssignedTotal} of ${restockTargetTotal} assigned — ${restockRemaining} remaining.`}
+                  {restockRemaining  > 0 && `${restockAssignedTotal} of ${restockTargetTotal} assigned - ${restockRemaining} remaining.`}
                   {restockRemaining  < 0 && `Over-assigned by ${Math.abs(restockRemaining)} unit${Math.abs(restockRemaining) !== 1 ? "s" : ""}.`}
                 </p>
               )}
@@ -649,7 +649,7 @@ export function ProductDetailView({
                 Cancel
               </button>
               <button className="btn-primary" onClick={confirmRestock} disabled={!restockCanSubmit || isRestocking}>
-                {isRestocking ? "Saving…" : "Confirm Restock"}
+                {isRestocking ? "Saving..." : "Confirm Restock"}
               </button>
             </div>
           </div>
