@@ -11,3 +11,4 @@ import "./productStockTracking.test.js";
 import "./pageRendering.test.js";
 import "./productThumbnails.test.js";
 import "./floorMapCanvas.test.js";
+import "./gridSnapping.test.js";
