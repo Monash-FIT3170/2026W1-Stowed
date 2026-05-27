@@ -8,3 +8,5 @@ import "./rbac.test.js";
 import "./statusBadge.test.js";
 import "./formValidation.test.js";
 import "./productStockTracking.test.js";
+import "./pageRendering.test.js";
+import "./productThumbnails.test.js";
