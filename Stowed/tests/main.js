@@ -12,3 +12,5 @@ import "./pageRendering.test.js";
 import "./productThumbnails.test.js";
 import "./floorMapCanvas.test.js";
 import "./gridSnapping.test.js";
+import "./searchAndFilter.test.js";
+import "./fileUpload.test.js";
