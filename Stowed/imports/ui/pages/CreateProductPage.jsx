@@ -13,7 +13,7 @@ import {
 } from "/imports/api/locations/collections";
 import "./CreateProductPage.css";
 import "../Global.css";
-import { uploadImageToServer } from "/imports/api/upload";
+import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 
 const inputStyle = {
   padding: "6px 8px",
@@ -174,7 +174,7 @@ export function CreateProductPage() {
     event.target.value = "";
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    if (!isImageFile(file)) {
       setUploadError("Please select an image file.");
       return;
     }
