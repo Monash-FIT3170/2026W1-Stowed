@@ -12,6 +12,7 @@ import {
 } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./LocationsPage.css";
+import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 
 const STORAGE_UNIT_TYPES = [
   "shelf",
@@ -259,32 +260,28 @@ export function LocationsPage() {
   async function handleUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const allowedTypes = ["image/jpeg", "image/png"];
-    if (!allowedTypes.includes(file.type)) {
-      setStatus({ type: "error", message: "Invalid file type. Must be PNG or JPEG." });
+
+    if (!isImageFile(file)) {
+      setStatus({ type: "error", message: "Please select an image file." });
+      setTimeout(() => setStatus({ type: "", message: "" }), 2000);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result.split(",")[1];
-      const extension = file.name.split(".").pop();
-      try {
-        const url = await Meteor.callAsync("uploads.image", base64, extension);
-        await Meteor.callAsync("storageLocations.update", {
-          storageLocationId: selectedLocation._id,
-          storageUnitId: selectedLocation.storageUnitId,
-          name: selectedLocation.name ?? "",
-          code: selectedLocation.code ?? "",
-          imageUrl: url,
-        });
-        setStatus({ type: "success", message: "Image uploaded successfully." });
-        setTimeout(() => setStatus({ type: "", message: "" }), 2000);
-      } catch {
-        setStatus({ type: "error", message: "Image failed to upload." });
-        setTimeout(() => setStatus({ type: "", message: "" }), 2000);
-      }
-    };
-    reader.readAsDataURL(file);
+
+    try {
+      const url = await uploadImageToServer(file);
+      await Meteor.callAsync("storageLocations.update", {
+        storageLocationId: selectedLocation._id,
+        storageUnitId: selectedLocation.storageUnitId,
+        name: selectedLocation.name ?? "",
+        code: selectedLocation.code ?? "",
+        imageUrl: url,
+      });
+      setStatus({ type: "success", message: "Image uploaded successfully." });
+    } catch {
+      setStatus({ type: "error", message: "Image failed to upload." });
+    } finally {
+      setTimeout(() => setStatus({ type: "", message: "" }), 2000);
+    }
   }
 
   async function handleCreateStorageUnit(event) {
