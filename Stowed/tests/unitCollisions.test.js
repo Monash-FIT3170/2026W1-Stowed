@@ -9,7 +9,11 @@ describe("Collision math calculations", function () {
         //             v---V
         const intervalA = {lower: 0, upper: 100};
         const intervalB = {lower: 101, upper: 200};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(false);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = false;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isRangeIntersecting' where max A = min B (edge case)", function () {
@@ -17,7 +21,11 @@ describe("Collision math calculations", function () {
         //           v---V
         const intervalA = {lower: 0, upper: 100};
         const intervalB = {lower: 100, upper: 200};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(false);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = false;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isRangeIntersecting' where max A > min B", function () {
@@ -25,7 +33,11 @@ describe("Collision math calculations", function () {
         //          v---V
         const intervalA = {lower: 0, upper: 100};
         const intervalB = {lower: 99, upper: 200};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(true);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = true;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
     
     it("test 'isRangeIntersecting' where min A < max B", function () {
@@ -33,7 +45,11 @@ describe("Collision math calculations", function () {
         //       v---V
         const intervalA = {lower: 199, upper: 300};
         const intervalB = {lower: 99, upper: 200};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(true);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = true;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isRangeIntersecting' where min A = max B (edge case)", function () {
@@ -41,7 +57,11 @@ describe("Collision math calculations", function () {
         //       v---V
         const intervalA = {lower: 200, upper: 300};
         const intervalB = {lower: 99, upper: 200};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(false);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = false;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
     
     it("test 'isRangeIntersecting' where A strictly > B", function () {
@@ -49,7 +69,11 @@ describe("Collision math calculations", function () {
         //    v---V
         const intervalA = {lower: 200, upper: 300};
         const intervalB = {lower: 99, upper: 199};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(false);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = false;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
     
     it("test 'isRangeIntersecting' where B is a subset of A", function () {
@@ -57,7 +81,11 @@ describe("Collision math calculations", function () {
         //         v--V
         const intervalA = {lower: 98, upper: 200};
         const intervalB = {lower: 99, upper: 199};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(true);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = true;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
     
     it("test 'isRangeIntersecting' where A is a subset of B", function () {
@@ -65,7 +93,11 @@ describe("Collision math calculations", function () {
         //       v------V
         const intervalA = {lower: 100, upper: 300};
         const intervalB = {lower: 99, upper: 301};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(true);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = true;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isRangeIntersecting' where A = B", function () {
@@ -73,7 +105,11 @@ describe("Collision math calculations", function () {
         //       v---V
         const intervalA = {lower: 100, upper: 300};
         const intervalB = {lower: 100, upper: 300};
-        expect(isRangeIntersecting(intervalA, intervalB)).toBe(true);
+
+        const result = isRangeIntersecting(intervalA, intervalB)
+        const expected = true;
+
+        assert.ok(result === expected, "the intervals " + intervalA + " and " + intervalB + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isRectRectIntersecting' BV corners and edges", function () {
@@ -82,7 +118,7 @@ describe("Collision math calculations", function () {
          * | B || B || B |
          * +---++---++---+
          * +---++---++---+
-         * | B ||A/B|| B |
+         * | B || A || B |
          * +---++---++---+
          * | B || B || B |
          * +---++---++---+
@@ -101,23 +137,26 @@ describe("Collision math calculations", function () {
          * editY: determines if testing the North (-1) or South (1) wall/corner or neither (0)
          * bvTest: determines the boundary-value test type - inside (-1), on (0), outside (1)
          */
-        editsRectB = edits.flatMap(
+        const editsRectB = edits.flatMap(
             (x) => edits.flatMap(
                 (y) => edits.map(
                     (bv) => ({editX: x, editY: y, bvTest: bv})
-                ).filter((edit) => (edit.editX == 0 && edit.editY == 0)) // handle equals separately
+                ).filter((edit) => !(edit.editX == 0 && edit.editY == 0)) // handle equals separately
             )
         );
 
-        editsRectB.forEach((edit) => {
+        const expectedEdits = 24;
+        assert.ok(editsRectB.length == 24, "Expected " + expectedEdits + " border test cases between two rectangles but found " + editsRectB.length);
+
+        editsRectB.forEach(({editX: x, editY: y, bvTest: bv}) => {
             const rectB = {
                 dom: {
-                    lower: rectA.dom.lower + width * edit.editX + edit.bv,
-                    upper: rectA.dom.upper + width * edit.editX + edit.bv
+                    lower: rectA.dom.lower + (width + bv) * x,
+                    upper: rectA.dom.upper + (width + bv) * x
                 },
                 ran: {
-                    lower: rectA.ran.lower + height * edit.editY + edit.bv,
-                    upper: rectA.ran.upper + height * edit.editY + edit.bv
+                    lower: rectA.ran.lower + (height + bv) * y,
+                    upper: rectA.ran.upper + (height + bv) * y
                 }
             };
 
@@ -125,12 +164,21 @@ describe("Collision math calculations", function () {
              * NOTE: all inside tests (bvTest = -1) should return true
              * all other tests (bvTest = 0 or 1) should return false
              */
-            expect(isRectRectIntersecting(rectA)(rectB)).toBe(edit.bvTest == -1);
+            const result = isRectRectIntersecting(rectA)(rectB);
+            const expected = bv === -1
+
+            assert.ok(result === expected, "the rectangles " + JSON.stringify(rectA) + " and " + JSON.stringify(rectB) + " were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
         });
     });
 
     it("test 'isRectRectIntersecting' BV rect contains rect", function () {
         /** Cases:
+         * +---------+
+         * |         |
+         * |   A=B   |
+         * |         |
+         * +---------+
+         * 
          * +-----+
          * |  A  |
          * |+---+|
@@ -145,7 +193,7 @@ describe("Collision math calculations", function () {
          * |+---+|
          * +-----+
          */
-        const edits = [-1, 1]; // when B is smaller (-1) and larger (+1)
+        const edits = [-1, 0, 1]; // when B is smaller (-1), equal to (0) and larger (+1)
         const rectA = {
             dom: {lower: 50, upper: 100},
             ran: {lower: 50, upper: 150}
@@ -163,7 +211,10 @@ describe("Collision math calculations", function () {
                 }
             };
             // should all be intersecting
-            expect(isRectRectIntersecting(rectA)(rectB)).toBe(true);
+            const result = isRectRectIntersecting(rectA)(rectB);
+            const expected = true;
+            
+            assert.ok(result === expected, "the rectangles " + JSON.stringify(rectA) + " and " + JSON.stringify(rectB) + " were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
         });
         
     });
@@ -197,38 +248,61 @@ describe("Collision math calculations", function () {
             )
         );
 
-        allTriples.forEach(({x1, x2, y1, y2, c}) => {
-            expect(calcDistance(x1, x2)(y1, y2)).toBe(c);
+        allTriples.forEach(({x1: x1, x2: x2, y1: y1, y2: y2, c: c}) => {
+            const result = calcDistance(x1, y1)(x2, y2);
+            const expected = c;
+
+            assert.ok(result === expected, "expected the distance between the points (" + x1 + ", " + y1 + ") and (" + x2 + ", " + y2 + ") to be " + expected + ", but calculated " + result);
         });
     });
 
     it("test 'isCircleCircleIntersecting' BV outside borders", function () {
-        const circ1 = {xPos: 0, yPos: 50, radius: 100};
-        const circ2 = {xPos: 110, yPos: 51, radius: 10};
-        expect(isCircleCircleIntersecting(circ1)(circ2)).toBe(false);
+        const circ1 = {centerX: 0, centerY: 50, radius: 100};
+        const circ2 = {centerX: 110, centerY: 51, radius: 10};
+
+        const result = isCircleCircleIntersecting(circ1)(circ2);
+        const expected = false;
+
+        assert.ok(result === expected, "the circles " + JSON.stringify(circ1) + " and " + JSON.stringify(circ2) + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isCircleCircleIntersecting' BV touching borders", function () {
-        const circ1 = {xPos: 0, yPos: 50, radius: 100};
-        const circ2 = {xPos: 110, yPos: 50, radius: 10};
-        expect(isCircleCircleIntersecting(circ1)(circ2)).toBe(false);
+        const circ1 = {centerX: 0, centerY: 50, radius: 100};
+        const circ2 = {centerX: 110, centerY: 50, radius: 10};
+        
+        const result = isCircleCircleIntersecting(circ1)(circ2);
+        const expected = false;
+
+        assert.ok(result === expected, "the circles " + JSON.stringify(circ1) + " and " + JSON.stringify(circ2) + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isCircleCircleIntersecting' BV inside borders", function () {
-        const circ1 = {xPos: 0, yPos: 50, radius: 100};
-        const circ2 = {xPos: 109, yPos: 51, radius: 10};
-        expect(isCircleCircleIntersecting(circ1)(circ2)).toBe(true);
+        const circ1 = {centerX: 0, centerY: 50, radius: 100};
+        const circ2 = {centerX: 109, centerY: 51, radius: 10};
+        
+        const result = isCircleCircleIntersecting(circ1)(circ2);
+        const expected = true;
+
+        assert.ok(result === expected, "the circles " + JSON.stringify(circ1) + " and " + JSON.stringify(circ2) + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isCircleCircleIntersecting' BV circle contains circle", function () {
-        const circ1 = {xPos: 50, yPos: 50, radius: 100};
-        const circ2 = {xPos: 40, yPos: 40, radius: 89};
-        expect(isCircleCircleIntersecting(circ1)(circ2)).toBe(true);
+        const circ1 = {centerX: 50, centerY: 50, radius: 100};
+        const circ2 = {centerX: 40, centerY: 40, radius: 89};
+        
+        const result = isCircleCircleIntersecting(circ1)(circ2);
+        const expected = true;
+
+        assert.ok(result === expected, "the circles " + JSON.stringify(circ1) + " and " + JSON.stringify(circ2) + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 
     it("test 'isCircleCircleIntersecting' BV circle equals circle", function () {
-        const circ1 = {xPos: 50, yPos: 50, radius: 100};
-        const circ2 = {xPos: 50, yPos: 50, radius: 100};
-        expect(isCircleCircleIntersecting(circ1)(circ2)).toBe(true);
+        const circ1 = {centerX: 50, centerY: 50, radius: 100};
+        const circ2 = {centerX: 50, centerY: 50, radius: 100};
+        
+        const result = isCircleCircleIntersecting(circ1)(circ2);
+        const expected = true;
+
+        assert.ok(result === expected, "the circles " + JSON.stringify(circ1) + " and " + JSON.stringify(circ2) + "were expected to get overalapping=" + expected + ", but returned overalapping=" + result);
     });
 });

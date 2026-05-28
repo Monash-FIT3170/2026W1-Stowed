@@ -1,15 +1,15 @@
 import { Layer, Rect, Line, Text } from "react-konva";
-import { COLOURS }                 from "../../../floorMapStyles";
-import { CANVAS_CONFIG }           from "../../CanvasConfig";
+import { COLOURS } from "../../../FloorMapStyles";
+import { CANVAS_CONFIG } from "../../CanvasConfig";
 
 /**
  * Renders a grid onto the Konva canvas
- * 
- * @param {number}  width      
- * @param {number}  height    
- * @param {number}  gridSizePx 
- * @param {boolean} showGrid 
- * 
+ *
+ * @param {number}  width
+ * @param {number}  height
+ * @param {number}  gridSizePx
+ * @param {boolean} showGrid
+ *
  * @returns {JSX.Element} A Konva <Layer> containing a grid or no grid
  */
 export function GridLayer({ width, height, gridSizePx, showGrid }) {
@@ -67,7 +67,13 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
   return (
     <Layer>
       {/* BACKGROUND */}
-      <Rect x={0} y={0} width={width} height={height} fill={COLOURS.CANVAS_FILL} />
+      <Rect
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        fill={COLOURS.CANVAS_FILL}
+      />
 
       {/* GRID LINES */}
       {vLines}

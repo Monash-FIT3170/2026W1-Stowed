@@ -42,7 +42,14 @@ async function seedProducts(seedOrgId) {
   if (count > 0) return;
 
   const now = new Date();
-  const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
+  const add = ({
+    name,
+    description,
+    category,
+    brand,
+    unitCost,
+    totalQuantity,
+  }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
@@ -61,7 +68,7 @@ async function seedProducts(seedOrgId) {
     description: "ANSI-rated chemical splash goggles for laboratory use.",
     category: "Lab Safety",
     brand: "3M",
-    unitCost: 12.50,
+    unitCost: 12.5,
     totalQuantity: 60,
   });
   await add({
@@ -69,7 +76,7 @@ async function seedProducts(seedOrgId) {
     description: "Powder-free nitrile examination gloves, medium size.",
     category: "Lab Safety",
     brand: "Ansell",
-    unitCost: 18.90,
+    unitCost: 18.9,
     totalQuantity: 40,
   });
   await add({
@@ -93,7 +100,7 @@ async function seedProducts(seedOrgId) {
     description: "Compact wireless keyboard with USB receiver.",
     category: "IT Equipment",
     brand: "Logitech",
-    unitCost: 49.00,
+    unitCost: 49.0,
     totalQuantity: 15,
   });
   await add({
@@ -101,7 +108,7 @@ async function seedProducts(seedOrgId) {
     description: "2m Cat6 RJ45 patch cable for network connections.",
     category: "IT Accessories",
     brand: "Belkin",
-    unitCost: 8.50,
+    unitCost: 8.5,
     totalQuantity: 50,
   });
   await add({
@@ -109,7 +116,7 @@ async function seedProducts(seedOrgId) {
     description: "Assorted colour dry-erase markers with chisel tip.",
     category: "Stationery",
     brand: "Artline",
-    unitCost: 11.20,
+    unitCost: 11.2,
     totalQuantity: 30,
   });
   await add({
@@ -125,7 +132,7 @@ async function seedProducts(seedOrgId) {
     description: "6-outlet surge-protected power board with 1.8m cord.",
     category: "Electrical",
     brand: "HPM",
-    unitCost: 34.00,
+    unitCost: 34.0,
     totalQuantity: 22,
   });
   await add({
@@ -133,7 +140,7 @@ async function seedProducts(seedOrgId) {
     description: "Workplace first aid kit compliant with AS2675 standards.",
     category: "Health & Safety",
     brand: "St John",
-    unitCost: 55.00,
+    unitCost: 55.0,
     totalQuantity: 8,
   });
 }
@@ -143,8 +150,16 @@ async function seedProductRecords() {
   if (count > 0) return;
 
   const [
-    goggles, gloves, usbCables, hdmiCables, keyboards,
-    ethCables, markers, paper, powerBoards, firstAid,
+    goggles,
+    gloves,
+    usbCables,
+    hdmiCables,
+    keyboards,
+    ethCables,
+    markers,
+    paper,
+    powerBoards,
+    firstAid,
   ] = await Promise.all([
     Products.findOneAsync({ name: "Lab Safety Goggles" }),
     Products.findOneAsync({ name: "Nitrile Gloves (Box of 100)" }),
@@ -173,7 +188,13 @@ async function seedProductRecords() {
 
   const now = new Date();
   const rec = (productId, locationId, quantity) =>
-    ProductRecords.insertAsync({ productId, locationId, quantity, createdAt: now, updatedAt: now });
+    ProductRecords.insertAsync({
+      productId,
+      locationId,
+      quantity,
+      createdAt: now,
+      updatedAt: now,
+    });
 
   // Lab Safety Goggles: split across science storage (total 60)
   await rec(goggles._id, sc1._id, 35);
@@ -397,7 +418,9 @@ async function seedLocations(seedOrgId) {
 }
 
 async function seedOwner(seedOrgId) {
-  const existing = await Meteor.users.findOneAsync({ username: "monash~admin" });
+  const existing = await Meteor.users.findOneAsync({
+    username: "monash~admin",
+  });
   if (existing) return;
 
   await Accounts.createUserAsync({
@@ -426,18 +449,24 @@ Meteor.startup(async () => {
 Meteor.publish("allUsers", async function () {
   if (!this.userId) return this.ready();
 
-  const currentUser = await Meteor.users.findOneAsync(
-    this.userId,
-    { fields: { 'profile.role': 1, 'profile.organisationId': 1 } }
-  );
+  const currentUser = await Meteor.users.findOneAsync(this.userId, {
+    fields: { "profile.role": 1, "profile.organisationId": 1 },
+  });
 
   if (!currentUser || currentUser.profile.role < ROLES.OWNER) {
-    throw new Meteor.Error('unauthorized', 'Owners only');
+    throw new Meteor.Error("unauthorized", "Owners only");
   }
 
   // Only users from the same organisation
   return Meteor.users.find(
-    { 'profile.organisationId': currentUser.profile.organisationId },
-    { fields: { username: 1, emails: 1, 'profile.role': 1, 'profile.username': 1 } }
+    { "profile.organisationId": currentUser.profile.organisationId },
+    {
+      fields: {
+        username: 1,
+        emails: 1,
+        "profile.role": 1,
+        "profile.username": 1,
+      },
+    },
   );
 });

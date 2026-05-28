@@ -10,6 +10,7 @@ import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
 import "../Global.css";
+import { searchProducts, filterLowStock, filterByStorageUnit } from "../../api/products/filters";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -87,34 +88,32 @@ export function InventoryListPage() {
     setCurrentPage(1);
     let result = items;
     if (activeFilter === "low-stock") {
-      result = result.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt);
+      result = filterLowStock(result);
     }
-    if (activeFilter === "location" && locationFilterUnitId) {
-      const unitLocationIds = new Set(
-        storageLocations.filter((l) => l.storageUnitId === locationFilterUnitId).map((l) => l._id)
+    if (activeFilter === "location") {
+      result = filterByStorageUnit(
+        result,
+        productRecords,
+        storageLocations,
+        locationFilterUnitId,
       );
-      const productIdsInUnit = new Set(
-        productRecords.filter((r) => unitLocationIds.has(r.locationId)).map((r) => r.productId)
-      );
-      result = result.filter((item) => productIdsInUnit.has(item._id));
     }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((item) => {
-        const name = (item.name || "").toLowerCase();
-        const description = (item.description || "").toLowerCase();
-        const sku = (item.sku || "").toLowerCase();
-        const id = (item._id || "").toLowerCase();
-        return name.includes(query) || description.includes(query) || sku.includes(query) || id.includes(query);
-      });
-    }
+    result = searchProducts(result, searchQuery);
     return result;
-  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
+  }, [
+    items,
+    activeFilter,
+    searchQuery,
+    locationFilterUnitId,
+    storageLocations,
+    productRecords,
+  ]);
+
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const lowStockCount = items.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt).length;
+  const lowStockCount = filterLowStock(items).length;
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedProductIds.includes(item._id)),

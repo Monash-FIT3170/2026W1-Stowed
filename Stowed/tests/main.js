@@ -1,3 +1,16 @@
 import "./smoke.test.js";
 import "./inventoryList.test.js";
 import "./productDetail.test.js";
+import "./unitCollisions.test.js";
+import "./login.test.js";
+import "./registration.test.js";
+import "./rbac.test.js";
+import "./statusBadge.test.js";
+import "./formValidation.test.js";
+import "./productStockTracking.test.js";
+import "./pageRendering.test.js";
+import "./productThumbnails.test.js";
+import "./floorMapCanvas.test.js";
+import "./gridSnapping.test.js";
+import "./searchAndFilter.test.js";
+import "./fileUpload.test.js";

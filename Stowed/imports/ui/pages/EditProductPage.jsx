@@ -11,7 +11,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
-import { uploadImageToServer } from "/imports/api/upload";
+import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import "./CreateProductPage.css";
 import "../Global.css";
 
@@ -88,7 +88,7 @@ export function EditProductPage() {
       setTotalQuantity(String(product.totalQuantity ?? ""));
       setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
       setReorderAt(product.reorderAt != null ? String(product.reorderAt) : "");
-      setImageUrls(product.images || product.imageUrls || product.catalogImages || []);
+      setImageUrls(product.images || []);
       setMainImageIndex(product.mainImageIndex || 0);
       setAssignments(
         originalRecords.map((r) => ({
@@ -129,7 +129,7 @@ export function EditProductPage() {
     if (parsedReorderAt !== originalReorderAt)
       result.reorderAt = { from: originalReorderAt, to: parsedReorderAt };
 
-    const originalImages = product.images || product.imageUrls || product.catalogImages || [];
+    const originalImages = product.images || [];
     const imagesChanged =
       imageUrls.length !== originalImages.length ||
       imageUrls.some((url, i) => url !== originalImages[i]);
@@ -167,7 +167,7 @@ export function EditProductPage() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!isImageFile(file)) {
       setUploadError("Please select an image file.");
       return;
     }
