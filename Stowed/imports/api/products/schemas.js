@@ -43,20 +43,6 @@ export const ProductSchema = new SimpleSchema({
     min: 0,
   },
 
-  photoUrl: {
-    type: String,
-    optional: true,
-  },
-
-  catalogImages: {
-    type: Array,
-    optional: true,
-  },
-
-  "catalogImages.$": {
-    type: String,
-  },
-
   qrCode: {
     type: String,
     optional: true,
