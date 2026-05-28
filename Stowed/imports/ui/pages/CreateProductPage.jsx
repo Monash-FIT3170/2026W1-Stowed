@@ -443,7 +443,7 @@ export function CreateProductPage() {
                         {remaining === 0 &&
                           `All ${parsedTotal} units assigned.`}
                         {remaining > 0 &&
-                          `${assignedTotal} of ${parsedTotal} assigned — ${remaining} remaining.`}
+                          `${assignedTotal} of ${parsedTotal} assigned - ${remaining} remaining.`}
                         {remaining < 0 &&
                           `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? "s" : ""}.`}
                       </p>

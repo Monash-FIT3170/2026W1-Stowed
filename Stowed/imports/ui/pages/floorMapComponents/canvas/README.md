@@ -87,7 +87,7 @@ Shared across the whole page. Any component can read it via `useEditor()`.
 | `pendingUnit` | Unit template armed for placement |
 | `historyRef` | Undo/redo stack (ref, not state, to avoid extra renders) |
 | `lowStockByUnitId` | Map of `unitId -> [{ product, quantity, threshold, isLow, locationName }]` derived from products/productRecords pub/sub |
-| `selectedUnit` | The unit clicked in view mode — triggers slide-out panel |
+| `selectedUnit` | The unit clicked in view mode - triggers slide-out panel |
 | `isPanelOpen` | Whether the low stock slide-out panel is open |
 
 ### Canvas UI State - `editorReducer`
@@ -157,7 +157,7 @@ node.x() / px
 
 ---
 
-## MVP Feature 5 — Low Stock Visual Alerts (Selena, Sprint 2)
+## MVP Feature 5 - Low Stock Visual Alerts (Selena, Sprint 2)
 
 ### Overview
 When in **view mode**, storage units on the canvas are colour coded based on their stock status, and users can hover or click to see more details.
@@ -170,13 +170,13 @@ When in **view mode**, storage units on the canvas are colour coded based on the
 | Green overlay | All products in this unit are in stock |
 | Grey overlay | No products are assigned to this unit |
 
-**Hover tooltip** — appears next to the cursor when hovering over a unit:
+**Hover tooltip** - appears next to the cursor when hovering over a unit:
 - Unit name
 - If low stock: list of low stock items with quantity left and location name
 - If all stocked: "All items on this shelf are stocked"
 - If empty: "No items on this shelf"
 
-**Click slide-out panel** — opens on the right side of the screen when a unit is clicked:
+**Click slide-out panel** - opens on the right side of the screen when a unit is clicked:
 - Storage unit name and status badge
 - Low stock items listed in red with quantity and minimum threshold
 - In stock items listed in green
@@ -188,7 +188,7 @@ When in **view mode**, storage units on the canvas are colour coded based on the
 | File | What Changed |
 |---|---|
 | `editor/EditorContext.jsx` | Added `useTracker` subscriptions to `products`, `productRecords`, `locations.all`. Added `lowStockByUnitId` computed map. Added `selectedUnit` and `isPanelOpen` state exposed via `useEditor()` |
-| `components/layers/LowStockLayer.jsx` | **New file** — renders colour overlay `Rect` on each unit, fires `onHover`/`onHoverEnd` callbacks with item data, opens slide-out panel on click |
+| `components/layers/LowStockLayer.jsx` | **New file** - renders colour overlay `Rect` on each unit, fires `onHover`/`onHoverEnd` callbacks with item data, opens slide-out panel on click |
 | `components/Canvas.jsx` | Imported and added `<LowStockLayer />` to the Konva `<Stage>`. Added `onUnitHover` and `onUnitHoverEnd` props |
 | `hooks/UseCanvasHandlers.jsx` | Changed view mode unit click to call `setSelectedUnit` and `setIsPanelOpen` instead of navigating to `/storage-unit/:id` |
 | `FloorMapPage.jsx` | Added `tooltip` state, hover tooltip DOM element, and slide-out panel UI |
@@ -209,6 +209,6 @@ Canvas units are not yet linked to `StorageLocations` in MongoDB (pending Team 1
 
 **To integrate real data once it is ready:**
 1. Remove `MOCK_LOW_STOCK` constant from `LowStockLayer.jsx`
-2. Remove the `getItemsForUnit` mock fallback — use `lowStockByUnitId[unit._id]` directly
+2. Remove the `getItemsForUnit` mock fallback - use `lowStockByUnitId[unit._id]` directly
 3. Remove `mockItems` from the `setSelectedUnit` call
-4. Update `FloorMapPage.jsx` — change `selectedUnit?.mockItems` back to `lowStockByUnitId?.[selectedUnit?._id]`
+4. Update `FloorMapPage.jsx` - change `selectedUnit?.mockItems` back to `lowStockByUnitId?.[selectedUnit?._id]`

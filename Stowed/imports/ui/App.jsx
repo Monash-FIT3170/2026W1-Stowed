@@ -41,12 +41,22 @@ export function App() {
     <BrowserRouter>
       <div
         className="flex h-screen overflow-hidden"
-        style={{ backgroundColor: "var(--bg-primary)" }}
+        style={{
+          backgroundColor: "var(--bg-primary)",
+          display: "flex",
+          minHeight: "100vh",
+          overflow: "hidden",
+        }}
       >
         {isLoggedIn && <Sidebar />}
         <main
           className="flex-1 overflow-y-auto"
-          style={{ backgroundColor: "var(--bg-primary)" }}
+          style={{
+            backgroundColor: "var(--bg-primary)",
+            flex: 1,
+            overflowY: "auto",
+            marginLeft: isLoggedIn ? "200px" : "0",
+          }}
         >
           <Routes>
             {/* public routes */}

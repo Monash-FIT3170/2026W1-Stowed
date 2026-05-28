@@ -2,7 +2,7 @@ import "../Global.css";
 
 /**
  * FORECAST
- * Demand forecasting — predict future stock needs based on usage history.
+ * Demand forecasting - predict future stock needs based on usage history.
  *
  * TODO for team:
  *  - Record stock adjustment events (consumption, restock) in a history collection

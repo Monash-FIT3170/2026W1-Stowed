@@ -74,10 +74,10 @@ export function InventoryListPage() {
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
-    if (!records.length) return "—";
+    if (!records.length) return "-";
     const first = records[0];
     const loc = storageLocations.find((l) => l._id === first.locationId);
-    if (!loc) return "—";
+    if (!loc) return "-";
     const unit = storageUnits.find((u) => u._id === loc.storageUnitId);
     const label = unit ? `${unit.name} · ${loc.name}` : loc.name;
     return records.length > 1 ? `${label} +${records.length - 1}` : label;
@@ -251,7 +251,7 @@ export function InventoryListPage() {
                   <span>
                     <Link to={`/inventory/${item._id}`} className="item-name-link">{item.name}</Link>
                   </span>
-                  <span><span className="item-tag">{item.tag || "—"}</span></span>
+                  <span><span className="item-tag">{item.tag || "-"}</span></span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
                   <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />

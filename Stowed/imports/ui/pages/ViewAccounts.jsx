@@ -138,7 +138,7 @@ export function ViewAccounts() {
                   Cancel
                 </button>
                 <button onClick={confirmDelete} disabled={deleting !== null} className="btn-danger">
-                  {deleting !== null ? "Deleting…" : "Confirm Delete"}
+                  {deleting !== null ? "Deleting..." : "Confirm Delete"}
                 </button>
               </div>
             </div>
