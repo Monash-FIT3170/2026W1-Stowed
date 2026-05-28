@@ -11,7 +11,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "../../api/locations/collections";
-import { uploadImageToServer } from "/imports/api/upload";
+import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import "./ProductDetailPage.css";
 import "../Global.css";
 
@@ -135,23 +135,16 @@ export function ProductDetailView({
 
   const unitCost = Number(item.unitCost);
   const reorderAt = item.reorderAt ?? null;
-  const galleryImages =
-    imageUrls.length > 0
-      ? imageUrls
-      : Array.isArray(item.images) && item.images.length
-        ? item.images
-        : Array.isArray(item.catalogImages) && item.catalogImages.length
-          ? item.catalogImages
-          : item.photoUrl
-            ? [item.photoUrl]
-            : [];
+  const galleryImages = imageUrls.length > 0 ? imageUrls : (item.images || []);
+
   // For each gallery image, determine whether it originates from the
   // uploaded images (so it can be removed). We treat `imageUrls` (current
   // edited/uploaded images) and `item.images` (persisted uploads) as
   // removable sources. Fallback `photoUrl` or `catalogImages` are not removable.
   const removableFlags = galleryImages.map((img) => {
     if (imageUrls.length > 0) return imageUrls.includes(img);
-    if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
+    if (Array.isArray(item.images) && item.images.length)
+      return item.images.includes(img);
     return false;
   });
   const qrCode = item.qrCode || "";
@@ -179,14 +172,7 @@ export function ProductDetailView({
       : [];
 
   useEffect(() => {
-    const initialImages =
-      item?.images?.length
-        ? item.images
-        : Array.isArray(item.catalogImages) && item.catalogImages.length
-          ? item.catalogImages
-          : item.photoUrl
-            ? [item.photoUrl]
-            : [];
+    const initialImages = item?.images?.length ? item.images : [];
     setImageUrls(initialImages);
     if (initialImages.length > 0) {
       setSelectedImageIndex(0);
@@ -205,14 +191,7 @@ export function ProductDetailView({
   };
 
   function imagesHaveChanged() {
-    const sourceImages =
-      item?.images?.length
-        ? item.images
-        : Array.isArray(item.catalogImages) && item.catalogImages.length
-          ? item.catalogImages
-          : item.photoUrl
-            ? [item.photoUrl]
-            : [];
+    const sourceImages = item?.images || [];
     if (sourceImages.length !== imageUrls.length) return true;
     return imageUrls.some((url, index) => url !== sourceImages[index]);
   }
@@ -241,7 +220,7 @@ export function ProductDetailView({
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!isImageFile(file)) {
       setUploadError("Please select an image file.");
       return;
     }

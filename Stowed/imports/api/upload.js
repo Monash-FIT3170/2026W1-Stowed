@@ -1,5 +1,31 @@
 import { Meteor } from 'meteor/meteor';
 
+
+// Returns the part of a data URL after the comma.
+// "data:image/png;base64,iVBORw..." -> "iVBORw..."
+export function extractBase64FromDataUrl(dataUrl) {
+  if (typeof dataUrl !== "string" || !dataUrl.includes(",")) return "";
+  return dataUrl.split(",")[1];
+}
+
+// Returns the lowercase extension of a filename.
+// "photo.PNG" -> "png"
+export function getFileExtension(filename) {
+  if (typeof filename !== "string" || !filename.includes(".")) return "";
+  return filename.split(".").pop().toLowerCase();
+}
+
+// True if the file looks like an image based on its MIME type.
+export function isImageFile(file) {
+  return Boolean(file && typeof file.type === "string" && file.type.startsWith("image/"));
+}
+
+// Builds the public URL where an uploaded image will be served from.
+export function buildUploadUrl(timestamp, extension) {
+  return `/Uploads/images/${timestamp}.${extension}`;
+}
+
+
 // Client side
 // Uploads an image file to the server.
 // Takes a File and returns the URL where it was saved.
@@ -8,14 +34,9 @@ export function uploadImageToServer(file) {
     const reader = new FileReader();
 
     reader.onload = () => {
-      // "data:image/png;base64,iVBORw0K..."
-      // only want the content after the comma.
-      const base64Data = reader.result.split(',')[1];
+      const base64Data = extractBase64FromDataUrl(reader.result);
+      const extension = getFileExtension(file.name);
 
-      // Get the file extension, "png" or "jpg"
-      const extension = file.name.split('.').pop().toLowerCase();
-
-      // Send to the server
       Meteor.call('uploads.image', base64Data, extension, (error, url) => {
         if (error) reject(error);
         else resolve(url);
@@ -44,21 +65,22 @@ if (Meteor.isServer) {
 
   // Meteor method (UPLOADS)
   Meteor.methods({
-    'uploads.image'(fileData, extension) {
+    "uploads.image"(fileData, extension) {
       check(fileData, String);
       check(extension, String);
 
       if (!this.userId && !Meteor.isDevelopment) {
-        throw new Meteor.Error('not-authorised', 'You must be logged in.');
+        throw new Meteor.Error("not-authorised", "You must be logged in.");
       }
 
-      const filename = `${Date.now()}.${extension}`;
+      const timestamp = Date.now();
+      const filename = `${timestamp}.${extension}`;
       const filepath = path.join(uploadDir, filename);
 
-      fs.writeFileSync(filepath, fileData, 'base64');
+      fs.writeFileSync(filepath, fileData, "base64");
 
-      return `/Uploads/images/${filename}`;
-    }
+      return buildUploadUrl(timestamp, extension);
+    },
   });
 
   // Static file server (SERVE FILES ONLY)
