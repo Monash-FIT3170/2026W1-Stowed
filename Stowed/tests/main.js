@@ -14,3 +14,4 @@ import "./floorMapCanvas.test.js";
 import "./gridSnapping.test.js";
 import "./searchAndFilter.test.js";
 import "./fileUpload.test.js";
+import "./productMethods.test.js";
