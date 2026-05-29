@@ -341,3 +341,160 @@ describe("products.update", function () {
     assert.strictEqual(after.totalQuantity, before.totalQuantity);
   });
 });
+
+// restock
+ 
+describe("products.restock", function () {
+  let productId;
+ 
+  beforeEach(async function () {
+    productId = await callMethod(
+      "products.createWithAssignments",
+      makeCreateParams({
+        name: `Restock Base ${Date.now()}`,
+        totalQuantity: 50,
+        assignments: [{ locationId: "loc-1", quantity: 50 }],
+      }),
+    );
+  });
+ 
+  afterEach(async function () {
+    if (productId) {
+      await ProductRecords.removeAsync({ productId });
+      await Products.removeAsync(productId);
+      productId = null;
+    }
+  });
+ 
+  it("increases totalQuantity by additionalQuantity", async function () {
+    await callMethod("products.restock", {
+      productId,
+      additionalQuantity: 25,
+      assignments: [{ locationId: "loc-1", quantity: 75 }],
+    });
+ 
+    const product = await Products.findOneAsync(productId);
+    assert.strictEqual(product.totalQuantity, 75);
+  });
+ 
+  it("replaces ProductRecords with the new assignment distribution", async function () {
+    await callMethod("products.restock", {
+      productId,
+      additionalQuantity: 50,
+      assignments: [
+        { locationId: "loc-1", quantity: 60 },
+        { locationId: "loc-2", quantity: 40 },
+      ],
+    });
+ 
+    const records = await ProductRecords.find({ productId }).fetchAsync();
+    const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
+ 
+    assert.strictEqual(records.length, 2);
+    assert.strictEqual(byLocation["loc-1"], 60);
+    assert.strictEqual(byLocation["loc-2"], 40);
+  });
+ 
+  it("merges duplicate locationIds in restock assignments", async function () {
+    await callMethod("products.restock", {
+      productId,
+      additionalQuantity: 25,
+      // 40 + 35 = 75 (50 existing + 25 new), same location
+      assignments: [
+        { locationId: "loc-1", quantity: 40 },
+        { locationId: "loc-1", quantity: 35 },
+      ],
+    });
+ 
+    const records = await ProductRecords.find({ productId }).fetchAsync();
+    assert.strictEqual(records.length, 1);
+    assert.strictEqual(records[0].quantity, 75);
+  });
+ 
+  it("throws product-not-found for an unknown productId", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("products.restock", {
+          productId: "nonexistent-id",
+          additionalQuantity: 10,
+          assignments: [{ locationId: "loc-1", quantity: 10 }],
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "product-not-found");
+        return true;
+      },
+    );
+  });
+ 
+  it("throws invalid-quantity when additionalQuantity is zero", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("products.restock", {
+          productId,
+          additionalQuantity: 0,
+          assignments: [{ locationId: "loc-1", quantity: 50 }],
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "invalid-quantity");
+        return true;
+      },
+    );
+  });
+ 
+  it("throws invalid-quantity when additionalQuantity is negative", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("products.restock", {
+          productId,
+          additionalQuantity: -10,
+          assignments: [{ locationId: "loc-1", quantity: 40 }],
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "invalid-quantity");
+        return true;
+      },
+    );
+  });
+ 
+  it("throws quantity-mismatch when assignments do not sum to new total", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("products.restock", {
+          productId,
+          additionalQuantity: 25,
+          assignments: [{ locationId: "loc-1", quantity: 60 }], // should be 75
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "quantity-mismatch");
+        return true;
+      },
+    );
+  });
+ 
+  it("does not modify totalQuantity on quantity-mismatch", async function () {
+    try {
+      await callMethod("products.restock", {
+        productId,
+        additionalQuantity: 25,
+        assignments: [{ locationId: "loc-1", quantity: 1 }], // mismatch
+      });
+    } catch (_) {}
+ 
+    const product = await Products.findOneAsync(productId);
+    assert.strictEqual(product.totalQuantity, 50, "totalQuantity must be unchanged");
+  });
+ 
+  it("does not modify ProductRecords on quantity-mismatch", async function () {
+    try {
+      await callMethod("products.restock", {
+        productId,
+        additionalQuantity: 25,
+        assignments: [{ locationId: "loc-1", quantity: 1 }], // mismatch
+      });
+    } catch (_) {}
+ 
+    const records = await ProductRecords.find({ productId }).fetchAsync();
+    assert.strictEqual(records.length, 1);
+    assert.strictEqual(records[0].quantity, 50, "Original records must be unchanged");
+  });
+});
