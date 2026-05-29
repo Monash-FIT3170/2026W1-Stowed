@@ -1,12 +1,103 @@
 import assert from "assert";
 import { Meteor } from "meteor/meteor";
 import { Products, ProductRecords } from "../imports/api/products/collections";
+import { Organisations } from "../imports/api/organisations";
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../imports/api/locations/collections";
 import "../imports/api/products/methods";
+ 
+const TEST_USER_ID = "test-user-id";
+const TEST_ORG_ID = "test-org-id";
+const TEST_SITE_ID = "test-site-id";
+const TEST_FLOOR_MAP_ID = "test-floor-map-id";
+const TEST_STORAGE_UNIT_ID = "test-storage-unit-id";
+const TEST_LOCATION_ID = "loc-1";
+const TEST_ROLE = 3; // ROLES.OWNER — passes all permission checks
+ 
+before(async function () {
+  // Clean up any leftover test data
+  await Meteor.users.removeAsync(TEST_USER_ID);
+  await Organisations.removeAsync(TEST_ORG_ID);
+  await Sites.removeAsync(TEST_SITE_ID);
+  await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
+  await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
+  await StorageLocations.removeAsync(TEST_LOCATION_ID);
+ 
+  // Insert org
+  await Organisations.insertAsync({
+    _id: TEST_ORG_ID,
+    name: "Test Organisation",
+    code: "testorg",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+ 
+  // Insert user linked to org with owner role
+  await Meteor.users.insertAsync({
+    _id: TEST_USER_ID,
+    username: "testorg~testuser",
+    emails: [{ address: "test@testorg.com", verified: true }],
+    profile: {
+      organisationId: TEST_ORG_ID,
+      role: TEST_ROLE,
+      username: "testuser",
+    },
+  });
+ 
+  // Insert location hierarchy: Site → FloorMap → StorageUnit → StorageLocation
+  await Sites.insertAsync({
+    _id: TEST_SITE_ID,
+    orgId: TEST_ORG_ID,
+    name: "Test Site",
+    description: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+ 
+  await FloorMaps.insertAsync({
+    _id: TEST_FLOOR_MAP_ID,
+    orgId: TEST_ORG_ID,
+    siteId: TEST_SITE_ID,
+    name: "Test Floor Map",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+ 
+  await StorageUnits.insertAsync({
+    _id: TEST_STORAGE_UNIT_ID,
+    orgId: TEST_ORG_ID,
+    floorMapId: TEST_FLOOR_MAP_ID,
+    name: "Test Storage Unit",
+    type: "shelf",
+    position: {},
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+ 
+  await StorageLocations.insertAsync({
+    _id: TEST_LOCATION_ID,
+    orgId: TEST_ORG_ID,
+    storageUnitId: TEST_STORAGE_UNIT_ID,
+    name: "Test Location",
+    code: "LOC-1",
+    storedItems: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+});
+ 
+after(async function () {
+  await Meteor.users.removeAsync(TEST_USER_ID);
+  await Organisations.removeAsync(TEST_ORG_ID);
+  await Sites.removeAsync(TEST_SITE_ID);
+  await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
+  await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
+  await StorageLocations.removeAsync(TEST_LOCATION_ID);
+});
  
 function callMethod(name, params) {
   return new Promise((resolve, reject) => {
     const method = Meteor.server.method_handlers[name];
-    const context = { userId: "test-user-id" };
+    const context = { userId: TEST_USER_ID };
     try {
       const result = method.call(context, params);
       Promise.resolve(result).then(resolve).catch(reject);
@@ -31,7 +122,7 @@ function makeCreateParams(overrides = {}) {
     catalogImages: [],
     qrCode: "",
     totalQuantity: 10,
-    assignments: [{ locationId: "loc-1", quantity: 10 }],
+    assignments: [{ locationId: TEST_LOCATION_ID, quantity: 10 }],
     ...overrides,
   };
 }
@@ -67,12 +158,24 @@ describe("products.createWithAssignments", function () {
   });
  
   it("creates a ProductRecord for each assignment", async function () {
+    // Insert a second location for this test
+    await StorageLocations.insertAsync({
+      _id: "loc-B",
+      orgId: TEST_ORG_ID,
+      storageUnitId: TEST_STORAGE_UNIT_ID,
+      name: "Test Location B",
+      code: "LOC-B",
+      storedItems: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+ 
     createdProductId = await callMethod(
       "products.createWithAssignments",
       makeCreateParams({
         totalQuantity: 15,
         assignments: [
-          { locationId: "loc-A", quantity: 10 },
+          { locationId: TEST_LOCATION_ID, quantity: 10 },
           { locationId: "loc-B", quantity: 5 },
         ],
       }),
@@ -82,8 +185,10 @@ describe("products.createWithAssignments", function () {
     const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
  
     assert.strictEqual(records.length, 2);
-    assert.strictEqual(byLocation["loc-A"], 10);
+    assert.strictEqual(byLocation[TEST_LOCATION_ID], 10);
     assert.strictEqual(byLocation["loc-B"], 5);
+ 
+    await StorageLocations.removeAsync("loc-B");
   });
  
   it("merges duplicate locationIds by summing their quantities", async function () {
@@ -92,8 +197,8 @@ describe("products.createWithAssignments", function () {
       makeCreateParams({
         totalQuantity: 13,
         assignments: [
-          { locationId: "loc-1", quantity: 7 },
-          { locationId: "loc-1", quantity: 6 },
+          { locationId: TEST_LOCATION_ID, quantity: 7 },
+          { locationId: TEST_LOCATION_ID, quantity: 6 },
         ],
       }),
     );
@@ -125,7 +230,7 @@ describe("products.createWithAssignments", function () {
           "products.createWithAssignments",
           makeCreateParams({
             totalQuantity: 20,
-            assignments: [{ locationId: "loc-1", quantity: 10 }],
+            assignments: [{ locationId: TEST_LOCATION_ID, quantity: 10 }],
           }),
         ),
       (err) => {
@@ -152,12 +257,24 @@ describe("products.delete", function () {
   });
  
   it("removes all associated ProductRecords", async function () {
+    // Insert a second location for this test
+    await StorageLocations.insertAsync({
+      _id: "loc-2",
+      orgId: TEST_ORG_ID,
+      storageUnitId: TEST_STORAGE_UNIT_ID,
+      name: "Test Location 2",
+      code: "LOC-2",
+      storedItems: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+ 
     const productId = await callMethod(
       "products.createWithAssignments",
       makeCreateParams({
         totalQuantity: 10,
         assignments: [
-          { locationId: "loc-1", quantity: 6 },
+          { locationId: TEST_LOCATION_ID, quantity: 6 },
           { locationId: "loc-2", quantity: 4 },
         ],
       }),
@@ -167,13 +284,15 @@ describe("products.delete", function () {
  
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 0);
+ 
+    await StorageLocations.removeAsync("loc-2");
   });
  
   it("throws product-not-found for an unknown productId", async function () {
     await assert.rejects(
       () => callMethod("products.delete", { productId: "nonexistent-id" }),
       (err) => {
-        assert.strictEqual(err.error, "product-not-found");
+        assert.strictEqual(err.error, "not-found");
         return true;
       },
     );
@@ -191,7 +310,7 @@ describe("products.update", function () {
       makeCreateParams({
         name: `Update Base ${Date.now()}`,
         totalQuantity: 50,
-        assignments: [{ locationId: "loc-1", quantity: 50 }],
+        assignments: [{ locationId: TEST_LOCATION_ID, quantity: 50 }],
       }),
     );
   });
@@ -212,7 +331,7 @@ describe("products.update", function () {
         brand: "DeWalt",
         unitCost: 49.99,
         totalQuantity: 50,
-        assignments: [{ locationId: "loc-1", quantity: 50 }],
+        assignments: [{ locationId: TEST_LOCATION_ID, quantity: 50 }],
       }),
       productId,
     });
@@ -225,12 +344,33 @@ describe("products.update", function () {
   });
  
   it("replaces all ProductRecords with the new assignments", async function () {
+    await StorageLocations.insertAsync({
+      _id: "loc-A",
+      orgId: TEST_ORG_ID,
+      storageUnitId: TEST_STORAGE_UNIT_ID,
+      name: "Test Location A",
+      code: "LOC-A",
+      storedItems: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await StorageLocations.insertAsync({
+      _id: "loc-B2",
+      orgId: TEST_ORG_ID,
+      storageUnitId: TEST_STORAGE_UNIT_ID,
+      name: "Test Location B2",
+      code: "LOC-B2",
+      storedItems: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+ 
     await callMethod("products.update", {
       ...makeCreateParams({
         totalQuantity: 50,
         assignments: [
           { locationId: "loc-A", quantity: 30 },
-          { locationId: "loc-B", quantity: 20 },
+          { locationId: "loc-B2", quantity: 20 },
         ],
       }),
       productId,
@@ -241,19 +381,20 @@ describe("products.update", function () {
  
     assert.strictEqual(records.length, 2);
     assert.strictEqual(byLocation["loc-A"], 30);
-    assert.strictEqual(byLocation["loc-B"], 20);
-    // Original loc-1 record should be gone
-    assert.strictEqual(byLocation["loc-1"], undefined);
+    assert.strictEqual(byLocation["loc-B2"], 20);
+    assert.strictEqual(byLocation[TEST_LOCATION_ID], undefined);
+ 
+    await StorageLocations.removeAsync("loc-A");
+    await StorageLocations.removeAsync("loc-B2");
   });
  
   it("merges duplicate locationIds in the new assignments", async function () {
     await callMethod("products.update", {
       ...makeCreateParams({
         totalQuantity: 50,
-        // 30 + 20 = 50, same location
         assignments: [
-          { locationId: "loc-1", quantity: 30 },
-          { locationId: "loc-1", quantity: 20 },
+          { locationId: TEST_LOCATION_ID, quantity: 30 },
+          { locationId: TEST_LOCATION_ID, quantity: 20 },
         ],
       }),
       productId,
@@ -275,9 +416,9 @@ describe("products.update", function () {
         () =>
           callMethod("products.update", {
             ...makeCreateParams({
-              name: "taken name", // case-insensitive collision
+              name: "taken name",
               totalQuantity: 50,
-              assignments: [{ locationId: "loc-1", quantity: 50 }],
+              assignments: [{ locationId: TEST_LOCATION_ID, quantity: 50 }],
             }),
             productId,
           }),
@@ -295,12 +436,11 @@ describe("products.update", function () {
   it("allows updating a product to keep its own name", async function () {
     const product = await Products.findOneAsync(productId);
  
-    // Should not throw duplicate-name against itself
     await callMethod("products.update", {
       ...makeCreateParams({
         name: product.name,
         totalQuantity: 50,
-        assignments: [{ locationId: "loc-1", quantity: 50 }],
+        assignments: [{ locationId: TEST_LOCATION_ID, quantity: 50 }],
       }),
       productId,
     });
@@ -315,7 +455,7 @@ describe("products.update", function () {
         callMethod("products.update", {
           ...makeCreateParams({
             totalQuantity: 50,
-            assignments: [{ locationId: "loc-1", quantity: 30 }], // 30 ≠ 50
+            assignments: [{ locationId: TEST_LOCATION_ID, quantity: 30 }],
           }),
           productId,
         }),
@@ -334,7 +474,7 @@ describe("products.update", function () {
         ...makeCreateParams({
           name: "Should Not Stick",
           totalQuantity: 50,
-          assignments: [{ locationId: "loc-1", quantity: 1 }], // mismatch
+          assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
         }),
         productId,
       });
@@ -357,7 +497,7 @@ describe("products.restock", function () {
       makeCreateParams({
         name: `Restock Base ${Date.now()}`,
         totalQuantity: 50,
-        assignments: [{ locationId: "loc-1", quantity: 50 }],
+        assignments: [{ locationId: TEST_LOCATION_ID, quantity: 50 }],
       }),
     );
   });
@@ -374,7 +514,7 @@ describe("products.restock", function () {
     await callMethod("products.restock", {
       productId,
       additionalQuantity: 25,
-      assignments: [{ locationId: "loc-1", quantity: 75 }],
+      assignments: [{ locationId: TEST_LOCATION_ID, quantity: 75 }],
     });
  
     const product = await Products.findOneAsync(productId);
@@ -382,12 +522,23 @@ describe("products.restock", function () {
   });
  
   it("replaces ProductRecords with the new assignment distribution", async function () {
+    await StorageLocations.insertAsync({
+      _id: "loc-restock-2",
+      orgId: TEST_ORG_ID,
+      storageUnitId: TEST_STORAGE_UNIT_ID,
+      name: "Restock Location 2",
+      code: "LOC-R2",
+      storedItems: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+ 
     await callMethod("products.restock", {
       productId,
       additionalQuantity: 50,
       assignments: [
-        { locationId: "loc-1", quantity: 60 },
-        { locationId: "loc-2", quantity: 40 },
+        { locationId: TEST_LOCATION_ID, quantity: 60 },
+        { locationId: "loc-restock-2", quantity: 40 },
       ],
     });
  
@@ -395,18 +546,19 @@ describe("products.restock", function () {
     const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
  
     assert.strictEqual(records.length, 2);
-    assert.strictEqual(byLocation["loc-1"], 60);
-    assert.strictEqual(byLocation["loc-2"], 40);
+    assert.strictEqual(byLocation[TEST_LOCATION_ID], 60);
+    assert.strictEqual(byLocation["loc-restock-2"], 40);
+ 
+    await StorageLocations.removeAsync("loc-restock-2");
   });
  
   it("merges duplicate locationIds in restock assignments", async function () {
     await callMethod("products.restock", {
       productId,
       additionalQuantity: 25,
-      // 40 + 35 = 75 (50 existing + 25 new), same location
       assignments: [
-        { locationId: "loc-1", quantity: 40 },
-        { locationId: "loc-1", quantity: 35 },
+        { locationId: TEST_LOCATION_ID, quantity: 40 },
+        { locationId: TEST_LOCATION_ID, quantity: 35 },
       ],
     });
  
@@ -421,7 +573,7 @@ describe("products.restock", function () {
         callMethod("products.restock", {
           productId: "nonexistent-id",
           additionalQuantity: 10,
-          assignments: [{ locationId: "loc-1", quantity: 10 }],
+          assignments: [{ locationId: TEST_LOCATION_ID, quantity: 10 }],
         }),
       (err) => {
         assert.strictEqual(err.error, "product-not-found");
@@ -436,7 +588,7 @@ describe("products.restock", function () {
         callMethod("products.restock", {
           productId,
           additionalQuantity: 0,
-          assignments: [{ locationId: "loc-1", quantity: 50 }],
+          assignments: [{ locationId: TEST_LOCATION_ID, quantity: 50 }],
         }),
       (err) => {
         assert.strictEqual(err.error, "invalid-quantity");
@@ -451,7 +603,7 @@ describe("products.restock", function () {
         callMethod("products.restock", {
           productId,
           additionalQuantity: -10,
-          assignments: [{ locationId: "loc-1", quantity: 40 }],
+          assignments: [{ locationId: TEST_LOCATION_ID, quantity: 40 }],
         }),
       (err) => {
         assert.strictEqual(err.error, "invalid-quantity");
@@ -466,7 +618,7 @@ describe("products.restock", function () {
         callMethod("products.restock", {
           productId,
           additionalQuantity: 25,
-          assignments: [{ locationId: "loc-1", quantity: 60 }], // should be 75
+          assignments: [{ locationId: TEST_LOCATION_ID, quantity: 60 }],
         }),
       (err) => {
         assert.strictEqual(err.error, "quantity-mismatch");
@@ -480,7 +632,7 @@ describe("products.restock", function () {
       await callMethod("products.restock", {
         productId,
         additionalQuantity: 25,
-        assignments: [{ locationId: "loc-1", quantity: 1 }], // mismatch
+        assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
       });
     } catch (_) {}
  
@@ -493,7 +645,7 @@ describe("products.restock", function () {
       await callMethod("products.restock", {
         productId,
         additionalQuantity: 25,
-        assignments: [{ locationId: "loc-1", quantity: 1 }], // mismatch
+        assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
       });
     } catch (_) {}
  
