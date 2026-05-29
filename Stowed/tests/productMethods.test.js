@@ -68,7 +68,7 @@ before(async function () {
     floorMapId: TEST_FLOOR_MAP_ID,
     name: "Test Storage Unit",
     type: "shelf",
-    position: {},
+    position: { x: 0, y: 0 },
     createdAt: new Date(),
     updatedAt: new Date(),
   });
