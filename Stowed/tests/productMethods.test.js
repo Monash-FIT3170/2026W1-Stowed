@@ -576,7 +576,7 @@ describe("products.restock", function () {
           assignments: [{ locationId: TEST_LOCATION_ID, quantity: 10 }],
         }),
       (err) => {
-        assert.strictEqual(err.error, "product-not-found");
+        assert.strictEqual(err.error, "not-found");
         return true;
       },
     );
