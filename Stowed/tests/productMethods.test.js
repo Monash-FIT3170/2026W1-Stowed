@@ -5,10 +5,14 @@ import "../imports/api/products/methods";
  
 function callMethod(name, params) {
   return new Promise((resolve, reject) => {
-    Meteor.call(name, params, (err, result) => {
-      if (err) reject(err);
-      else resolve(result);
-    });
+    const method = Meteor.server.method_handlers[name];
+    const context = { userId: "test-user-id" };
+    try {
+      const result = method.call(context, params);
+      Promise.resolve(result).then(resolve).catch(reject);
+    } catch (err) {
+      reject(err);
+    }
   });
 }
  
@@ -31,7 +35,7 @@ function makeCreateParams(overrides = {}) {
     ...overrides,
   };
 }
-
+ 
 // create
  
 describe("products.createWithAssignments", function () {
@@ -341,7 +345,7 @@ describe("products.update", function () {
     assert.strictEqual(after.totalQuantity, before.totalQuantity);
   });
 });
-
+ 
 // restock
  
 describe("products.restock", function () {
