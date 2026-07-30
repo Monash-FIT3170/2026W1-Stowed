@@ -190,212 +190,293 @@ export function ListsPage() {
 
   return (
     <div className="product-detail-container">
-      <div className="product-detail-header">
+      <div className="product-detail-header lists-header">
         <div className="breadcrumb">
           <span className="breadcrumb-link">Workspace</span>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Lists</span>
         </div>
-        <div className="header-top">
-          <h1 className="header-title">Shopping <em>Lists</em></h1>
-        </div>
-      </div>
 
-      <div className="lists-page">
-        <p>
+        <div className="header-top">
+          <h1 className="header-title">
+            Shopping <em>Lists</em>
+          </h1>
+
+          <button type="button" className="btn-primary" onClick={generate}>
+            + Generate shopping list
+          </button>
+        </div>
+
+        <p className="lists-subtitle">
           Pulls every product at or below its reorder threshold. Budget is not
           applied.
         </p>
+      </div>
 
+      <div className="lists-body">
         {list === null ? (
-          <div className="lists-box lists-empty">
-            <h2>No active shopping list</h2>
-            <p>
+          <div className="detail-section lists-empty-card">
+            <span className="lists-empty-icon" aria-hidden="true">
+              &#128722;
+            </span>
+            <h2 className="header-title">No active shopping list</h2>
+            <p className="section-empty">
               Generate one to pull in every product that&apos;s hit its reorder
               point.
             </p>
-            <button type="button" onClick={generate}>
+            <button type="button" className="btn-primary" onClick={generate}>
               Generate shopping list
             </button>
           </div>
         ) : (
-          <div className="lists-layout">
-            <div className="lists-main">
-              <div className="lists-stats">
-                <div className="lists-box lists-stat">
-                  <span className="lists-stat-value">{activeItems.length}</span>
-                  <span>Items on list</span>
-                </div>
-                <div className="lists-box lists-stat">
-                  <span className="lists-stat-value">{totalUnits}</span>
-                  <span>Units to buy</span>
-                </div>
-                <div className="lists-box lists-stat">
-                  <span className="lists-stat-value">
-                    {currency(estimatedCost)}
+          <>
+            <div className="lists-stats">
+              <div className="lists-stat lists-stat-items">
+                <span className="lists-stat-value">{activeItems.length}</span>
+                <span className="lists-stat-label">Items on list</span>
+              </div>
+              <div className="lists-stat lists-stat-units">
+                <span className="lists-stat-value">{totalUnits}</span>
+                <span className="lists-stat-label">Units to buy</span>
+              </div>
+              <div className="lists-stat lists-stat-cost">
+                <span className="lists-stat-value">
+                  {currency(estimatedCost)}
+                </span>
+                <span className="lists-stat-label">Estimated cost</span>
+              </div>
+            </div>
+
+            <div className="lists-layout">
+              <div className="detail-section lists-card">
+                <div className="section-title">
+                  <span>Shopping list</span>
+                  <span
+                    className={isDraft ? "section-badge op" : "section-badge id"}
+                  >
+                    {isDraft ? "Draft" : "Saved"}
                   </span>
-                  <span>Estimated cost</span>
+                </div>
+
+                <div className="section-content">
+                  <div className="lists-toolbar">
+                    <div className="lists-filters">
+                      {[
+                        {
+                          key: FILTERS.LOW_STOCK,
+                          label: "Low stock",
+                          count: generated.length,
+                        },
+                        {
+                          key: FILTERS.ALL,
+                          label: "All on list",
+                          count: items.length,
+                        },
+                        {
+                          key: FILTERS.MANUAL,
+                          label: "Added manually",
+                          count: manual.length,
+                        },
+                      ].map(({ key, label, count }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          className={
+                            filter === key
+                              ? "btn-secondary lists-filter is-active"
+                              : "btn-secondary lists-filter"
+                          }
+                          onClick={() => setFilter(key)}
+                        >
+                          {label}
+                          <span className="lists-filter-count">{count}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={resetQuantities}
+                    >
+                      Reset quantities
+                    </button>
+                  </div>
+
+                  {visibleItems.length === 0 ? (
+                    <p className="section-empty lists-no-match">
+                      Nothing on this filter.
+                    </p>
+                  ) : (
+                    <table className="lists-table">
+                      <thead>
+                        <tr>
+                          <th className="lists-col-check">
+                            <span className="sr-only">Exclude</span>
+                          </th>
+                          <th>Product</th>
+                          <th className="lists-col-num">In stock</th>
+                          <th className="lists-col-num">Reorder at</th>
+                          <th className="lists-col-num">Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleItems.map((item) => {
+                          const isExcluded = excluded.includes(item.productId);
+
+                          return (
+                            <tr
+                              key={item.productId}
+                              className={isExcluded ? "is-excluded" : undefined}
+                            >
+                              <td className="lists-col-check">
+                                <input
+                                  type="checkbox"
+                                  checked={isExcluded}
+                                  onChange={() => toggleExcluded(item.productId)}
+                                  aria-label={`Exclude ${item.productName}`}
+                                />
+                              </td>
+
+                              <td>
+                                <span className="lists-product-name">
+                                  {item.productName}
+                                </span>
+                                <span className="lists-product-meta">
+                                  {item.sku} &middot; {item.category}
+                                </span>
+                              </td>
+
+                              <td className="lists-col-num">{item.inStock}</td>
+                              <td className="lists-col-num">{item.reorderAt}</td>
+
+                              <td className="lists-col-num">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  className="form-input lists-qty-input"
+                                  value={item.quantityWanted}
+                                  onChange={(event) =>
+                                    updateQuantity(
+                                      item.productId,
+                                      event.target.value,
+                                    )
+                                  }
+                                  disabled={isExcluded}
+                                  aria-label={`Quantity for ${item.productName}`}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+
+                  <div className="lists-add-row">
+                    <div className="form-group lists-add-product">
+                      <label htmlFor="add-product">Add a product manually</label>
+                      <select
+                        id="add-product"
+                        className="form-input selected"
+                        value={addProductId}
+                        onChange={(event) => setAddProductId(event.target.value)}
+                      >
+                        {mockProducts.map((product) => (
+                          <option key={product._id} value={product._id}>
+                            {product.name} ({product.quantity} in stock)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group lists-add-qty">
+                      <label htmlFor="add-qty">Qty wanted</label>
+                      <input
+                        id="add-qty"
+                        type="number"
+                        min="1"
+                        className="form-input"
+                        value={addQuantity}
+                        onChange={(event) => setAddQuantity(event.target.value)}
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-secondary lists-add-btn"
+                      onClick={addManually}
+                    >
+                      Add to list
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="lists-box">
-                <h2>Shopping list [{isDraft ? "Draft" : "Saved"}]</h2>
-
-                <div className="lists-toolbar">
-                  <button
-                    type="button"
-                    onClick={() => setFilter(FILTERS.LOW_STOCK)}
-                    disabled={filter === FILTERS.LOW_STOCK}
-                  >
-                    Low stock ({generated.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilter(FILTERS.ALL)}
-                    disabled={filter === FILTERS.ALL}
-                  >
-                    All on list ({items.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilter(FILTERS.MANUAL)}
-                    disabled={filter === FILTERS.MANUAL}
-                  >
-                    Added manually ({manual.length})
-                  </button>
-                  <button type="button" onClick={resetQuantities}>
-                    Reset quantities
-                  </button>
+              <div className="lists-sidebar">
+                <div className="detail-section">
+                  <div className="section-title">Actions</div>
+                  <div className="section-content lists-sidebar-actions">
+                    <button
+                      type="button"
+                      className="btn-print"
+                      onClick={save}
+                      disabled={!isDraft}
+                    >
+                      {isDraft ? "Save list" : "Saved"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary lists-full-btn"
+                      onClick={generate}
+                    >
+                      Regenerate
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-danger lists-full-btn"
+                      onClick={discard}
+                    >
+                      Discard list
+                    </button>
+                  </div>
                 </div>
 
-                {visibleItems.length === 0 ? (
-                  <p>Nothing on this filter.</p>
-                ) : (
-                  <table className="lists-table">
-                    <thead>
-                      <tr>
-                        <th>Exclude</th>
-                        <th>Product</th>
-                        <th>In stock</th>
-                        <th>Reorder at</th>
-                        <th>Qty</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleItems.map((item) => {
-                        const isExcluded = excluded.includes(item.productId);
+                {/* change when real data is used instead of mock */}
+                <div className="detail-section">
+                  <div className="section-title">Schedule</div>
+                  <div className="section-content">
+                    <div className="form-group">
+                      <label htmlFor="schedule-frequency">Generate every</label>
+                      <select
+                        id="schedule-frequency"
+                        className="form-input selected"
+                        value={frequency}
+                        onChange={(event) => setFrequency(event.target.value)}
+                      >
+                        {Object.values(LIST_FREQUENCIES).map((value) => (
+                          <option key={value} value={value}>
+                            {LIST_FREQUENCY_LABELS[value]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                        return (
-                          <tr
-                            key={item.productId}
-                            className={isExcluded ? "is-excluded" : undefined}
-                          >
-                            <td>
-                              <input
-                                type="checkbox"
-                                checked={isExcluded}
-                                onChange={() => toggleExcluded(item.productId)}
-                                aria-label={`Exclude ${item.productName}`}
-                              />
-                            </td>
-                            <td>
-                              {item.productName}
-                              <span className="lists-meta">
-                                {item.sku} / {item.category}
-                              </span>
-                            </td>
-                            <td className="lists-num">{item.inStock}</td>
-                            <td className="lists-num">{item.reorderAt}</td>
-                            <td className="lists-num">
-                              <input
-                                type="number"
-                                min="0"
-                                className="lists-qty"
-                                value={item.quantityWanted}
-                                onChange={(event) =>
-                                  updateQuantity(
-                                    item.productId,
-                                    event.target.value,
-                                  )
-                                }
-                                disabled={isExcluded}
-                                aria-label={`Quantity for ${item.productName}`}
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
+                    <div className="form-group">
+                      <label htmlFor="next-order-day">Next order day</label>
+                      <div className="form-tag" id="next-order-day">
+                        {nextOrderDay(frequency)}
+                      </div>
+                    </div>
 
-                <div className="lists-add">
-                  <label htmlFor="add-product">Add a product manually</label>
-                  <select
-                    id="add-product"
-                    value={addProductId}
-                    onChange={(event) => setAddProductId(event.target.value)}
-                  >
-                    {mockProducts.map((product) => (
-                      <option key={product._id} value={product._id}>
-                        {product.name} ({product.quantity} in stock)
-                      </option>
-                    ))}
-                  </select>
-
-                  <label htmlFor="add-qty">Qty wanted</label>
-                  <input
-                    id="add-qty"
-                    type="number"
-                    min="1"
-                    className="lists-qty"
-                    value={addQuantity}
-                    onChange={(event) => setAddQuantity(event.target.value)}
-                  />
-
-                  <button type="button" onClick={addManually}>
-                    Add to list
-                  </button>
+                    <p className="lists-schedule-note">
+                      Skeleton only, no logic wired.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <div className="lists-side">
-              <div className="lists-box">
-                <h2>Actions</h2>
-                <div className="lists-actions">
-                  <button type="button" onClick={save} disabled={!isDraft}>
-                    {isDraft ? "Save list" : "Saved"}
-                  </button>
-                  <button type="button" onClick={generate}>
-                    Regenerate
-                  </button>
-                  <button type="button" onClick={discard}>
-                    Discard list
-                  </button>
-                </div>
-              </div>
-
-              {/* change when real data is used instead of mock */}
-              <div className="lists-box">
-                <h2>Schedule</h2>
-                <label htmlFor="schedule-frequency">Generate every</label>
-                <select
-                  id="schedule-frequency"
-                  value={frequency}
-                  onChange={(event) => setFrequency(event.target.value)}
-                >
-                  {Object.values(LIST_FREQUENCIES).map((value) => (
-                    <option key={value} value={value}>
-                      {LIST_FREQUENCY_LABELS[value]}
-                    </option>
-                  ))}
-                </select>
-                <p>Next order day: {nextOrderDay(frequency)}</p>
-                <p>Skeleton only, no logic wired.</p>
-              </div>
-            </div>
-          </div>
+          </>
         )}
       </div>
     </div>
