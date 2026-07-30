@@ -125,6 +125,11 @@ export const StorageUnitSchema = new SimpleSchema({
     ],
   },
 
+  shape: { // reference to display shape
+    type: UnitShapeSchema,
+    required: true
+  },
+
   position: {
     type: Object,
   },
@@ -167,6 +172,50 @@ export const StorageUnitSchema = new SimpleSchema({
     type: String,
     optional: true,
   },
+});
+
+/**
+ * Schema for Unit shapes
+ */
+export const UnitShapeSchema = new SimpleSchema({
+  id: {
+    type: String
+  },
+  name: {
+    type: String,
+    max: 100
+  },
+  width: {
+    type: Number,
+    min: 1
+  },
+  height: {
+    type: Number,
+    min: 1
+  },
+  points: {
+    type: [UnitShapePointSchema],
+    validate: [
+      (list) => list.length > 2, "The shape {VALUE} must contain at least 3 points but only were given"
+    ]
+  },
+  gridReference: { // default to top-left or (0, 0)
+    type: UnitShapePointSchema
+  }
+});
+
+/**
+ * Schema for Unit shape points (vertices)
+ */
+export const UnitShapePointSchema = new SimpleSchema({
+  x: {
+    type: Number,
+    min: 0
+  },
+  y: {
+    type: Number,
+    min: 0
+  }
 });
 
 /**
