@@ -1,0 +1,130 @@
+/* ListsPage.css - shopping lists page */
+/* Lo-fi scaffolding. Deliberately plain so it reads as unfinished. */
+/* Shell, header and breadcrumb come from Global.css. */
+/* TODO: replace this whole block with bloom styling once behaviour is settled */
+
+.lists-lofi {
+  padding: 8px 28px 28px 28px;
+  max-width: 900px;
+}
+
+/* Row holding list mode on the left and status on the right */
+.lofi-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.lofi-status {
+  padding: 3px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lofi-block {
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.lofi-block:last-child {
+  border-bottom: none;
+}
+
+.lofi-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lofi-inline-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.lofi-value {
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.lofi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lofi-row-baseline {
+  align-items: center;
+  margin-top: 10px;
+}
+
+.lofi-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--card-bg);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.lofi-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lofi-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--card-bg);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.lofi-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.lofi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.lofi-table th,
+.lofi-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.lofi-table th {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+@media (max-width: 720px) {
+  .lofi-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

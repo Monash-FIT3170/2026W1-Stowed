@@ -34,6 +34,16 @@ export const LIST_FREQUENCIES = {
 
 
 /**
+ * Display labels for each frequency, so stored values are never shown raw.
+ */
+export const LIST_FREQUENCY_LABELS = {
+  [LIST_FREQUENCIES.WEEKLY]: "Weekly",
+  [LIST_FREQUENCIES.FORTNIGHTLY]: "Fortnightly",
+  [LIST_FREQUENCIES.MONTHLY]: "Monthly",
+};
+
+
+/**
  * Number of reorder cycles a generated list should cover, per frequency.
  * A monthly list buys roughly four times what a weekly list buys.
  */
@@ -53,5 +63,3 @@ export const LIST_STATUSES = {
   DRAFT: "draft",
   SAVED: "saved",
 };
-
-
