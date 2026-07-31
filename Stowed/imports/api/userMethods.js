@@ -3,7 +3,6 @@ import { check } from "meteor/check";
 import { ROLES } from "./roles";
 import { Organisations } from "./organisations";
 import { Accounts } from "meteor/accounts-base";
-import { Sites } from "./locations/collections";
 
 /**
  * Helper methods

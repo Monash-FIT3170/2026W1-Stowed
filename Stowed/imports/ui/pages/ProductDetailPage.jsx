@@ -63,7 +63,7 @@ export function ProductDetailView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [imageUrls, setImageUrls] = useState([]);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [, setUploadError] = useState("");
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const { role } = useAuth();

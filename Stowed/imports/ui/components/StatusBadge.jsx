@@ -1,4 +1,3 @@
-import React from "react";
 
 /**
  * Visual status indicator for an item's stock level.

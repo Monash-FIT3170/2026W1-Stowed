@@ -1,4 +1,3 @@
-import React from "react";
 
 /**
  * Filter chip bar for the inventory list view.

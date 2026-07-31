@@ -15,50 +15,6 @@ import "./CreateProductPage.css";
 import "../Global.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 
-const inputStyle = {
-  padding: "6px 8px",
-  border: "1px solid #999",
-  borderRadius: "3px",
-  fontSize: "14px",
-  width: "100%",
-  boxSizing: "border-box",
-};
-
-const buttonStyle = {
-  padding: "6px 14px",
-  border: "1px solid #333",
-  borderRadius: "3px",
-  cursor: "pointer",
-  background: "transparent",
-  fontSize: "14px",
-};
-
-const fieldStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "4px",
-  marginBottom: "16px",
-};
-
-const sectionStyle = {
-  borderTop: "1px solid #ccc",
-  marginTop: "24px",
-  paddingTop: "16px",
-};
-
-const assignmentRowStyle = {
-  display: "flex",
-  gap: "8px",
-  alignItems: "center",
-  marginBottom: "8px",
-};
-
-const warningStyle = {
-  marginTop: "4px",
-  fontStyle: "italic",
-  fontSize: "13px",
-};
-
 // Helpers
 
 // Wraps Meteor.call in a Promise so we can use async/await.
@@ -98,7 +54,7 @@ export function CreateProductPage() {
   }, [role, navigate]);
 
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [description] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");

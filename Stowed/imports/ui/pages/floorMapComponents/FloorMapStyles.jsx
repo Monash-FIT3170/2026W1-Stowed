@@ -25,7 +25,6 @@ export const COLOURS = {
   CANVAS_GRID: "#e5d8cc",
 };
 
-const cardShadow = "0 2px 8px rgba(0,0,0,0.04)";
 
 const baseButton = {
   padding: "10px 18px",

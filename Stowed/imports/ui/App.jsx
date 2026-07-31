@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { InventoryPage } from "./pages/InventoryPage";
@@ -10,7 +10,6 @@ import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
-import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
@@ -25,7 +24,7 @@ const LocationsPage = lazy(() =>
 );
 
 export function App() {
-  const { user, loggingIn } = useTracker(() => {
+  const { user } = useTracker(() => {
     return {
       user: Meteor.user(),
       loggingIn: Meteor.loggingIn(),

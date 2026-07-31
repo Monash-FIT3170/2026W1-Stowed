@@ -1,5 +1,4 @@
 import { useEditor } from "../editor/EditorContext";
-import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { snapToGrid } from "../editor/utils/Snapping";
@@ -41,12 +40,10 @@ export function useCanvasHandlers({
   gridInterval,
   width,
   height,
-  activeTool,
   wrapperRef,
   clipboard,
   isCanvasEditMode,
 }) {
-  const navigate = useNavigate();
   const { setSelectedUnit, setIsPanelOpen } = useEditor();
 
   // INTERNAL HELPERS
@@ -431,8 +428,6 @@ export function useCanvasHandlers({
     const placedUnits = [];
 
     clipboard.forEach((unit) => {
-      let found = false;
-
       for (let step = 1; step <= MAX_SEARCH; step++) {
         const testX = unit.x + OFFSET * step;
         const testY = unit.y + OFFSET * step;
@@ -452,7 +447,6 @@ export function useCanvasHandlers({
             x: testX,
             y: testY,
           });
-          found = true;
           break;
         }
       }
@@ -468,7 +462,7 @@ export function useCanvasHandlers({
     });
   }, [clipboard, units]);
 
-  function handleDelete(e) {
+  function handleDelete() {
     const idsToDelete = selectedIds;
     if (idsToDelete.size === 0) return;
 

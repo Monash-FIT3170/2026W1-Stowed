@@ -9,11 +9,7 @@ import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
-import {
-  buttonStyles,
-  pageStyles,
-  COLOURS,
-} from "./floorMapComponents/FloorMapStyles";
+import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { Meteor } from "meteor/meteor";
@@ -21,18 +17,6 @@ import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
-
-function callMethod(methodName, params) {
-  return new Promise((resolve, reject) => {
-    Meteor.call(methodName, params, (error, result) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(result);
-    });
-  });
-}
 
 function FloorMapPageInner() {
   const { role } = useAuth();
@@ -48,7 +32,6 @@ function FloorMapPageInner() {
     isCanvasEditMode,
     setCanvasEditMode,
     units,
-    commitUnits,
     canUndo,
     canRedo,
     handleUndo,
@@ -58,8 +41,6 @@ function FloorMapPageInner() {
     handleCanvasSettingsSave,
     selectedUnit,
     setSelectedUnit,
-    setIsPanelOpen,
-    isPanelOpen,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
   } = useEditor();
@@ -96,13 +77,9 @@ function FloorMapPageInner() {
     setIsStockPanelOpen(!!unitId);
   };
 
-  // Current floor map and its site
+  // Current floor map
   const currentFloorMap =
     floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
-  const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
-  const floorMapsForSite = floorMaps.filter(
-    (f) => f.siteId === currentSite?._id,
-  );
 
   return (
     <div
