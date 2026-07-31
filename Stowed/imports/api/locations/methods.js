@@ -183,10 +183,11 @@ Meteor.methods({
   /**
    * Creates a new StorageUnit under an existing FloorMap.
    */
-  async 'storageUnits.create'({ floorMapId, name, type, position, fill }) {
+  async 'storageUnits.create'({ floorMapId, name, type, shape, position, fill }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
+    check(shape, Object);
     check(position, Object);
     if (fill !== undefined) check(fill, String);
 
@@ -206,6 +207,7 @@ Meteor.methods({
       floorMapId,
       name,
       type,
+      shape,
       position,
       ...(fill !== undefined ? { fill } : {}),
       createdAt: new Date(),
@@ -216,11 +218,12 @@ Meteor.methods({
   /**
    * Updates an existing StorageUnit.
    */
-  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, position, fill }) {
+  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, shape, position, fill }) {
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
     check(type, String);
+    check(shape, Object);
     check(position, Object);
     if (fill !== undefined) check(fill, String);
 
@@ -256,6 +259,7 @@ Meteor.methods({
         floorMapId,
         name,
         type,
+        shape,
         position,
         ...(fill !== undefined ? { fill } : {}),
         updatedAt: new Date(),
