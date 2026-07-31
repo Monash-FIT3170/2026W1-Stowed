@@ -68,6 +68,13 @@ module.exports = [
     languageOptions: { globals: { ...globals.node } },
   },
 
+  // upload.js is isomorphic: it also runs on the client and uses browser APIs
+  // (FileReader), so it needs browser globals in addition to the Node ones above.
+  {
+    files: ["imports/api/upload.js"],
+    languageOptions: { globals: { ...globals.browser } },
+  },
+
   // Mocha test files.
   {
     files: ["tests/**", "**/*.test.js"],

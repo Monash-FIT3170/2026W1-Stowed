@@ -498,7 +498,9 @@ describe("products.update", function () {
         }),
         productId,
       });
-    } catch (_) {}
+    } catch {
+      // expected to throw
+    }
 
     const after = await Products.findOneAsync(productId);
     assert.strictEqual(after.name, before.name);
@@ -656,7 +658,9 @@ describe("products.restock", function () {
         additionalQuantity: 25,
         assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
       });
-    } catch (_) {}
+    } catch {
+      // expected to throw
+    }
 
     const product = await Products.findOneAsync(productId);
     assert.strictEqual(
@@ -673,7 +677,9 @@ describe("products.restock", function () {
         additionalQuantity: 25,
         assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
       });
-    } catch (_) {}
+    } catch {
+      // expected to throw
+    }
 
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 1);

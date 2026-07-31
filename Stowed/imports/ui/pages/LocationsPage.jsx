@@ -414,34 +414,6 @@ export function LocationsPage() {
     });
   }
 
-  function startEditSite(site) {
-    setEditingSiteId(site._id);
-    setEditSiteForm({ name: site.name, description: site.description || "" });
-  }
-
-  async function saveEditSite(siteId) {
-    const name = editSiteForm.name.trim();
-    if (!name) return;
-    const duplicate = sites.some(
-      (s) => s._id !== siteId && s.name.toLowerCase() === name.toLowerCase(),
-    );
-    if (duplicate) {
-      setStatus({
-        type: "error",
-        message: "A site with that name already exists.",
-      });
-      return;
-    }
-    await runSubmit(async () => {
-      await submitMeteorMethod("sites.update", {
-        siteId,
-        name,
-        description: editSiteForm.description.trim(),
-      });
-      setEditingSiteId(null);
-    });
-  }
-
   function startEditFloorMap(fm) {
     setEditingFloorMapId(fm._id);
     setEditFloorMapForm({ name: fm.name, imageUrl: fm.imageUrl || "" });
@@ -1448,7 +1420,7 @@ export function LocationsPage() {
       {deleteConfirm && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3 className="modal-title">Delete "{deleteConfirm.name}"?</h3>
+            <h3 className="modal-title">Delete &quot;{deleteConfirm.name}&quot;?</h3>
             <p className="modal-text">
               This will permanently remove this item. This cannot be undone.
             </p>

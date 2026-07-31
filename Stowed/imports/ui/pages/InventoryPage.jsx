@@ -38,7 +38,7 @@ export function InventoryPage() {
         <span className="breadcrumb-current">Dashboard</span>
       </div>
       <h1 className="page-heading">Hello, {username || "User"}</h1>
-      <h2 className="page-subheading">Here's what's stocked.</h2>
+      <h2 className="page-subheading">Here&apos;s what&apos;s stocked.</h2>
       <div className="stats-container">
         <div className="stat-card stat-card-green">
           <div className="stat-value">{totalItems}</div>

@@ -79,6 +79,14 @@ export function ProductDetailView({
   const [isRestocking, setIsRestocking] = useState(false);
   const [restockError, setRestockError] = useState("");
 
+  useEffect(() => {
+    const initialImages = item?.images?.length ? item.images : [];
+    setImageUrls(initialImages);
+    if (initialImages.length > 0) {
+      setSelectedImageIndex(0);
+    }
+  }, [item]);
+
   if (!item) {
     return <div className="p-8 text-center">Product not found.</div>;
   }
@@ -188,14 +196,6 @@ export function ProductDetailView({
           },
         ]
       : [];
-
-  useEffect(() => {
-    const initialImages = item?.images?.length ? item.images : [];
-    setImageUrls(initialImages);
-    if (initialImages.length > 0) {
-      setSelectedImageIndex(0);
-    }
-  }, [item]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -570,7 +570,7 @@ export function ProductDetailView({
       {showRestockModal && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: "480px", width: "100%" }}>
-            <h3 className="modal-title">Restock "{item.name}"</h3>
+            <h3 className="modal-title">Restock &quot;{item.name}&quot;</h3>
             <p
               style={{
                 fontSize: "13px",
@@ -764,7 +764,7 @@ export function ProductDetailView({
       {showDeleteModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3 className="modal-title">Delete "{item.name}"?</h3>
+            <h3 className="modal-title">Delete &quot;{item.name}&quot;?</h3>
             <p className="modal-text">
               This will permanently delete the product and remove it from all
               storage locations.

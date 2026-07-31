@@ -396,7 +396,7 @@ function FloorMapPageInner() {
                           style={{ width: "100%" }}
                           onClick={handleDeleteSelectedUnit}
                         >
-                          Delete "{selectedUnit.name}"
+                          Delete &quot;{selectedUnit.name}&quot;
                         </button>
                       </div>
                     )}
