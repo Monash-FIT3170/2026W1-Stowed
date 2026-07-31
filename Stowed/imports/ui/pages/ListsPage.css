@@ -182,28 +182,10 @@
   border-bottom: none;
 }
 
-.lists-col-check {
-  width: 30px;
-}
-
 .lists-table th.lists-col-num,
 .lists-table td.lists-col-num {
   text-align: right;
   white-space: nowrap;
-}
-
-.lists-table tr.is-excluded .lists-product-name,
-.lists-table tr.is-excluded .lists-col-num {
-  color: var(--text-muted);
-  text-decoration: line-through;
-}
-
-.lists-table tr.is-excluded .lists-qty-input {
-  text-decoration: none;
-}
-
-.lists-table tr.is-excluded .lists-product-meta {
-  opacity: 0.5;
 }
 
 .lists-product-name {

@@ -70,12 +70,10 @@ export function ListsPage() {
 
   const [frequency, setFrequency] = useState(LIST_FREQUENCIES.WEEKLY);
   const [filter, setFilter] = useState(FILTERS.ALL);
-  const [excluded, setExcluded] = useState([]);
   const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
   const [addQuantity, setAddQuantity] = useState(1);
 
   const items = list?.items ?? [];
-  const activeItems = items.filter((i) => !excluded.includes(i.productId));
 
   const generated = items.filter(
     (i) => i.addMode === ADD_PRODUCT_MODES.GENERATED,
@@ -89,8 +87,8 @@ export function ListsPage() {
         ? manual
         : items;
 
-  const totalUnits = activeItems.reduce((sum, i) => sum + i.quantityWanted, 0);
-  const estimatedCost = activeItems.reduce(
+  const totalUnits = items.reduce((sum, i) => sum + i.quantityWanted, 0);
+  const estimatedCost = items.reduce(
     (sum, i) => sum + i.quantityWanted * i.unitCost,
     0,
   );
@@ -106,7 +104,6 @@ export function ListsPage() {
         toItem(product, frequency, ADD_PRODUCT_MODES.GENERATED),
       ),
     });
-    setExcluded([]);
     setFilter(FILTERS.ALL);
   }
 
@@ -120,14 +117,6 @@ export function ListsPage() {
         item.productId === productId ? { ...item, quantityWanted } : item,
       ),
     }));
-  }
-
-  function toggleExcluded(productId) {
-    setExcluded((current) =>
-      current.includes(productId)
-        ? current.filter((id) => id !== productId)
-        : [...current, productId],
-    );
   }
 
   function addManually() {
@@ -169,26 +158,11 @@ export function ListsPage() {
 
   function discard() {
     setList(null);
-    setExcluded([]);
   }
 
   function renderRow(item) {
-    const isExcluded = excluded.includes(item.productId);
-
     return (
-      <tr
-        key={item.productId}
-        className={isExcluded ? "is-excluded" : undefined}
-      >
-        <td className="lists-col-check">
-          <input
-            type="checkbox"
-            checked={isExcluded}
-            onChange={() => toggleExcluded(item.productId)}
-            aria-label={`Exclude ${item.productName}`}
-          />
-        </td>
-
+      <tr key={item.productId}>
         <td>
           <span className="lists-product-name">{item.productName}</span>
           <span className="lists-product-meta">
@@ -208,7 +182,6 @@ export function ListsPage() {
             onChange={(event) =>
               updateQuantity(item.productId, event.target.value)
             }
-            disabled={isExcluded}
             aria-label={`Quantity for ${item.productName}`}
           />
         </td>
@@ -262,7 +235,7 @@ export function ListsPage() {
           <>
             <div className="lists-stats">
               <div className="lists-stat lists-stat-items">
-                <span className="lists-stat-value">{activeItems.length}</span>
+                <span className="lists-stat-value">{items.length}</span>
                 <span className="lists-stat-label">Items on list</span>
               </div>
               <div className="lists-stat lists-stat-units">
@@ -333,9 +306,6 @@ export function ListsPage() {
                     <table className="lists-table">
                       <thead>
                         <tr>
-                          <th className="lists-col-check">
-                            <span className="sr-only">Exclude</span>
-                          </th>
                           <th>Product</th>
                           <th className="lists-col-num">In stock</th>
                           <th className="lists-col-num">Reorder at</th>
@@ -348,7 +318,7 @@ export function ListsPage() {
                             {generated.map(renderRow)}
                             {manual.length > 0 && (
                               <tr className="lists-divider">
-                                <td colSpan={5}>Added manually</td>
+                                <td colSpan={4}>Added manually</td>
                               </tr>
                             )}
                             {manual.map(renderRow)}
