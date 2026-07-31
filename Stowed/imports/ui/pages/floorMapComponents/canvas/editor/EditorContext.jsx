@@ -47,7 +47,7 @@ export function EditorProvider({ children, floorMapId }) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   // --- UNDO / REDO HISTORY ---
-  const [_, forceRender] = useState(0);
+  const [, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
   const canUndo = historyRef.current.index > 0;
   const canRedo =
@@ -210,6 +210,20 @@ export function EditorProvider({ children, floorMapId }) {
         settings: canvasSettings,
       });
 
+      const currentUnitIds = units
+        .filter((unit) => unit._id)
+        .map((unit) => unit._id);
+
+      for (const savedUnit of savedUnits) {
+        if (!currentUnitIds.includes(savedUnit._id)) {
+          await callMethod("storageUnits.delete", {
+            storageUnitId: savedUnit._id,
+          });
+        }
+      }
+
+      const savedCanvasUnits = [];
+
       for (const unit of units) {
         const position = {
           x: unit.x,
@@ -218,60 +232,37 @@ export function EditorProvider({ children, floorMapId }) {
           height: unit.height,
         };
 
-        const currentUnitIds = units
-          .filter((unit) => unit._id)
-          .map((unit) => unit._id);
+        if (unit._id) {
+          await callMethod("storageUnits.update", {
+            storageUnitId: unit._id,
+            floorMapId: activeFloorMapId,
+            name: unit.name,
+            type: unit.type || "other",
+            position,
+            fill: unit.fill || "lightblue",
+          });
 
-        for (const savedUnit of savedUnits) {
-          if (!currentUnitIds.includes(savedUnit._id)) {
-            await callMethod("storageUnits.delete", {
-              storageUnitId: savedUnit._id,
-            });
-          }
+          savedCanvasUnits.push(unit);
+        } else {
+          const newId = await callMethod("storageUnits.create", {
+            floorMapId: activeFloorMapId,
+            name: unit.name,
+            type: unit.type || "other",
+            position,
+            fill: unit.fill || "lightblue",
+          });
+
+          savedCanvasUnits.push({
+            ...unit,
+            _id: newId,
+            id: newId,
+          });
         }
-
-        const savedCanvasUnits = [];
-
-        for (const unit of units) {
-          const position = {
-            x: unit.x,
-            y: unit.y,
-            width: unit.width,
-            height: unit.height,
-          };
-
-          if (unit._id) {
-            await callMethod("storageUnits.update", {
-              storageUnitId: unit._id,
-              floorMapId: activeFloorMapId,
-              name: unit.name,
-              type: unit.type || "other",
-              position,
-              fill: unit.fill || "lightblue",
-            });
-
-            savedCanvasUnits.push(unit);
-          } else {
-            const newId = await callMethod("storageUnits.create", {
-              floorMapId: activeFloorMapId,
-              name: unit.name,
-              type: unit.type || "other",
-              position,
-              fill: unit.fill || "lightblue",
-            });
-
-            savedCanvasUnits.push({
-              ...unit,
-              _id: newId,
-              id: newId,
-            });
-          }
-        }
-
-        setUnits(savedCanvasUnits);
-        historyRef.current = { stack: [savedCanvasUnits], index: 0 };
-        alert("Layout saved to database!");
       }
+
+      setUnits(savedCanvasUnits);
+      historyRef.current = { stack: [savedCanvasUnits], index: 0 };
+      alert("Layout saved to database!");
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
