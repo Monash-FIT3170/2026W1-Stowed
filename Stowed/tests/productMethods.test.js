@@ -68,6 +68,24 @@ before(async function () {
     floorMapId: TEST_FLOOR_MAP_ID,
     name: "Test Storage Unit",
     type: "shelf",
+    shape: {
+      shapeId: 0,
+      orgId: TEST_ORG_ID,
+      name: "dummy-shape",
+      width: 1,
+      height: 1,
+      points: [
+        { x: 0, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 1, y: 0 },
+      ],
+      gridReference: {
+        x: 0,
+        y: 0
+      }
+
+    },
     position: { x: 0, y: 0, width: 100, height: 100 },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -78,6 +96,24 @@ before(async function () {
     orgId: TEST_ORG_ID,
     storageUnitId: TEST_STORAGE_UNIT_ID,
     name: "Test Location",
+    shape: {
+      shapeId: 0,
+      orgId: TEST_ORG_ID,
+      name: "dummy-shape",
+      width: 1,
+      height: 1,
+      points: [
+        { x: 0, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 1, y: 0 },
+      ],
+      gridReference: {
+        x: 0,
+        y: 0
+      }
+
+    },
     code: "LOC-1",
     storedItems: [],
     createdAt: new Date(),
@@ -164,6 +200,24 @@ describe("products.createWithAssignments", function () {
       orgId: TEST_ORG_ID,
       storageUnitId: TEST_STORAGE_UNIT_ID,
       name: "Test Location B",
+      shape: {
+        shapeId: 0,
+        orgId: TEST_ORG_ID,
+        name: "dummy-shape",
+        width: 1,
+        height: 1,
+        points: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 1 },
+          { x: 1, y: 0 },
+        ],
+        gridReference: {
+          x: 0,
+          y: 0
+        }
+
+      },
       code: "LOC-B",
       storedItems: [],
       createdAt: new Date(),
@@ -263,6 +317,24 @@ describe("products.delete", function () {
       orgId: TEST_ORG_ID,
       storageUnitId: TEST_STORAGE_UNIT_ID,
       name: "Test Location 2",
+      shape: {
+        shapeId: 0,
+        orgId: TEST_ORG_ID,
+        name: "dummy-shape",
+        width: 1,
+        height: 1,
+        points: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 1 },
+          { x: 1, y: 0 },
+        ],
+        gridReference: {
+          x: 0,
+          y: 0
+        }
+
+      },
       code: "LOC-2",
       storedItems: [],
       createdAt: new Date(),
@@ -349,6 +421,24 @@ describe("products.update", function () {
       orgId: TEST_ORG_ID,
       storageUnitId: TEST_STORAGE_UNIT_ID,
       name: "Test Location A",
+      shape: {
+        shapeId: 0,
+        orgId: TEST_ORG_ID,
+        name: "dummy-shape",
+        width: 1,
+        height: 1,
+        points: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 1 },
+          { x: 1, y: 0 },
+        ],
+        gridReference: {
+          x: 0,
+          y: 0
+        }
+
+      },
       code: "LOC-A",
       storedItems: [],
       createdAt: new Date(),
@@ -359,6 +449,24 @@ describe("products.update", function () {
       orgId: TEST_ORG_ID,
       storageUnitId: TEST_STORAGE_UNIT_ID,
       name: "Test Location B2",
+      shape: {
+        shapeId: 0,
+        orgId: TEST_ORG_ID,
+        name: "dummy-shape",
+        width: 1,
+        height: 1,
+        points: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 1 },
+          { x: 1, y: 0 },
+        ],
+        gridReference: {
+          x: 0,
+          y: 0
+        }
+
+      },
       code: "LOC-B2",
       storedItems: [],
       createdAt: new Date(),
@@ -527,6 +635,24 @@ describe("products.restock", function () {
       orgId: TEST_ORG_ID,
       storageUnitId: TEST_STORAGE_UNIT_ID,
       name: "Restock Location 2",
+      shape: {
+        shapeId: 0,
+        orgId: TEST_ORG_ID,
+        name: "dummy-shape",
+        width: 1,
+        height: 1,
+        points: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 1 },
+          { x: 1, y: 0 },
+        ],
+        gridReference: {
+          x: 0,
+          y: 0
+        }
+
+      },
       code: "LOC-R2",
       storedItems: [],
       createdAt: new Date(),
