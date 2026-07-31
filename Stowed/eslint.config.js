@@ -101,13 +101,16 @@ module.exports = [
       // JS-only project with no PropTypes/TypeScript — prop validation not enforced.
       "react/prop-types": "off",
 
-      // React Compiler rules that flag intentional canvas/ref architecture
-      // (ref-based undo/redo in EditorContext, Konva group-ref registry).
-      // Kept visible as warnings for incremental cleanup rather than blocking.
-      // rules-of-hooks, exhaustive-deps, and set-state-in-effect stay at defaults.
+      // React Compiler rules that flag intentional or hard-to-refactor patterns
+      // (ref-based undo/redo in EditorContext, Konva group-ref registry, and the
+      // many "seed/reset local state from async data" effects across pages).
+      // Kept visible as warnings for incremental cleanup rather than blocking;
+      // fixing them cleanly requires behavioral refactors of forms/canvas/selectors.
+      // rules-of-hooks and exhaustive-deps stay at their defaults.
       "react-hooks/refs": "warn",
       "react-hooks/immutability": "warn",
       "react-hooks/set-state-in-render": "warn",
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
 ];

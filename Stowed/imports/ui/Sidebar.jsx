@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
-import React, { useEffect, useRef, useState } from "react";
 import "./Global.css";
 import "./Sidebar.css";
 
@@ -47,24 +46,14 @@ export function Sidebar() {
   const username = currentUser?.profile?.username;
   const navigate = useNavigate();
 
-  const [orgSubReady, setOrgSubReady] = useState(false);
-  useEffect(() => {
-    if (!currentUser) return;
-    const sub = Meteor.subscribe("currentOrganisation");
-    sub.ready() ? setOrgSubReady(true) : setOrgSubReady(false);
-    const interval = setInterval(() => {
-      setOrgSubReady(sub.ready());
-    }, 100);
-    return () => {
-      sub.stop();
-      clearInterval(interval);
-    };
-  }, [currentUser?._id]);
-
   const organisation = useTracker(() => {
-    if (!currentUser || !orgSubReady) return null;
+    if (!currentUser) return null;
+    // Subscribing inside the tracker lets Meteor reactively re-run this when the
+    // subscription becomes ready and clean it up on unmount — no polling needed.
+    const sub = Meteor.subscribe("currentOrganisation");
+    if (!sub.ready()) return null;
     return Organisations.findOne(currentUser.profile.organisationId);
-  }, [currentUser?.profile?.organisationId, orgSubReady]);
+  }, [currentUser?.profile?.organisationId]);
 
   const handleLogout = () => {
     logoutUser();
