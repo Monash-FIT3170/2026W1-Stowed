@@ -98,9 +98,8 @@ export const FloorMapSchema = new SimpleSchema({
  * Schema for Unit shapes
  */
 export const UnitShapeSchema = new SimpleSchema({
-  orgId: {
-    type: String
-  },
+  orgId: String,
+  shapeId: Number,
   name: {
     type: String,
     max: 100
@@ -113,15 +112,17 @@ export const UnitShapeSchema = new SimpleSchema({
     type: Number,
     min: 0  // in practice, should be >0
   },
-  points: {
-    type: Array
+  points: Array,
+  "points.$": Object,
+  "points.$.x": {
+    type: Number,
+    min: 0
   },
-  "points.$": {
-    type: {x: Number, y: Number}
+  "points.$.y": {
+    type: Number,
+    min: 0
   },
-  gridReference: {
-    type: Object
-  },
+  gridReference: Object,
   "gridReference.x": {
     type: Number,
     min: 0
