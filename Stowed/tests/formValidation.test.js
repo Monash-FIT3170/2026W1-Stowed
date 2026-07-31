@@ -44,7 +44,7 @@ function validateProductForm(fields = {}) {
     } else {
       const assignedTotal = fields.assignments.reduce(
         (sum, a) => sum + (a.quantity || 0),
-        0
+        0,
       );
       if (assignedTotal !== Number(fields.totalQuantity)) {
         errors.assignments = "Assigned quantity must equal total quantity.";
@@ -56,7 +56,6 @@ function validateProductForm(fields = {}) {
 }
 
 describe("formValidation - validateProductForm()", function () {
-
   it("passes with all valid required fields", function () {
     const { valid, errors } = validateProductForm({
       name: "Hex bolts M8 × 50mm",
@@ -154,7 +153,6 @@ describe("formValidation - validateProductForm()", function () {
     assert.strictEqual(valid, true);
   });
 
-
   it("fails when name is missing", function () {
     const { valid, errors } = validateProductForm({
       totalQuantity: 5,
@@ -198,7 +196,6 @@ describe("formValidation - validateProductForm()", function () {
     assert.strictEqual(valid, false);
     assert.ok(errors.name);
   });
-
 
   it("fails when totalQuantity is missing", function () {
     const { valid, errors } = validateProductForm({
@@ -253,7 +250,6 @@ describe("formValidation - validateProductForm()", function () {
     assert.ok(errors.totalQuantity);
   });
 
-
   it("fails when reorderAt is negative", function () {
     const { valid, errors } = validateProductForm({
       name: "Bolts",
@@ -284,7 +280,6 @@ describe("formValidation - validateProductForm()", function () {
     assert.ok(errors.reorderAt);
   });
 
-
   it("fails when unitCost is negative", function () {
     const { valid, errors } = validateProductForm({
       name: "Bolts",
@@ -304,7 +299,6 @@ describe("formValidation - validateProductForm()", function () {
     assert.strictEqual(valid, false);
     assert.ok(errors.unitCost);
   });
-
 
   it("fails when assignments is an empty array", function () {
     const { valid, errors } = validateProductForm({
@@ -364,7 +358,6 @@ describe("formValidation - validateProductForm()", function () {
     });
     assert.strictEqual(valid, true);
   });
-
 
   it("returns multiple errors when several fields are invalid", function () {
     const { valid, errors } = validateProductForm({

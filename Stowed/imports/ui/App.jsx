@@ -35,7 +35,8 @@ export function App() {
   const isLoggedIn = !!user;
 
   const role = user?.profile?.role ?? null;
-  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/inventory");
+  const canAccessInventory =
+    isLoggedIn && hasClientPermission(role, "route:/inventory");
 
   return (
     <BrowserRouter>

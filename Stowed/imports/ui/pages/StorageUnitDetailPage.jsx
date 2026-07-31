@@ -20,7 +20,9 @@ function readSavedPhotos() {
   if (typeof window === "undefined") return {};
 
   try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_UNIT_PHOTOS_KEY) || "{}");
+    return JSON.parse(
+      window.localStorage.getItem(STORAGE_UNIT_PHOTOS_KEY) || "{}",
+    );
   } catch {
     return {};
   }
@@ -38,28 +40,33 @@ export function StorageUnitDetailPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const { loading, liveUnit, liveLocations, floorMap, site } = useTracker(() => {
-    const handle = Meteor.subscribe("locations.all");
-    const liveUnit = StorageUnits.findOne(unitId);
-    const floorMap = liveUnit ? FloorMaps.findOne(liveUnit.floorMapId) : null;
-    const site = floorMap ? Sites.findOne(floorMap.siteId) : null;
+  const { loading, liveUnit, liveLocations, floorMap, site } =
+    useTracker(() => {
+      const handle = Meteor.subscribe("locations.all");
+      const liveUnit = StorageUnits.findOne(unitId);
+      const floorMap = liveUnit ? FloorMaps.findOne(liveUnit.floorMapId) : null;
+      const site = floorMap ? Sites.findOne(floorMap.siteId) : null;
 
-    return {
-      loading: !handle.ready(),
-      liveUnit,
-      liveLocations: StorageLocations.find(
-        { storageUnitId: unitId },
-        { sort: { createdAt: 1 } },
-      ).fetch(),
-      floorMap,
-      site,
-    };
-  }, [unitId]);
+      return {
+        loading: !handle.ready(),
+        liveUnit,
+        liveLocations: StorageLocations.find(
+          { storageUnitId: unitId },
+          { sort: { createdAt: 1 } },
+        ).fetch(),
+        floorMap,
+        site,
+      };
+    }, [unitId]);
 
   const mockUnit = getMockStorageUnitById(unitId);
   const unit = liveUnit || mockUnit;
-  const locations = liveUnit ? liveLocations : getMockStorageLocationsByUnitId(unitId);
-  const [photoPreview, setPhotoPreview] = useState(() => getSavedPhotoForUnit(unitId, unit?.photoUrl));
+  const locations = liveUnit
+    ? liveLocations
+    : getMockStorageLocationsByUnitId(unitId);
+  const [photoPreview, setPhotoPreview] = useState(() =>
+    getSavedPhotoForUnit(unitId, unit?.photoUrl),
+  );
   const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
@@ -70,7 +77,8 @@ export function StorageUnitDetailPage() {
   }, [unitId, unit?.photoUrl]);
 
   if (loading) return <p className="storage-page-message">Loading...</p>;
-  if (!unit) return <p className="storage-page-message">Storage unit not found.</p>;
+  if (!unit)
+    return <p className="storage-page-message">Storage unit not found.</p>;
 
   const unitCode = unit.name.toUpperCase();
   const locationCount = locations.length;
@@ -104,7 +112,10 @@ export function StorageUnitDetailPage() {
   function handleSaveChanges() {
     const savedPhotos = readSavedPhotos();
     savedPhotos[unitId] = photoPreview;
-    window.localStorage.setItem(STORAGE_UNIT_PHOTOS_KEY, JSON.stringify(savedPhotos));
+    window.localStorage.setItem(
+      STORAGE_UNIT_PHOTOS_KEY,
+      JSON.stringify(savedPhotos),
+    );
     setSaveMessage("Changes saved");
   }
 
@@ -114,18 +125,26 @@ export function StorageUnitDetailPage() {
         <div className="storage-header-top">
           <div>
             <p className="storage-breadcrumb">
-              {site?.name || "Mornington Hardware"} / {floorMap?.name || "Floor map"} / {unitCode}
+              {site?.name || "Mornington Hardware"} /{" "}
+              {floorMap?.name || "Floor map"} / {unitCode}
             </p>
             <p className="storage-live-dot">Live floor map</p>
           </div>
           <div className="storage-actions">
             <button
               className="storage-btn storage-btn-secondary"
-              onClick={() => navigate(floorMap?._id ? `/floor-map/${floorMap._id}` : "/floor-map")}
+              onClick={() =>
+                navigate(
+                  floorMap?._id ? `/floor-map/${floorMap._id}` : "/floor-map",
+                )
+              }
             >
               Back
             </button>
-            <button className="storage-btn storage-btn-primary" onClick={handleSaveChanges}>
+            <button
+              className="storage-btn storage-btn-primary"
+              onClick={handleSaveChanges}
+            >
               Save changes
             </button>
           </div>
@@ -142,7 +161,9 @@ export function StorageUnitDetailPage() {
               <span>{unit.type} storage unit</span>
               <span>{locationCount} storage locations</span>
               <span>{storedItemCount} stored item types</span>
-              <span>{widthMeters}m x {heightMeters}m footprint</span>
+              <span>
+                {widthMeters}m x {heightMeters}m footprint
+              </span>
             </div>
           </div>
         </section>
@@ -181,12 +202,18 @@ export function StorageUnitDetailPage() {
                 Upload photo
               </button>
               {photoPreview && (
-                <button className="storage-remove-btn" type="button" onClick={handleRemovePhoto}>
+                <button
+                  className="storage-remove-btn"
+                  type="button"
+                  onClick={handleRemovePhoto}
+                >
                   Remove
                 </button>
               )}
             </div>
-            {saveMessage && <p className="storage-save-message">{saveMessage}</p>}
+            {saveMessage && (
+              <p className="storage-save-message">{saveMessage}</p>
+            )}
           </div>
         </section>
 
@@ -244,7 +271,10 @@ export function StorageUnitDetailPage() {
                   <div className="storage-stored-items">
                     {location.storedItems?.length ? (
                       location.storedItems.map((item) => (
-                        <div className="storage-stored-item" key={item.itemId || item.sku}>
+                        <div
+                          className="storage-stored-item"
+                          key={item.itemId || item.sku}
+                        >
                           <span>
                             {item.name}
                             <small>
@@ -256,13 +286,17 @@ export function StorageUnitDetailPage() {
                         </div>
                       ))
                     ) : (
-                      <span className="storage-no-items">Empty/available space</span>
+                      <span className="storage-no-items">
+                        Empty/available space
+                      </span>
                     )}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="storage-location-empty">No storage locations inside this unit yet.</div>
+              <div className="storage-location-empty">
+                No storage locations inside this unit yet.
+              </div>
             )}
           </div>
         </section>

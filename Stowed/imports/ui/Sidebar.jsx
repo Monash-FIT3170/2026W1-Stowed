@@ -10,17 +10,17 @@ import "./Global.css";
 import "./Sidebar.css";
 
 const WORKSPACE_LINKS = [
-  { to: "/locations",  label: "Locations",      icon: "📍" },
-  { to: "/floor-map",  label: "Floor Map",      icon: "🗺" },
-  { to: "/inventory",  label: "Inventory",      icon: "📦" },
-  { to: "/",           label: "Inventory Page", icon: "✓"  },
-  { to: "/lists",      label: "Lists",          icon: "🛒" },
+  { to: "/locations", label: "Locations", icon: "📍" },
+  { to: "/floor-map", label: "Floor Map", icon: "🗺" },
+  { to: "/inventory", label: "Inventory", icon: "📦" },
+  { to: "/", label: "Inventory Page", icon: "✓" },
+  { to: "/lists", label: "Lists", icon: "🛒" },
 ];
 
 const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
   { to: "/forecast", label: "Forecast", icon: "🔮" },
-  { to: "/alerts",   label: "Alerts",   icon: "⚠️" },
+  { to: "/alerts", label: "Alerts", icon: "⚠️" },
 ];
 
 function SidebarLink({ to, label, icon, end }) {
@@ -28,9 +28,7 @@ function SidebarLink({ to, label, icon, end }) {
     <NavLink
       to={to}
       end={end}
-      className={({ isActive }) =>
-        `sidebar-link${isActive ? " active" : ""}`
-      }
+      className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
     >
       {icon && <span className="sidebar-link-icon">{icon}</span>}
       <span>{label}</span>
@@ -78,9 +76,7 @@ export function Sidebar() {
     ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
   const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
-    link.to === "/register"
-      ? hasClientPermission(role, "create-users")
-      : true
+    link.to === "/register" ? hasClientPermission(role, "create-users") : true,
   );
 
   return (
@@ -110,7 +106,7 @@ export function Sidebar() {
           <section className="sidebar-section">
             <SectionLabel label="Workspace" />
             {WORKSPACE_LINKS.filter((link) =>
-              hasClientPermission(role, `route:${link.to}`)
+              hasClientPermission(role, `route:${link.to}`),
             ).map((link) => (
               <SidebarLink key={link.to} {...link} end={link.to === "/"} />
             ))}
@@ -140,11 +136,10 @@ export function Sidebar() {
       {/* Bottom - logged in as */}
       {isLoggedIn && (
         <div className="sidebar-user">Logged in as {username}</div>
-        
       )}
-        <button className="sidebar-logout" onClick={handleLogout}>
-            Logout
-         </button>
+      <button className="sidebar-logout" onClick={handleLogout}>
+        Logout
+      </button>
     </aside>
   );
 }

@@ -79,13 +79,7 @@ describe("Role-Based Access Control", function () {
   });
 
   it("enforces owner-only user management", function () {
-    assert.strictEqual(
-      hasClientPermission(ROLES.ADMIN, "create-users"),
-      false,
-    );
-    assert.strictEqual(
-      hasClientPermission(ROLES.OWNER, "create-users"),
-      true,
-    );
+    assert.strictEqual(hasClientPermission(ROLES.ADMIN, "create-users"), false);
+    assert.strictEqual(hasClientPermission(ROLES.OWNER, "create-users"), true);
   });
 });

@@ -2,7 +2,11 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
-import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
+import {
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+} from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 
@@ -40,13 +44,14 @@ export function EditorProvider({ children, floorMapId }) {
 
   // --- SLIDE-OUT PANEL STATE ---
   const [selectedUnit, setSelectedUnit] = useState(null);
-  const [isPanelOpen, setIsPanelOpen]   = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   // --- UNDO / REDO HISTORY ---
   const [_, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
   const canUndo = historyRef.current.index > 0;
-  const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
+  const canRedo =
+    historyRef.current.index < historyRef.current.stack.length - 1;
 
   function commitUnits(updater) {
     const next = typeof updater === "function" ? updater(units) : updater;
@@ -99,31 +104,33 @@ export function EditorProvider({ children, floorMapId }) {
     Meteor.subscribe("productRecords");
     Meteor.subscribe("locations.all");
 
-    const products         = Products.find().fetch();
-    const productRecords   = ProductRecords.find().fetch();
+    const products = Products.find().fetch();
+    const productRecords = ProductRecords.find().fetch();
     const storageLocations = StorageLocations.find().fetch();
 
     // Build map: unitId -> [{ product, quantity, threshold, isLow, locationName }]
     const map = {};
 
     productRecords.forEach((record) => {
-      const product  = products.find((p) => p._id === record.productId);
+      const product = products.find((p) => p._id === record.productId);
       if (!product) return;
 
-      const location = storageLocations.find((l) => l._id === record.locationId);
+      const location = storageLocations.find(
+        (l) => l._id === record.locationId,
+      );
       if (!location) return;
 
       const threshold = product.reorderAt ?? 0;
-      const isLow     = product.totalQuantity <= threshold;
-      const unitId    = location.storageUnitId;
+      const isLow = product.totalQuantity <= threshold;
+      const unitId = location.storageUnitId;
 
       if (!map[unitId]) map[unitId] = [];
 
       map[unitId].push({
         product,
-        quantity:     product.totalQuantity,
+        quantity: product.totalQuantity,
         threshold,
-        reorderAt:    threshold,
+        reorderAt: threshold,
         isLow,
         locationName: location.name,
       });
@@ -159,15 +166,15 @@ export function EditorProvider({ children, floorMapId }) {
       const h = unit.position.height;
       const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
       return {
-        id:     unit._id,
-        _id:    unit._id,
-        name:   unit.name,
-        type:   unit.type,
-        x:      isPixels ? x / PX_PER_M : x,
-        y:      isPixels ? y / PX_PER_M : y,
-        width:  isPixels ? w / PX_PER_M : w,
+        id: unit._id,
+        _id: unit._id,
+        name: unit.name,
+        type: unit.type,
+        x: isPixels ? x / PX_PER_M : x,
+        y: isPixels ? y / PX_PER_M : y,
+        width: isPixels ? w / PX_PER_M : w,
         height: isPixels ? h / PX_PER_M : h,
-        fill:   unit.fill || "lightblue",
+        fill: unit.fill || "lightblue",
       };
     });
 
@@ -196,34 +203,12 @@ export function EditorProvider({ children, floorMapId }) {
     try {
       await callMethod("floorMaps.update", {
         floorMapId: activeFloorMapId,
-        siteId:     floorMap.siteId,
-        name:       floorMap.name,
-        imageUrl:   floorMap.imageUrl || "",
+        siteId: floorMap.siteId,
+        name: floorMap.name,
+        imageUrl: floorMap.imageUrl || "",
         floorSize,
-        settings:   canvasSettings,
+        settings: canvasSettings,
       });
-
-      for (const unit of units) {
-        const position = {
-          x:      unit.x,
-          y:      unit.y,
-          width:  unit.width,
-          height: unit.height,
-        };
-
-      const currentUnitIds = units
-        .filter((unit) => unit._id)
-        .map((unit) => unit._id);
-
-      for (const savedUnit of savedUnits) {
-        if (!currentUnitIds.includes(savedUnit._id)) {
-          await callMethod("storageUnits.delete", {
-            storageUnitId: savedUnit._id,
-          });
-        }
-      }
-
-      const savedCanvasUnits = [];
 
       for (const unit of units) {
         const position = {
@@ -233,38 +218,60 @@ export function EditorProvider({ children, floorMapId }) {
           height: unit.height,
         };
 
-        if (unit._id) {
-          await callMethod("storageUnits.update", {
-            storageUnitId: unit._id,
-            floorMapId:    activeFloorMapId,
-            name:          unit.name,
-            type:          unit.type || "other",
-            position,
-            fill:          unit.fill || "lightblue",
-          });
+        const currentUnitIds = units
+          .filter((unit) => unit._id)
+          .map((unit) => unit._id);
 
-          savedCanvasUnits.push(unit);
-        } else {
-          const newId = await callMethod("storageUnits.create", {
-            floorMapId: activeFloorMapId,
-            name:       unit.name,
-            type:       unit.type || "other",
-            position,
-            fill:       unit.fill || "lightblue",
-          });
-
-          savedCanvasUnits.push({
-            ...unit,
-            _id: newId,
-            id: newId,
-          });
+        for (const savedUnit of savedUnits) {
+          if (!currentUnitIds.includes(savedUnit._id)) {
+            await callMethod("storageUnits.delete", {
+              storageUnitId: savedUnit._id,
+            });
+          }
         }
-      }
 
-      setUnits(savedCanvasUnits);
-      historyRef.current = { stack: [savedCanvasUnits], index: 0 };
-      alert("Layout saved to database!");
-    }
+        const savedCanvasUnits = [];
+
+        for (const unit of units) {
+          const position = {
+            x: unit.x,
+            y: unit.y,
+            width: unit.width,
+            height: unit.height,
+          };
+
+          if (unit._id) {
+            await callMethod("storageUnits.update", {
+              storageUnitId: unit._id,
+              floorMapId: activeFloorMapId,
+              name: unit.name,
+              type: unit.type || "other",
+              position,
+              fill: unit.fill || "lightblue",
+            });
+
+            savedCanvasUnits.push(unit);
+          } else {
+            const newId = await callMethod("storageUnits.create", {
+              floorMapId: activeFloorMapId,
+              name: unit.name,
+              type: unit.type || "other",
+              position,
+              fill: unit.fill || "lightblue",
+            });
+
+            savedCanvasUnits.push({
+              ...unit,
+              _id: newId,
+              id: newId,
+            });
+          }
+        }
+
+        setUnits(savedCanvasUnits);
+        historyRef.current = { stack: [savedCanvasUnits], index: 0 };
+        alert("Layout saved to database!");
+      }
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
@@ -298,15 +305,15 @@ export function EditorProvider({ children, floorMapId }) {
       const h = unit.position.height;
       const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
       return {
-        id:     unit._id,
-        _id:    unit._id,
-        name:   unit.name,
-        type:   unit.type,
-        x:      isPixels ? x / PX_PER_M : x,
-        y:      isPixels ? y / PX_PER_M : y,
-        width:  isPixels ? w / PX_PER_M : w,
+        id: unit._id,
+        _id: unit._id,
+        name: unit.name,
+        type: unit.type,
+        x: isPixels ? x / PX_PER_M : x,
+        y: isPixels ? y / PX_PER_M : y,
+        width: isPixels ? w / PX_PER_M : w,
         height: isPixels ? h / PX_PER_M : h,
-        fill:   unit.fill || "lightblue",
+        fill: unit.fill || "lightblue",
       };
     });
 
@@ -326,24 +333,34 @@ export function EditorProvider({ children, floorMapId }) {
   }
 
   // --- CANVAS SETTINGS ---
-  function handleCanvasSettingsSave({ floorSize: newFloorSize, gridInterval, showGrid, snapToGrid }) {
-    const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
-    const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+  function handleCanvasSettingsSave({
+    floorSize: newFloorSize,
+    gridInterval,
+    showGrid,
+    snapToGrid,
+  }) {
+    const floorWidthMeters =
+      newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+    const floorHeightMeters =
+      newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
     const unitsInsideFloor = units.filter(
       (unit) =>
         unit.x >= 0 &&
         unit.y >= 0 &&
         unit.x + unit.width <= floorWidthMeters &&
-        unit.y + unit.height <= floorHeightMeters
+        unit.y + unit.height <= floorHeightMeters,
     );
     const removedUnits = units.filter(
-      (unit) => !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id)
+      (unit) =>
+        !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id),
     );
 
     if (removedUnits.length > 0) {
-      const unitNames = removedUnits.map((unit) => unit.name || unit.id).join(", ");
+      const unitNames = removedUnits
+        .map((unit) => unit.name || unit.id)
+        .join(", ");
       const proceed = confirm(
-        `The resized floor is too small for ${removedUnits.length} unit(s): ${unitNames}.\n\nDelete these unit(s) from the floor map?\n\nChoose Cancel to keep editing the floor size.`
+        `The resized floor is too small for ${removedUnits.length} unit(s): ${unitNames}.\n\nDelete these unit(s) from the floor map?\n\nChoose Cancel to keep editing the floor size.`,
       );
 
       if (!proceed) return false;
@@ -360,60 +377,82 @@ export function EditorProvider({ children, floorMapId }) {
     const unitId = selectedUnit._id || selectedUnit.id;
     if (!unitId) {
       // Unit not saved to DB yet - just remove from canvas
-      commitUnits((prev) => prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id));
+      commitUnits((prev) =>
+        prev.filter(
+          (u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id,
+        ),
+      );
       setSelectedUnit(null);
       return;
     }
     try {
       await callMethod("storageUnits.delete", { storageUnitId: unitId });
-      commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
+      commitUnits((prev) =>
+        prev.filter((u) => u._id !== unitId && u.id !== unitId),
+      );
       setSelectedUnit(null);
     } catch (error) {
-      alert(error.reason || "Cannot delete this unit. Make sure all storage locations within it are removed first.");
+      alert(
+        error.reason ||
+          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+      );
     }
   }
 
   const value = {
     // Tool
-    activeTool, setActiveTool,
+    activeTool,
+    setActiveTool,
 
     // Floor
-    floorSize, setFloorSize,
+    floorSize,
+    setFloorSize,
 
     // Canvas settings
-    canvasSettings, isCanvasSettingsOpen, setCanvasSettingsOpen, handleCanvasSettingsSave,
+    canvasSettings,
+    isCanvasSettingsOpen,
+    setCanvasSettingsOpen,
+    handleCanvasSettingsSave,
 
     // Mode toggling
-    isCanvasEditMode, setCanvasEditMode,
+    isCanvasEditMode,
+    setCanvasEditMode,
 
     // Units
-    units, commitUnits,
-    pendingUnit, setPendingUnit,
+    units,
+    commitUnits,
+    pendingUnit,
+    setPendingUnit,
 
     // History
-    canUndo, canRedo, handleUndo, handleRedo,
+    canUndo,
+    canRedo,
+    handleUndo,
+    handleRedo,
 
     // Save / load
-    handleSaveLayout, handleLoadLayout,
+    handleSaveLayout,
+    handleLoadLayout,
 
     // Placement helpers
-    handlePlaceUnit, handleUnitPlaced,
+    handlePlaceUnit,
+    handleUnitPlaced,
 
     // Low stock
     lowStockByUnitId,
 
     // Slide-out panel
-    selectedUnit, setSelectedUnit,
-    isPanelOpen,  setIsPanelOpen,
+    selectedUnit,
+    setSelectedUnit,
+    isPanelOpen,
+    setIsPanelOpen,
 
     // Delete selected unit
     handleDeleteSelectedUnit,
   };
 
   return (
-    <EditorContext.Provider value={value}>
-      {children}
-    </EditorContext.Provider>
+    <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
   );
 }
 

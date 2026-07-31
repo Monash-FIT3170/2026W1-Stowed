@@ -6,7 +6,8 @@ import assert from "assert";
 // ---------------------------------------------------------------------------
 
 function isLowStock(totalQuantity, reorderAt) {
-  if (typeof totalQuantity !== "number" || typeof reorderAt !== "number") return false;
+  if (typeof totalQuantity !== "number" || typeof reorderAt !== "number")
+    return false;
   if (reorderAt <= 0) return false;
   return totalQuantity <= reorderAt;
 }
@@ -22,7 +23,10 @@ function mergeAssignments(assignments) {
   for (const { locationId, quantity } of assignments) {
     map.set(locationId, (map.get(locationId) ?? 0) + quantity);
   }
-  return Array.from(map.entries()).map(([locationId, quantity]) => ({ locationId, quantity }));
+  return Array.from(map.entries()).map(([locationId, quantity]) => ({
+    locationId,
+    quantity,
+  }));
 }
 
 function assignedMatchesTotal(assignments, totalQuantity) {
@@ -62,12 +66,12 @@ describe("productStockTracking - isLowStock()", function () {
 
 describe("productStockTracking - getLowStockItems()", function () {
   const items = [
-    { _id: "1", name: "Hex bolts",     totalQuantity: 4,  reorderAt: 25 },
-    { _id: "2", name: "Pine planks",   totalQuantity: 47, reorderAt: 60 },
-    { _id: "3", name: "Adj wrench",    totalQuantity: 23, reorderAt: 30 },
+    { _id: "1", name: "Hex bolts", totalQuantity: 4, reorderAt: 25 },
+    { _id: "2", name: "Pine planks", totalQuantity: 47, reorderAt: 60 },
+    { _id: "3", name: "Adj wrench", totalQuantity: 23, reorderAt: 30 },
     { _id: "4", name: "LED bulbs E27", totalQuantity: 50, reorderAt: 30 },
-    { _id: "5", name: "Garden hose",   totalQuantity: 7,  reorderAt: 20 },
-    { _id: "6", name: "No threshold",  totalQuantity: 3,  reorderAt: 0  },
+    { _id: "5", name: "Garden hose", totalQuantity: 7, reorderAt: 20 },
+    { _id: "6", name: "No threshold", totalQuantity: 3, reorderAt: 0 },
   ];
 
   it("returns items at or below their reorderAt threshold", function () {
@@ -183,9 +187,7 @@ describe("productStockTracking - getLowStockItems() edge cases", function () {
   });
 
   it("excludes item missing reorderAt field entirely", function () {
-    const items = [
-      { _id: "1", name: "Item A", totalQuantity: 5 },
-    ];
+    const items = [{ _id: "1", name: "Item A", totalQuantity: 5 }];
     const result = getLowStockItems(items);
     assert.deepStrictEqual(result, []);
   });

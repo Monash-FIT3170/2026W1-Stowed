@@ -25,8 +25,12 @@ function getDropPlacement({
 
   const wPixels = template.width * px;
   const hPixels = template.height * px;
-  const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : x - wPixels / 2;
-  const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : y - hPixels / 2;
+  const snappedX = snapEnabled
+    ? snapToGrid(x - wPixels / 2, gridSizePx)
+    : x - wPixels / 2;
+  const snappedY = snapEnabled
+    ? snapToGrid(y - hPixels / 2, gridSizePx)
+    : y - hPixels / 2;
 
   if (x < 0 || y < 0 || x > width || y > height) return null;
 
@@ -119,7 +123,9 @@ describe("Grid Snapping - Canvas alignment and snapping to grid", function () {
       ["1m", "2m", "3m", "4m", "1m", "2m"],
     );
     assert.ok(lines.every((line) => line.props.stroke === COLOURS.CANVAS_GRID));
-    assert.ok(labels.every((label) => label.props.fill === COLOURS.CANVAS_LABEL));
+    assert.ok(
+      labels.every((label) => label.props.fill === COLOURS.CANVAS_LABEL),
+    );
   });
 
   it("does not draw grid lines or labels at the origin", function () {
@@ -134,7 +140,11 @@ describe("Grid Snapping - Canvas alignment and snapping to grid", function () {
     const lines = children.filter((child) => child.props.points);
     const labels = children.filter((child) => child.props.text);
 
-    assert.ok(lines.every((line) => line.props.points[0] !== 0 || line.props.points[1] !== 0));
+    assert.ok(
+      lines.every(
+        (line) => line.props.points[0] !== 0 || line.props.points[1] !== 0,
+      ),
+    );
     assert.ok(labels.every((label) => label.props.text !== "0m"));
   });
 

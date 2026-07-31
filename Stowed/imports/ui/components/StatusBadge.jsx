@@ -39,7 +39,8 @@ export function StatusBadge({ quantity, threshold }) {
         display: "inline-block",
       }}
     >
-      {icon}{label}
+      {icon}
+      {label}
     </span>
   );
 }

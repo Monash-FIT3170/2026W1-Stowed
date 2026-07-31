@@ -1,66 +1,71 @@
-import React, { useState } from 'react';
-import { Meteor } from 'meteor/meteor';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import './Register.css';
+import React, { useState } from "react";
+import { Meteor } from "meteor/meteor";
+import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import "./Register.css";
 
 /**
  * Login Page
  */
 export const Login = () => {
-  const [orgCode, setOrgCode] = useState('');      // organisation code
-  const [login, setLogin] = useState('');          // email or username
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [orgCode, setOrgCode] = useState(""); // organisation code
+  const [login, setLogin] = useState(""); // email or username
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     // 1. Organisation required first
     if (!orgCode.trim()) {
-      setError('Please enter your organisation code.');
+      setError("Please enter your organisation code.");
       return;
     }
 
     // 2. Other fields
     if (!login.trim() || !password) {
-      setError('Please fill in all fields.');
+      setError("Please fill in all fields.");
       return;
     }
 
     setLoading(true);
 
     try {
-    await Meteor.callAsync('users.checkOrganisation', {
-      orgCode: orgCode.trim(),
-      login: login.trim(),
-    });
-
-    // Compound the username with the org code so Meteor can find the globally-unique account
-    const identifier = login.includes('@')
-      ? login
-      : { username: `${orgCode.trim().toLowerCase()}~${login.trim()}` };
-
-    await new Promise((resolve, reject) => {
-      Meteor.loginWithPassword(identifier, password, (err) => {
-        if (err) reject(err);
-        else resolve();
+      await Meteor.callAsync("users.checkOrganisation", {
+        orgCode: orgCode.trim(),
+        login: login.trim(),
       });
-    });
-      navigate('/');
+
+      // Compound the username with the org code so Meteor can find the globally-unique account
+      const identifier = login.includes("@")
+        ? login
+        : { username: `${orgCode.trim().toLowerCase()}~${login.trim()}` };
+
+      await new Promise((resolve, reject) => {
+        Meteor.loginWithPassword(identifier, password, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      navigate("/");
     } catch (err) {
-      const reason = err.reason || err.message || '';
-      if (reason.toLowerCase().includes('incorrect password')) {
-        setError('Incorrect password. Please try again.');
-      } else if (reason.toLowerCase().includes('user not found') || reason.toLowerCase().includes('no user')) {
-        setError('No account found with those details.');
-      } else if (err.error === 'too-many-requests') {
-        setError('Too many attempts. Please wait a moment before trying again.');
+      const reason = err.reason || err.message || "";
+      if (reason.toLowerCase().includes("incorrect password")) {
+        setError("Incorrect password. Please try again.");
+      } else if (
+        reason.toLowerCase().includes("user not found") ||
+        reason.toLowerCase().includes("no user")
+      ) {
+        setError("No account found with those details.");
+      } else if (err.error === "too-many-requests") {
+        setError(
+          "Too many attempts. Please wait a moment before trying again.",
+        );
       } else {
-        setError('Login failed. Please check your details and try again.');
+        setError("Login failed. Please check your details and try again.");
       }
     } finally {
       setLoading(false);
@@ -72,9 +77,12 @@ export const Login = () => {
       <section className="auth-shell" aria-label="Login">
         <div className="auth-brand-panel">
           <p className="auth-kicker">Stocktake / Floor maps</p>
-          <h1>Welcome back to <em>Stowed</em></h1>
+          <h1>
+            Welcome back to <em>Stowed</em>
+          </h1>
           <p>
-            Map your shop or home storage, scan QR labels, and keep every product easy to find.
+            Map your shop or home storage, scan QR labels, and keep every
+            product easy to find.
           </p>
           <ul className="auth-feature-list">
             <li>Storage units and product locations</li>
@@ -102,7 +110,7 @@ export const Login = () => {
                 className="auth-input"
               />
             </label>
-            
+
             <label className="auth-field" htmlFor="login">
               <span>Email or Username</span>
               <input
@@ -132,12 +140,14 @@ export const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="auth-primary-button">
-              {loading ? 'Logging in...' : 'Log In'}
+              className="auth-primary-button"
+            >
+              {loading ? "Logging in..." : "Log In"}
             </button>
 
             <p className="auth-switch">
-              New to Stowed? <Link to="/register">Set up your organisation</Link>
+              New to Stowed?{" "}
+              <Link to="/register">Set up your organisation</Link>
             </p>
           </form>
         </div>

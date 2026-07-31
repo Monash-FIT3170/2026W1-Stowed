@@ -6,23 +6,37 @@ export function searchProducts(products, query) {
     const description = (item.description || "").toLowerCase();
     const sku = (item.sku || "").toLowerCase();
     const id = (item._id || "").toLowerCase();
-    return name.includes(q) || description.includes(q) || sku.includes(q) || id.includes(q);
+    return (
+      name.includes(q) ||
+      description.includes(q) ||
+      sku.includes(q) ||
+      id.includes(q)
+    );
   });
 }
 
 export function filterLowStock(products) {
   return products.filter(
-    (item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt
+    (item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt,
   );
 }
 
-export function filterByStorageUnit(products, productRecords, storageLocations, unitId) {
+export function filterByStorageUnit(
+  products,
+  productRecords,
+  storageLocations,
+  unitId,
+) {
   if (!unitId) return products;
   const unitLocationIds = new Set(
-    storageLocations.filter((l) => l.storageUnitId === unitId).map((l) => l._id)
+    storageLocations
+      .filter((l) => l.storageUnitId === unitId)
+      .map((l) => l._id),
   );
   const productIdsInUnit = new Set(
-    productRecords.filter((r) => unitLocationIds.has(r.locationId)).map((r) => r.productId)
+    productRecords
+      .filter((r) => unitLocationIds.has(r.locationId))
+      .map((r) => r.productId),
   );
   return products.filter((item) => productIdsInUnit.has(item._id));
 }

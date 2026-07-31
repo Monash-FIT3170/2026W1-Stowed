@@ -27,7 +27,9 @@ function callMethod(methodName, params) {
 
 function buildLocationLabel(location, storageUnits, floorMaps, sites) {
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
+  const floorMap = unit
+    ? floorMaps.find((f) => f._id === unit.floorMapId)
+    : null;
   const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
   return [site?.name, floorMap?.name, unit?.name, location.name]
     .filter(Boolean)
@@ -63,22 +65,33 @@ export function EditProductPage() {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const { loading, product, originalRecords, sites, floorMaps, storageUnits, storageLocations } =
-    useTracker(() => {
-      const subProducts = Meteor.subscribe("products");
-      const subRecords = Meteor.subscribe("productRecords");
-      const subLocations = Meteor.subscribe("locations.all");
-      const loading = !subProducts.ready() || !subRecords.ready() || !subLocations.ready();
-      return {
-        loading,
-        product: Products.findOne(productId),
-        originalRecords: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
-        sites: Sites.find().fetch(),
-        floorMaps: FloorMaps.find().fetch(),
-        storageUnits: StorageUnits.find().fetch(),
-        storageLocations: StorageLocations.find().fetch(),
-      };
-    }, [productId]);
+  const {
+    loading,
+    product,
+    originalRecords,
+    sites,
+    floorMaps,
+    storageUnits,
+    storageLocations,
+  } = useTracker(() => {
+    const subProducts = Meteor.subscribe("products");
+    const subRecords = Meteor.subscribe("productRecords");
+    const subLocations = Meteor.subscribe("locations.all");
+    const loading =
+      !subProducts.ready() || !subRecords.ready() || !subLocations.ready();
+    return {
+      loading,
+      product: Products.findOne(productId),
+      originalRecords: ProductRecords.find(
+        { productId },
+        { sort: { quantity: -1 } },
+      ).fetch(),
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+    };
+  }, [productId]);
 
   useEffect(() => {
     if (!loading && product && !initialised) {
@@ -104,8 +117,13 @@ export function EditProductPage() {
   const nameIsValid = name.trim().length > 0;
   const totalQuantityIsValid = totalQuantity !== "" && !isNaN(parsedTotal);
 
-  const validAssignments = assignments.filter((a) => a.locationId && a.quantity !== "");
-  const assignedTotal = validAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
+  const validAssignments = assignments.filter(
+    (a) => a.locationId && a.quantity !== "",
+  );
+  const assignedTotal = validAssignments.reduce(
+    (sum, a) => sum + parseInt(a.quantity, 10),
+    0,
+  );
   const remaining = totalQuantityIsValid ? parsedTotal - assignedTotal : null;
   const isBalanced = totalQuantityIsValid && remaining === 0;
   const canSave = nameIsValid && totalQuantityIsValid && isBalanced;
@@ -138,20 +156,40 @@ export function EditProductPage() {
     const normalise = (arr) =>
       [...arr].sort((a, b) => a.locationId.localeCompare(b.locationId));
     const currentNorm = normalise(
-      validAssignments.map((a) => ({ locationId: a.locationId, quantity: parseInt(a.quantity, 10) })),
+      validAssignments.map((a) => ({
+        locationId: a.locationId,
+        quantity: parseInt(a.quantity, 10),
+      })),
     );
     const originalNorm = normalise(
-      originalRecords.map((r) => ({ locationId: r.locationId, quantity: r.quantity })),
+      originalRecords.map((r) => ({
+        locationId: r.locationId,
+        quantity: r.quantity,
+      })),
     );
     const assignmentsChanged =
       currentNorm.length !== originalNorm.length ||
       currentNorm.some(
-        (a, i) => a.locationId !== originalNorm[i].locationId || a.quantity !== originalNorm[i].quantity,
+        (a, i) =>
+          a.locationId !== originalNorm[i].locationId ||
+          a.quantity !== originalNorm[i].quantity,
       );
     if (assignmentsChanged) result.assignments = true;
 
     return result;
-  }, [initialised, product, name, category, brand, parsedTotal, unitCost, reorderAt, imageUrls, validAssignments, originalRecords]);
+  }, [
+    initialised,
+    product,
+    name,
+    category,
+    brand,
+    parsedTotal,
+    unitCost,
+    reorderAt,
+    imageUrls,
+    validAssignments,
+    originalRecords,
+  ]);
 
   function addAssignment() {
     setAssignments([...assignments, { locationId: "", quantity: "" }]);
@@ -160,7 +198,9 @@ export function EditProductPage() {
     setAssignments(assignments.filter((_, i) => i !== index));
   }
   function updateAssignment(index, field, value) {
-    setAssignments(assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)));
+    setAssignments(
+      assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
+    );
   }
 
   async function handleImageSelect(event) {
@@ -231,21 +271,29 @@ export function EditProductPage() {
     }
   }
 
-  if (loading || !initialised) return <div className="p-8 text-center">Loading...</div>;
-  if (!product) return <div className="p-8 text-center">Product not found.</div>;
+  if (loading || !initialised)
+    return <div className="p-8 text-center">Loading...</div>;
+  if (!product)
+    return <div className="p-8 text-center">Product not found.</div>;
 
   return (
     <div className="product-detail-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <Link to="/inventory/list" className="breadcrumb-link">Inventory</Link>
+          <Link to="/inventory/list" className="breadcrumb-link">
+            Inventory
+          </Link>
           <span className="breadcrumb-separator">/</span>
-          <Link to={`/inventory/${productId}`} className="breadcrumb-link">Product</Link>
+          <Link to={`/inventory/${productId}`} className="breadcrumb-link">
+            Product
+          </Link>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Edit</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">Edit <em>{name}</em></h1>
+          <h1 className="header-title">
+            Edit <em>{name}</em>
+          </h1>
         </div>
       </div>
 
@@ -296,7 +344,7 @@ export function EditProductPage() {
             </h2>
             <div className="section-content">
               <div className="form-row">
-                  <div className="form-group">
+                <div className="form-group">
                   <label>Unit cost</label>
                   <input
                     type="number"
@@ -341,25 +389,43 @@ export function EditProductPage() {
               Storage locations
             </h2>
             <div className="section-content">
-              <p style={{ marginBottom: "16px", fontSize: "13px", color: "var(--text-muted)" }}>
+              <p
+                style={{
+                  marginBottom: "16px",
+                  fontSize: "13px",
+                  color: "var(--text-muted)",
+                }}
+              >
                 All stock must be assigned before saving.
               </p>
 
               {assignments.map((assignment, index) => (
                 <div
                   key={index}
-                  style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    alignItems: "center",
+                    marginBottom: "8px",
+                  }}
                 >
                   <select
                     value={assignment.locationId}
-                    onChange={(e) => updateAssignment(index, "locationId", e.target.value)}
+                    onChange={(e) =>
+                      updateAssignment(index, "locationId", e.target.value)
+                    }
                     className="form-input"
                     style={{ flex: 2 }}
                   >
                     <option value="">Select a location...</option>
                     {storageLocations.map((location) => (
                       <option key={location._id} value={location._id}>
-                        {buildLocationLabel(location, storageUnits, floorMaps, sites)}
+                        {buildLocationLabel(
+                          location,
+                          storageUnits,
+                          floorMaps,
+                          sites,
+                        )}
                       </option>
                     ))}
                   </select>
@@ -369,7 +435,9 @@ export function EditProductPage() {
                     min="0"
                     placeholder="Qty"
                     value={assignment.quantity}
-                    onChange={(e) => updateAssignment(index, "quantity", e.target.value)}
+                    onChange={(e) =>
+                      updateAssignment(index, "quantity", e.target.value)
+                    }
                     className="form-input"
                     style={{ maxWidth: "80px" }}
                   />
@@ -384,15 +452,22 @@ export function EditProductPage() {
                 </div>
               ))}
 
-              <button type="button" onClick={addAssignment} className="btn-secondary" style={{ marginTop: "12px" }}>
+              <button
+                type="button"
+                onClick={addAssignment}
+                className="btn-secondary"
+                style={{ marginTop: "12px" }}
+              >
                 + Add Location
               </button>
 
               {remaining !== null && (
                 <p className="warning-text" style={{ marginTop: "12px" }}>
                   {remaining === 0 && `All ${parsedTotal} units assigned.`}
-                  {remaining > 0 && `${assignedTotal} of ${parsedTotal} assigned - ${remaining} remaining.`}
-                  {remaining < 0 && `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? "s" : ""}.`}
+                  {remaining > 0 &&
+                    `${assignedTotal} of ${parsedTotal} assigned - ${remaining} remaining.`}
+                  {remaining < 0 &&
+                    `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? "s" : ""}.`}
                 </p>
               )}
             </div>
@@ -411,10 +486,16 @@ export function EditProductPage() {
                   <img
                     src={imageUrls[mainImageIndex]}
                     alt="Product preview"
-                    style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
                   />
                 ) : (
-                  <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                  <span
+                    style={{ fontSize: "13px", color: "var(--text-muted)" }}
+                  >
                     {uploadingImage ? "Uploading..." : "No image uploaded"}
                   </span>
                 )}
@@ -422,14 +503,25 @@ export function EditProductPage() {
 
               <div className="thumbnail-gallery">
                 {imageUrls.map((url, index) => (
-                  <div key={url} style={{ position: "relative", display: "inline-block" }}>
+                  <div
+                    key={url}
+                    style={{ position: "relative", display: "inline-block" }}
+                  >
                     <button
                       type="button"
                       className={`thumbnail ${index === mainImageIndex ? "active" : ""}`}
                       onClick={() => setMainImageIndex(index)}
                       title="Set as main image"
                     >
-                      <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img
+                        src={url}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
                     </button>
                     <button
                       type="button"
@@ -474,7 +566,9 @@ export function EditProductPage() {
               </div>
 
               {uploadError && (
-                <p className="warning-text" style={{ marginTop: "8px" }}>{uploadError}</p>
+                <p className="warning-text" style={{ marginTop: "8px" }}>
+                  {uploadError}
+                </p>
               )}
             </div>
           </div>
@@ -485,7 +579,11 @@ export function EditProductPage() {
         <button className="btn-secondary" onClick={() => navigate(-1)}>
           Cancel
         </button>
-        <button className="btn-primary" onClick={handleSave} disabled={!canSave}>
+        <button
+          className="btn-primary"
+          onClick={handleSave}
+          disabled={!canSave}
+        >
           {isSaving ? "Saving..." : "Save changes"}
         </button>
       </div>
@@ -497,64 +595,165 @@ export function EditProductPage() {
             <h2 className="modal-title">Save changes?</h2>
             <p className="modal-text">The following fields will be updated:</p>
 
-            <div style={{ marginBottom: "16px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div
+              style={{
+                marginBottom: "16px",
+                fontSize: "13px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
               {changes.name && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Name</div>
-                  <div style={{ color: "var(--text-muted)" }}>{changes.name.from} → {changes.name.to}</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Name
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    {changes.name.from} → {changes.name.to}
+                  </div>
                 </div>
               )}
               {changes.category && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Category</div>
-                  <div style={{ color: "var(--text-muted)" }}>{changes.category.from} → {changes.category.to}</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Category
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    {changes.category.from} → {changes.category.to}
+                  </div>
                 </div>
               )}
               {changes.brand && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Brand</div>
-                  <div style={{ color: "var(--text-muted)" }}>{changes.brand.from} → {changes.brand.to}</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Brand
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    {changes.brand.from} → {changes.brand.to}
+                  </div>
                 </div>
               )}
               {changes.totalQuantity && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Total quantity</div>
-                  <div style={{ color: "var(--text-muted)" }}>{changes.totalQuantity.from} → {changes.totalQuantity.to}</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Total quantity
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    {changes.totalQuantity.from} → {changes.totalQuantity.to}
+                  </div>
                 </div>
               )}
               {changes.unitCost && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Unit cost</div>
-                  <div style={{ color: "var(--text-muted)" }}>${changes.unitCost.from} → ${changes.unitCost.to}</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Unit cost
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    ${changes.unitCost.from} → ${changes.unitCost.to}
+                  </div>
                 </div>
               )}
               {changes.reorderAt && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Reorder at</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Reorder at
+                  </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {changes.reorderAt.from ?? "-"} → {changes.reorderAt.to ?? "-"}
+                    {changes.reorderAt.from ?? "-"} →{" "}
+                    {changes.reorderAt.to ?? "-"}
                   </div>
                 </div>
               )}
               {changes.images && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>Images</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Images
+                  </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {changes.images.from.length} image{changes.images.from.length !== 1 ? "s" : ""} →{" "}
-                    {changes.images.to.length} image{changes.images.to.length !== 1 ? "s" : ""}
+                    {changes.images.from.length} image
+                    {changes.images.from.length !== 1 ? "s" : ""} →{" "}
+                    {changes.images.to.length} image
+                    {changes.images.to.length !== 1 ? "s" : ""}
                   </div>
                 </div>
               )}
               {changes.assignments && (
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "6px" }}>Storage locations</div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Storage locations
+                  </div>
                   {validAssignments.map((a, i) => {
-                    const loc = storageLocations.find((l) => l._id === a.locationId);
-                    const label = loc ? buildLocationLabel(loc, storageUnits, floorMaps, sites) : a.locationId;
+                    const loc = storageLocations.find(
+                      (l) => l._id === a.locationId,
+                    );
+                    const label = loc
+                      ? buildLocationLabel(loc, storageUnits, floorMaps, sites)
+                      : a.locationId;
                     return (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", marginBottom: "4px" }}>
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          color: "var(--text-muted)",
+                          marginBottom: "4px",
+                        }}
+                      >
                         <span>{label}</span>
-                        <span style={{ fontWeight: 600, color: "var(--text-dark)" }}>{a.quantity}</span>
+                        <span
+                          style={{ fontWeight: 600, color: "var(--text-dark)" }}
+                        >
+                          {a.quantity}
+                        </span>
                       </div>
                     );
                   })}
@@ -564,10 +763,18 @@ export function EditProductPage() {
 
             {saveError && <div className="warning-text">{saveError}</div>}
             <div className="modal-actions">
-              <button className="btn-secondary" disabled={isSaving} onClick={() => setShowSaveModal(false)}>
+              <button
+                className="btn-secondary"
+                disabled={isSaving}
+                onClick={() => setShowSaveModal(false)}
+              >
                 Cancel
               </button>
-              <button className="btn-primary" disabled={isSaving} onClick={confirmSave}>
+              <button
+                className="btn-primary"
+                disabled={isSaving}
+                onClick={confirmSave}
+              >
                 {isSaving ? "Saving..." : "Confirm save"}
               </button>
             </div>

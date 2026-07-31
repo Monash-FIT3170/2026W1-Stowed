@@ -1,4 +1,4 @@
-import { useState } from "react"; 
+import { useState } from "react";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
@@ -31,17 +31,16 @@ export function CanvasToolbar({
     ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
     : "None";
 
-    // floor dimension validation
-    const updateDimension = (dimensionType, rawValue) => {
+  // floor dimension validation
+  const updateDimension = (dimensionType, rawValue) => {
     setInputMeters((prev) => ({ ...prev, [dimensionType]: rawValue }));
-      const val = Number(rawValue);
+    const val = Number(rawValue);
     if (rawValue === "" || Number.isNaN(val) || val <= 0) return;
     setFloorSize((prev) => ({
       ...prev,
       [dimensionType]: val * CANVAS_CONFIG.PIXELS_PER_METER,
     }));
-    };
-
+  };
 
   const toolButtonStyle = (tool) => ({
     ...buttonStyles.base,
@@ -54,7 +53,7 @@ export function CanvasToolbar({
   const disabledStyle = (isDisabled) =>
     isDisabled ? buttonStyles.disabled : null;
 
-    return (
+  return (
     <div style={toolbarStyles.bar}>
       <div style={toolbarStyles.status}>
         <span>Active tool</span>

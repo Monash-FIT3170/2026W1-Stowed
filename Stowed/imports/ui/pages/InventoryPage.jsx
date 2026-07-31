@@ -23,15 +23,19 @@ export function InventoryPage() {
   }
 
   const totalItems = items.length;
-  const lowStockCount = items.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt).length;
-  const totalValue = items.reduce((sum, item) => sum + (item.unitCost * item.totalQuantity || 0), 0);
+  const lowStockCount = items.filter(
+    (item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt,
+  ).length;
+  const totalValue = items.reduce(
+    (sum, item) => sum + (item.unitCost * item.totalQuantity || 0),
+    0,
+  );
   const recentItems = items.slice(0, 5);
 
   return (
     <div className="inventory-page-container">
       <div className="breadcrumb">
-        <span className="breadcrumb-link">Inventory</span>
-        {" "}&nbsp;/{" "}&nbsp;
+        <span className="breadcrumb-link">Inventory</span> &nbsp;/ &nbsp;
         <span className="breadcrumb-current">Dashboard</span>
       </div>
       <h1 className="page-heading">Hello, {username || "User"}</h1>
@@ -67,15 +71,17 @@ export function InventoryPage() {
 
         {recentItems.map((item) => (
           <div key={item._id} className="table-row">
-            <ProductThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
+            <ProductThumbnail
+              images={item.images || item.catalogImages}
+              photoUrl={item.photoUrl}
+              name={item.name}
+            />
             <span>
               <Link to={`/inventory/${item._id}`} className="item-name-link">
                 {item.name}
               </Link>
             </span>
-            <span>
-              {item.totalQuantity}
-            </span>
+            <span>{item.totalQuantity}</span>
             <StatusBadge
               quantity={item.totalQuantity}
               threshold={item.reorderAt != null ? item.reorderAt : null}

@@ -1,5 +1,4 @@
-import { Meteor } from 'meteor/meteor';
-
+import { Meteor } from "meteor/meteor";
 
 // Returns the part of a data URL after the comma.
 // "data:image/png;base64,iVBORw..." -> "iVBORw..."
@@ -17,14 +16,15 @@ export function getFileExtension(filename) {
 
 // True if the file looks like an image based on its MIME type.
 export function isImageFile(file) {
-  return Boolean(file && typeof file.type === "string" && file.type.startsWith("image/"));
+  return Boolean(
+    file && typeof file.type === "string" && file.type.startsWith("image/"),
+  );
 }
 
 // Builds the public URL where an uploaded image will be served from.
 export function buildUploadUrl(timestamp, extension) {
   return `/Uploads/images/${timestamp}.${extension}`;
 }
-
 
 // Client side
 // Uploads an image file to the server.
@@ -37,13 +37,13 @@ export function uploadImageToServer(file) {
       const base64Data = extractBase64FromDataUrl(reader.result);
       const extension = getFileExtension(file.name);
 
-      Meteor.call('uploads.image', base64Data, extension, (error, url) => {
+      Meteor.call("uploads.image", base64Data, extension, (error, url) => {
         if (error) reject(error);
         else resolve(url);
       });
     };
 
-    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onerror = () => reject(new Error("Could not read file"));
 
     // Start reading the file
     reader.readAsDataURL(file);
@@ -53,13 +53,13 @@ export function uploadImageToServer(file) {
 // Server side code
 // only runs on the server.
 if (Meteor.isServer) {
-  const fs = require('fs');
-  const path = require('path');
-  const { WebApp } = require('meteor/webapp');
-  const { check } = require('meteor/check');
+  const fs = require("fs");
+  const path = require("path");
+  const { WebApp } = require("meteor/webapp");
+  const { check } = require("meteor/check");
 
-  const projectRoot = process.cwd().split(path.sep + '.meteor')[0];
-  const uploadDir = path.join(projectRoot, 'Uploads', 'images');
+  const projectRoot = process.cwd().split(path.sep + ".meteor")[0];
+  const uploadDir = path.join(projectRoot, "Uploads", "images");
 
   fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -84,13 +84,13 @@ if (Meteor.isServer) {
   });
 
   // Static file server (SERVE FILES ONLY)
-  WebApp.connectHandlers.use('/Uploads/images', (req, res) => {
+  WebApp.connectHandlers.use("/Uploads/images", (req, res) => {
     const filename = path.basename(req.url);
     const filepath = path.join(uploadDir, filename);
 
     if (!fs.existsSync(filepath)) {
       res.writeHead(404);
-      res.end('Not found');
+      res.end("Not found");
       return;
     }
 

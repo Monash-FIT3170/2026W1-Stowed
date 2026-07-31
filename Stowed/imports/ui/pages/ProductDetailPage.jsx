@@ -87,32 +87,50 @@ export function ProductDetailView({
   function openRestockModal() {
     setRestockQty("");
     setRestockAssignments(
-      records.map((r) => ({ locationId: r.locationId, quantity: String(r.quantity) }))
+      records.map((r) => ({
+        locationId: r.locationId,
+        quantity: String(r.quantity),
+      })),
     );
     setIsRestocking(false);
     setRestockError("");
     setShowRestockModal(true);
   }
   function addRestockAssignment() {
-    setRestockAssignments((prev) => [...prev, { locationId: "", quantity: "" }]);
+    setRestockAssignments((prev) => [
+      ...prev,
+      { locationId: "", quantity: "" },
+    ]);
   }
   function removeRestockAssignment(index) {
     setRestockAssignments((prev) => prev.filter((_, i) => i !== index));
   }
   function updateRestockAssignment(index, field, value) {
     setRestockAssignments((prev) =>
-      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
+      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
     );
   }
-  const parsedRestockQty   = parseInt(restockQty, 10);
-  const restockQtyIsValid  = restockQty !== "" && !isNaN(parsedRestockQty) && parsedRestockQty > 0;
+  const parsedRestockQty = parseInt(restockQty, 10);
+  const restockQtyIsValid =
+    restockQty !== "" && !isNaN(parsedRestockQty) && parsedRestockQty > 0;
   const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
-  const restockTargetTotal = restockQtyIsValid ? currentStock + parsedRestockQty : null;
-  const validRestockAssignments = restockAssignments.filter((a) => a.locationId && a.quantity !== "");
-  const restockAssignedTotal = validRestockAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
-  const restockRemaining   = restockTargetTotal !== null ? restockTargetTotal - restockAssignedTotal : null;
-  const restockIsBalanced  = restockTargetTotal !== null && restockRemaining === 0;
-  const restockCanSubmit   = restockQtyIsValid && restockIsBalanced;
+  const restockTargetTotal = restockQtyIsValid
+    ? currentStock + parsedRestockQty
+    : null;
+  const validRestockAssignments = restockAssignments.filter(
+    (a) => a.locationId && a.quantity !== "",
+  );
+  const restockAssignedTotal = validRestockAssignments.reduce(
+    (sum, a) => sum + parseInt(a.quantity, 10),
+    0,
+  );
+  const restockRemaining =
+    restockTargetTotal !== null
+      ? restockTargetTotal - restockAssignedTotal
+      : null;
+  const restockIsBalanced =
+    restockTargetTotal !== null && restockRemaining === 0;
+  const restockCanSubmit = restockQtyIsValid && restockIsBalanced;
 
   async function confirmRestock() {
     setIsRestocking(true);
@@ -123,7 +141,7 @@ export function ProductDetailView({
         additionalQuantity: parsedRestockQty,
         assignments: validRestockAssignments.map((a) => ({
           locationId: a.locationId,
-          quantity:   parseInt(a.quantity, 10),
+          quantity: parseInt(a.quantity, 10),
         })),
       });
       setShowRestockModal(false);
@@ -135,7 +153,7 @@ export function ProductDetailView({
 
   const unitCost = Number(item.unitCost);
   const reorderAt = item.reorderAt ?? null;
-  const galleryImages = imageUrls.length > 0 ? imageUrls : (item.images || []);
+  const galleryImages = imageUrls.length > 0 ? imageUrls : item.images || [];
 
   // For each gallery image, determine whether it originates from the
   // uploaded images (so it can be removed). We treat `imageUrls` (current
@@ -151,24 +169,24 @@ export function ProductDetailView({
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
     ? records.map((record) => ({
-      key: record._id,
-      label: buildLocationLabel(
-        record.locationId,
-        storageLocations,
-        storageUnits,
-        floorMaps,
-        sites,
-      ),
-      quantity: record.quantity,
-    }))
+        key: record._id,
+        label: buildLocationLabel(
+          record.locationId,
+          storageLocations,
+          storageUnits,
+          floorMaps,
+          sites,
+        ),
+        quantity: record.quantity,
+      }))
     : item.location
       ? [
-        {
-          key: "legacy-location",
-          label: item.location,
-          quantity: currentStock,
-        },
-      ]
+          {
+            key: "legacy-location",
+            label: item.location,
+            quantity: currentStock,
+          },
+        ]
       : [];
 
   useEffect(() => {
@@ -241,7 +259,10 @@ export function ProductDetailView({
 
       // Auto-save uploaded image list to server so it appears in lists.
       try {
-        await callMethod("products.setImages", { productId, images: nextImages });
+        await callMethod("products.setImages", {
+          productId,
+          images: nextImages,
+        });
       } catch (err) {
         console.error("Failed to auto-save uploaded images:", err);
       }
@@ -319,9 +340,15 @@ export function ProductDetailView({
           <div className="header-content">
             <div className="header-icon-section">
               {galleryImages.length > 0 ? (
-                <img className="header-icon" src={galleryImages[0]} alt="Product" />
+                <img
+                  className="header-icon"
+                  src={galleryImages[0]}
+                  alt="Product"
+                />
               ) : (
-                <div className="header-icon header-icon-placeholder">No photo</div>
+                <div className="header-icon header-icon-placeholder">
+                  No photo
+                </div>
               )}
             </div>
             <div className="header-info">
@@ -330,7 +357,11 @@ export function ProductDetailView({
               <div className="header-meta">
                 <span>{currentStock} in stock</span>
                 <span></span>
-                <span>{reorderAt != null ? `Reorder at ${reorderAt}` : "No reorder threshold"}</span>
+                <span>
+                  {reorderAt != null
+                    ? `Reorder at ${reorderAt}`
+                    : "No reorder threshold"}
+                </span>
               </div>
             </div>
           </div>
@@ -465,7 +496,9 @@ export function ProductDetailView({
                       className="main-image"
                     />
                   ) : (
-                    <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                    <span
+                      style={{ color: "var(--text-muted)", fontSize: "13px" }}
+                    >
                       {uploadingImage ? "Uploading..." : "No image uploaded"}
                     </span>
                   )}
@@ -531,7 +564,6 @@ export function ProductDetailView({
             </div>
           </div>
         </div>
-
       </div>
 
       {/* -- RESTOCK MODAL -- */}
@@ -539,14 +571,22 @@ export function ProductDetailView({
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: "480px", width: "100%" }}>
             <h3 className="modal-title">Restock "{item.name}"</h3>
-            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
-              Current stock: <strong>{currentStock}</strong>. Enter units being added, then
-              redistribute <em>all</em> stock across locations.
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--text-muted)",
+                marginBottom: "16px",
+              }}
+            >
+              Current stock: <strong>{currentStock}</strong>. Enter units being
+              added, then redistribute <em>all</em> stock across locations.
             </p>
 
             {/* Units being added */}
             <div className="form-group" style={{ marginBottom: "16px" }}>
-              <label style={{ fontWeight: 600, fontSize: "13px" }}>Units being added</label>
+              <label style={{ fontWeight: 600, fontSize: "13px" }}>
+                Units being added
+              </label>
               <input
                 type="number"
                 min="1"
@@ -557,28 +597,62 @@ export function ProductDetailView({
                 disabled={isRestocking}
               />
               {restockTargetTotal !== null && (
-                <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--text-muted)" }}>
+                <p
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "12px",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   New total will be <strong>{restockTargetTotal}</strong> units.
                 </p>
               )}
             </div>
 
             {/* Location assignments */}
-            <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: "14px" }}>
-              <p style={{ fontWeight: 600, fontSize: "13px", marginBottom: "10px" }}>
+            <div
+              style={{
+                borderTop: "1px solid var(--border-light)",
+                paddingTop: "14px",
+              }}
+            >
+              <p
+                style={{
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  marginBottom: "10px",
+                }}
+              >
                 Assign all stock to locations
               </p>
               {restockAssignments.map((assignment, index) => {
                 const usedElsewhere = new Set(
-                  restockAssignments.filter((_, i) => i !== index).map((a) => a.locationId).filter(Boolean)
+                  restockAssignments
+                    .filter((_, i) => i !== index)
+                    .map((a) => a.locationId)
+                    .filter(Boolean),
                 );
                 return (
-                  <div key={index} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
                     <select
                       className="form-input"
                       style={{ flex: 2 }}
                       value={assignment.locationId}
-                      onChange={(e) => updateRestockAssignment(index, "locationId", e.target.value)}
+                      onChange={(e) =>
+                        updateRestockAssignment(
+                          index,
+                          "locationId",
+                          e.target.value,
+                        )
+                      }
                       disabled={isRestocking}
                     >
                       <option value="">Select a location...</option>
@@ -586,7 +660,13 @@ export function ProductDetailView({
                         .filter((loc) => !usedElsewhere.has(loc._id))
                         .map((loc) => (
                           <option key={loc._id} value={loc._id}>
-                            {buildLocationLabel(loc._id, storageLocations, storageUnits, floorMaps, sites)}
+                            {buildLocationLabel(
+                              loc._id,
+                              storageLocations,
+                              storageUnits,
+                              floorMaps,
+                              sites,
+                            )}
                           </option>
                         ))}
                     </select>
@@ -597,37 +677,83 @@ export function ProductDetailView({
                       className="form-input"
                       style={{ maxWidth: "80px" }}
                       value={assignment.quantity}
-                      onChange={(e) => updateRestockAssignment(index, "quantity", e.target.value)}
+                      onChange={(e) =>
+                        updateRestockAssignment(
+                          index,
+                          "quantity",
+                          e.target.value,
+                        )
+                      }
                       disabled={isRestocking}
                     />
-                    <button type="button" className="btn-secondary" onClick={() => removeRestockAssignment(index)} disabled={isRestocking}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => removeRestockAssignment(index)}
+                      disabled={isRestocking}
+                    >
                       Remove
                     </button>
                   </div>
                 );
               })}
-              <button type="button" className="btn-secondary" style={{ marginTop: "4px" }} onClick={addRestockAssignment} disabled={isRestocking}>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ marginTop: "4px" }}
+                onClick={addRestockAssignment}
+                disabled={isRestocking}
+              >
                 + Add Location
               </button>
 
               {restockRemaining !== null && (
-                <p style={{ marginTop: "10px", fontSize: "12px", fontStyle: "italic", color: restockRemaining === 0 ? "var(--success)" : "var(--text-muted)" }}>
-                  {restockRemaining === 0 && `All ${restockTargetTotal} units assigned.`}
-                  {restockRemaining  > 0 && `${restockAssignedTotal} of ${restockTargetTotal} assigned - ${restockRemaining} remaining.`}
-                  {restockRemaining  < 0 && `Over-assigned by ${Math.abs(restockRemaining)} unit${Math.abs(restockRemaining) !== 1 ? "s" : ""}.`}
+                <p
+                  style={{
+                    marginTop: "10px",
+                    fontSize: "12px",
+                    fontStyle: "italic",
+                    color:
+                      restockRemaining === 0
+                        ? "var(--success)"
+                        : "var(--text-muted)",
+                  }}
+                >
+                  {restockRemaining === 0 &&
+                    `All ${restockTargetTotal} units assigned.`}
+                  {restockRemaining > 0 &&
+                    `${restockAssignedTotal} of ${restockTargetTotal} assigned - ${restockRemaining} remaining.`}
+                  {restockRemaining < 0 &&
+                    `Over-assigned by ${Math.abs(restockRemaining)} unit${Math.abs(restockRemaining) !== 1 ? "s" : ""}.`}
                 </p>
               )}
             </div>
 
             {restockError && (
-              <p style={{ marginTop: "10px", fontSize: "12px", color: "var(--danger, #b91c1c)" }}>{restockError}</p>
+              <p
+                style={{
+                  marginTop: "10px",
+                  fontSize: "12px",
+                  color: "var(--danger, #b91c1c)",
+                }}
+              >
+                {restockError}
+              </p>
             )}
 
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setShowRestockModal(false)} disabled={isRestocking}>
+              <button
+                className="btn-secondary"
+                onClick={() => setShowRestockModal(false)}
+                disabled={isRestocking}
+              >
                 Cancel
               </button>
-              <button className="btn-primary" onClick={confirmRestock} disabled={!restockCanSubmit || isRestocking}>
+              <button
+                className="btn-primary"
+                onClick={confirmRestock}
+                disabled={!restockCanSubmit || isRestocking}
+              >
                 {isRestocking ? "Saving..." : "Confirm Restock"}
               </button>
             </div>

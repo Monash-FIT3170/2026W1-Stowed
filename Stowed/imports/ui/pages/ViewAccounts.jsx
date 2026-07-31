@@ -21,7 +21,12 @@ export function ViewAccounts() {
 
   const { users, currentUser } = useTracker(() => {
     const subscription = Meteor.subscribe("allUsers");
-    const users = Meteor.users.find({}, { fields: { emails: 1, "profile.role": 1, "profile.username": 1 } }).fetch();
+    const users = Meteor.users
+      .find(
+        {},
+        { fields: { emails: 1, "profile.role": 1, "profile.username": 1 } },
+      )
+      .fetch();
     return { users, currentUser: Meteor.user(), ready: subscription.ready() };
   }, []);
 
@@ -30,7 +35,10 @@ export function ViewAccounts() {
     const query = searchQuery.toLowerCase();
     return users.filter((user) => {
       const username = (user.profile?.username || "").toLowerCase();
-      const email = ((user.emails && user.emails[0]?.address) || "").toLowerCase();
+      const email = (
+        (user.emails && user.emails[0]?.address) ||
+        ""
+      ).toLowerCase();
       return username.includes(query) || email.includes(query);
     });
   }, [users, searchQuery]);
@@ -73,9 +81,14 @@ export function ViewAccounts() {
           <span className="breadcrumb-current">All accounts</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">Manage <em>Accounts</em></h1>
+          <h1 className="header-title">
+            Manage <em>Accounts</em>
+          </h1>
           {canCreateUsers && (
-            <button onClick={() => navigate("/register")} className="btn-primary">
+            <button
+              onClick={() => navigate("/register")}
+              className="btn-primary"
+            >
               + Create Account
             </button>
           )}
@@ -97,9 +110,14 @@ export function ViewAccounts() {
         <div className="detail-section">
           <div style={{ padding: "16px 20px 0", marginBottom: "8px" }}>
             <div className="recent-items-title">All Accounts</div>
-            <div className="recent-items-subtitle">{filteredUsers.length} of {users.length} accounts shown</div>
+            <div className="recent-items-subtitle">
+              {filteredUsers.length} of {users.length} accounts shown
+            </div>
           </div>
-          <div className="table-header" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
+          <div
+            className="table-header"
+            style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}
+          >
             <span>Username</span>
             <span>Email</span>
             <span>Role</span>
@@ -108,36 +126,60 @@ export function ViewAccounts() {
 
           {filteredUsers.length === 0 ? (
             <div className="empty-state">No accounts found.</div>
-          ) : filteredUsers.map((user) => (
-            <div key={user._id} className="table-row" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
-              <span style={{ fontWeight: 500 }}>{user.profile?.username}</span>
-              <span style={{ color: "var(--text-muted)" }}>{getEmail(user)}</span>
-              <span>{roleLabel(user.profile?.role)}</span>
-              <span>
-                {canDeleteUsers && user._id !== currentUser?._id && (
-                  <button
-                    onClick={() => openDeleteModal(user._id)}
-                    disabled={deleting === user._id}
-                    className="btn-danger"
-                  >
-                    {deleting === user._id ? "Deleting..." : "Delete"}
-                  </button>
-                )}
-              </span>
-            </div>
-          ))}
+          ) : (
+            filteredUsers.map((user) => (
+              <div
+                key={user._id}
+                className="table-row"
+                style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}
+              >
+                <span style={{ fontWeight: 500 }}>
+                  {user.profile?.username}
+                </span>
+                <span style={{ color: "var(--text-muted)" }}>
+                  {getEmail(user)}
+                </span>
+                <span>{roleLabel(user.profile?.role)}</span>
+                <span>
+                  {canDeleteUsers && user._id !== currentUser?._id && (
+                    <button
+                      onClick={() => openDeleteModal(user._id)}
+                      disabled={deleting === user._id}
+                      className="btn-danger"
+                    >
+                      {deleting === user._id ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
+                </span>
+              </div>
+            ))
+          )}
         </div>
 
         {showDeleteModal && (
           <div className="modal-overlay">
             <div className="modal">
               <h3 className="modal-title">Delete this account?</h3>
-              <p className="modal-text">This will permanently delete the account. This action cannot be undone.</p>
+              <p className="modal-text">
+                This will permanently delete the account. This action cannot be
+                undone.
+              </p>
               <div className="modal-actions">
-                <button onClick={() => { setShowDeleteModal(false); setUserToDelete(null); }} disabled={deleting !== null} className="btn-secondary">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setUserToDelete(null);
+                  }}
+                  disabled={deleting !== null}
+                  className="btn-secondary"
+                >
                   Cancel
                 </button>
-                <button onClick={confirmDelete} disabled={deleting !== null} className="btn-danger">
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting !== null}
+                  className="btn-danger"
+                >
                   {deleting !== null ? "Deleting..." : "Confirm Delete"}
                 </button>
               </div>
