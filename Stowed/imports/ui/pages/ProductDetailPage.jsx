@@ -5,12 +5,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from "../../api/locations/collections";
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import "./ProductDetailPage.css";
 import "../Global.css";
@@ -24,29 +19,15 @@ function callMethod(methodName, params) {
   });
 }
 
-function buildLocationLabel(
-  locationId,
-  storageLocations,
-  storageUnits,
-  floorMaps,
-  sites,
-) {
+function buildLocationLabel(locationId, storageLocations, storageUnits, floorMaps, sites) {
   const location = storageLocations.find((loc) => loc._id === locationId);
   if (!location) return locationId;
 
-  const unit = storageUnits.find(
-    (candidate) => candidate._id === location.storageUnitId,
-  );
-  const floorMap = unit
-    ? floorMaps.find((candidate) => candidate._id === unit.floorMapId)
-    : null;
-  const site = floorMap
-    ? sites.find((candidate) => candidate._id === floorMap.siteId)
-    : null;
+  const unit = storageUnits.find((candidate) => candidate._id === location.storageUnitId);
+  const floorMap = unit ? floorMaps.find((candidate) => candidate._id === unit.floorMapId) : null;
+  const site = floorMap ? sites.find((candidate) => candidate._id === floorMap.siteId) : null;
 
-  return [site?.name, floorMap?.name, unit?.name, location.name]
-    .filter(Boolean)
-    .join(" → ");
+  return [site?.name, floorMap?.name, unit?.name, location.name].filter(Boolean).join(" → ");
 }
 
 export function ProductDetailView({
@@ -105,10 +86,7 @@ export function ProductDetailView({
     setShowRestockModal(true);
   }
   function addRestockAssignment() {
-    setRestockAssignments((prev) => [
-      ...prev,
-      { locationId: "", quantity: "" },
-    ]);
+    setRestockAssignments((prev) => [...prev, { locationId: "", quantity: "" }]);
   }
   function removeRestockAssignment(index) {
     setRestockAssignments((prev) => prev.filter((_, i) => i !== index));
@@ -119,12 +97,9 @@ export function ProductDetailView({
     );
   }
   const parsedRestockQty = parseInt(restockQty, 10);
-  const restockQtyIsValid =
-    restockQty !== "" && !isNaN(parsedRestockQty) && parsedRestockQty > 0;
+  const restockQtyIsValid = restockQty !== "" && !isNaN(parsedRestockQty) && parsedRestockQty > 0;
   const currentStock = item.currentStock ?? item.totalQuantity ?? 0;
-  const restockTargetTotal = restockQtyIsValid
-    ? currentStock + parsedRestockQty
-    : null;
+  const restockTargetTotal = restockQtyIsValid ? currentStock + parsedRestockQty : null;
   const validRestockAssignments = restockAssignments.filter(
     (a) => a.locationId && a.quantity !== "",
   );
@@ -133,11 +108,8 @@ export function ProductDetailView({
     0,
   );
   const restockRemaining =
-    restockTargetTotal !== null
-      ? restockTargetTotal - restockAssignedTotal
-      : null;
-  const restockIsBalanced =
-    restockTargetTotal !== null && restockRemaining === 0;
+    restockTargetTotal !== null ? restockTargetTotal - restockAssignedTotal : null;
+  const restockIsBalanced = restockTargetTotal !== null && restockRemaining === 0;
   const restockCanSubmit = restockQtyIsValid && restockIsBalanced;
 
   async function confirmRestock() {
@@ -169,8 +141,7 @@ export function ProductDetailView({
   // removable sources. Fallback `photoUrl` or `catalogImages` are not removable.
   const removableFlags = galleryImages.map((img) => {
     if (imageUrls.length > 0) return imageUrls.includes(img);
-    if (Array.isArray(item.images) && item.images.length)
-      return item.images.includes(img);
+    if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
     return false;
   });
   const qrCode = item.qrCode || "";
@@ -288,9 +259,7 @@ export function ProductDetailView({
 
   const isLowStock = item.status && item.status.includes("CRITICAL");
   const statusLabel = isLowStock ? "Low stock" : "In stock";
-  const statusClass = isLowStock
-    ? "panel-status-badge low"
-    : "panel-status-badge ok";
+  const statusClass = isLowStock ? "panel-status-badge low" : "panel-status-badge ok";
 
   return (
     <>
@@ -323,10 +292,7 @@ export function ProductDetailView({
                 </button>
               )}
               {canDelete && (
-                <button
-                  className="btn-danger"
-                  onClick={() => setShowDeleteModal(true)}
-                >
+                <button className="btn-danger" onClick={() => setShowDeleteModal(true)}>
                   Delete
                 </button>
               )}
@@ -340,15 +306,9 @@ export function ProductDetailView({
           <div className="header-content">
             <div className="header-icon-section">
               {galleryImages.length > 0 ? (
-                <img
-                  className="header-icon"
-                  src={galleryImages[0]}
-                  alt="Product"
-                />
+                <img className="header-icon" src={galleryImages[0]} alt="Product" />
               ) : (
-                <div className="header-icon header-icon-placeholder">
-                  No photo
-                </div>
+                <div className="header-icon header-icon-placeholder">No photo</div>
               )}
             </div>
             <div className="header-info">
@@ -358,9 +318,7 @@ export function ProductDetailView({
                 <span>{currentStock} in stock</span>
                 <span></span>
                 <span>
-                  {reorderAt != null
-                    ? `Reorder at ${reorderAt}`
-                    : "No reorder threshold"}
+                  {reorderAt != null ? `Reorder at ${reorderAt}` : "No reorder threshold"}
                 </span>
               </div>
             </div>
@@ -454,28 +412,17 @@ export function ProductDetailView({
                 {storageAssignments.length ? (
                   <div className="storage-location-list">
                     {storageAssignments.map((assignment) => (
-                      <div
-                        key={assignment.key}
-                        className="storage-location-item"
-                      >
+                      <div key={assignment.key} className="storage-location-item">
                         <div>
-                          <div className="storage-location-name">
-                            {assignment.label}
-                          </div>
-                          <div className="storage-location-meta">
-                            Assigned stock
-                          </div>
+                          <div className="storage-location-name">{assignment.label}</div>
+                          <div className="storage-location-meta">Assigned stock</div>
                         </div>
-                        <div className="storage-location-quantity">
-                          {assignment.quantity}
-                        </div>
+                        <div className="storage-location-quantity">{assignment.quantity}</div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="section-empty">
-                    No stock assigned to a storage location yet.
-                  </div>
+                  <div className="section-empty">No stock assigned to a storage location yet.</div>
                 )}
               </div>
             </div>
@@ -496,9 +443,7 @@ export function ProductDetailView({
                       className="main-image"
                     />
                   ) : (
-                    <span
-                      style={{ color: "var(--text-muted)", fontSize: "13px" }}
-                    >
+                    <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
                       {uploadingImage ? "Uploading..." : "No image uploaded"}
                     </span>
                   )}
@@ -578,15 +523,13 @@ export function ProductDetailView({
                 marginBottom: "16px",
               }}
             >
-              Current stock: <strong>{currentStock}</strong>. Enter units being
-              added, then redistribute <em>all</em> stock across locations.
+              Current stock: <strong>{currentStock}</strong>. Enter units being added, then
+              redistribute <em>all</em> stock across locations.
             </p>
 
             {/* Units being added */}
             <div className="form-group" style={{ marginBottom: "16px" }}>
-              <label style={{ fontWeight: 600, fontSize: "13px" }}>
-                Units being added
-              </label>
+              <label style={{ fontWeight: 600, fontSize: "13px" }}>Units being added</label>
               <input
                 type="number"
                 min="1"
@@ -646,13 +589,7 @@ export function ProductDetailView({
                       className="form-input"
                       style={{ flex: 2 }}
                       value={assignment.locationId}
-                      onChange={(e) =>
-                        updateRestockAssignment(
-                          index,
-                          "locationId",
-                          e.target.value,
-                        )
-                      }
+                      onChange={(e) => updateRestockAssignment(index, "locationId", e.target.value)}
                       disabled={isRestocking}
                     >
                       <option value="">Select a location...</option>
@@ -677,13 +614,7 @@ export function ProductDetailView({
                       className="form-input"
                       style={{ maxWidth: "80px" }}
                       value={assignment.quantity}
-                      onChange={(e) =>
-                        updateRestockAssignment(
-                          index,
-                          "quantity",
-                          e.target.value,
-                        )
-                      }
+                      onChange={(e) => updateRestockAssignment(index, "quantity", e.target.value)}
                       disabled={isRestocking}
                     />
                     <button
@@ -713,14 +644,10 @@ export function ProductDetailView({
                     marginTop: "10px",
                     fontSize: "12px",
                     fontStyle: "italic",
-                    color:
-                      restockRemaining === 0
-                        ? "var(--success)"
-                        : "var(--text-muted)",
+                    color: restockRemaining === 0 ? "var(--success)" : "var(--text-muted)",
                   }}
                 >
-                  {restockRemaining === 0 &&
-                    `All ${restockTargetTotal} units assigned.`}
+                  {restockRemaining === 0 && `All ${restockTargetTotal} units assigned.`}
                   {restockRemaining > 0 &&
                     `${restockAssignedTotal} of ${restockTargetTotal} assigned - ${restockRemaining} remaining.`}
                   {restockRemaining < 0 &&
@@ -766,8 +693,7 @@ export function ProductDetailView({
           <div className="modal">
             <h3 className="modal-title">Delete &quot;{item.name}&quot;?</h3>
             <p className="modal-text">
-              This will permanently delete the product and remove it from all
-              storage locations.
+              This will permanently delete the product and remove it from all storage locations.
             </p>
             <div className="modal-actions">
               <button
@@ -777,11 +703,7 @@ export function ProductDetailView({
               >
                 Cancel
               </button>
-              <button
-                className="btn-danger"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
+              <button className="btn-danger" onClick={handleDelete} disabled={isDeleting}>
                 {isDeleting ? "Deleting..." : "Confirm Delete"}
               </button>
             </div>
@@ -795,34 +717,21 @@ export function ProductDetailView({
 export function ProductDetailPage() {
   const { productId } = useParams();
 
-  const {
-    item,
-    isLoading,
-    records,
-    sites,
-    floorMaps,
-    storageUnits,
-    storageLocations,
-  } = useTracker(() => {
-    const handleProducts = Meteor.subscribe("products");
-    const handleRecords = Meteor.subscribe("productRecords");
-    const handleLocations = Meteor.subscribe("locations.all");
-    return {
-      isLoading:
-        !handleProducts.ready() ||
-        !handleRecords.ready() ||
-        !handleLocations.ready(),
-      item: Products.findOne(productId),
-      records: ProductRecords.find(
-        { productId },
-        { sort: { quantity: -1 } },
-      ).fetch(),
-      sites: Sites.find().fetch(),
-      floorMaps: FloorMaps.find().fetch(),
-      storageUnits: StorageUnits.find().fetch(),
-      storageLocations: StorageLocations.find().fetch(),
-    };
-  }, [productId]);
+  const { item, isLoading, records, sites, floorMaps, storageUnits, storageLocations } =
+    useTracker(() => {
+      const handleProducts = Meteor.subscribe("products");
+      const handleRecords = Meteor.subscribe("productRecords");
+      const handleLocations = Meteor.subscribe("locations.all");
+      return {
+        isLoading: !handleProducts.ready() || !handleRecords.ready() || !handleLocations.ready(),
+        item: Products.findOne(productId),
+        records: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
+        sites: Sites.find().fetch(),
+        floorMaps: FloorMaps.find().fetch(),
+        storageUnits: StorageUnits.find().fetch(),
+        storageLocations: StorageLocations.find().fetch(),
+      };
+    }, [productId]);
 
   if (isLoading) {
     return <div className="p-8 text-center">Loading...</div>;

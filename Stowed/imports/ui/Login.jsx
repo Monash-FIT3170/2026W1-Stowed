@@ -61,9 +61,7 @@ export const Login = () => {
       ) {
         setError("No account found with those details.");
       } else if (err.error === "too-many-requests") {
-        setError(
-          "Too many attempts. Please wait a moment before trying again.",
-        );
+        setError("Too many attempts. Please wait a moment before trying again.");
       } else {
         setError("Login failed. Please check your details and try again.");
       }
@@ -80,10 +78,7 @@ export const Login = () => {
           <h1>
             Welcome back to <em>Stowed</em>
           </h1>
-          <p>
-            Map your shop or home storage, scan QR labels, and keep every
-            product easy to find.
-          </p>
+          <p>Map your shop or home storage, scan QR labels, and keep every product easy to find.</p>
           <ul className="auth-feature-list">
             <li>Storage units and product locations</li>
             <li>Low-stock visual alerts</li>
@@ -137,17 +132,12 @@ export const Login = () => {
               />
             </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="auth-primary-button"
-            >
+            <button type="submit" disabled={loading} className="auth-primary-button">
               {loading ? "Logging in..." : "Log In"}
             </button>
 
             <p className="auth-switch">
-              New to Stowed?{" "}
-              <Link to="/register">Set up your organisation</Link>
+              New to Stowed? <Link to="/register">Set up your organisation</Link>
             </p>
           </form>
         </div>

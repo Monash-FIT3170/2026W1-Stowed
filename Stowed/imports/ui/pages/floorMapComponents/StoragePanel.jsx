@@ -30,11 +30,7 @@ function findFreePosition(unitW, unitH, existingUnits, floorW, floorH) {
   for (let y = 0; y + unitH <= floorH + 0.001; y += STEP) {
     for (let x = 0; x + unitW <= floorW + 0.001; x += STEP) {
       const overlaps = existingUnits.some(
-        (u) =>
-          x < u.x + u.width &&
-          x + unitW > u.x &&
-          y < u.y + u.height &&
-          y + unitH > u.y,
+        (u) => x < u.x + u.width && x + unitW > u.x && y < u.y + u.height && y + unitH > u.y,
       );
       if (!overlaps) return { x, y };
     }
@@ -63,11 +59,7 @@ export function StoragePanel({ floorMapId }) {
   const floorHm = (floorSize.height || 500) / CANVAS_CONFIG.PIXELS_PER_METER;
 
   const isValid =
-    form.name.trim().length > 0 &&
-    !isNaN(unitW) &&
-    unitW >= 0.5 &&
-    !isNaN(unitH) &&
-    unitH >= 0.5;
+    form.name.trim().length > 0 && !isNaN(unitW) && unitW >= 0.5 && !isNaN(unitH) && unitH >= 0.5;
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -137,11 +129,7 @@ export function StoragePanel({ floorMapId }) {
       )}
 
       {/* Toggle button */}
-      <button
-        type="button"
-        style={storagePanelStyles.createBtn}
-        onClick={handleToggle}
-      >
+      <button type="button" style={storagePanelStyles.createBtn} onClick={handleToggle}>
         {showForm ? "Cancel" : "+ Add Storage Unit"}
       </button>
 
@@ -181,9 +169,7 @@ export function StoragePanel({ floorMapId }) {
           </select>
 
           {/* Width + Height side by side */}
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             <div>
               <label style={storagePanelStyles.label} htmlFor="su-width">
                 Width (m) <span style={{ color: "#d86f58" }}>*</span>
@@ -231,9 +217,7 @@ export function StoragePanel({ floorMapId }) {
           )}
 
           {/* Error */}
-          {error && (
-            <p style={{ fontSize: 11, color: "#d86f58", margin: 0 }}>{error}</p>
-          )}
+          {error && <p style={{ fontSize: 11, color: "#d86f58", margin: 0 }}>{error}</p>}
 
           {/* Submit */}
           <button

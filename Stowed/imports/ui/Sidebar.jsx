@@ -81,9 +81,7 @@ export function Sidebar() {
 
         {isLoggedIn && organisation && (
           <div className="sidebar-org">
-            <div className="sidebar-org-avatar">
-              {organisation.name.charAt(0).toUpperCase()}
-            </div>
+            <div className="sidebar-org-avatar">{organisation.name.charAt(0).toUpperCase()}</div>
             <div className="sidebar-org-info">
               <div className="sidebar-org-label">Organisation</div>
               <div className="sidebar-org-name">{organisation.name}</div>
@@ -94,11 +92,11 @@ export function Sidebar() {
         <nav className="sidebar-nav">
           <section className="sidebar-section">
             <SectionLabel label="Workspace" />
-            {WORKSPACE_LINKS.filter((link) =>
-              hasClientPermission(role, `route:${link.to}`),
-            ).map((link) => (
-              <SidebarLink key={link.to} {...link} end={link.to === "/"} />
-            ))}
+            {WORKSPACE_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
+              (link) => (
+                <SidebarLink key={link.to} {...link} end={link.to === "/"} />
+              ),
+            )}
           </section>
 
           <section className="sidebar-section">
@@ -123,9 +121,7 @@ export function Sidebar() {
       </div>
 
       {/* Bottom - logged in as */}
-      {isLoggedIn && (
-        <div className="sidebar-user">Logged in as {username}</div>
-      )}
+      {isLoggedIn && <div className="sidebar-user">Logged in as {username}</div>}
       <button className="sidebar-logout" onClick={handleLogout}>
         Logout
       </button>

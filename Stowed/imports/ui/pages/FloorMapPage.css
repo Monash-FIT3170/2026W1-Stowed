@@ -234,8 +234,7 @@
   overflow: auto;
   background:
     linear-gradient(90deg, rgba(239, 231, 218, 0.45) 1px, transparent 1px),
-    linear-gradient(rgba(239, 231, 218, 0.45) 1px, transparent 1px),
-    var(--input-bg, #fdf7f2);
+    linear-gradient(rgba(239, 231, 218, 0.45) 1px, transparent 1px), var(--input-bg, #fdf7f2);
   background-size: 28px 28px;
 }
 

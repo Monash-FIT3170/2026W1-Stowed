@@ -6,8 +6,7 @@ import assert from "assert";
 // ---------------------------------------------------------------------------
 
 function isLowStock(totalQuantity, reorderAt) {
-  if (typeof totalQuantity !== "number" || typeof reorderAt !== "number")
-    return false;
+  if (typeof totalQuantity !== "number" || typeof reorderAt !== "number") return false;
   if (reorderAt <= 0) return false;
   return totalQuantity <= reorderAt;
 }

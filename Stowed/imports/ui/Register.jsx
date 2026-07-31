@@ -111,12 +111,10 @@ const Register = () => {
       <section className="auth-shell" aria-label="Create account">
         <div className="auth-brand-panel">
           <p className="auth-kicker">Stocktake / Users</p>
-          <h1>
-            {isPrivileged ? "Add a team member" : "Start mapping with Stowed"}
-          </h1>
+          <h1>{isPrivileged ? "Add a team member" : "Start mapping with Stowed"}</h1>
           <p>
-            Give people access to manage products, update stock counts, and
-            maintain storage locations.
+            Give people access to manage products, update stock counts, and maintain storage
+            locations.
           </p>
           <ul className="auth-feature-list">
             <li>Shop and home floor layouts</li>
@@ -133,22 +131,14 @@ const Register = () => {
             </div>
 
             {!isLoggedIn && (
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="auth-link-button"
-              >
+              <button type="button" onClick={() => navigate("/login")} className="auth-link-button">
                 Back to login
               </button>
             )}
           </div>
 
-          {error && (
-            <div className="auth-status auth-status-error">{error}</div>
-          )}
-          {success && (
-            <div className="auth-status auth-status-success">{success}</div>
-          )}
+          {error && <div className="auth-status auth-status-error">{error}</div>}
+          {success && <div className="auth-status auth-status-success">{success}</div>}
 
           <form onSubmit={onSubmit} className="auth-form">
             {!isPrivileged && (
@@ -244,11 +234,7 @@ const Register = () => {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="auth-primary-button"
-            >
+            <button type="submit" disabled={loading} className="auth-primary-button">
               {loading ? "Creating..." : "Register"}
             </button>
           </form>

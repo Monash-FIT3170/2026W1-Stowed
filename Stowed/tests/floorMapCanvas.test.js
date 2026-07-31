@@ -53,12 +53,8 @@ function getDropPlacement({
 
   const wPixels = template.width * px;
   const hPixels = template.height * px;
-  const snappedX = snapEnabled
-    ? snapToGrid(x - wPixels / 2, gridSizePx)
-    : x - wPixels / 2;
-  const snappedY = snapEnabled
-    ? snapToGrid(y - hPixels / 2, gridSizePx)
-    : y - hPixels / 2;
+  const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : x - wPixels / 2;
+  const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : y - hPixels / 2;
 
   if (x < 0 || y < 0 || x > width || y > height) return null;
 
@@ -227,10 +223,7 @@ describe("Floor map canvas", function () {
         onTransformEnd: () => {},
       });
 
-      assert.strictEqual(
-        React.Children.toArray(layer.props.children).length,
-        0,
-      );
+      assert.strictEqual(React.Children.toArray(layer.props.children).length, 0);
     });
   });
 
@@ -276,9 +269,7 @@ describe("Floor map canvas", function () {
         gridSizePx: 50,
       });
 
-      const [firstGhost, secondGhost] = React.Children.toArray(
-        layer.props.children,
-      );
+      const [firstGhost, secondGhost] = React.Children.toArray(layer.props.children);
 
       assert.strictEqual(firstGhost.props.x, 150);
       assert.strictEqual(firstGhost.props.y, 150);
@@ -312,10 +303,7 @@ describe("Floor map canvas", function () {
         gridSizePx: 50,
       });
 
-      assert.strictEqual(
-        React.Children.toArray(layer.props.children).length,
-        0,
-      );
+      assert.strictEqual(React.Children.toArray(layer.props.children).length, 0);
     });
 
     it("renders no ghost children when nothing is being dropped or dragged", function () {
@@ -328,21 +316,12 @@ describe("Floor map canvas", function () {
         gridSizePx: 50,
       });
 
-      assert.strictEqual(
-        React.Children.toArray(layer.props.children).length,
-        0,
-      );
+      assert.strictEqual(React.Children.toArray(layer.props.children).length, 0);
     });
   });
 
   describe("drag-and-drop placement", function () {
-    function createStage({
-      left = 10,
-      top = 20,
-      x = 25,
-      y = 50,
-      scale = 2,
-    } = {}) {
+    function createStage({ left = 10, top = 20, x = 25, y = 50, scale = 2 } = {}) {
       return {
         container: () => ({
           getBoundingClientRect: () => ({ left, top }),
@@ -550,22 +529,10 @@ describe("Floor map canvas", function () {
         units: [],
       };
 
-      assert.strictEqual(
-        getDropPlacement({ ...base, clientX: -1, clientY: 100 }),
-        null,
-      );
-      assert.strictEqual(
-        getDropPlacement({ ...base, clientX: 501, clientY: 100 }),
-        null,
-      );
-      assert.strictEqual(
-        getDropPlacement({ ...base, clientX: 100, clientY: -1 }),
-        null,
-      );
-      assert.strictEqual(
-        getDropPlacement({ ...base, clientX: 100, clientY: 401 }),
-        null,
-      );
+      assert.strictEqual(getDropPlacement({ ...base, clientX: -1, clientY: 100 }), null);
+      assert.strictEqual(getDropPlacement({ ...base, clientX: 501, clientY: 100 }), null);
+      assert.strictEqual(getDropPlacement({ ...base, clientX: 100, clientY: -1 }), null);
+      assert.strictEqual(getDropPlacement({ ...base, clientX: 100, clientY: 401 }), null);
     });
   });
 

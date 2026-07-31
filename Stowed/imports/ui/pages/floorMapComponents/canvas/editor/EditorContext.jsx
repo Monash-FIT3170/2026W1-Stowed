@@ -2,11 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
-import {
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from "/imports/api/locations/collections";
+import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 
@@ -50,8 +46,7 @@ export function EditorProvider({ children, floorMapId }) {
   const [, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
   const canUndo = historyRef.current.index > 0;
-  const canRedo =
-    historyRef.current.index < historyRef.current.stack.length - 1;
+  const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
 
   function commitUnits(updater) {
     const next = typeof updater === "function" ? updater(units) : updater;
@@ -83,9 +78,7 @@ export function EditorProvider({ children, floorMapId }) {
   const { isLoading, floorMap, savedUnits } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
 
-    const activeFloorMap = floorMapId
-      ? FloorMaps.findOne(floorMapId)
-      : FloorMaps.findOne();
+    const activeFloorMap = floorMapId ? FloorMaps.findOne(floorMapId) : FloorMaps.findOne();
 
     const activeFloorMapId = activeFloorMap?._id;
 
@@ -115,9 +108,7 @@ export function EditorProvider({ children, floorMapId }) {
       const product = products.find((p) => p._id === record.productId);
       if (!product) return;
 
-      const location = storageLocations.find(
-        (l) => l._id === record.locationId,
-      );
+      const location = storageLocations.find((l) => l._id === record.locationId);
       if (!location) return;
 
       const threshold = product.reorderAt ?? 0;
@@ -210,9 +201,7 @@ export function EditorProvider({ children, floorMapId }) {
         settings: canvasSettings,
       });
 
-      const currentUnitIds = units
-        .filter((unit) => unit._id)
-        .map((unit) => unit._id);
+      const currentUnitIds = units.filter((unit) => unit._id).map((unit) => unit._id);
 
       for (const savedUnit of savedUnits) {
         if (!currentUnitIds.includes(savedUnit._id)) {
@@ -330,10 +319,8 @@ export function EditorProvider({ children, floorMapId }) {
     showGrid,
     snapToGrid,
   }) {
-    const floorWidthMeters =
-      newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
-    const floorHeightMeters =
-      newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+    const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+    const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
     const unitsInsideFloor = units.filter(
       (unit) =>
         unit.x >= 0 &&
@@ -342,14 +329,11 @@ export function EditorProvider({ children, floorMapId }) {
         unit.y + unit.height <= floorHeightMeters,
     );
     const removedUnits = units.filter(
-      (unit) =>
-        !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id),
+      (unit) => !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id),
     );
 
     if (removedUnits.length > 0) {
-      const unitNames = removedUnits
-        .map((unit) => unit.name || unit.id)
-        .join(", ");
+      const unitNames = removedUnits.map((unit) => unit.name || unit.id).join(", ");
       const proceed = confirm(
         `The resized floor is too small for ${removedUnits.length} unit(s): ${unitNames}.\n\nDelete these unit(s) from the floor map?\n\nChoose Cancel to keep editing the floor size.`,
       );
@@ -369,18 +353,14 @@ export function EditorProvider({ children, floorMapId }) {
     if (!unitId) {
       // Unit not saved to DB yet - just remove from canvas
       commitUnits((prev) =>
-        prev.filter(
-          (u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id,
-        ),
+        prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id),
       );
       setSelectedUnit(null);
       return;
     }
     try {
       await callMethod("storageUnits.delete", { storageUnitId: unitId });
-      commitUnits((prev) =>
-        prev.filter((u) => u._id !== unitId && u.id !== unitId),
-      );
+      commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
       setSelectedUnit(null);
     } catch (error) {
       alert(
@@ -442,9 +422,7 @@ export function EditorProvider({ children, floorMapId }) {
     handleDeleteSelectedUnit,
   };
 
-  return (
-    <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
-  );
+  return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
 }
 
 /**

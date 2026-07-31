@@ -5,9 +5,7 @@ import { StatusBadge } from "../imports/ui/components/StatusBadge";
 
 describe("statusBadge (boundary-safe)", function () {
   const render = (quantity, threshold) =>
-    renderToStaticMarkup(
-      React.createElement(StatusBadge, { quantity, threshold }),
-    );
+    renderToStaticMarkup(React.createElement(StatusBadge, { quantity, threshold }));
 
   describe("NULL threshold", function () {
     it("renders In stock when threshold is null", function () {

@@ -67,9 +67,7 @@ export function UnitCard({ unit, onClick }) {
       onDragEnd={handleDragEnd}
       style={{
         ...storagePanelStyles.card,
-        background: hovered
-          ? COLOURS.UNIT_CARD_HOVER
-          : storagePanelStyles.card.background,
+        background: hovered ? COLOURS.UNIT_CARD_HOVER : storagePanelStyles.card.background,
         cursor: "grab",
       }}
       onClick={onClick}

@@ -2,13 +2,7 @@ import { Layer, Rect } from "react-konva";
 import { useEditor } from "../../editor/EditorContext";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
 
-export function LowStockLayer({
-  units,
-  onHover,
-  onHoverEnd,
-  onUnitClick,
-  isCanvasEditMode,
-}) {
+export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanvasEditMode }) {
   const { lowStockByUnitId, setSelectedUnit, setIsPanelOpen } = useEditor();
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 

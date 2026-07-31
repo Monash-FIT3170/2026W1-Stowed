@@ -13,9 +13,7 @@ export function TransformerLayer({ selectedIds, getGroupRef }) {
   // Only show transformer for a single selection
   if (selectedIds.size !== 1) return null;
 
-  const nodes = [...selectedIds]
-    .map((id) => getGroupRef(id).current)
-    .filter(Boolean);
+  const nodes = [...selectedIds].map((id) => getGroupRef(id).current).filter(Boolean);
 
   if (nodes.length === 0) return null;
 

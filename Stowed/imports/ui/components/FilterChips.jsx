@@ -49,9 +49,7 @@ export function FilterChips({ filters, activeFilter, onFilterChange }) {
           >
             {filter.label}
             {filter.count !== undefined && (
-              <span style={{ marginLeft: "6px", opacity: 0.7 }}>
-                {filter.count}
-              </span>
+              <span style={{ marginLeft: "6px", opacity: 0.7 }}>{filter.count}</span>
             )}
           </button>
         );

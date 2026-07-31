@@ -10,9 +10,7 @@ function renderWithoutLayoutEffectWarning(element) {
   const originalError = console.error;
 
   console.error = (...args) => {
-    if (
-      String(args[0]).includes("useLayoutEffect does nothing on the server")
-    ) {
+    if (String(args[0]).includes("useLayoutEffect does nothing on the server")) {
       return;
     }
     originalError(...args);

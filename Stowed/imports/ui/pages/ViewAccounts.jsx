@@ -22,10 +22,7 @@ export function ViewAccounts() {
   const { users, currentUser } = useTracker(() => {
     const subscription = Meteor.subscribe("allUsers");
     const users = Meteor.users
-      .find(
-        {},
-        { fields: { emails: 1, "profile.role": 1, "profile.username": 1 } },
-      )
+      .find({}, { fields: { emails: 1, "profile.role": 1, "profile.username": 1 } })
       .fetch();
     return { users, currentUser: Meteor.user(), ready: subscription.ready() };
   }, []);
@@ -35,10 +32,7 @@ export function ViewAccounts() {
     const query = searchQuery.toLowerCase();
     return users.filter((user) => {
       const username = (user.profile?.username || "").toLowerCase();
-      const email = (
-        (user.emails && user.emails[0]?.address) ||
-        ""
-      ).toLowerCase();
+      const email = ((user.emails && user.emails[0]?.address) || "").toLowerCase();
       return username.includes(query) || email.includes(query);
     });
   }, [users, searchQuery]);
@@ -85,10 +79,7 @@ export function ViewAccounts() {
             Manage <em>Accounts</em>
           </h1>
           {canCreateUsers && (
-            <button
-              onClick={() => navigate("/register")}
-              className="btn-primary"
-            >
+            <button onClick={() => navigate("/register")} className="btn-primary">
               + Create Account
             </button>
           )}
@@ -114,10 +105,7 @@ export function ViewAccounts() {
               {filteredUsers.length} of {users.length} accounts shown
             </div>
           </div>
-          <div
-            className="table-header"
-            style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}
-          >
+          <div className="table-header" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
             <span>Username</span>
             <span>Email</span>
             <span>Role</span>
@@ -133,12 +121,8 @@ export function ViewAccounts() {
                 className="table-row"
                 style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}
               >
-                <span style={{ fontWeight: 500 }}>
-                  {user.profile?.username}
-                </span>
-                <span style={{ color: "var(--text-muted)" }}>
-                  {getEmail(user)}
-                </span>
+                <span style={{ fontWeight: 500 }}>{user.profile?.username}</span>
+                <span style={{ color: "var(--text-muted)" }}>{getEmail(user)}</span>
                 <span>{roleLabel(user.profile?.role)}</span>
                 <span>
                   {canDeleteUsers && user._id !== currentUser?._id && (
@@ -161,8 +145,7 @@ export function ViewAccounts() {
             <div className="modal">
               <h3 className="modal-title">Delete this account?</h3>
               <p className="modal-text">
-                This will permanently delete the account. This action cannot be
-                undone.
+                This will permanently delete the account. This action cannot be undone.
               </p>
               <div className="modal-actions">
                 <button
@@ -175,11 +158,7 @@ export function ViewAccounts() {
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={deleting !== null}
-                  className="btn-danger"
-                >
+                <button onClick={confirmDelete} disabled={deleting !== null} className="btn-danger">
                   {deleting !== null ? "Deleting..." : "Confirm Delete"}
                 </button>
               </div>

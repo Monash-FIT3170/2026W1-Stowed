@@ -2,12 +2,7 @@
 import { Mongo } from "meteor/mongo";
 import "meteor/aldeed:collection2/static";
 
-import {
-  SiteSchema,
-  FloorMapSchema,
-  StorageUnitSchema,
-  StorageLocationSchema,
-} from "./schemas";
+import { SiteSchema, FloorMapSchema, StorageUnitSchema, StorageLocationSchema } from "./schemas";
 
 /**
  * Stores high-level physical storage areas.

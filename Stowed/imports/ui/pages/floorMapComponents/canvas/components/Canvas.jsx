@@ -13,23 +13,14 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 
-export function Canvas({
-  style,
-  isCanvasEditMode,
-  setSelectedStorageUnitId,
-  setTooltip,
-}) {
-  const { units, commitUnits, activeTool, floorSize, canvasSettings } =
-    useEditor();
+export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
+  const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
 
   const width = floorSize.width;
   const height = floorSize.height;
 
-  const gridInterval =
-    canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
-  const showGrid = isCanvasEditMode
-    ? (canvasSettings?.showGrid ?? true)
-    : false;
+  const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
+  const showGrid = isCanvasEditMode ? (canvasSettings?.showGrid ?? true) : false;
   const snapEnabled = canvasSettings?.snapToGrid ?? true;
   const gridSizePx = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
 
@@ -39,15 +30,7 @@ export function Canvas({
   const groupRefs = useRef({});
 
   const [state, dispatch] = useReducer(canvasReducer, initialCanvasState);
-  const {
-    selectedIds,
-    ghostUnit,
-    dragOffsets,
-    scale,
-    stagePos,
-    displaySize,
-    clipboard,
-  } = state;
+  const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize, clipboard } = state;
 
   const {
     getGroupRef,
@@ -151,12 +134,7 @@ export function Canvas({
             onDragEnd={handleDragEndGrid}
             onClick={handleStageClick}
           >
-            <GridLayer
-              width={width}
-              height={height}
-              gridSizePx={gridSizePx}
-              showGrid={showGrid}
-            />
+            <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
             <UnitLayer
               units={units}
@@ -172,10 +150,7 @@ export function Canvas({
               onTransformEnd={handleTransformEnd}
             />
 
-            <TransformerLayer
-              selectedIds={selectedIds}
-              getGroupRef={getGroupRef}
-            />
+            <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef} />
 
             <GhostLayer
               ghostUnit={ghostUnit}

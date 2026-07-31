@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
-import {
-  EditorProvider,
-  useEditor,
-} from "./floorMapComponents/canvas/editor/EditorContext";
+import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
@@ -63,8 +60,7 @@ function FloorMapPageInner() {
     };
   }, []);
 
-  const items =
-    selectedUnit?.mockItems ?? lowStockByUnitId?.[selectedUnit?._id] ?? [];
+  const items = selectedUnit?.mockItems ?? lowStockByUnitId?.[selectedUnit?._id] ?? [];
   const lowItems = items.filter((i) => i.isLow);
   const okItems = items.filter((i) => !i.isLow);
   const hasLow = lowItems.length > 0;
@@ -78,8 +74,7 @@ function FloorMapPageInner() {
   };
 
   // Current floor map
-  const currentFloorMap =
-    floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
+  const currentFloorMap = floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
 
   return (
     <div
@@ -99,9 +94,7 @@ function FloorMapPageInner() {
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-link">Floor Map</span>
           <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-current">
-            {isCanvasEditMode ? "Edit mode" : "View mode"}
-          </span>
+          <span className="breadcrumb-current">{isCanvasEditMode ? "Edit mode" : "View mode"}</span>
         </div>
         <div className="header-top">
           <h1 className="header-title">
@@ -144,9 +137,7 @@ function FloorMapPageInner() {
                     cursor: "pointer",
                     fontSize: "13px",
                     fontWeight: isActive ? 700 : 400,
-                    color: isActive
-                      ? "var(--accent-primary)"
-                      : "var(--text-muted)",
+                    color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
                     whiteSpace: "nowrap",
                     fontFamily: "inherit",
                     flexShrink: 0,
@@ -206,21 +197,14 @@ function FloorMapPageInner() {
         >
           {/* STOCK SLIDE-OUT PANEL - view mode only */}
           {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
-            <div
-              className="low-stock-panel"
-              style={{ borderLeft: "none", flex: "0 0 auto" }}
-            >
+            <div className="low-stock-panel" style={{ borderLeft: "none", flex: "0 0 auto" }}>
               <div
                 className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}
               >
                 <div>
                   <div className="panel-header-label">{selectedUnit.name}</div>
                   <div className="panel-header-title">
-                    {isEmpty
-                      ? "No products"
-                      : hasLow
-                        ? "Low stock"
-                        : "All stocked"}
+                    {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
                   </div>
                   <div
                     className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}
@@ -242,9 +226,7 @@ function FloorMapPageInner() {
               </div>
               <div className="panel-content">
                 {isEmpty ? (
-                  <div className="panel-empty">
-                    No products assigned to this unit.
-                  </div>
+                  <div className="panel-empty">No products assigned to this unit.</div>
                 ) : (
                   <>
                     {lowItems.length > 0 && (
@@ -256,18 +238,12 @@ function FloorMapPageInner() {
                               <div className="panel-item-name">
                                 {item.product?.name ?? item.name}
                               </div>
-                              <div className="panel-item-location">
-                                {item.locationName}
-                              </div>
+                              <div className="panel-item-location">{item.locationName}</div>
                             </div>
                             <div>
-                              <div className="panel-item-qty low">
-                                {item.quantity}
-                              </div>
+                              <div className="panel-item-qty low">{item.quantity}</div>
                               {item.reorderAt > 0 && (
-                                <div className="panel-item-threshold">
-                                  min {item.reorderAt}
-                                </div>
+                                <div className="panel-item-threshold">min {item.reorderAt}</div>
                               )}
                             </div>
                           </div>
@@ -283,18 +259,12 @@ function FloorMapPageInner() {
                               <div className="panel-item-name">
                                 {item.product?.name ?? item.name}
                               </div>
-                              <div className="panel-item-location">
-                                {item.locationName}
-                              </div>
+                              <div className="panel-item-location">{item.locationName}</div>
                             </div>
                             <div>
-                              <div className="panel-item-qty ok">
-                                {item.quantity}
-                              </div>
+                              <div className="panel-item-qty ok">{item.quantity}</div>
                               {item.reorderAt > 0 && (
-                                <div className="panel-item-threshold">
-                                  min {item.reorderAt}
-                                </div>
+                                <div className="panel-item-threshold">min {item.reorderAt}</div>
                               )}
                             </div>
                           </div>
@@ -324,15 +294,8 @@ function FloorMapPageInner() {
                     flex: 1,
                   }}
                 >
-                  <div
-                    className="section-title"
-                    style={{ padding: "14px", flexShrink: 0 }}
-                  >
-                    <span
-                      style={{ fontWeight: 700, color: "var(--text-dark)" }}
-                    >
-                      Edit Mode
-                    </span>
+                  <div className="section-title" style={{ padding: "14px", flexShrink: 0 }}>
+                    <span style={{ fontWeight: 700, color: "var(--text-dark)" }}>Edit Mode</span>
                     <button
                       onClick={() => setSidebarOpen(false)}
                       style={{
@@ -378,9 +341,7 @@ function FloorMapPageInner() {
                         overflow: "hidden",
                       }}
                     >
-                      <StorageLocationPanel
-                        storageUnitId={selectedStorageUnitId}
-                      />
+                      <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
                     </div>
                     <div
                       style={{
@@ -509,20 +470,13 @@ function FloorMapPageInner() {
                 style={{
                   fontWeight: 700,
                   marginBottom: "6px",
-                  color:
-                    tipItems.length === 0
-                      ? "#998874"
-                      : tipHasLow
-                        ? "#991b1b"
-                        : "#166534",
+                  color: tipItems.length === 0 ? "#998874" : tipHasLow ? "#991b1b" : "#166534",
                 }}
               >
                 {tooltip.unit.name}
               </div>
               {tipItems.length === 0 ? (
-                <div style={{ color: "#998874", fontSize: "11px" }}>
-                  No products on this shelf
-                </div>
+                <div style={{ color: "#998874", fontSize: "11px" }}>No products on this shelf</div>
               ) : tipHasLow ? (
                 <>
                   <div
@@ -551,9 +505,7 @@ function FloorMapPageInner() {
                           justifyContent: "space-between",
                         }}
                       >
-                        <span style={{ fontWeight: 600 }}>
-                          {item.product.name}
-                        </span>
+                        <span style={{ fontWeight: 600 }}>{item.product.name}</span>
                         <span
                           style={{
                             color: "#991b1b",

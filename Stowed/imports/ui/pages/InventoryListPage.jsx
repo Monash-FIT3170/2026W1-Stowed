@@ -5,19 +5,12 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
-import {
-  StorageUnits,
-  StorageLocations,
-} from "../../api/locations/collections";
+import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
 import "../Global.css";
-import {
-  searchProducts,
-  filterLowStock,
-  filterByStorageUnit,
-} from "../../api/products/filters";
+import { searchProducts, filterLowStock, filterByStorageUnit } from "../../api/products/filters";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -77,19 +70,18 @@ export function InventoryListPage() {
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits } =
-    useTracker(() => {
-      const sub1 = Meteor.subscribe("products");
-      Meteor.subscribe("productRecords");
-      Meteor.subscribe("locations.all");
-      return {
-        items: Products.find().fetch(),
-        loading: !sub1.ready(),
-        productRecords: ProductRecords.find().fetch(),
-        storageLocations: StorageLocations.find().fetch(),
-        storageUnits: StorageUnits.find().fetch(),
-      };
-    }, []);
+  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
+    const sub1 = Meteor.subscribe("products");
+    Meteor.subscribe("productRecords");
+    Meteor.subscribe("locations.all");
+    return {
+      items: Products.find().fetch(),
+      loading: !sub1.ready(),
+      productRecords: ProductRecords.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+    };
+  }, []);
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
@@ -109,29 +101,14 @@ export function InventoryListPage() {
       result = filterLowStock(result);
     }
     if (activeFilter === "location") {
-      result = filterByStorageUnit(
-        result,
-        productRecords,
-        storageLocations,
-        locationFilterUnitId,
-      );
+      result = filterByStorageUnit(result, productRecords, storageLocations, locationFilterUnitId);
     }
     result = searchProducts(result, searchQuery);
     return result;
-  }, [
-    items,
-    activeFilter,
-    searchQuery,
-    locationFilterUnitId,
-    storageLocations,
-    productRecords,
-  ]);
+  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
-  const pagedItems = filteredItems.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
-  );
+  const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const lowStockCount = filterLowStock(items).length;
 
@@ -171,9 +148,7 @@ export function InventoryListPage() {
       setShowDeleteModal(false);
     } catch (error) {
       console.error("Failed to delete selected products:", error);
-      setDeleteError(
-        error.reason || error.message || "Could not delete selected products.",
-      );
+      setDeleteError(error.reason || error.message || "Could not delete selected products.");
     } finally {
       setIsDeleting(false);
     }
@@ -186,8 +161,7 @@ export function InventoryListPage() {
     { id: "location", label: "Location ▾" },
   ];
 
-  if (loading)
-    return <div className="inventory-list-container">Loading...</div>;
+  if (loading) return <div className="inventory-list-container">Loading...</div>;
 
   return (
     <div className="inventory-list-container">
@@ -251,9 +225,7 @@ export function InventoryListPage() {
         )}
 
         {filteredItems.length === 0 ? (
-          <div className="empty-state">
-            No products match the current filters.
-          </div>
+          <div className="empty-state">No products match the current filters.</div>
         ) : (
           <>
             <div className="detail-section">
@@ -273,19 +245,13 @@ export function InventoryListPage() {
                     disabled={selectedProductIds.length === 0}
                     aria-label="Delete selected products"
                   >
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="delete-icon"
-                    >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="delete-icon">
                       <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
                       <path d="M6 9h12l-1 11H7L6 9Zm4 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
                     </svg>
                     <span className="sr-only">Delete selected products</span>
                   </button>
-                  <span className="selected-count">
-                    {selectedProductIds.length}
-                  </span>
+                  <span className="selected-count">{selectedProductIds.length}</span>
                 </div>
               )}
               <div className="table-header">
@@ -305,24 +271,16 @@ export function InventoryListPage() {
                     name={item.name}
                   />
                   <span>
-                    <Link
-                      to={`/inventory/${item._id}`}
-                      className="item-name-link"
-                    >
+                    <Link to={`/inventory/${item._id}`} className="item-name-link">
                       {item.name}
                     </Link>
                   </span>
                   <span>
                     <span className="item-tag">{item.tag || "-"}</span>
                   </span>
-                  <span className="item-location">
-                    {getLocationLabel(item._id)}
-                  </span>
+                  <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
-                  <StatusBadge
-                    quantity={item.totalQuantity}
-                    threshold={item.reorderAt ?? null}
-                  />
+                  <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />
                   <label className="row-select">
                     <input
                       type="checkbox"
@@ -345,34 +303,25 @@ export function InventoryListPage() {
                   justifyContent: "center",
                 }}
               >
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "8px",
-                        border:
-                          page === currentPage
-                            ? "none"
-                            : "1px solid var(--border-subtle)",
-                        background:
-                          page === currentPage
-                            ? "var(--accent-primary)"
-                            : "var(--card-bg)",
-                        color:
-                          page === currentPage ? "#fff" : "var(--text-muted)",
-                        fontWeight: page === currentPage ? 700 : 400,
-                        fontSize: "13px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {page}
-                    </button>
-                  ),
-                )}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "8px",
+                      border: page === currentPage ? "none" : "1px solid var(--border-subtle)",
+                      background: page === currentPage ? "var(--accent-primary)" : "var(--card-bg)",
+                      color: page === currentPage ? "#fff" : "var(--text-muted)",
+                      fontWeight: page === currentPage ? 700 : 400,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {page}
+                  </button>
+                ))}
               </div>
             )}
           </>
@@ -392,8 +341,8 @@ export function InventoryListPage() {
               </h2>
               <p className="modal-text">
                 This will permanently delete the selected product
-                {selectedItems.length !== 1 ? "s" : ""} and remove all related
-                location stock records.
+                {selectedItems.length !== 1 ? "s" : ""} and remove all related location stock
+                records.
               </p>
               {deleteError && <div className="warning-text">{deleteError}</div>}
               <div className="modal-actions">

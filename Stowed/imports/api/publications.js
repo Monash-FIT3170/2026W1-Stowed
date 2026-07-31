@@ -1,11 +1,6 @@
 import { Meteor } from "meteor/meteor";
 
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from "./locations/collections";
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./locations/collections";
 import { Products, ProductRecords } from "./products/collections";
 import { getCallerOrgId } from "./userMethods";
 import { Organisations } from "/imports/api/organisations";
@@ -36,9 +31,9 @@ Meteor.publish("productRecords", async function () {
   const orgId = await getCallerOrgId(this.userId);
   if (!orgId) return this.ready();
 
-  const productIds = (
-    await Products.find({ orgId }, { fields: { _id: 1 } }).fetchAsync()
-  ).map((p) => p._id);
+  const productIds = (await Products.find({ orgId }, { fields: { _id: 1 } }).fetchAsync()).map(
+    (p) => p._id,
+  );
 
   return ProductRecords.find({ productId: { $in: productIds } });
 });

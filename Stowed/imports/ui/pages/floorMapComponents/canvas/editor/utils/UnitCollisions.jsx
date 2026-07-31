@@ -1,10 +1,5 @@
 // File to check for collisions between different objects on the floor map designer page
-export {
-  isRectRectIntersecting,
-  calcDistance,
-  isRangeIntersecting,
-  isCircleCircleIntersecting,
-};
+export { isRectRectIntersecting, calcDistance, isRangeIntersecting, isCircleCircleIntersecting };
 
 /**
  * A boolean check if two intervals overlap

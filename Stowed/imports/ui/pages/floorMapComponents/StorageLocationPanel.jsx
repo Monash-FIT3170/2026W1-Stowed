@@ -72,10 +72,7 @@ export function StorageLocationPanel({ storageUnitId }) {
           style={locationPanelStyles.input}
         />
 
-        <button
-          onClick={handleAddLocation}
-          style={locationPanelStyles.addButton}
-        >
+        <button onClick={handleAddLocation} style={locationPanelStyles.addButton}>
           + Add Location
         </button>
       </div>

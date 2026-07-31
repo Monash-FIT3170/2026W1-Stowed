@@ -16,9 +16,7 @@ export function getFileExtension(filename) {
 
 // True if the file looks like an image based on its MIME type.
 export function isImageFile(file) {
-  return Boolean(
-    file && typeof file.type === "string" && file.type.startsWith("image/"),
-  );
+  return Boolean(file && typeof file.type === "string" && file.type.startsWith("image/"));
 }
 
 // Builds the public URL where an uploaded image will be served from.

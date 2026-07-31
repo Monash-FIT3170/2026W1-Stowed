@@ -1,28 +1,15 @@
 import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
 import { Products, ProductRecords } from "./collections";
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from "../locations/collections";
-import {
-  getCallerOrgId,
-  assertOrgAccess,
-  requirePermission,
-} from "../userMethods";
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
+import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 
 // Traverses StorageLocation → StorageUnit → FloorMap → Site and asserts org access.
 async function assertLocationOrgAccess(locationId, userId) {
   const storageLocation = await StorageLocations.findOneAsync(locationId);
-  if (!storageLocation)
-    throw new Meteor.Error("not-found", "Storage location not found.");
-  const storageUnit = await StorageUnits.findOneAsync(
-    storageLocation.storageUnitId,
-  );
-  if (!storageUnit)
-    throw new Meteor.Error("not-found", "Storage unit not found.");
+  if (!storageLocation) throw new Meteor.Error("not-found", "Storage location not found.");
+  const storageUnit = await StorageUnits.findOneAsync(storageLocation.storageUnitId);
+  if (!storageUnit) throw new Meteor.Error("not-found", "Storage unit not found.");
   const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
   if (!floorMap) throw new Meteor.Error("not-found", "Floor map not found.");
   await assertOrgAccess(Sites, floorMap.siteId, userId);
@@ -86,11 +73,7 @@ Meteor.methods({
     }
 
     const orgId = await getCallerOrgId(this.userId);
-    if (!orgId)
-      throw new Meteor.Error(
-        "no-org",
-        "Your account is not linked to an organisation.",
-      );
+    if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
 
     await requirePermission(this.userId, "products.create");
 
@@ -99,20 +82,14 @@ Meteor.methods({
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
     });
     if (existing) {
-      throw new Meteor.Error(
-        "duplicate-name",
-        `A product named "${name}" already exists.`,
-      );
+      throw new Meteor.Error("duplicate-name", `A product named "${name}" already exists.`);
     }
 
     // Merge any duplicate locationIds by summing their quantities.
     const mergedAssignments = mergeAssignments(assignments);
 
     // All stock must be accounted for across assignments.
-    const assignedTotal = mergedAssignments.reduce(
-      (sum, a) => sum + a.quantity,
-      0,
-    );
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== totalQuantity) {
       throw new Meteor.Error(
         "quantity-mismatch",
@@ -205,18 +182,12 @@ Meteor.methods({
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
     });
     if (existing) {
-      throw new Meteor.Error(
-        "duplicate-name",
-        `A product named "${name}" already exists.`,
-      );
+      throw new Meteor.Error("duplicate-name", `A product named "${name}" already exists.`);
     }
 
     const mergedAssignments = mergeAssignments(assignments);
 
-    const assignedTotal = mergedAssignments.reduce(
-      (sum, a) => sum + a.quantity,
-      0,
-    );
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== totalQuantity) {
       throw new Meteor.Error(
         "quantity-mismatch",
@@ -226,8 +197,7 @@ Meteor.methods({
 
     const now = new Date();
     const galleryImages = images.length ? images : catalogImages;
-    const primaryPhotoUrl =
-      photoUrl || product?.photoUrl || galleryImages[0] || "";
+    const primaryPhotoUrl = photoUrl || product?.photoUrl || galleryImages[0] || "";
 
     await Products.updateAsync(productId, {
       $set: {
@@ -296,26 +266,17 @@ Meteor.methods({
 
     const product = await Products.findOneAsync(productId);
     if (!product) {
-      throw new Meteor.Error(
-        "product-not-found",
-        "No product found with that ID.",
-      );
+      throw new Meteor.Error("product-not-found", "No product found with that ID.");
     }
 
     if (additionalQuantity <= 0) {
-      throw new Meteor.Error(
-        "invalid-quantity",
-        "Units being added must be greater than zero.",
-      );
+      throw new Meteor.Error("invalid-quantity", "Units being added must be greater than zero.");
     }
 
     const mergedAssignments = mergeAssignments(assignments);
 
     const newTotal = product.totalQuantity + additionalQuantity;
-    const assignedTotal = mergedAssignments.reduce(
-      (sum, a) => sum + a.quantity,
-      0,
-    );
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== newTotal) {
       throw new Meteor.Error(
         "quantity-mismatch",
@@ -400,10 +361,7 @@ Meteor.methods({
 
     const product = await Products.findOneAsync(productId);
     if (!product) {
-      throw new Meteor.Error(
-        "product-not-found",
-        "No product found with that ID.",
-      );
+      throw new Meteor.Error("product-not-found", "No product found with that ID.");
     }
 
     const primaryPhotoUrl =

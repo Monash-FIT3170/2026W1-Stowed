@@ -59,14 +59,8 @@ export function useCanvasHandlers({
   // Helper: get clamped bounds for any unit at an offset position
   function getMovedBounds(unit, deltaX, deltaY) {
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
-    const newX = Math.max(
-      0,
-      Math.min(unit.x + deltaX, width / px - unit.width),
-    );
-    const newY = Math.max(
-      0,
-      Math.min(unit.y + deltaY, height / px - unit.height),
-    );
+    const newX = Math.max(0, Math.min(unit.x + deltaX, width / px - unit.width));
+    const newY = Math.max(0, Math.min(unit.y + deltaY, height / px - unit.height));
     return {
       bounds: {
         dom: { lower: newX * px, upper: (newX + unit.width) * px },
@@ -94,12 +88,8 @@ export function useCanvasHandlers({
     const wPixels = template.width * CANVAS_CONFIG.PIXELS_PER_METER;
     const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const snappedX = snapEnabled
-      ? snapToGrid(x - wPixels / 2, gridSizePx)
-      : x - wPixels / 2;
-    const snappedY = snapEnabled
-      ? snapToGrid(y - hPixels / 2, gridSizePx)
-      : y - hPixels / 2;
+    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : x - wPixels / 2;
+    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : y - hPixels / 2;
 
     const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
     if (!pointInGrid) return null;
@@ -161,12 +151,8 @@ export function useCanvasHandlers({
     const wPixels = template.width * CANVAS_CONFIG.PIXELS_PER_METER;
     const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const snappedX = snapEnabled
-      ? snapToGrid(x - wPixels / 2, gridSizePx)
-      : x - wPixels / 2;
-    const snappedY = snapEnabled
-      ? snapToGrid(y - hPixels / 2, gridSizePx)
-      : y - hPixels / 2;
+    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : x - wPixels / 2;
+    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : y - hPixels / 2;
 
     const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
     if (!pointInGrid) return;
@@ -266,22 +252,13 @@ export function useCanvasHandlers({
     const draggedUnit = units.find((u) => u.id === unitId);
     if (!draggedUnit) return;
 
-    const clampedXm = Math.max(
-      0,
-      Math.min(snappedXm, width / px - draggedUnit.width),
-    );
-    const clampedYm = Math.max(
-      0,
-      Math.min(snappedYm, height / px - draggedUnit.height),
-    );
+    const clampedXm = Math.max(0, Math.min(snappedXm, width / px - draggedUnit.width));
+    const clampedYm = Math.max(0, Math.min(snappedYm, height / px - draggedUnit.height));
 
     const deltaX = clampedXm - draggedUnit.x;
     const deltaY = clampedYm - draggedUnit.y;
 
-    const movedIds =
-      selectedIds.size > 1 && selectedIds.has(unitId)
-        ? [...selectedIds]
-        : [unitId];
+    const movedIds = selectedIds.size > 1 && selectedIds.has(unitId) ? [...selectedIds] : [unitId];
 
     // Check all units that will move for collisions
     const wouldCollide = movedIds.some((id) => {
@@ -402,8 +379,7 @@ export function useCanvasHandlers({
       y: (mouse.y - stage.y()) / oldScale,
     };
 
-    const newScale =
-      e.evt.deltaY > 0 ? oldScale / scaleFactor : oldScale * scaleFactor;
+    const newScale = e.evt.deltaY > 0 ? oldScale / scaleFactor : oldScale * scaleFactor;
 
     dispatch({ type: CANVAS_ACTIONS.SET_SCALE, payload: { scale: newScale } });
 

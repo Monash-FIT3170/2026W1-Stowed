@@ -42,10 +42,7 @@ function validateProductForm(fields = {}) {
     if (!Array.isArray(fields.assignments) || fields.assignments.length === 0) {
       errors.assignments = "At least one location assignment is required.";
     } else {
-      const assignedTotal = fields.assignments.reduce(
-        (sum, a) => sum + (a.quantity || 0),
-        0,
-      );
+      const assignedTotal = fields.assignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
       if (assignedTotal !== Number(fields.totalQuantity)) {
         errors.assignments = "Assigned quantity must equal total quantity.";
       }

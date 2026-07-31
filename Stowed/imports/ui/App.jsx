@@ -34,8 +34,7 @@ export function App() {
   const isLoggedIn = !!user;
 
   const role = user?.profile?.role ?? null;
-  const canAccessInventory =
-    isLoggedIn && hasClientPermission(role, "route:/inventory");
+  const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/inventory");
 
   return (
     <BrowserRouter>
@@ -61,10 +60,7 @@ export function App() {
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />
-            <Route
-              path="/login"
-              element={isLoggedIn ? <Navigate to="/" replace /> : <Login />}
-            />
+            <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <Login />} />
             <Route
               path="/"
               element={
@@ -81,33 +77,15 @@ export function App() {
             />
             <Route
               path="/inventory/new"
-              element={
-                canAccessInventory ? (
-                  <CreateProductPage />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
+              element={canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace />}
             />
             <Route
               path="/inventory/:productId/edit"
-              element={
-                canAccessInventory ? (
-                  <EditProductPage />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
+              element={canAccessInventory ? <EditProductPage /> : <Navigate to="/" replace />}
             />
             <Route
               path="/inventory/:productId"
-              element={
-                canAccessInventory ? (
-                  <ProductDetailPage />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
+              element={canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace />}
             />
             <Route path="/inventory/list" element={<InventoryListPage />} />
             <Route

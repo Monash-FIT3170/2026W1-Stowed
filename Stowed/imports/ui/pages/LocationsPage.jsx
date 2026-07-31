@@ -14,14 +14,7 @@ import "../Global.css";
 import "./LocationsPage.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 
-const STORAGE_UNIT_TYPES = [
-  "shelf",
-  "cabinet",
-  "rack",
-  "drawer",
-  "fridge",
-  "other",
-];
+const STORAGE_UNIT_TYPES = ["shelf", "cabinet", "rack", "drawer", "fridge", "other"];
 
 // Default form uses meter values to match the floor map editor coordinate system
 const DEFAULT_UNIT_FORM = {
@@ -85,12 +78,7 @@ function TextInput({ label, value, onChange, placeholder }) {
   return (
     <div className="form-group">
       <label>{label}</label>
-      <input
-        className="form-input"
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-      />
+      <input className="form-input" value={value} onChange={onChange} placeholder={placeholder} />
     </div>
   );
 }
@@ -166,28 +154,23 @@ export function LocationsPage() {
     name: "",
     type: "shelf",
   });
-  const [editingStorageLocationId, setEditingStorageLocationId] =
-    useState(null);
+  const [editingStorageLocationId, setEditingStorageLocationId] = useState(null);
   const [editStorageLocationForm, setEditStorageLocationForm] = useState({
     name: "",
     code: "",
   });
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id, name }
 
-  const { isLoading, sites, floorMaps, storageUnits, storageLocations } =
-    useTracker(() => {
-      const handle = Meteor.subscribe("locations.all");
-      return {
-        isLoading: !handle.ready(),
-        sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
-        floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
-        storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
-        storageLocations: StorageLocations.find(
-          {},
-          { sort: { createdAt: 1 } },
-        ).fetch(),
-      };
-    }, []);
+  const { isLoading, sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
+    const handle = Meteor.subscribe("locations.all");
+    return {
+      isLoading: !handle.ready(),
+      sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
+      floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageLocations: StorageLocations.find({}, { sort: { createdAt: 1 } }).fetch(),
+    };
+  }, []);
 
   const selectedSite = useMemo(
     () => sites.find((site) => site._id === selectedSiteId) ?? null,
@@ -200,8 +183,7 @@ export function LocationsPage() {
   );
 
   const selectedFloorMap = useMemo(
-    () =>
-      floorMaps.find((floorMap) => floorMap._id === selectedFloorMapId) ?? null,
+    () => floorMaps.find((floorMap) => floorMap._id === selectedFloorMapId) ?? null,
     [floorMaps, selectedFloorMapId],
   );
 
@@ -211,22 +193,17 @@ export function LocationsPage() {
   );
 
   const selectedStorageUnit = useMemo(
-    () =>
-      storageUnits.find((unit) => unit._id === selectedStorageUnitId) ?? null,
+    () => storageUnits.find((unit) => unit._id === selectedStorageUnitId) ?? null,
     [storageUnits, selectedStorageUnitId],
   );
 
   const locationsForStorageUnit = useMemo(
-    () =>
-      storageLocations.filter(
-        (location) => location.storageUnitId === selectedStorageUnitId,
-      ),
+    () => storageLocations.filter((location) => location.storageUnitId === selectedStorageUnitId),
     [storageLocations, selectedStorageUnitId],
   );
 
   const currentLocation =
-    storageLocations.find((loc) => loc._id === selectedLocation?._id) ??
-    selectedLocation;
+    storageLocations.find((loc) => loc._id === selectedLocation?._id) ?? selectedLocation;
 
   useEffect(() => {
     if (!sites.length) {
@@ -243,9 +220,7 @@ export function LocationsPage() {
       setSelectedFloorMapId("");
       return;
     }
-    if (
-      !floorMapsForSite.some((floorMap) => floorMap._id === selectedFloorMapId)
-    ) {
+    if (!floorMapsForSite.some((floorMap) => floorMap._id === selectedFloorMapId)) {
       setSelectedFloorMapId(floorMapsForSite[0]._id);
     }
   }, [floorMapsForSite, selectedFloorMapId]);
@@ -255,11 +230,7 @@ export function LocationsPage() {
       setSelectedStorageUnitId("");
       return;
     }
-    if (
-      !storageUnitsForFloorMap.some(
-        (unit) => unit._id === selectedStorageUnitId,
-      )
-    ) {
+    if (!storageUnitsForFloorMap.some((unit) => unit._id === selectedStorageUnitId)) {
       setSelectedStorageUnitId(storageUnitsForFloorMap[0]._id);
     }
   }, [storageUnitsForFloorMap, selectedStorageUnitId]);
@@ -346,9 +317,7 @@ export function LocationsPage() {
         Number(unitForm.width) < 1 ||
         Number(unitForm.height) < 1
       ) {
-        throw new Error(
-          "Position values must be numbers, and width/height must be at least 1.",
-        );
+        throw new Error("Position values must be numbers, and width/height must be at least 1.");
       }
       await submitMeteorMethod("storageUnits.create", {
         floorMapId: selectedFloorMapId,
@@ -423,8 +392,7 @@ export function LocationsPage() {
     const name = editFloorMapForm.name.trim();
     if (!name) return;
     const duplicate = floorMapsForSite.some(
-      (f) =>
-        f._id !== floorMapId && f.name.toLowerCase() === name.toLowerCase(),
+      (f) => f._id !== floorMapId && f.name.toLowerCase() === name.toLowerCase(),
     );
     if (duplicate) {
       setStatus({
@@ -461,8 +429,7 @@ export function LocationsPage() {
     if (duplicate) {
       setStatus({
         type: "error",
-        message:
-          "A storage unit with that name already exists on this floor map.",
+        message: "A storage unit with that name already exists on this floor map.",
       });
       return;
     }
@@ -489,14 +456,12 @@ export function LocationsPage() {
     const code = editStorageLocationForm.code.trim();
     if (!name || !code) return;
     const duplicate = locationsForStorageUnit.some(
-      (l) =>
-        l._id !== locationId && l.name.toLowerCase() === name.toLowerCase(),
+      (l) => l._id !== locationId && l.name.toLowerCase() === name.toLowerCase(),
     );
     if (duplicate) {
       setStatus({
         type: "error",
-        message:
-          "A location with that name already exists in this storage unit.",
+        message: "A location with that name already exists in this storage unit.",
       });
       return;
     }
@@ -518,8 +483,7 @@ export function LocationsPage() {
     const { type, id } = deleteConfirm;
     setDeleteConfirm(null);
     await runSubmit(async () => {
-      if (type === "site")
-        await submitMeteorMethod("sites.delete", { siteId: id });
+      if (type === "site") await submitMeteorMethod("sites.delete", { siteId: id });
       else if (type === "floorMap")
         await submitMeteorMethod("floorMaps.delete", { floorMapId: id });
       else if (type === "storageUnit")
@@ -562,11 +526,7 @@ export function LocationsPage() {
     const maxBottom = Math.max(...converted.map((u) => u.px.top + u.px.height));
 
     // Scale to fit with padding
-    const scale = Math.min(
-      (PREVIEW_W - 8) / maxRight,
-      (PREVIEW_H - 8) / maxBottom,
-      1,
-    );
+    const scale = Math.min((PREVIEW_W - 8) / maxRight, (PREVIEW_H - 8) / maxBottom, 1);
 
     return { units: converted, scale };
   }
@@ -584,9 +544,7 @@ export function LocationsPage() {
             Locations <em>Overview</em>
           </h1>
           <div className="locations-page-status-indicator">
-            {isLoading
-              ? "Loading location data…"
-              : `${sites.length} sites loaded`}
+            {isLoading ? "Loading location data…" : `${sites.length} sites loaded`}
           </div>
         </div>
       </div>
@@ -602,18 +560,13 @@ export function LocationsPage() {
 
       <div className="product-detail-grid">
         <div className="left-column">
-          <Panel
-            title="Site"
-            subtitle="Create and select the top-level physical area."
-          >
+          <Panel title="Site" subtitle="Create and select the top-level physical area.">
             {canManage && (
               <form className="form-grid" onSubmit={handleSiteSubmit}>
                 <Field label="Name">
                   <TextInput
                     value={siteForm.name}
-                    onChange={(e) =>
-                      setSiteForm((cur) => ({ ...cur, name: e.target.value }))
-                    }
+                    onChange={(e) => setSiteForm((cur) => ({ ...cur, name: e.target.value }))}
                     placeholder="Warehouse"
                   />
                 </Field>
@@ -757,25 +710,16 @@ export function LocationsPage() {
                 ))}
               </div>
             ) : (
-              <EmptyState>
-                No sites yet. Create one to unlock the rest of the chain.
-              </EmptyState>
+              <EmptyState>No sites yet. Create one to unlock the rest of the chain.</EmptyState>
             )}
           </Panel>
 
           <Panel
             title="Floor Maps"
-            subtitle={
-              selectedSite
-                ? `Attached to ${selectedSite.name}.`
-                : "Select a site first."
-            }
+            subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}
           >
             {canManage && (
-              <form
-                className="form-grid form-grid-cols-2"
-                onSubmit={handleFloorMapSubmit}
-              >
+              <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
                 <Field label="Name">
                   <TextInput
                     value={floorMapForm.name}
@@ -802,9 +746,7 @@ export function LocationsPage() {
                 </Field>
                 <button
                   type="submit"
-                  disabled={
-                    submitting || !selectedSiteId || !floorMapForm.name.trim()
-                  }
+                  disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()}
                   className="btn-primary"
                   style={{ width: "100%" }}
                 >
@@ -860,9 +802,7 @@ export function LocationsPage() {
                             className="btn-primary"
                             style={{ flex: 1 }}
                             onClick={() => saveEditFloorMap(floorMap._id)}
-                            disabled={
-                              submitting || !editFloorMapForm.name.trim()
-                            }
+                            disabled={submitting || !editFloorMapForm.name.trim()}
                           >
                             Save
                           </button>
@@ -895,9 +835,7 @@ export function LocationsPage() {
                             padding: 0,
                           }}
                         >
-                          <div className="selection-item-name">
-                            {floorMap.name}
-                          </div>
+                          <div className="selection-item-name">{floorMap.name}</div>
                           <div className="selection-item-description">
                             {floorMap.imageUrl || "No image URL"}
                           </div>
@@ -941,30 +879,21 @@ export function LocationsPage() {
           <Panel
             title="Storage Units"
             subtitle={
-              selectedFloorMap
-                ? `Placed on ${selectedFloorMap.name}.`
-                : "Select a floor map first."
+              selectedFloorMap ? `Placed on ${selectedFloorMap.name}.` : "Select a floor map first."
             }
           >
             {canManage && (
-              <form
-                className="form-grid form-grid-cols-2"
-                onSubmit={handleCreateStorageUnit}
-              >
+              <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
                 <TextInput
                   label="Name"
                   value={unitForm.name}
-                  onChange={(e) =>
-                    setUnitForm((cur) => ({ ...cur, name: e.target.value }))
-                  }
+                  onChange={(e) => setUnitForm((cur) => ({ ...cur, name: e.target.value }))}
                   placeholder="Shelf A"
                 />
                 <SelectInput
                   label="Type"
                   value={unitForm.type}
-                  onChange={(e) =>
-                    setUnitForm((cur) => ({ ...cur, type: e.target.value }))
-                  }
+                  onChange={(e) => setUnitForm((cur) => ({ ...cur, type: e.target.value }))}
                   options={STORAGE_UNIT_TYPES.map((t) => ({
                     value: t,
                     label: t,
@@ -973,30 +902,22 @@ export function LocationsPage() {
                 <NumberInput
                   label="X (meters)"
                   value={unitForm.x}
-                  onChange={(e) =>
-                    setUnitForm((cur) => ({ ...cur, x: e.target.value }))
-                  }
+                  onChange={(e) => setUnitForm((cur) => ({ ...cur, x: e.target.value }))}
                 />
                 <NumberInput
                   label="Y (meters)"
                   value={unitForm.y}
-                  onChange={(e) =>
-                    setUnitForm((cur) => ({ ...cur, y: e.target.value }))
-                  }
+                  onChange={(e) => setUnitForm((cur) => ({ ...cur, y: e.target.value }))}
                 />
                 <NumberInput
                   label="Width (meters)"
                   value={unitForm.width}
-                  onChange={(e) =>
-                    setUnitForm((cur) => ({ ...cur, width: e.target.value }))
-                  }
+                  onChange={(e) => setUnitForm((cur) => ({ ...cur, width: e.target.value }))}
                 />
                 <NumberInput
                   label="Height (meters)"
                   value={unitForm.height}
-                  onChange={(e) =>
-                    setUnitForm((cur) => ({ ...cur, height: e.target.value }))
-                  }
+                  onChange={(e) => setUnitForm((cur) => ({ ...cur, height: e.target.value }))}
                 />
                 <button
                   type="submit"
@@ -1068,9 +989,7 @@ export function LocationsPage() {
                             className="btn-primary"
                             style={{ flex: 1 }}
                             onClick={() => saveEditStorageUnit(unit._id)}
-                            disabled={
-                              submitting || !editStorageUnitForm.name.trim()
-                            }
+                            disabled={submitting || !editStorageUnitForm.name.trim()}
                           >
                             Save
                           </button>
@@ -1104,9 +1023,7 @@ export function LocationsPage() {
                           }}
                         >
                           <div className="unit-list-item-flex">
-                            <span className="selection-item-name">
-                              {unit.name}
-                            </span>
+                            <span className="selection-item-name">{unit.name}</span>
                             <span
                               className={`unit-type-badge ${unit._id === selectedStorageUnitId ? "unit-type-badge-selected" : ""}`}
                             >
@@ -1161,24 +1078,17 @@ export function LocationsPage() {
             }
           >
             {canManage && (
-              <form
-                className="form-grid form-grid-cols-2"
-                onSubmit={handleCreateStorageLocation}
-              >
+              <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageLocation}>
                 <TextInput
                   label="Name"
                   value={locationForm.name}
-                  onChange={(e) =>
-                    setLocationForm((cur) => ({ ...cur, name: e.target.value }))
-                  }
+                  onChange={(e) => setLocationForm((cur) => ({ ...cur, name: e.target.value }))}
                   placeholder="Top Shelf"
                 />
                 <TextInput
                   label="Code"
                   value={locationForm.code}
-                  onChange={(e) =>
-                    setLocationForm((cur) => ({ ...cur, code: e.target.value }))
-                  }
+                  onChange={(e) => setLocationForm((cur) => ({ ...cur, code: e.target.value }))}
                   placeholder="SH-A-01"
                 />
                 <button
@@ -1236,9 +1146,7 @@ export function LocationsPage() {
                             type="button"
                             className="btn-primary"
                             style={{ flex: 1 }}
-                            onClick={() =>
-                              saveEditStorageLocation(location._id)
-                            }
+                            onClick={() => saveEditStorageLocation(location._id)}
                             disabled={
                               submitting ||
                               !editStorageLocationForm.name.trim() ||
@@ -1259,12 +1167,8 @@ export function LocationsPage() {
                     ) : (
                       <>
                         <div className="location-list-details">
-                          <div className="location-list-item-name">
-                            {location.name}
-                          </div>
-                          <div className="location-list-item-code">
-                            {location.code}
-                          </div>
+                          <div className="location-list-item-name">{location.name}</div>
+                          <div className="location-list-item-code">{location.code}</div>
                         </div>
                         <div
                           style={{
@@ -1348,12 +1252,8 @@ export function LocationsPage() {
                 </dd>
               </div>
               <div className="relationship-summary-item">
-                <dt className="relationship-summary-label">
-                  Storage Locations
-                </dt>
-                <dd className="relationship-summary-value">
-                  {locationsForStorageUnit.length}
-                </dd>
+                <dt className="relationship-summary-label">Storage Locations</dt>
+                <dd className="relationship-summary-value">{locationsForStorageUnit.length}</dd>
               </div>
             </dl>
           </Panel>
@@ -1374,9 +1274,7 @@ export function LocationsPage() {
                 }}
               >
                 {(() => {
-                  const { units: laid, scale } = getPreviewLayout(
-                    storageUnitsForFloorMap,
-                  );
+                  const { units: laid, scale } = getPreviewLayout(storageUnitsForFloorMap);
                   return laid.length ? (
                     laid.map((unit) => (
                       <button
@@ -1420,9 +1318,7 @@ export function LocationsPage() {
       {deleteConfirm && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3 className="modal-title">
-              Delete &quot;{deleteConfirm.name}&quot;?
-            </h3>
+            <h3 className="modal-title">Delete &quot;{deleteConfirm.name}&quot;?</h3>
             <p className="modal-text">
               This will permanently remove this item. This cannot be undone.
             </p>
@@ -1434,11 +1330,7 @@ export function LocationsPage() {
               >
                 Cancel
               </button>
-              <button
-                className="btn-danger"
-                onClick={handleDeleteConfirmed}
-                disabled={submitting}
-              >
+              <button className="btn-danger" onClick={handleDeleteConfirmed} disabled={submitting}>
                 {submitting ? "Deleting…" : "Delete"}
               </button>
             </div>
@@ -1447,14 +1339,8 @@ export function LocationsPage() {
       )}
 
       {imageModalOpen && currentLocation && (
-        <div
-          className="modal-overlay location-image-modal"
-          onClick={closeModal}
-        >
-          <div
-            className="modal location-image-container"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="modal-overlay location-image-modal" onClick={closeModal}>
+          <div className="modal location-image-container" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">
               {currentLocation.name} ({currentLocation.code})
             </h2>
@@ -1484,10 +1370,7 @@ export function LocationsPage() {
                   style={{ display: "none" }}
                   onChange={handleUpload}
                 />
-                <button
-                  className="btn-primary"
-                  onClick={() => fileInputRef.current.click()}
-                >
+                <button className="btn-primary" onClick={() => fileInputRef.current.click()}>
                   Upload New
                 </button>
               </div>

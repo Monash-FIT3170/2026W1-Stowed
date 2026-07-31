@@ -122,55 +122,30 @@ describe("location filter", function () {
   ];
 
   it("returns all products when no unit id is provided", function () {
-    const result = filterByStorageUnit(
-      products,
-      productRecords,
-      storageLocations,
-      "",
-    );
+    const result = filterByStorageUnit(products, productRecords, storageLocations, "");
     assert.strictEqual(result.length, products.length);
   });
 
   it("returns only products stored in the chosen unit", function () {
-    const result = filterByStorageUnit(
-      products,
-      productRecords,
-      storageLocations,
-      "unitA",
-    );
+    const result = filterByStorageUnit(products, productRecords, storageLocations, "unitA");
     const ids = result.map((p) => p._id).sort();
     assert.deepStrictEqual(ids, ["p1", "p2"]);
   });
 
   it("returns multiple products sharing a single location", function () {
-    const result = filterByStorageUnit(
-      products,
-      productRecords,
-      storageLocations,
-      "unitB",
-    );
+    const result = filterByStorageUnit(products, productRecords, storageLocations, "unitB");
     const ids = result.map((p) => p._id).sort();
     assert.deepStrictEqual(ids, ["p3", "p4"]);
   });
 
   it("returns an empty array when no products are stored in the unit", function () {
-    const result = filterByStorageUnit(
-      products,
-      productRecords,
-      storageLocations,
-      "unitC",
-    );
+    const result = filterByStorageUnit(products, productRecords, storageLocations, "unitC");
     assert.strictEqual(result.length, 0);
   });
 
   it("does not include products with no matching record", function () {
     const orphanProducts = [...products, { _id: "p5", name: "Item 5" }];
-    const result = filterByStorageUnit(
-      orphanProducts,
-      productRecords,
-      storageLocations,
-      "unitA",
-    );
+    const result = filterByStorageUnit(orphanProducts, productRecords, storageLocations, "unitA");
     assert.ok(!result.some((p) => p._id === "p5"));
   });
 });

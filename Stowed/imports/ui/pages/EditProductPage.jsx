@@ -27,13 +27,9 @@ function callMethod(methodName, params) {
 
 function buildLocationLabel(location, storageUnits, floorMaps, sites) {
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit
-    ? floorMaps.find((f) => f._id === unit.floorMapId)
-    : null;
+  const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
   const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
-  return [site?.name, floorMap?.name, unit?.name, location.name]
-    .filter(Boolean)
-    .join(" → ");
+  return [site?.name, floorMap?.name, unit?.name, location.name].filter(Boolean).join(" → ");
 }
 
 export function EditProductPage() {
@@ -65,33 +61,22 @@ export function EditProductPage() {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const {
-    loading,
-    product,
-    originalRecords,
-    sites,
-    floorMaps,
-    storageUnits,
-    storageLocations,
-  } = useTracker(() => {
-    const subProducts = Meteor.subscribe("products");
-    const subRecords = Meteor.subscribe("productRecords");
-    const subLocations = Meteor.subscribe("locations.all");
-    const loading =
-      !subProducts.ready() || !subRecords.ready() || !subLocations.ready();
-    return {
-      loading,
-      product: Products.findOne(productId),
-      originalRecords: ProductRecords.find(
-        { productId },
-        { sort: { quantity: -1 } },
-      ).fetch(),
-      sites: Sites.find().fetch(),
-      floorMaps: FloorMaps.find().fetch(),
-      storageUnits: StorageUnits.find().fetch(),
-      storageLocations: StorageLocations.find().fetch(),
-    };
-  }, [productId]);
+  const { loading, product, originalRecords, sites, floorMaps, storageUnits, storageLocations } =
+    useTracker(() => {
+      const subProducts = Meteor.subscribe("products");
+      const subRecords = Meteor.subscribe("productRecords");
+      const subLocations = Meteor.subscribe("locations.all");
+      const loading = !subProducts.ready() || !subRecords.ready() || !subLocations.ready();
+      return {
+        loading,
+        product: Products.findOne(productId),
+        originalRecords: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
+        sites: Sites.find().fetch(),
+        floorMaps: FloorMaps.find().fetch(),
+        storageUnits: StorageUnits.find().fetch(),
+        storageLocations: StorageLocations.find().fetch(),
+      };
+    }, [productId]);
 
   useEffect(() => {
     if (!loading && product && !initialised) {
@@ -117,13 +102,8 @@ export function EditProductPage() {
   const nameIsValid = name.trim().length > 0;
   const totalQuantityIsValid = totalQuantity !== "" && !isNaN(parsedTotal);
 
-  const validAssignments = assignments.filter(
-    (a) => a.locationId && a.quantity !== "",
-  );
-  const assignedTotal = validAssignments.reduce(
-    (sum, a) => sum + parseInt(a.quantity, 10),
-    0,
-  );
+  const validAssignments = assignments.filter((a) => a.locationId && a.quantity !== "");
+  const assignedTotal = validAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
   const remaining = totalQuantityIsValid ? parsedTotal - assignedTotal : null;
   const isBalanced = totalQuantityIsValid && remaining === 0;
   const canSave = nameIsValid && totalQuantityIsValid && isBalanced;
@@ -132,12 +112,10 @@ export function EditProductPage() {
     if (!initialised || !product) return {};
     const result = {};
 
-    if (name.trim() !== product.name)
-      result.name = { from: product.name, to: name.trim() };
+    if (name.trim() !== product.name) result.name = { from: product.name, to: name.trim() };
     if (category !== (product.category || ""))
       result.category = { from: product.category || "", to: category };
-    if (brand !== (product.brand || ""))
-      result.brand = { from: product.brand || "", to: brand };
+    if (brand !== (product.brand || "")) result.brand = { from: product.brand || "", to: brand };
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
     if (parseFloat(unitCost) !== product.unitCost)
@@ -153,8 +131,7 @@ export function EditProductPage() {
       imageUrls.some((url, i) => url !== originalImages[i]);
     if (imagesChanged) result.images = { from: originalImages, to: imageUrls };
 
-    const normalise = (arr) =>
-      [...arr].sort((a, b) => a.locationId.localeCompare(b.locationId));
+    const normalise = (arr) => [...arr].sort((a, b) => a.locationId.localeCompare(b.locationId));
     const currentNorm = normalise(
       validAssignments.map((a) => ({
         locationId: a.locationId,
@@ -171,8 +148,7 @@ export function EditProductPage() {
       currentNorm.length !== originalNorm.length ||
       currentNorm.some(
         (a, i) =>
-          a.locationId !== originalNorm[i].locationId ||
-          a.quantity !== originalNorm[i].quantity,
+          a.locationId !== originalNorm[i].locationId || a.quantity !== originalNorm[i].quantity,
       );
     if (assignmentsChanged) result.assignments = true;
 
@@ -198,9 +174,7 @@ export function EditProductPage() {
     setAssignments(assignments.filter((_, i) => i !== index));
   }
   function updateAssignment(index, field, value) {
-    setAssignments(
-      assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
-    );
+    setAssignments(assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)));
   }
 
   async function handleImageSelect(event) {
@@ -271,10 +245,8 @@ export function EditProductPage() {
     }
   }
 
-  if (loading || !initialised)
-    return <div className="p-8 text-center">Loading...</div>;
-  if (!product)
-    return <div className="p-8 text-center">Product not found.</div>;
+  if (loading || !initialised) return <div className="p-8 text-center">Loading...</div>;
+  if (!product) return <div className="p-8 text-center">Product not found.</div>;
 
   return (
     <div className="product-detail-container">
@@ -411,21 +383,14 @@ export function EditProductPage() {
                 >
                   <select
                     value={assignment.locationId}
-                    onChange={(e) =>
-                      updateAssignment(index, "locationId", e.target.value)
-                    }
+                    onChange={(e) => updateAssignment(index, "locationId", e.target.value)}
                     className="form-input"
                     style={{ flex: 2 }}
                   >
                     <option value="">Select a location...</option>
                     {storageLocations.map((location) => (
                       <option key={location._id} value={location._id}>
-                        {buildLocationLabel(
-                          location,
-                          storageUnits,
-                          floorMaps,
-                          sites,
-                        )}
+                        {buildLocationLabel(location, storageUnits, floorMaps, sites)}
                       </option>
                     ))}
                   </select>
@@ -435,9 +400,7 @@ export function EditProductPage() {
                     min="0"
                     placeholder="Qty"
                     value={assignment.quantity}
-                    onChange={(e) =>
-                      updateAssignment(index, "quantity", e.target.value)
-                    }
+                    onChange={(e) => updateAssignment(index, "quantity", e.target.value)}
                     className="form-input"
                     style={{ maxWidth: "80px" }}
                   />
@@ -493,9 +456,7 @@ export function EditProductPage() {
                     }}
                   />
                 ) : (
-                  <span
-                    style={{ fontSize: "13px", color: "var(--text-muted)" }}
-                  >
+                  <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
                     {uploadingImage ? "Uploading..." : "No image uploaded"}
                   </span>
                 )}
@@ -503,10 +464,7 @@ export function EditProductPage() {
 
               <div className="thumbnail-gallery">
                 {imageUrls.map((url, index) => (
-                  <div
-                    key={url}
-                    style={{ position: "relative", display: "inline-block" }}
-                  >
+                  <div key={url} style={{ position: "relative", display: "inline-block" }}>
                     <button
                       type="button"
                       className={`thumbnail ${index === mainImageIndex ? "active" : ""}`}
@@ -579,11 +537,7 @@ export function EditProductPage() {
         <button className="btn-secondary" onClick={() => navigate(-1)}>
           Cancel
         </button>
-        <button
-          className="btn-primary"
-          onClick={handleSave}
-          disabled={!canSave}
-        >
+        <button className="btn-primary" onClick={handleSave} disabled={!canSave}>
           {isSaving ? "Saving..." : "Save changes"}
         </button>
       </div>
@@ -696,8 +650,7 @@ export function EditProductPage() {
                     Reorder at
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {changes.reorderAt.from ?? "-"} →{" "}
-                    {changes.reorderAt.to ?? "-"}
+                    {changes.reorderAt.from ?? "-"} → {changes.reorderAt.to ?? "-"}
                   </div>
                 </div>
               )}
@@ -714,8 +667,7 @@ export function EditProductPage() {
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
                     {changes.images.from.length} image
-                    {changes.images.from.length !== 1 ? "s" : ""} →{" "}
-                    {changes.images.to.length} image
+                    {changes.images.from.length !== 1 ? "s" : ""} → {changes.images.to.length} image
                     {changes.images.to.length !== 1 ? "s" : ""}
                   </div>
                 </div>
@@ -732,9 +684,7 @@ export function EditProductPage() {
                     Storage locations
                   </div>
                   {validAssignments.map((a, i) => {
-                    const loc = storageLocations.find(
-                      (l) => l._id === a.locationId,
-                    );
+                    const loc = storageLocations.find((l) => l._id === a.locationId);
                     const label = loc
                       ? buildLocationLabel(loc, storageUnits, floorMaps, sites)
                       : a.locationId;
@@ -749,9 +699,7 @@ export function EditProductPage() {
                         }}
                       >
                         <span>{label}</span>
-                        <span
-                          style={{ fontWeight: 600, color: "var(--text-dark)" }}
-                        >
+                        <span style={{ fontWeight: 600, color: "var(--text-dark)" }}>
                           {a.quantity}
                         </span>
                       </div>
@@ -770,11 +718,7 @@ export function EditProductPage() {
               >
                 Cancel
               </button>
-              <button
-                className="btn-primary"
-                disabled={isSaving}
-                onClick={confirmSave}
-              >
+              <button className="btn-primary" disabled={isSaving} onClick={confirmSave}>
                 {isSaving ? "Saving..." : "Confirm save"}
               </button>
             </div>

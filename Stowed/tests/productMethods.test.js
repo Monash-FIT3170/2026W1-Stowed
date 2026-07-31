@@ -146,10 +146,7 @@ describe("products.createWithAssignments", function () {
   });
 
   it("returns a string _id", async function () {
-    createdProductId = await callMethod(
-      "products.createWithAssignments",
-      makeCreateParams(),
-    );
+    createdProductId = await callMethod("products.createWithAssignments", makeCreateParams());
     assert.strictEqual(typeof createdProductId, "string");
     assert.ok(createdProductId.length > 0);
   });
@@ -192,9 +189,7 @@ describe("products.createWithAssignments", function () {
     const records = await ProductRecords.find({
       productId: createdProductId,
     }).fetchAsync();
-    const byLocation = Object.fromEntries(
-      records.map((r) => [r.locationId, r.quantity]),
-    );
+    const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
 
     assert.strictEqual(records.length, 2);
     assert.strictEqual(byLocation[TEST_LOCATION_ID], 10);
@@ -229,11 +224,7 @@ describe("products.createWithAssignments", function () {
     );
 
     await assert.rejects(
-      () =>
-        callMethod(
-          "products.createWithAssignments",
-          makeCreateParams({ name: "hi-vis vest" }),
-        ),
+      () => callMethod("products.createWithAssignments", makeCreateParams({ name: "hi-vis vest" })),
       (err) => {
         assert.strictEqual(err.error, "duplicate-name");
         return true;
@@ -263,10 +254,7 @@ describe("products.createWithAssignments", function () {
 
 describe("products.delete", function () {
   it("removes the product from the database", async function () {
-    const productId = await callMethod(
-      "products.createWithAssignments",
-      makeCreateParams(),
-    );
+    const productId = await callMethod("products.createWithAssignments", makeCreateParams());
 
     await callMethod("products.delete", { productId });
 
@@ -395,9 +383,7 @@ describe("products.update", function () {
     });
 
     const records = await ProductRecords.find({ productId }).fetchAsync();
-    const byLocation = Object.fromEntries(
-      records.map((r) => [r.locationId, r.quantity]),
-    );
+    const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
 
     assert.strictEqual(records.length, 2);
     assert.strictEqual(byLocation["loc-A"], 30);
@@ -565,9 +551,7 @@ describe("products.restock", function () {
     });
 
     const records = await ProductRecords.find({ productId }).fetchAsync();
-    const byLocation = Object.fromEntries(
-      records.map((r) => [r.locationId, r.quantity]),
-    );
+    const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
 
     assert.strictEqual(records.length, 2);
     assert.strictEqual(byLocation[TEST_LOCATION_ID], 60);
@@ -663,11 +647,7 @@ describe("products.restock", function () {
     }
 
     const product = await Products.findOneAsync(productId);
-    assert.strictEqual(
-      product.totalQuantity,
-      50,
-      "totalQuantity must be unchanged",
-    );
+    assert.strictEqual(product.totalQuantity, 50, "totalQuantity must be unchanged");
   });
 
   it("does not modify ProductRecords on quantity-mismatch", async function () {
@@ -683,10 +663,6 @@ describe("products.restock", function () {
 
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 1);
-    assert.strictEqual(
-      records[0].quantity,
-      50,
-      "Original records must be unchanged",
-    );
+    assert.strictEqual(records[0].quantity, 50, "Original records must be unchanged");
   });
 });

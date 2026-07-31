@@ -219,7 +219,5 @@ export function getMockStorageUnitById(unitId) {
 }
 
 export function getMockStorageLocationsByUnitId(unitId) {
-  return mockStorageLocations.filter(
-    (location) => location.storageUnitId === unitId,
-  );
+  return mockStorageLocations.filter((location) => location.storageUnitId === unitId);
 }

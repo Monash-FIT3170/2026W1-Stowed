@@ -87,18 +87,12 @@ export async function getCallerOrgId(userId) {
 }
 
 export async function assertOrgAccess(collection, docId, userId) {
-  if (!userId)
-    throw new Meteor.Error("not-authorised", "You must be logged in.");
+  if (!userId) throw new Meteor.Error("not-authorised", "You must be logged in.");
   const orgId = await getCallerOrgId(userId);
-  if (!orgId)
-    throw new Meteor.Error(
-      "no-org",
-      "Your account is not linked to an organisation.",
-    );
+  if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
   const doc = await collection.findOneAsync(docId);
   if (!doc) throw new Meteor.Error("not-found", "Document not found.");
-  if (doc.orgId !== orgId)
-    throw new Meteor.Error("forbidden", "Access denied.");
+  if (doc.orgId !== orgId) throw new Meteor.Error("forbidden", "Access denied.");
 }
 
 /**
@@ -117,10 +111,7 @@ Meteor.methods({
     }
 
     if (password.length < 6) {
-      throw new Meteor.Error(
-        "invalid-password",
-        "Password must be at least 6 characters.",
-      );
+      throw new Meteor.Error("invalid-password", "Password must be at least 6 characters.");
     }
 
     await requirePermission(this.userId, "create-users");
@@ -128,10 +119,7 @@ Meteor.methods({
     const caller = await Meteor.users.findOneAsync(this.userId);
     const organisationId = caller.profile.organisationId;
     if (!organisationId) {
-      throw new Meteor.Error(
-        "no-org",
-        "Your account is not linked to an organisation.",
-      );
+      throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
     }
 
     const org = await Organisations.findOneAsync(organisationId);
@@ -174,13 +162,7 @@ Meteor.methods({
   // Self-registration: always requires an org code.
   // If the code is new, a new organisation is created and the registrant becomes its Owner.
   // If the code already exists, registration is blocked — new members must be invited by the org owner.
-  "users.register": async function ({
-    username,
-    email,
-    password,
-    orgCode,
-    orgName,
-  }) {
+  "users.register": async function ({ username, email, password, orgCode, orgName }) {
     check(username, String);
     check(email, String);
     check(password, String);
@@ -188,26 +170,17 @@ Meteor.methods({
     check(orgName, String);
 
     if (password.length < 6) {
-      throw new Meteor.Error(
-        "invalid-password",
-        "Password must be at least 6 characters.",
-      );
+      throw new Meteor.Error("invalid-password", "Password must be at least 6 characters.");
     }
 
     const orgName_used = orgName.trim();
     if (!orgName_used) {
-      throw new Meteor.Error(
-        "org-name-required",
-        "Please provide an organisation name.",
-      );
+      throw new Meteor.Error("org-name-required", "Please provide an organisation name.");
     }
 
     const orgCode_used = orgCode.trim().toLowerCase();
     if (!orgCode_used) {
-      throw new Meteor.Error(
-        "org-required",
-        "Please provide an organisation code.",
-      );
+      throw new Meteor.Error("org-required", "Please provide an organisation code.");
     }
 
     const existing = await Organisations.findOneAsync({ code: orgCode_used });
@@ -246,10 +219,7 @@ Meteor.methods({
       // Roll back the org we just created — no user means no org
       await Organisations.removeAsync(organisationId);
       if (err.error === 403 || err.reason?.toLowerCase().includes("email")) {
-        throw new Meteor.Error(
-          "email-taken",
-          "An account with that email already exists.",
-        );
+        throw new Meteor.Error("email-taken", "An account with that email already exists.");
       }
       throw err;
     }
@@ -269,10 +239,7 @@ Meteor.methods({
     const target = await Meteor.users.findOneAsync(userId, {
       fields: { "profile.organisationId": 1 },
     });
-    if (
-      !target ||
-      target.profile.organisationId !== caller.profile.organisationId
-    ) {
+    if (!target || target.profile.organisationId !== caller.profile.organisationId) {
       throw new Meteor.Error(
         "forbidden",
         "You can only delete users within your own organisation.",
@@ -299,17 +266,11 @@ Meteor.methods({
     const compoundUsername = `${org.code}~${login}`;
     const user = await Meteor.users.findOneAsync({
       "profile.organisationId": org._id,
-      $or: [
-        { "emails.address": login.toLowerCase() },
-        { username: compoundUsername },
-      ],
+      $or: [{ "emails.address": login.toLowerCase() }, { username: compoundUsername }],
     });
 
     if (!user) {
-      throw new Meteor.Error(
-        "user-not-found",
-        "No account found in this organisation.",
-      );
+      throw new Meteor.Error("user-not-found", "No account found in this organisation.");
     }
 
     return true;
