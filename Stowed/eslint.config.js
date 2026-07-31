@@ -74,15 +74,40 @@ module.exports = [
     languageOptions: { globals: { ...globals.node, ...globals.mocha } },
   },
 
-  // Build/tooling config files run in Node.
+  // CommonJS build/tooling config (eslint.config.js, rspack.config.js).
   {
-    files: ["*.config.js", "*.config.mjs", "rspack.config.js"],
+    files: ["*.config.js", "*.config.cjs"],
     languageOptions: {
       sourceType: "commonjs",
       globals: { ...globals.node },
     },
   },
 
-  // Must be last: turn off rules that conflict with Prettier formatting.
+  // ESM config files (postcss.config.mjs).
+  {
+    files: ["*.config.mjs", "*.mjs"],
+    languageOptions: {
+      sourceType: "module",
+      globals: { ...globals.node },
+    },
+  },
+
+  // Turn off rules that conflict with Prettier formatting.
   prettier,
+
+  // Project rule policy (applied last so these severities win).
+  {
+    rules: {
+      // JS-only project with no PropTypes/TypeScript — prop validation not enforced.
+      "react/prop-types": "off",
+
+      // React Compiler rules that flag intentional canvas/ref architecture
+      // (ref-based undo/redo in EditorContext, Konva group-ref registry).
+      // Kept visible as warnings for incremental cleanup rather than blocking.
+      // rules-of-hooks, exhaustive-deps, and set-state-in-effect stay at defaults.
+      "react-hooks/refs": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/set-state-in-render": "warn",
+    },
+  },
 ];
