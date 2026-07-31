@@ -30,10 +30,9 @@
 
 .selected-actions {
   display: grid;
-  grid-template-columns: 44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(
-      84px,
-      1fr
-    ) 64px 88px 82px;
+  grid-template-columns:
+    44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(84px, 1fr)
+    64px 88px 82px;
   align-items: center;
   gap: 0 8px;
   min-height: 30px;
@@ -92,10 +91,9 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(
-      84px,
-      1fr
-    ) 64px 88px 82px;
+  grid-template-columns:
+    44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(84px, 1fr)
+    64px 88px 82px;
   padding: 8px 20px;
   border-bottom: 1px solid var(--border-subtle);
   font-size: 11px;
@@ -107,10 +105,9 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(
-      84px,
-      1fr
-    ) 64px 88px 82px;
+  grid-template-columns:
+    44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(84px, 1fr)
+    64px 88px 82px;
   padding: 10px 20px;
   border-bottom: 0.5px solid var(--border-light);
   font-size: 13px;

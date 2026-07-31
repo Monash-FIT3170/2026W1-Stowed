@@ -1,4 +1,3 @@
-
 /**
  * Visual status indicator for an item's stock level.
  * Colours match the Bloom design palette.

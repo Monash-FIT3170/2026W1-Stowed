@@ -1,4 +1,3 @@
-
 /**
  * Filter chip bar for the inventory list view.
  * Renders pill-style buttons; the active filter is visually distinguished.

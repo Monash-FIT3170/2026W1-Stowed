@@ -1420,7 +1420,9 @@ export function LocationsPage() {
       {deleteConfirm && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3 className="modal-title">Delete &quot;{deleteConfirm.name}&quot;?</h3>
+            <h3 className="modal-title">
+              Delete &quot;{deleteConfirm.name}&quot;?
+            </h3>
             <p className="modal-text">
               This will permanently remove this item. This cannot be undone.
             </p>
