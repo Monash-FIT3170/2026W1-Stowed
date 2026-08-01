@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Meteor } from "meteor/meteor";
 import { buttonStyles } from "./FloorMapStyles";
 
 export function CreateShapeModal({ onClose }) {
@@ -39,16 +40,23 @@ export function CreateShapeModal({ onClose }) {
         );
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const formattedPoints = points.map((point) => ({
             x: Number(point.x),
             y: Number(point.y),
         }));
 
-        console.log("Shape name:", shapeName);
-        console.log("Shape points:", formattedPoints);
+        try {
+            await Meteor.callAsync("mapShapes.create", {
+                name: shapeName,
+                points: formattedPoints,
+            });
 
-        onClose();
+            onClose();
+        } catch (error) {
+            console.error("Failed to save shape:", error);
+            alert(error.reason || "Failed to save shape.");
+        }
     };
 
     return (
