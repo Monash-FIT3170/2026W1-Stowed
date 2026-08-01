@@ -4,7 +4,10 @@ import React from "react";
 import { StorageUnit } from "../imports/ui/pages/floorMapComponents/canvas/components/units/StorageUnit";
 import { UnitLayer } from "../imports/ui/pages/floorMapComponents/canvas/components/layers/UnitLayer";
 import { GhostLayer } from "../imports/ui/pages/floorMapComponents/canvas/components/layers/GhostLayer";
-import { canvasReducer, initialCanvasState } from "../imports/ui/pages/floorMapComponents/canvas/editor/EditorReducer";
+import {
+  canvasReducer,
+  initialCanvasState,
+} from "../imports/ui/pages/floorMapComponents/canvas/editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../imports/ui/pages/floorMapComponents/canvas/editor/Actions";
 import { CANVAS_CONFIG } from "../imports/ui/pages/floorMapComponents/canvas/CanvasConfig";
 import { COLOURS } from "../imports/ui/pages/floorMapComponents/FloorMapStyles";
@@ -21,10 +24,12 @@ function hasPixelCollision(bounds, units) {
       ran: { lower: unit.y * px, upper: (unit.y + unit.height) * px },
     };
 
-    return bounds.dom.lower < other.dom.upper &&
+    return (
+      bounds.dom.lower < other.dom.upper &&
       bounds.dom.upper > other.dom.lower &&
       bounds.ran.lower < other.ran.upper &&
-      bounds.ran.upper > other.ran.lower;
+      bounds.ran.upper > other.ran.lower
+    );
   });
 }
 
@@ -63,7 +68,13 @@ function getDropPlacement({
   if (hasPixelCollision(bounds, units)) return null;
 
   return {
-    pixelUnit: { ...template, x: clampedX, y: clampedY, width: wPixels, height: hPixels },
+    pixelUnit: {
+      ...template,
+      x: clampedX,
+      y: clampedY,
+      width: wPixels,
+      height: hPixels,
+    },
     unit: {
       ...template,
       x: clampedX / px,
@@ -165,10 +176,7 @@ describe("Floor map canvas", function () {
     });
 
     it("renders unit layer children with selected state and unit-specific callbacks", function () {
-      const units = [
-        unit,
-        { ...unit, id: "unit-b", name: "Shelf B", x: 7 },
-      ];
+      const units = [unit, { ...unit, id: "unit-b", name: "Shelf B", x: 7 }];
       const refs = {};
       const clicked = [];
       const dragged = [];
@@ -256,10 +264,7 @@ describe("Floor map canvas", function () {
         ghostUnit: null,
         dragOffsets: { deltaX: 0.7, deltaY: 0.4, unitId: "unit-a" },
         selectedIds: new Set(["unit-a", "unit-b"]),
-        units: [
-          unit,
-          { ...unit, id: "unit-b", name: "Shelf B", x: 6, y: 1 },
-        ],
+        units: [unit, { ...unit, id: "unit-b", name: "Shelf B", x: 6, y: 1 }],
         snapEnabled: true,
         gridSizePx: 50,
       });
@@ -330,7 +335,13 @@ describe("Floor map canvas", function () {
 
     it("converts drop coordinates into snapped metre-based unit placement", function () {
       const placement = getDropPlacement({
-        template: { name: "Drop Shelf", type: "shelf", width: 2, height: 1, fill: "#22c55e" },
+        template: {
+          name: "Drop Shelf",
+          type: "shelf",
+          width: 2,
+          height: 1,
+          fill: "#22c55e",
+        },
         clientX: 335,
         clientY: 220,
         stage: createStage(),
@@ -394,7 +405,12 @@ describe("Floor map canvas", function () {
 
     it("accepts pointer positions exactly on the canvas boundary before clamping", function () {
       const placement = getDropPlacement({
-        template: { name: "Boundary Shelf", width: 1, height: 1, fill: "#22c55e" },
+        template: {
+          name: "Boundary Shelf",
+          width: 1,
+          height: 1,
+          fill: "#22c55e",
+        },
         clientX: 500,
         clientY: 400,
         stage: createStage({ left: 0, top: 0, x: 0, y: 0, scale: 1 }),
@@ -412,7 +428,12 @@ describe("Floor map canvas", function () {
 
     it("accounts for stage offset and zoom when converting pointer coordinates", function () {
       const placement = getDropPlacement({
-        template: { name: "Zoomed Shelf", width: 2, height: 2, fill: "#22c55e" },
+        template: {
+          name: "Zoomed Shelf",
+          width: 2,
+          height: 2,
+          fill: "#22c55e",
+        },
         clientX: 260,
         clientY: 170,
         stage: createStage({ left: 20, top: 10, x: 40, y: 30, scale: 2 }),
@@ -432,7 +453,12 @@ describe("Floor map canvas", function () {
 
     it("allows a drop that exactly touches another unit edge", function () {
       const placement = getDropPlacement({
-        template: { name: "Touching Shelf", width: 2, height: 1, fill: "#22c55e" },
+        template: {
+          name: "Touching Shelf",
+          width: 2,
+          height: 1,
+          fill: "#22c55e",
+        },
         clientX: 200,
         clientY: 75,
         stage: createStage({ left: 0, top: 0, x: 0, y: 0, scale: 1 }),
@@ -449,7 +475,12 @@ describe("Floor map canvas", function () {
     });
 
     it("rejects drops outside the canvas or colliding with existing units", function () {
-      const template = { name: "Drop Shelf", width: 2, height: 1, fill: "#22c55e" };
+      const template = {
+        name: "Drop Shelf",
+        width: 2,
+        height: 1,
+        fill: "#22c55e",
+      };
       const stage = createStage({ left: 0, top: 0, x: 0, y: 0, scale: 1 });
 
       const outside = getDropPlacement({
@@ -481,7 +512,12 @@ describe("Floor map canvas", function () {
     });
 
     it("rejects pointer positions just beyond each canvas edge", function () {
-      const template = { name: "Drop Shelf", width: 1, height: 1, fill: "#22c55e" };
+      const template = {
+        name: "Drop Shelf",
+        width: 1,
+        height: 1,
+        fill: "#22c55e",
+      };
       const stage = createStage({ left: 0, top: 0, x: 0, y: 0, scale: 1 });
       const base = {
         template,
@@ -544,10 +580,18 @@ describe("Floor map canvas", function () {
         type: CANVAS_ACTIONS.SET_DRAG_OFFSETS,
         payload: { deltaX: 1.5, deltaY: -0.5, unitId: "unit-a" },
       });
-      assert.deepStrictEqual(state.dragOffsets, { deltaX: 1.5, deltaY: -0.5, unitId: "unit-a" });
+      assert.deepStrictEqual(state.dragOffsets, {
+        deltaX: 1.5,
+        deltaY: -0.5,
+        unitId: "unit-a",
+      });
 
       state = canvasReducer(state, { type: CANVAS_ACTIONS.CLEAR_DRAG_OFFSETS });
-      assert.deepStrictEqual(state.dragOffsets, { deltaX: 0, deltaY: 0, unitId: null });
+      assert.deepStrictEqual(state.dragOffsets, {
+        deltaX: 0,
+        deltaY: 0,
+        unitId: null,
+      });
 
       state = canvasReducer(state, {
         type: CANVAS_ACTIONS.SET_SCALE,

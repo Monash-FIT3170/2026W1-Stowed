@@ -13,12 +13,7 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 
-export function Canvas({
-  style,
-  isCanvasEditMode,
-  setSelectedStorageUnitId,
-  setTooltip,
-}) {
+export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
   const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
 
   const width = floorSize.width;
@@ -77,10 +72,16 @@ export function Canvas({
     function measure() {
       const { width, height } = el.getBoundingClientRect();
       if (width === 0 || height === 0) return; // guard - never dispatch zero dimensions
-      dispatch({ type: CANVAS_ACTIONS.SET_DISPLAY_SIZE, payload: { width, height } });
+      dispatch({
+        type: CANVAS_ACTIONS.SET_DISPLAY_SIZE,
+        payload: { width, height },
+      });
       const centeredX = (width - floorSize.width * scale) / 2;
       const centeredY = (height - floorSize.height * scale) / 2;
-      dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: { x: centeredX, y: centeredY } });
+      dispatch({
+        type: CANVAS_ACTIONS.SET_STAGE_POS,
+        payload: { x: centeredX, y: centeredY },
+      });
     }
 
     measure();
@@ -109,9 +110,14 @@ export function Canvas({
   }, [handleCopy, handlePaste, handleDelete]);
 
   return (
-    <div ref={wrapperRef} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} style={{ width: "100%", height: "100%" }}>
+    <div
+      ref={wrapperRef}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      style={{ width: "100%", height: "100%" }}
+    >
       <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
-
         {/* Only mount Stage once we have real pixel dimensions */}
         {displaySize.width > 0 && displaySize.height > 0 && (
           <Stage
@@ -164,7 +170,6 @@ export function Canvas({
             />
           </Stage>
         )}
-
       </div>
     </div>
   );

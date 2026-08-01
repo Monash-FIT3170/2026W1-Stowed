@@ -114,15 +114,7 @@ export const StorageUnitSchema = new SimpleSchema({
 
   type: {
     type: String,
-    allowedValues: [
-      "shelf",
-      "cabinet",
-      "rack",
-      "drawer",
-      "fridge",
-      "other",
-      "custom",
-    ],
+    allowedValues: ["shelf", "cabinet", "rack", "drawer", "fridge", "other", "custom"],
   },
 
   position: {

@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
+import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
@@ -25,7 +25,12 @@ export function ProductThumbnail({ photoUrl, catalogImages, images, name }) {
   const [imgError, setImgError] = useState(false);
 
   const initials = name
-    ? name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+    ? name
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
     : "?";
 
   const thumbnailUrls = [
@@ -41,7 +46,12 @@ export function ProductThumbnail({ photoUrl, catalogImages, images, name }) {
   }
 
   return (
-    <img src={thumbnailUrl} alt={name} onError={() => setImgError(true)} className="item-thumbnail" />
+    <img
+      src={thumbnailUrl}
+      alt={name}
+      onError={() => setImgError(true)}
+      className="item-thumbnail"
+    />
   );
 }
 
@@ -91,24 +101,11 @@ export function InventoryListPage() {
       result = filterLowStock(result);
     }
     if (activeFilter === "location") {
-      result = filterByStorageUnit(
-        result,
-        productRecords,
-        storageLocations,
-        locationFilterUnitId,
-      );
+      result = filterByStorageUnit(result, productRecords, storageLocations, locationFilterUnitId);
     }
     result = searchProducts(result, searchQuery);
     return result;
-  }, [
-    items,
-    activeFilter,
-    searchQuery,
-    locationFilterUnitId,
-    storageLocations,
-    productRecords,
-  ]);
-
+  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -128,8 +125,16 @@ export function InventoryListPage() {
     );
   };
 
-  const openDeleteModal = () => { if (selectedProductIds.length === 0) return; setShowDeleteModal(true); setDeleteError(""); };
-  const closeDeleteModal = () => { if (isDeleting) return; setShowDeleteModal(false); setDeleteError(""); };
+  const openDeleteModal = () => {
+    if (selectedProductIds.length === 0) return;
+    setShowDeleteModal(true);
+    setDeleteError("");
+  };
+  const closeDeleteModal = () => {
+    if (isDeleting) return;
+    setShowDeleteModal(false);
+    setDeleteError("");
+  };
 
   const handleDeleteSelectedProducts = async () => {
     if (selectedProductIds.length === 0) return;
@@ -162,12 +167,16 @@ export function InventoryListPage() {
     <div className="inventory-list-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <Link to="/" className="breadcrumb-link">Inventory</Link>
+          <Link to="/" className="breadcrumb-link">
+            Inventory
+          </Link>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">All products</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">All <em>Products</em></h1>
+          <h1 className="header-title">
+            All <em>Products</em>
+          </h1>
           {canCreate && (
             <Link to="/inventory/new">
               <button className="btn-primary">+ Add product</button>
@@ -177,7 +186,6 @@ export function InventoryListPage() {
       </div>
 
       <div style={{ padding: "0 28px 48px" }}>
-
         <div className="search-bar-container">
           <input
             type="text"
@@ -189,7 +197,14 @@ export function InventoryListPage() {
           />
         </div>
 
-        <FilterChips filters={filters} activeFilter={activeFilter} onFilterChange={(f) => { setActiveFilter(f); if (f !== "location") setLocationFilterUnitId(""); }} />
+        <FilterChips
+          filters={filters}
+          activeFilter={activeFilter}
+          onFilterChange={(f) => {
+            setActiveFilter(f);
+            if (f !== "location") setLocationFilterUnitId("");
+          }}
+        />
 
         {activeFilter === "location" && (
           <div style={{ marginBottom: "12px" }}>
@@ -201,7 +216,9 @@ export function InventoryListPage() {
             >
               <option value="">All locations</option>
               {storageUnits.map((unit) => (
-                <option key={unit._id} value={unit._id}>{unit.name}</option>
+                <option key={unit._id} value={unit._id}>
+                  {unit.name}
+                </option>
               ))}
             </select>
           </div>
@@ -214,7 +231,9 @@ export function InventoryListPage() {
             <div className="detail-section">
               <div style={{ padding: "16px 20px 0", marginBottom: "8px" }}>
                 <div className="recent-items-title">Inventory List</div>
-                <div className="recent-items-subtitle">{filteredItems.length} of {items.length} products shown</div>
+                <div className="recent-items-subtitle">
+                  {filteredItems.length} of {items.length} products shown
+                </div>
               </div>
               {canDelete && (
                 <div className="selected-actions">
@@ -246,11 +265,19 @@ export function InventoryListPage() {
               </div>
               {pagedItems.map((item) => (
                 <div key={item._id} className="table-row">
-                  <ProductThumbnail images={item.images || item.catalogImages} photoUrl={item.photoUrl} name={item.name} />
+                  <ProductThumbnail
+                    images={item.images || item.catalogImages}
+                    photoUrl={item.photoUrl}
+                    name={item.name}
+                  />
                   <span>
-                    <Link to={`/inventory/${item._id}`} className="item-name-link">{item.name}</Link>
+                    <Link to={`/inventory/${item._id}`} className="item-name-link">
+                      {item.name}
+                    </Link>
                   </span>
-                  <span><span className="item-tag">{item.tag || "-"}</span></span>
+                  <span>
+                    <span className="item-tag">{item.tag || "-"}</span>
+                  </span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
                   <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />
@@ -268,13 +295,21 @@ export function InventoryListPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div style={{ display: "flex", gap: "6px", marginTop: "12px", justifyContent: "center" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "6px",
+                  marginTop: "12px",
+                  justifyContent: "center",
+                }}
+              >
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
                     style={{
-                      width: "32px", height: "32px",
+                      width: "32px",
+                      height: "32px",
                       borderRadius: "8px",
                       border: page === currentPage ? "none" : "1px solid var(--border-subtle)",
                       background: page === currentPage ? "var(--accent-primary)" : "var(--card-bg)",
@@ -294,24 +329,43 @@ export function InventoryListPage() {
 
         {showDeleteModal && (
           <div className="modal-overlay" role="presentation">
-            <div className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-product-title">
+            <div
+              className="modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-product-title"
+            >
               <h2 id="delete-product-title" className="modal-title">
-                Delete {selectedItems.length} selected item{selectedItems.length !== 1 ? "s" : ""}?
+                Delete {selectedItems.length} selected item
+                {selectedItems.length !== 1 ? "s" : ""}?
               </h2>
               <p className="modal-text">
-                This will permanently delete the selected product{selectedItems.length !== 1 ? "s" : ""} and remove all related location stock records.
+                This will permanently delete the selected product
+                {selectedItems.length !== 1 ? "s" : ""} and remove all related location stock
+                records.
               </p>
               {deleteError && <div className="warning-text">{deleteError}</div>}
               <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={closeDeleteModal} disabled={isDeleting}>Cancel</button>
-                <button type="button" className="btn-danger" onClick={handleDeleteSelectedProducts} disabled={isDeleting}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={closeDeleteModal}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={handleDeleteSelectedProducts}
+                  disabled={isDeleting}
+                >
                   {isDeleting ? "Deleting..." : "Delete selected"}
                 </button>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

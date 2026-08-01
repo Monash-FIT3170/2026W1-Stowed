@@ -1,7 +1,3 @@
 export function StocktakePage() {
-  return (
-    <div>
-      Stocktake Page
-      </div>
-  );
+  return <div>Stocktake Page</div>;
 }

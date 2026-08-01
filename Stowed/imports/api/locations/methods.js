@@ -3,12 +3,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import {
-  Sites,
-  FloorMaps,
-  StorageUnits,
-  StorageLocations,
-} from "./collections";
+import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./collections";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 
@@ -128,10 +123,7 @@ Meteor.methods({
 
     const floorMap = await FloorMaps.findOneAsync(floorMapId);
     if (!floorMap) {
-      throw new Meteor.Error(
-        "floor-map-not-found",
-        "No floor map found with that ID.",
-      );
+      throw new Meteor.Error("floor-map-not-found", "No floor map found with that ID.");
     }
 
     // Verify ownership via current parent site
@@ -160,10 +152,7 @@ Meteor.methods({
 
     const floorMap = await FloorMaps.findOneAsync(floorMapId);
     if (!floorMap) {
-      throw new Meteor.Error(
-        "floor-map-not-found",
-        "No floor map found with that ID.",
-      );
+      throw new Meteor.Error("floor-map-not-found", "No floor map found with that ID.");
     }
 
     await assertOrgAccess(Sites, floorMap.siteId, this.userId);
@@ -183,7 +172,7 @@ Meteor.methods({
   /**
    * Creates a new StorageUnit under an existing FloorMap.
    */
-  async 'storageUnits.create'({ floorMapId, name, type, position, fill }) {
+  async "storageUnits.create"({ floorMapId, name, type, position, fill }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
@@ -216,7 +205,7 @@ Meteor.methods({
   /**
    * Updates an existing StorageUnit.
    */
-  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, position, fill }) {
+  async "storageUnits.update"({ storageUnitId, floorMapId, name, type, position, fill }) {
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
@@ -230,10 +219,7 @@ Meteor.methods({
 
     const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
     if (!storageUnit) {
-      throw new Meteor.Error(
-        "storage-unit-not-found",
-        "No storage unit found with that ID.",
-      );
+      throw new Meteor.Error("storage-unit-not-found", "No storage unit found with that ID.");
     }
 
     const currentFloorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
@@ -275,10 +261,7 @@ Meteor.methods({
 
     const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
     if (!storageUnit) {
-      throw new Meteor.Error(
-        "storage-unit-not-found",
-        "No storage unit found with that ID.",
-      );
+      throw new Meteor.Error("storage-unit-not-found", "No storage unit found with that ID.");
     }
 
     const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
@@ -305,12 +288,7 @@ Meteor.methods({
   /**
    * Creates a new StorageLocation under an existing StorageUnit.
    */
-  async "storageLocations.create"({
-    storageUnitId,
-    name,
-    code,
-    imageUrl = "",
-  }) {
+  async "storageLocations.create"({ storageUnitId, name, code, imageUrl = "" }) {
     check(storageUnitId, String);
     check(name, String);
     check(code, String);
@@ -319,10 +297,7 @@ Meteor.methods({
     // Prevent orphaned storage locations by ensuring the parent StorageUnit exists first.
     const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
     if (!storageUnit) {
-      throw new Meteor.Error(
-        "invalid-storage-unit",
-        "Storage unit does not exist.",
-      );
+      throw new Meteor.Error("invalid-storage-unit", "Storage unit does not exist.");
     }
 
     const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
@@ -350,13 +325,7 @@ Meteor.methods({
   /**
    * Updates an existing StorageLocation.
    */
-  async "storageLocations.update"({
-    storageLocationId,
-    storageUnitId,
-    name,
-    code,
-    imageUrl = "",
-  }) {
+  async "storageLocations.update"({ storageLocationId, storageUnitId, name, code, imageUrl = "" }) {
     check(storageLocationId, String);
     check(storageUnitId, String);
     check(name, String);
@@ -367,8 +336,7 @@ Meteor.methods({
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
-    const storageLocation =
-      await StorageLocations.findOneAsync(storageLocationId);
+    const storageLocation = await StorageLocations.findOneAsync(storageLocationId);
     if (!storageLocation) {
       throw new Meteor.Error(
         "storage-location-not-found",
@@ -421,8 +389,7 @@ Meteor.methods({
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
-    const storageLocation =
-      await StorageLocations.findOneAsync(storageLocationId);
+    const storageLocation = await StorageLocations.findOneAsync(storageLocationId);
     if (!storageLocation) {
       throw new Meteor.Error(
         "storage-location-not-found",
@@ -432,10 +399,7 @@ Meteor.methods({
 
     const storageUnit = await StorageUnits.findOneAsync(storageLocation.storageUnitId);
     if (!storageUnit) {
-      throw new Meteor.Error(
-        "invalid-storage-unit",
-        "Storage unit does not exist.",
-      );
+      throw new Meteor.Error("invalid-storage-unit", "Storage unit does not exist.");
     }
 
     const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
@@ -462,9 +426,6 @@ Meteor.methods({
   async "storageLocations.getByStorageUnit"({ storageUnitId }) {
     check(storageUnitId, String);
 
-    return StorageLocations.find(
-      { storageUnitId },
-      { sort: { code: 1 } },
-    ).fetchAsync();
+    return StorageLocations.find({ storageUnitId }, { sort: { code: 1 } }).fetchAsync();
   },
 });

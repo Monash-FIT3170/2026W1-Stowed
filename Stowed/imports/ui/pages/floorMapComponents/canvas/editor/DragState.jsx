@@ -4,6 +4,6 @@
  * so put it into this type and then share
  */
 export const dragState = {
-    /** @type {{name: string, width: number, height: number, fill: string, type?: string} | null} */
-    template: null,
-  };
+  /** @type {{name: string, width: number, height: number, fill: string, type?: string} | null} */
+  template: null,
+};

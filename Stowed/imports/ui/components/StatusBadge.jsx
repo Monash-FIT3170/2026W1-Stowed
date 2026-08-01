@@ -1,5 +1,3 @@
-import React from "react";
-
 /**
  * Visual status indicator for an item's stock level.
  * Colours match the Bloom design palette.
@@ -39,7 +37,8 @@ export function StatusBadge({ quantity, threshold }) {
         display: "inline-block",
       }}
     >
-      {icon}{label}
+      {icon}
+      {label}
     </span>
   );
 }

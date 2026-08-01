@@ -3,46 +3,46 @@ import { Meteor } from "meteor/meteor";
 import { locationPanelStyles } from "./FloorMapStyles";
 
 export function StorageLocationPanel({ storageUnitId }) {
-    const [locations, setLocations] = useState([]);
-    const [name, setName] = useState("");
-    const [code, setCode] = useState("");
+  const [locations, setLocations] = useState([]);
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
 
-    async function loadLocations() {
-        if (!storageUnitId) return;
+  async function loadLocations() {
+    if (!storageUnitId) return;
 
     const result = await Meteor.callAsync("storageLocations.getByStorageUnit", {
       storageUnitId,
     });
 
-        setLocations(result);
-    }
+    setLocations(result);
+  }
 
-    useEffect(() => {
-        loadLocations();
-    }, [storageUnitId]);
+  useEffect(() => {
+    loadLocations();
+  }, [storageUnitId]);
 
-    async function handleAddLocation() {
-        if (!name.trim() || !code.trim() || !storageUnitId) return;
+  async function handleAddLocation() {
+    if (!name.trim() || !code.trim() || !storageUnitId) return;
 
-        await Meteor.callAsync("storageLocations.create", {
-            storageUnitId,
-            name,
-            code,
-            imageUrl: "",
-        });
+    await Meteor.callAsync("storageLocations.create", {
+      storageUnitId,
+      name,
+      code,
+      imageUrl: "",
+    });
 
-        setName("");
-        setCode("");
-        loadLocations();
-    }
+    setName("");
+    setCode("");
+    loadLocations();
+  }
 
-    async function handleDeleteLocation(storageLocationId) {
-        await Meteor.callAsync("storageLocations.delete", {
-            storageLocationId,
-        });
+  async function handleDeleteLocation(storageLocationId) {
+    await Meteor.callAsync("storageLocations.delete", {
+      storageLocationId,
+    });
 
-        loadLocations();
-    }
+    loadLocations();
+  }
 
   if (!storageUnitId) {
     return (
@@ -72,10 +72,7 @@ export function StorageLocationPanel({ storageUnitId }) {
           style={locationPanelStyles.input}
         />
 
-        <button
-          onClick={handleAddLocation}
-          style={locationPanelStyles.addButton}
-        >
+        <button onClick={handleAddLocation} style={locationPanelStyles.addButton}>
           + Add Location
         </button>
       </div>
