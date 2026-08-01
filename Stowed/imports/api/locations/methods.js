@@ -342,7 +342,7 @@ Meteor.methods({
     if (height <= 0) throw new Meteor.Error('invalid-shape-height', `The height of the shape must be >0 but got "${height}"`);
 
     // shapeId
-    const lastId = MapShapes.rawCollection().aggregate([{
+    const lastId = await MapShapes.rawCollection().aggregate([{
       $group: {
         _id: null,
         maxVal: { $max: "$shapeId"}
@@ -364,7 +364,7 @@ Meteor.methods({
 
     return MapShapes.insertAsync({
       orgId,
-      newId,
+      shapeId,
       name,
       width,
       height,
