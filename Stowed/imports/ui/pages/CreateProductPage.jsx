@@ -15,50 +15,6 @@ import "./CreateProductPage.css";
 import "../Global.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 
-const inputStyle = {
-  padding: "6px 8px",
-  border: "1px solid #999",
-  borderRadius: "3px",
-  fontSize: "14px",
-  width: "100%",
-  boxSizing: "border-box",
-};
-
-const buttonStyle = {
-  padding: "6px 14px",
-  border: "1px solid #333",
-  borderRadius: "3px",
-  cursor: "pointer",
-  background: "transparent",
-  fontSize: "14px",
-};
-
-const fieldStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "4px",
-  marginBottom: "16px",
-};
-
-const sectionStyle = {
-  borderTop: "1px solid #ccc",
-  marginTop: "24px",
-  paddingTop: "16px",
-};
-
-const assignmentRowStyle = {
-  display: "flex",
-  gap: "8px",
-  alignItems: "center",
-  marginBottom: "8px",
-};
-
-const warningStyle = {
-  marginTop: "4px",
-  fontStyle: "italic",
-  fontSize: "13px",
-};
-
 // Helpers
 
 // Wraps Meteor.call in a Promise so we can use async/await.
@@ -75,14 +31,10 @@ function callMethod(methodName, params) {
 // "Main Warehouse → Ground Floor → Shelf A → Bay 1"
 function buildLocationLabel(location, storageUnits, floorMaps, sites) {
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
-  const floorMap = unit
-    ? floorMaps.find((f) => f._id === unit.floorMapId)
-    : null;
+  const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
   const site = floorMap ? sites.find((s) => s._id === floorMap.siteId) : null;
 
-  return [site?.name, floorMap?.name, unit?.name, location.name]
-    .filter(Boolean)
-    .join(" → ");
+  return [site?.name, floorMap?.name, unit?.name, location.name].filter(Boolean).join(" → ");
 }
 
 // Component
@@ -98,7 +50,7 @@ export function CreateProductPage() {
   }, [role, navigate]);
 
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [description] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");
@@ -111,18 +63,17 @@ export function CreateProductPage() {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const { products, sites, floorMaps, storageUnits, storageLocations } =
-    useTracker(() => {
-      Meteor.subscribe("products");
-      Meteor.subscribe("locations.all");
-      return {
-        products: Products.find().fetch(),
-        sites: Sites.find().fetch(),
-        floorMaps: FloorMaps.find().fetch(),
-        storageUnits: StorageUnits.find().fetch(),
-        storageLocations: StorageLocations.find().fetch(),
-      };
-    }, []);
+  const { products, sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
+    Meteor.subscribe("products");
+    Meteor.subscribe("locations.all");
+    return {
+      products: Products.find().fetch(),
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+    };
+  }, []);
 
   // Derived validation
 
@@ -133,24 +84,15 @@ export function CreateProductPage() {
 
   // Case-insensitive check against all existing product names.
   const isDuplicate =
-    nameIsValid &&
-    products.some(
-      (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase(),
-    );
+    nameIsValid && products.some((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase());
 
   // Only count rows that have both a location and a quantity filled in.
-  const validAssignments = assignments.filter(
-    (a) => a.locationId && a.quantity !== "",
-  );
-  const assignedTotal = validAssignments.reduce(
-    (sum, a) => sum + parseInt(a.quantity, 10),
-    0,
-  );
+  const validAssignments = assignments.filter((a) => a.locationId && a.quantity !== "");
+  const assignedTotal = validAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
   const remaining = totalQuantityIsValid ? parsedTotal - assignedTotal : null;
   const isBalanced = totalQuantityIsValid && remaining === 0;
 
-  const canSubmit =
-    nameIsValid && totalQuantityIsValid && isBalanced && !isDuplicate;
+  const canSubmit = nameIsValid && totalQuantityIsValid && isBalanced && !isDuplicate;
 
   // Assignment handlers
 
@@ -163,9 +105,7 @@ export function CreateProductPage() {
   }
 
   function updateAssignment(index, field, value) {
-    setAssignments(
-      assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
-    );
+    setAssignments(assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)));
   }
 
   async function handleImageSelect(event) {
@@ -243,8 +183,7 @@ export function CreateProductPage() {
         <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              <span className="breadcrumb-link">Inventory</span>
-              {" "}&nbsp;/{" "}&nbsp;
+              <span className="breadcrumb-link">Inventory</span> &nbsp;/ &nbsp;
               <span className="breadcrumb-current">Create product</span>
             </div>
           </div>
@@ -258,10 +197,7 @@ export function CreateProductPage() {
             {/* Core identification */}
             <div className="detail-section">
               <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#d6ede8", color: "#4a8c78" }}
-                >
+                <span className="section-badge" style={{ background: "#d6ede8", color: "#4a8c78" }}>
                   ID
                 </span>
                 Core identification
@@ -277,9 +213,7 @@ export function CreateProductPage() {
                     placeholder="e.g. AAA Battery Pack"
                   />
                   {isDuplicate && (
-                    <span className="warning-text">
-                      A product with this name already exists.
-                    </span>
+                    <span className="warning-text">A product with this name already exists.</span>
                   )}
                 </div>
                 <div className="form-row">
@@ -310,10 +244,7 @@ export function CreateProductPage() {
             {/* Operational details */}
             <div className="detail-section">
               <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#fde8d8", color: "#b5532a" }}
-                >
+                <span className="section-badge" style={{ background: "#fde8d8", color: "#b5532a" }}>
                   OP
                 </span>
                 Operational details
@@ -361,10 +292,7 @@ export function CreateProductPage() {
             {/* Assign to locations */}
             <div className="detail-section">
               <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#f5efe6", color: "#998874" }}
-                >
+                <span className="section-badge" style={{ background: "#f5efe6", color: "#998874" }}>
                   LC
                 </span>
                 Assign to locations
@@ -372,8 +300,7 @@ export function CreateProductPage() {
               <div className="section-content">
                 {!locationsExist ? (
                   <p>
-                    No storage locations set up yet.{" "}
-                    <Link to="/locations">Go to Locations</Link>
+                    No storage locations set up yet. <Link to="/locations">Go to Locations</Link>
                   </p>
                 ) : (
                   <>
@@ -389,25 +316,14 @@ export function CreateProductPage() {
                       >
                         <select
                           value={assignment.locationId}
-                          onChange={(e) =>
-                            updateAssignment(
-                              index,
-                              "locationId",
-                              e.target.value,
-                            )
-                          }
+                          onChange={(e) => updateAssignment(index, "locationId", e.target.value)}
                           className="form-input"
                           style={{ flex: 2 }}
                         >
                           <option value="">Select a location...</option>
                           {storageLocations.map((loc) => (
                             <option key={loc._id} value={loc._id}>
-                              {buildLocationLabel(
-                                loc,
-                                storageUnits,
-                                floorMaps,
-                                sites,
-                              )}
+                              {buildLocationLabel(loc, storageUnits, floorMaps, sites)}
                             </option>
                           ))}
                         </select>
@@ -416,9 +332,7 @@ export function CreateProductPage() {
                           min="0"
                           placeholder="Qty"
                           value={assignment.quantity}
-                          onChange={(e) =>
-                            updateAssignment(index, "quantity", e.target.value)
-                          }
+                          onChange={(e) => updateAssignment(index, "quantity", e.target.value)}
                           className="form-input"
                           style={{ maxWidth: "80px" }}
                         />
@@ -431,17 +345,12 @@ export function CreateProductPage() {
                         </button>
                       </div>
                     ))}
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={addAssignment}
-                    >
+                    <button type="button" className="btn-secondary" onClick={addAssignment}>
                       + Add Location
                     </button>
                     {remaining !== null && (
                       <p className="warning-text" style={{ marginTop: "12px" }}>
-                        {remaining === 0 &&
-                          `All ${parsedTotal} units assigned.`}
+                        {remaining === 0 && `All ${parsedTotal} units assigned.`}
                         {remaining > 0 &&
                           `${assignedTotal} of ${parsedTotal} assigned - ${remaining} remaining.`}
                         {remaining < 0 &&
@@ -459,10 +368,7 @@ export function CreateProductPage() {
             {/* Visual catalogue */}
             <div className="detail-section">
               <div className="section-title">
-                <span
-                  className="section-badge"
-                  style={{ background: "#d6ede8", color: "#4a8c78" }}
-                >
+                <span className="section-badge" style={{ background: "#d6ede8", color: "#4a8c78" }}>
                   IM
                 </span>
                 Visual catalogue
@@ -488,10 +394,7 @@ export function CreateProductPage() {
 
                 <div className="thumbnail-gallery">
                   {imageUrls.map((url, index) => (
-                    <div
-                      key={url}
-                      style={{ position: "relative", display: "inline-block" }}
-                    >
+                    <div key={url} style={{ position: "relative", display: "inline-block" }}>
                       <button
                         type="button"
                         className={`thumbnail ${index === mainImageIndex ? "active" : ""}`}
@@ -501,7 +404,11 @@ export function CreateProductPage() {
                         <img
                           src={url}
                           alt=""
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
                         />
                       </button>
                       <button
@@ -560,11 +467,7 @@ export function CreateProductPage() {
           <button className="btn-secondary" onClick={() => navigate(-1)}>
             Cancel
           </button>
-          <button
-            className="btn-primary"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-          >
+          <button className="btn-primary" onClick={handleSubmit} disabled={!canSubmit}>
             Create Product
           </button>
         </div>

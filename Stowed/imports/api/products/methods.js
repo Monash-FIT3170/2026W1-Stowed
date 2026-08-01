@@ -82,20 +82,14 @@ Meteor.methods({
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
     });
     if (existing) {
-      throw new Meteor.Error(
-        "duplicate-name",
-        `A product named "${name}" already exists.`,
-      );
+      throw new Meteor.Error("duplicate-name", `A product named "${name}" already exists.`);
     }
 
     // Merge any duplicate locationIds by summing their quantities.
     const mergedAssignments = mergeAssignments(assignments);
 
     // All stock must be accounted for across assignments.
-    const assignedTotal = mergedAssignments.reduce(
-      (sum, a) => sum + a.quantity,
-      0,
-    );
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== totalQuantity) {
       throw new Meteor.Error(
         "quantity-mismatch",
@@ -188,18 +182,12 @@ Meteor.methods({
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
     });
     if (existing) {
-      throw new Meteor.Error(
-        "duplicate-name",
-        `A product named "${name}" already exists.`,
-      );
+      throw new Meteor.Error("duplicate-name", `A product named "${name}" already exists.`);
     }
 
     const mergedAssignments = mergeAssignments(assignments);
 
-    const assignedTotal = mergedAssignments.reduce(
-      (sum, a) => sum + a.quantity,
-      0,
-    );
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== totalQuantity) {
       throw new Meteor.Error(
         "quantity-mismatch",
@@ -278,26 +266,17 @@ Meteor.methods({
 
     const product = await Products.findOneAsync(productId);
     if (!product) {
-      throw new Meteor.Error(
-        "product-not-found",
-        "No product found with that ID.",
-      );
+      throw new Meteor.Error("product-not-found", "No product found with that ID.");
     }
 
     if (additionalQuantity <= 0) {
-      throw new Meteor.Error(
-        "invalid-quantity",
-        "Units being added must be greater than zero.",
-      );
+      throw new Meteor.Error("invalid-quantity", "Units being added must be greater than zero.");
     }
 
     const mergedAssignments = mergeAssignments(assignments);
 
     const newTotal = product.totalQuantity + additionalQuantity;
-    const assignedTotal = mergedAssignments.reduce(
-      (sum, a) => sum + a.quantity,
-      0,
-    );
+    const assignedTotal = mergedAssignments.reduce((sum, a) => sum + a.quantity, 0);
     if (assignedTotal !== newTotal) {
       throw new Meteor.Error(
         "quantity-mismatch",

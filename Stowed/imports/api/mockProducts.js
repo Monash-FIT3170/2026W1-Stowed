@@ -4,7 +4,8 @@ export const mockProducts = [
     name: "AAA Battery Pack",
     tag: "electrical",
     description: "Alkaline rechargeable AAA battery pack (4-pack).",
-    photoUrl: "https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png",
+    photoUrl:
+      "https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png",
     updatedAt: new Date("2026-04-28"),
     quantity: 50,
     currentStock: 50,
@@ -16,7 +17,9 @@ export const mockProducts = [
     category: "electrical",
     brand: "Duracell",
     unitCost: 4.5,
-    images: ["https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png"],
+    images: [
+      "https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png",
+    ],
     qrCode: "",
   },
   {
@@ -24,7 +27,8 @@ export const mockProducts = [
     name: "Safety Helmet",
     tag: "safety",
     description: "Industrial safety helmet with adjustable strap.",
-    photoUrl: "https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1",
+    photoUrl:
+      "https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1",
     updatedAt: new Date("2026-04-27"),
     quantity: 5,
     currentStock: 5,
@@ -36,7 +40,9 @@ export const mockProducts = [
     category: "safety",
     brand: "SafeGear",
     unitCost: 22.0,
-    images: ["https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1"],
+    images: [
+      "https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1",
+    ],
     qrCode: "",
   },
   {

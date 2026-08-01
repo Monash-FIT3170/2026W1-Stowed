@@ -191,8 +191,11 @@
   cursor: pointer;
   text-align: center;
   width: 100%;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-  margin-top: 8px
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+  margin-top: 8px;
 }
 .sidebar-logout:hover {
   background: var(--dark);
