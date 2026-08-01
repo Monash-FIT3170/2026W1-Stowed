@@ -95,6 +95,45 @@ export const FloorMapSchema = new SimpleSchema({
 });
 
 /**
+ * Schema for Unit shapes
+ */
+export const UnitShapeSchema = new SimpleSchema({
+  orgId: String,
+  shapeId: Number,
+  name: {
+    type: String,
+    max: 100
+  },
+  width: {
+    type: Number,
+    min: 0  // in practice, should be >0
+  },
+  height: {
+    type: Number,
+    min: 0  // in practice, should be >0
+  },
+  points: Array,
+  "points.$": Object,
+  "points.$.x": {
+    type: Number,
+    min: 0
+  },
+  "points.$.y": {
+    type: Number,
+    min: 0
+  },
+  gridReference: Object,
+  "gridReference.x": {
+    type: Number,
+    min: 0
+  },
+  "gridReference.y": {
+    type: Number,
+    min: 0
+  }
+});
+
+/**
  * Schema for a StorageUnit.
  */
 export const StorageUnitSchema = new SimpleSchema({
@@ -123,6 +162,11 @@ export const StorageUnitSchema = new SimpleSchema({
       "other",
       "custom",
     ],
+  },
+
+  shape: { // reference to display shape
+    type: UnitShapeSchema,
+    required: true
   },
 
   position: {

@@ -7,6 +7,7 @@ import {
   Sites,
   FloorMaps,
   StorageUnits,
+  MapShapes,
   StorageLocations,
 } from "./collections";
 import { ProductRecords } from "../products/collections";
@@ -183,10 +184,11 @@ Meteor.methods({
   /**
    * Creates a new StorageUnit under an existing FloorMap.
    */
-  async 'storageUnits.create'({ floorMapId, name, type, position, fill }) {
+  async 'storageUnits.create'({ floorMapId, name, type, shape, position, fill }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
+    check(shape, Object);
     check(position, Object);
     if (fill !== undefined) check(fill, String);
 
@@ -206,6 +208,7 @@ Meteor.methods({
       floorMapId,
       name,
       type,
+      shape,
       position,
       ...(fill !== undefined ? { fill } : {}),
       createdAt: new Date(),
@@ -216,11 +219,12 @@ Meteor.methods({
   /**
    * Updates an existing StorageUnit.
    */
-  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, position, fill }) {
+  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, shape, position, fill }) {
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
     check(type, String);
+    check(shape, Object);
     check(position, Object);
     if (fill !== undefined) check(fill, String);
 
@@ -256,6 +260,7 @@ Meteor.methods({
         floorMapId,
         name,
         type,
+        shape,
         position,
         ...(fill !== undefined ? { fill } : {}),
         updatedAt: new Date(),
@@ -300,6 +305,150 @@ Meteor.methods({
     }
 
     await StorageUnits.removeAsync(storageUnitId);
+  },
+
+  /**
+   * Creates a new shape object
+   */
+  async 'mapShapes.create'({ name, points, gridReference={x: 0, y: 0} }) {
+    // validate inputs
+    check(name, String);
+    check(points, Array);
+    points.forEach(p => check(p, {x: Number, y: Number}));
+    check(gridReference, {x: Number, y: Number})
+
+    // check user permissions
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    // build calculated values
+    // Organisation ID
+    const orgId = await getCallerOrgId(this.userId);
+    if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+    // width and height
+    const minX = Math.min(...(points.map(p => p.x)));
+    const maxX = Math.max(...(points.map(p => p.x)));
+    const minY = Math.min(...(points.map(p => p.y)));
+    const maxY = Math.max(...(points.map(p => p.y)));
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    if (width <= 0) throw new Meteor.Error('invalid-shape-width', `The width of the shape must be >0 but got "${width}"`);
+    if (height <= 0) throw new Meteor.Error('invalid-shape-height', `The height of the shape must be >0 but got "${height}"`);
+
+    // shapeId
+    const lastId = MapShapes.rawCollection().aggregate([{
+      $group: {
+        _id: null,
+        maxVal: { $max: "$shapeId"}
+      }
+    }]).toArray();
+    const newId = (lastId.length > 0) ? lastId[0].maxVal + 1 : 0;
+
+    // Check unique name (within organisation) - case-sensitive
+    const existing = await MapShapes.findOneAsync({
+      orgId: { orgId },
+      name: { name }
+    });
+    if (existing) {
+      throw new Meteor.Error(
+        "duplicate-name",
+        `A shape named "${name}" already exists.`,
+      );
+    }
+
+    return MapShapes.insertAsync({
+      orgId,
+      newId,
+      name,
+      width,
+      height,
+      points,
+      gridReference
+    });
+  },
+
+  async 'mapShapes.update'({ orgId, shapeId, name, points, gridReference={x: 0, y: 0} }) {
+    // validate inputs
+    check(orgId, String);
+    check(shapeId, Number);
+    check(name, String);
+    check(points, Array);
+    points.forEach(p => check(p, {x: Number, y: Number}));
+    check(gridReference, {x: Number, y: Number})
+
+    // check user permissions
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    // build calculated values
+    
+    // width and height
+    const minX = Math.min(...(points.map(p => p.x)));
+    const maxX = Math.max(...(points.map(p => p.x)));
+    const minY = Math.min(...(points.map(p => p.y)));
+    const maxY = Math.max(...(points.map(p => p.y)));
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    if (width <= 0) throw new Meteor.Error('invalid-shape-width', `The width of the shape must be >0 but got "${width}"`);
+    if (height <= 0) throw new Meteor.Error('invalid-shape-height', `The height of the shape must be >0 but got "${height}"`);
+
+    // Check unique name (within organisation) - case-sensitive
+    const existing = await MapShapes.findOneAsync({
+      orgId: { orgId },
+      name: { name }
+    });
+    if (existing) {
+      throw new Meteor.Error(
+        "duplicate-name",
+        `A shape named "${name}" already exists.`,
+      );
+    }
+
+    return MapShapes.updateAsync(shapeId, {
+      $set: {
+        orgId: orgId,
+        name: name,
+        width: width,
+        height: height,
+        points: points,
+        gridReference: gridReference
+      }
+    });
+  },
+
+  /**
+   * Deletes a shape from the database
+   */
+  async 'mapShapes.delete'({ shapeId }) {
+    check(shapeId, Number);
+
+    // check user permissions
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    const shape = await MapShapes.findOneAsync({ shapeId: shapeId });
+    if (!shape) {
+      throw new Meteor.Error(
+        "shape-not-found",
+        "No shape found with that name.",
+      );
+    }
+
+    await StorageUnits.removeAsync({ shapeId: shapeId });
   },
 
   /**
@@ -459,6 +608,9 @@ Meteor.methods({
     await StorageLocations.removeAsync(storageLocationId);
   },
 
+  /**
+   * Retrieves a storage unit as identified by its ID
+   */
   async "storageLocations.getByStorageUnit"({ storageUnitId }) {
     check(storageUnitId, String);
 
