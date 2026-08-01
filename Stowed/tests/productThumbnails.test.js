@@ -8,10 +8,7 @@ describe("product thumbnails", function () {
   it("uses the first images entry for the shared thumbnail component", function () {
     const html = renderToStaticMarkup(
       React.createElement(ProductThumbnail, {
-        images: [
-          "https://example.com/primary.png",
-          "https://example.com/secondary.png",
-        ],
+        images: ["https://example.com/primary.png", "https://example.com/secondary.png"],
         photoUrl: "https://example.com/fallback.png",
         name: "Hex bolts",
       }),

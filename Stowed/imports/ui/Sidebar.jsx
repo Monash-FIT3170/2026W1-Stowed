@@ -5,22 +5,21 @@ import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
-import React, { useEffect, useRef, useState } from "react";
 import "./Global.css";
 import "./Sidebar.css";
 
 const WORKSPACE_LINKS = [
-  { to: "/locations",  label: "Locations",      icon: "📍" },
-  { to: "/floor-map",  label: "Floor Map",      icon: "🗺" },
-  { to: "/inventory",  label: "Inventory",      icon: "📦" },
-  { to: "/",           label: "Inventory Page", icon: "✓"  },
-  { to: "/lists",      label: "Lists",          icon: "🛒" },
+  { to: "/locations", label: "Locations", icon: "📍" },
+  { to: "/floor-map", label: "Floor Map", icon: "🗺" },
+  { to: "/inventory", label: "Inventory", icon: "📦" },
+  { to: "/", label: "Inventory Page", icon: "✓" },
+  { to: "/lists", label: "Lists", icon: "🛒" },
 ];
 
 const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
   { to: "/forecast", label: "Forecast", icon: "🔮" },
-  { to: "/alerts",   label: "Alerts",   icon: "⚠️" },
+  { to: "/alerts", label: "Alerts", icon: "⚠️" },
 ];
 
 function SidebarLink({ to, label, icon, end }) {
@@ -28,9 +27,7 @@ function SidebarLink({ to, label, icon, end }) {
     <NavLink
       to={to}
       end={end}
-      className={({ isActive }) =>
-        `sidebar-link${isActive ? " active" : ""}`
-      }
+      className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
     >
       {icon && <span className="sidebar-link-icon">{icon}</span>}
       <span>{label}</span>
@@ -49,24 +46,14 @@ export function Sidebar() {
   const username = currentUser?.profile?.username;
   const navigate = useNavigate();
 
-  const [orgSubReady, setOrgSubReady] = useState(false);
-  useEffect(() => {
-    if (!currentUser) return;
-    const sub = Meteor.subscribe("currentOrganisation");
-    sub.ready() ? setOrgSubReady(true) : setOrgSubReady(false);
-    const interval = setInterval(() => {
-      setOrgSubReady(sub.ready());
-    }, 100);
-    return () => {
-      sub.stop();
-      clearInterval(interval);
-    };
-  }, [currentUser?._id]);
-
   const organisation = useTracker(() => {
-    if (!currentUser || !orgSubReady) return null;
+    if (!currentUser) return null;
+    // Subscribing inside the tracker lets Meteor reactively re-run this when the
+    // subscription becomes ready and clean it up on unmount — no polling needed.
+    const sub = Meteor.subscribe("currentOrganisation");
+    if (!sub.ready()) return null;
     return Organisations.findOne(currentUser.profile.organisationId);
-  }, [currentUser?.profile?.organisationId, orgSubReady]);
+  }, [currentUser?.profile?.organisationId]);
 
   const handleLogout = () => {
     logoutUser();
@@ -78,9 +65,7 @@ export function Sidebar() {
     ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
   const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
-    link.to === "/register"
-      ? hasClientPermission(role, "create-users")
-      : true
+    link.to === "/register" ? hasClientPermission(role, "create-users") : true,
   );
 
   return (
@@ -96,9 +81,7 @@ export function Sidebar() {
 
         {isLoggedIn && organisation && (
           <div className="sidebar-org">
-            <div className="sidebar-org-avatar">
-              {organisation.name.charAt(0).toUpperCase()}
-            </div>
+            <div className="sidebar-org-avatar">{organisation.name.charAt(0).toUpperCase()}</div>
             <div className="sidebar-org-info">
               <div className="sidebar-org-label">Organisation</div>
               <div className="sidebar-org-name">{organisation.name}</div>
@@ -109,11 +92,11 @@ export function Sidebar() {
         <nav className="sidebar-nav">
           <section className="sidebar-section">
             <SectionLabel label="Workspace" />
-            {WORKSPACE_LINKS.filter((link) =>
-              hasClientPermission(role, `route:${link.to}`)
-            ).map((link) => (
-              <SidebarLink key={link.to} {...link} end={link.to === "/"} />
-            ))}
+            {WORKSPACE_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
+              (link) => (
+                <SidebarLink key={link.to} {...link} end={link.to === "/"} />
+              ),
+            )}
           </section>
 
           <section className="sidebar-section">
@@ -138,13 +121,10 @@ export function Sidebar() {
       </div>
 
       {/* Bottom - logged in as */}
-      {isLoggedIn && (
-        <div className="sidebar-user">Logged in as {username}</div>
-        
-      )}
-        <button className="sidebar-logout" onClick={handleLogout}>
-            Logout
-         </button>
+      {isLoggedIn && <div className="sidebar-user">Logged in as {username}</div>}
+      <button className="sidebar-logout" onClick={handleLogout}>
+        Logout
+      </button>
     </aside>
   );
 }

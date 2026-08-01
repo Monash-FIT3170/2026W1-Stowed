@@ -10,10 +10,11 @@ export function QRCodesPage() {
           <span className="breadcrumb-current">QR Codes</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">QR <em>Codes</em></h1>
+          <h1 className="header-title">
+            QR <em>Codes</em>
+          </h1>
         </div>
       </div>
     </div>
   );
 }
- 

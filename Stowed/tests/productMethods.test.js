@@ -2,9 +2,14 @@ import assert from "assert";
 import { Meteor } from "meteor/meteor";
 import { Products, ProductRecords } from "../imports/api/products/collections";
 import { Organisations } from "../imports/api/organisations";
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../imports/api/locations/collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+} from "../imports/api/locations/collections";
 import "../imports/api/products/methods";
- 
+
 const TEST_USER_ID = "test-user-id";
 const TEST_ORG_ID = "test-org-id";
 const TEST_SITE_ID = "test-site-id";
@@ -12,7 +17,7 @@ const TEST_FLOOR_MAP_ID = "test-floor-map-id";
 const TEST_STORAGE_UNIT_ID = "test-storage-unit-id";
 const TEST_LOCATION_ID = "loc-1";
 const TEST_ROLE = 3; // ROLES.OWNER — passes all permission checks
- 
+
 before(async function () {
   // Clean up any leftover test data
   await Meteor.users.removeAsync(TEST_USER_ID);
@@ -21,7 +26,7 @@ before(async function () {
   await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
   await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
   await StorageLocations.removeAsync(TEST_LOCATION_ID);
- 
+
   // Insert org
   await Organisations.insertAsync({
     _id: TEST_ORG_ID,
@@ -30,7 +35,7 @@ before(async function () {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
- 
+
   // Insert user linked to org with owner role
   await Meteor.users.insertAsync({
     _id: TEST_USER_ID,
@@ -42,7 +47,7 @@ before(async function () {
       username: "testuser",
     },
   });
- 
+
   // Insert location hierarchy: Site → FloorMap → StorageUnit → StorageLocation
   await Sites.insertAsync({
     _id: TEST_SITE_ID,
@@ -52,7 +57,7 @@ before(async function () {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
- 
+
   await FloorMaps.insertAsync({
     _id: TEST_FLOOR_MAP_ID,
     orgId: TEST_ORG_ID,
@@ -61,7 +66,7 @@ before(async function () {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
- 
+
   await StorageUnits.insertAsync({
     _id: TEST_STORAGE_UNIT_ID,
     orgId: TEST_ORG_ID,
@@ -72,7 +77,7 @@ before(async function () {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
- 
+
   await StorageLocations.insertAsync({
     _id: TEST_LOCATION_ID,
     orgId: TEST_ORG_ID,
@@ -84,7 +89,7 @@ before(async function () {
     updatedAt: new Date(),
   });
 });
- 
+
 after(async function () {
   await Meteor.users.removeAsync(TEST_USER_ID);
   await Organisations.removeAsync(TEST_ORG_ID);
@@ -93,7 +98,7 @@ after(async function () {
   await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
   await StorageLocations.removeAsync(TEST_LOCATION_ID);
 });
- 
+
 function callMethod(name, params) {
   return new Promise((resolve, reject) => {
     const method = Meteor.server.method_handlers[name];
@@ -106,7 +111,7 @@ function callMethod(name, params) {
     }
   });
 }
- 
+
 // So new params dont have to be defined every test
 function makeCreateParams(overrides = {}) {
   return {
@@ -126,12 +131,12 @@ function makeCreateParams(overrides = {}) {
     ...overrides,
   };
 }
- 
+
 // create
- 
+
 describe("products.createWithAssignments", function () {
   let createdProductId;
- 
+
   afterEach(async function () {
     if (createdProductId) {
       await ProductRecords.removeAsync({ productId: createdProductId });
@@ -139,24 +144,24 @@ describe("products.createWithAssignments", function () {
       createdProductId = null;
     }
   });
- 
+
   it("returns a string _id", async function () {
     createdProductId = await callMethod("products.createWithAssignments", makeCreateParams());
     assert.strictEqual(typeof createdProductId, "string");
     assert.ok(createdProductId.length > 0);
   });
- 
+
   it("persists the product to the database", async function () {
     createdProductId = await callMethod(
       "products.createWithAssignments",
       makeCreateParams({ name: "Safety Helmet", totalQuantity: 10 }),
     );
- 
+
     const product = await Products.findOneAsync(createdProductId);
     assert.strictEqual(product.name, "Safety Helmet");
     assert.strictEqual(product.totalQuantity, 10);
   });
- 
+
   it("creates a ProductRecord for each assignment", async function () {
     // Insert a second location for this test
     await StorageLocations.insertAsync({
@@ -169,7 +174,7 @@ describe("products.createWithAssignments", function () {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
- 
+
     createdProductId = await callMethod(
       "products.createWithAssignments",
       makeCreateParams({
@@ -180,17 +185,19 @@ describe("products.createWithAssignments", function () {
         ],
       }),
     );
- 
-    const records = await ProductRecords.find({ productId: createdProductId }).fetchAsync();
+
+    const records = await ProductRecords.find({
+      productId: createdProductId,
+    }).fetchAsync();
     const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
- 
+
     assert.strictEqual(records.length, 2);
     assert.strictEqual(byLocation[TEST_LOCATION_ID], 10);
     assert.strictEqual(byLocation["loc-B"], 5);
- 
+
     await StorageLocations.removeAsync("loc-B");
   });
- 
+
   it("merges duplicate locationIds by summing their quantities", async function () {
     createdProductId = await callMethod(
       "products.createWithAssignments",
@@ -202,18 +209,20 @@ describe("products.createWithAssignments", function () {
         ],
       }),
     );
- 
-    const records = await ProductRecords.find({ productId: createdProductId }).fetchAsync();
+
+    const records = await ProductRecords.find({
+      productId: createdProductId,
+    }).fetchAsync();
     assert.strictEqual(records.length, 1);
     assert.strictEqual(records[0].quantity, 13);
   });
- 
+
   it("throws duplicate-name when the same name already exists (case-insensitive)", async function () {
     createdProductId = await callMethod(
       "products.createWithAssignments",
       makeCreateParams({ name: "Hi-Vis Vest" }),
     );
- 
+
     await assert.rejects(
       () => callMethod("products.createWithAssignments", makeCreateParams({ name: "hi-vis vest" })),
       (err) => {
@@ -222,7 +231,7 @@ describe("products.createWithAssignments", function () {
       },
     );
   });
- 
+
   it("throws quantity-mismatch when assignments do not sum to totalQuantity", async function () {
     await assert.rejects(
       () =>
@@ -240,22 +249,19 @@ describe("products.createWithAssignments", function () {
     );
   });
 });
- 
+
 // delete
- 
+
 describe("products.delete", function () {
   it("removes the product from the database", async function () {
-    const productId = await callMethod(
-      "products.createWithAssignments",
-      makeCreateParams(),
-    );
- 
+    const productId = await callMethod("products.createWithAssignments", makeCreateParams());
+
     await callMethod("products.delete", { productId });
- 
+
     const product = await Products.findOneAsync(productId);
     assert.strictEqual(product, undefined);
   });
- 
+
   it("removes all associated ProductRecords", async function () {
     // Insert a second location for this test
     await StorageLocations.insertAsync({
@@ -268,7 +274,7 @@ describe("products.delete", function () {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
- 
+
     const productId = await callMethod(
       "products.createWithAssignments",
       makeCreateParams({
@@ -279,15 +285,15 @@ describe("products.delete", function () {
         ],
       }),
     );
- 
+
     await callMethod("products.delete", { productId });
- 
+
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 0);
- 
+
     await StorageLocations.removeAsync("loc-2");
   });
- 
+
   it("throws product-not-found for an unknown productId", async function () {
     await assert.rejects(
       () => callMethod("products.delete", { productId: "nonexistent-id" }),
@@ -298,12 +304,12 @@ describe("products.delete", function () {
     );
   });
 });
- 
+
 // update
- 
+
 describe("products.update", function () {
   let productId;
- 
+
   beforeEach(async function () {
     productId = await callMethod(
       "products.createWithAssignments",
@@ -314,7 +320,7 @@ describe("products.update", function () {
       }),
     );
   });
- 
+
   afterEach(async function () {
     if (productId) {
       await ProductRecords.removeAsync({ productId });
@@ -322,7 +328,7 @@ describe("products.update", function () {
       productId = null;
     }
   });
- 
+
   it("updates product fields in the database", async function () {
     await callMethod("products.update", {
       ...makeCreateParams({
@@ -335,14 +341,14 @@ describe("products.update", function () {
       }),
       productId,
     });
- 
+
     const product = await Products.findOneAsync(productId);
     assert.strictEqual(product.name, "Updated Name");
     assert.strictEqual(product.category, "Power Tools");
     assert.strictEqual(product.brand, "DeWalt");
     assert.strictEqual(product.unitCost, 49.99);
   });
- 
+
   it("replaces all ProductRecords with the new assignments", async function () {
     await StorageLocations.insertAsync({
       _id: "loc-A",
@@ -364,7 +370,7 @@ describe("products.update", function () {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
- 
+
     await callMethod("products.update", {
       ...makeCreateParams({
         totalQuantity: 50,
@@ -375,19 +381,19 @@ describe("products.update", function () {
       }),
       productId,
     });
- 
+
     const records = await ProductRecords.find({ productId }).fetchAsync();
     const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
- 
+
     assert.strictEqual(records.length, 2);
     assert.strictEqual(byLocation["loc-A"], 30);
     assert.strictEqual(byLocation["loc-B2"], 20);
     assert.strictEqual(byLocation[TEST_LOCATION_ID], undefined);
- 
+
     await StorageLocations.removeAsync("loc-A");
     await StorageLocations.removeAsync("loc-B2");
   });
- 
+
   it("merges duplicate locationIds in the new assignments", async function () {
     await callMethod("products.update", {
       ...makeCreateParams({
@@ -399,18 +405,18 @@ describe("products.update", function () {
       }),
       productId,
     });
- 
+
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 1);
     assert.strictEqual(records[0].quantity, 50);
   });
- 
+
   it("throws duplicate-name when another product already has the new name", async function () {
     const otherProductId = await callMethod(
       "products.createWithAssignments",
       makeCreateParams({ name: "Taken Name" }),
     );
- 
+
     try {
       await assert.rejects(
         () =>
@@ -432,10 +438,10 @@ describe("products.update", function () {
       await Products.removeAsync(otherProductId);
     }
   });
- 
+
   it("allows updating a product to keep its own name", async function () {
     const product = await Products.findOneAsync(productId);
- 
+
     await callMethod("products.update", {
       ...makeCreateParams({
         name: product.name,
@@ -444,11 +450,11 @@ describe("products.update", function () {
       }),
       productId,
     });
- 
+
     const updated = await Products.findOneAsync(productId);
     assert.strictEqual(updated.name, product.name);
   });
- 
+
   it("throws quantity-mismatch when assignments do not sum to totalQuantity", async function () {
     await assert.rejects(
       () =>
@@ -465,10 +471,10 @@ describe("products.update", function () {
       },
     );
   });
- 
+
   it("does not modify the product on quantity-mismatch", async function () {
     const before = await Products.findOneAsync(productId);
- 
+
     try {
       await callMethod("products.update", {
         ...makeCreateParams({
@@ -478,19 +484,21 @@ describe("products.update", function () {
         }),
         productId,
       });
-    } catch (_) {}
- 
+    } catch {
+      // expected to throw
+    }
+
     const after = await Products.findOneAsync(productId);
     assert.strictEqual(after.name, before.name);
     assert.strictEqual(after.totalQuantity, before.totalQuantity);
   });
 });
- 
+
 // restock
- 
+
 describe("products.restock", function () {
   let productId;
- 
+
   beforeEach(async function () {
     productId = await callMethod(
       "products.createWithAssignments",
@@ -501,7 +509,7 @@ describe("products.restock", function () {
       }),
     );
   });
- 
+
   afterEach(async function () {
     if (productId) {
       await ProductRecords.removeAsync({ productId });
@@ -509,18 +517,18 @@ describe("products.restock", function () {
       productId = null;
     }
   });
- 
+
   it("increases totalQuantity by additionalQuantity", async function () {
     await callMethod("products.restock", {
       productId,
       additionalQuantity: 25,
       assignments: [{ locationId: TEST_LOCATION_ID, quantity: 75 }],
     });
- 
+
     const product = await Products.findOneAsync(productId);
     assert.strictEqual(product.totalQuantity, 75);
   });
- 
+
   it("replaces ProductRecords with the new assignment distribution", async function () {
     await StorageLocations.insertAsync({
       _id: "loc-restock-2",
@@ -532,7 +540,7 @@ describe("products.restock", function () {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
- 
+
     await callMethod("products.restock", {
       productId,
       additionalQuantity: 50,
@@ -541,17 +549,17 @@ describe("products.restock", function () {
         { locationId: "loc-restock-2", quantity: 40 },
       ],
     });
- 
+
     const records = await ProductRecords.find({ productId }).fetchAsync();
     const byLocation = Object.fromEntries(records.map((r) => [r.locationId, r.quantity]));
- 
+
     assert.strictEqual(records.length, 2);
     assert.strictEqual(byLocation[TEST_LOCATION_ID], 60);
     assert.strictEqual(byLocation["loc-restock-2"], 40);
- 
+
     await StorageLocations.removeAsync("loc-restock-2");
   });
- 
+
   it("merges duplicate locationIds in restock assignments", async function () {
     await callMethod("products.restock", {
       productId,
@@ -561,12 +569,12 @@ describe("products.restock", function () {
         { locationId: TEST_LOCATION_ID, quantity: 35 },
       ],
     });
- 
+
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 1);
     assert.strictEqual(records[0].quantity, 75);
   });
- 
+
   it("throws product-not-found for an unknown productId", async function () {
     await assert.rejects(
       () =>
@@ -581,7 +589,7 @@ describe("products.restock", function () {
       },
     );
   });
- 
+
   it("throws invalid-quantity when additionalQuantity is zero", async function () {
     await assert.rejects(
       () =>
@@ -596,7 +604,7 @@ describe("products.restock", function () {
       },
     );
   });
- 
+
   it("throws invalid-quantity when additionalQuantity is negative", async function () {
     await assert.rejects(
       () =>
@@ -611,7 +619,7 @@ describe("products.restock", function () {
       },
     );
   });
- 
+
   it("throws quantity-mismatch when assignments do not sum to new total", async function () {
     await assert.rejects(
       () =>
@@ -626,7 +634,7 @@ describe("products.restock", function () {
       },
     );
   });
- 
+
   it("does not modify totalQuantity on quantity-mismatch", async function () {
     try {
       await callMethod("products.restock", {
@@ -634,12 +642,14 @@ describe("products.restock", function () {
         additionalQuantity: 25,
         assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
       });
-    } catch (_) {}
- 
+    } catch {
+      // expected to throw
+    }
+
     const product = await Products.findOneAsync(productId);
     assert.strictEqual(product.totalQuantity, 50, "totalQuantity must be unchanged");
   });
- 
+
   it("does not modify ProductRecords on quantity-mismatch", async function () {
     try {
       await callMethod("products.restock", {
@@ -647,8 +657,10 @@ describe("products.restock", function () {
         additionalQuantity: 25,
         assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
       });
-    } catch (_) {}
- 
+    } catch {
+      // expected to throw
+    }
+
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 1);
     assert.strictEqual(records[0].quantity, 50, "Original records must be unchanged");
