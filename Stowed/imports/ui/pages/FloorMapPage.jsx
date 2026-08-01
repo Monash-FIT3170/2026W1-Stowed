@@ -14,6 +14,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
+import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -49,6 +50,7 @@ function FloorMapPageInner() {
   const [selectedStorageUnitId, setSelectedStorageUnitId] = useState(null);
   const [tooltip, setTooltip] = useState(null);
   const [isStockPanelOpen, setIsStockPanelOpen] = useState(false);
+  const [isCreateShapeOpen, setIsCreateShapeOpen] = useState(false);
 
   // Fetch all sites and floor maps for the tab bar
   const { sites, floorMaps, locationsReady } = useTracker(() => {
@@ -60,11 +62,11 @@ function FloorMapPageInner() {
     };
   }, []);
 
-  const items    = selectedUnit?.mockItems ?? (lowStockByUnitId?.[selectedUnit?._id] ?? []);
+  const items = selectedUnit?.mockItems ?? (lowStockByUnitId?.[selectedUnit?._id] ?? []);
   const lowItems = items.filter((i) => i.isLow);
-  const okItems  = items.filter((i) => !i.isLow);
-  const hasLow   = lowItems.length > 0;
-  const isEmpty  = items.length === 0;
+  const okItems = items.filter((i) => !i.isLow);
+  const hasLow = lowItems.length > 0;
+  const isEmpty = items.length === 0;
 
   const handleUnitSelect = (unitId) => {
     setSelectedStorageUnitId(unitId);
@@ -164,142 +166,143 @@ function FloorMapPageInner() {
         {/* RIGHT COLUMN - stock panel + edit sidebar stacked */}
         <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, height: "100%", borderLeft: "1px solid var(--border-light)" }}>
 
-        {/* STOCK SLIDE-OUT PANEL - view mode only */}
-        {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
-          <div className="low-stock-panel" style={{ borderLeft: "none", flex: "0 0 auto" }}>
-            <div className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}>
-              <div>
-                <div className="panel-header-label">{selectedUnit.name}</div>
-                <div className="panel-header-title">
-                  {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
+          {/* STOCK SLIDE-OUT PANEL - view mode only */}
+          {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
+            <div className="low-stock-panel" style={{ borderLeft: "none", flex: "0 0 auto" }}>
+              <div className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}>
+                <div>
+                  <div className="panel-header-label">{selectedUnit.name}</div>
+                  <div className="panel-header-title">
+                    {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
+                  </div>
+                  <div className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}>
+                    {isEmpty ? "Empty" : hasLow ? `${lowItems.length} need attention` : `${okItems.length} products OK`}
+                  </div>
                 </div>
-                <div className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}>
-                  {isEmpty ? "Empty" : hasLow ? `${lowItems.length} need attention` : `${okItems.length} products OK`}
-                </div>
+                <button className="panel-close-btn" onClick={() => setIsStockPanelOpen(false)} aria-label="Close panel">✕</button>
               </div>
-              <button className="panel-close-btn" onClick={() => setIsStockPanelOpen(false)} aria-label="Close panel">✕</button>
+              <div className="panel-content">
+                {isEmpty ? (
+                  <div className="panel-empty">No products assigned to this unit.</div>
+                ) : (
+                  <>
+                    {lowItems.length > 0 && (
+                      <div className="panel-section">
+                        <div className="panel-section-title low">Low stock</div>
+                        {lowItems.map((item, i) => (
+                          <div key={i} className="panel-item low">
+                            <div>
+                              <div className="panel-item-name">{item.product?.name ?? item.name}</div>
+                              <div className="panel-item-location">{item.locationName}</div>
+                            </div>
+                            <div>
+                              <div className="panel-item-qty low">{item.quantity}</div>
+                              {item.reorderAt > 0 && (
+                                <div className="panel-item-threshold">min {item.reorderAt}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {okItems.length > 0 && (
+                      <div className="panel-section">
+                        <div className="panel-section-title ok">In stock</div>
+                        {okItems.map((item, i) => (
+                          <div key={i} className="panel-item ok">
+                            <div>
+                              <div className="panel-item-name">{item.product?.name ?? item.name}</div>
+                              <div className="panel-item-location">{item.locationName}</div>
+                            </div>
+                            <div>
+                              <div className="panel-item-qty ok">{item.quantity}</div>
+                              {item.reorderAt > 0 && (
+                                <div className="panel-item-threshold">min {item.reorderAt}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            <div className="panel-content">
-              {isEmpty ? (
-                <div className="panel-empty">No products assigned to this unit.</div>
-              ) : (
-                <>
-                  {lowItems.length > 0 && (
-                    <div className="panel-section">
-                      <div className="panel-section-title low">Low stock</div>
-                      {lowItems.map((item, i) => (
-                        <div key={i} className="panel-item low">
-                          <div>
-                            <div className="panel-item-name">{item.product?.name ?? item.name}</div>
-                            <div className="panel-item-location">{item.locationName}</div>
-                          </div>
-                          <div>
-                            <div className="panel-item-qty low">{item.quantity}</div>
-                            {item.reorderAt > 0 && (
-                              <div className="panel-item-threshold">min {item.reorderAt}</div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {okItems.length > 0 && (
-                    <div className="panel-section">
-                      <div className="panel-section-title ok">In stock</div>
-                      {okItems.map((item, i) => (
-                        <div key={i} className="panel-item ok">
-                          <div>
-                            <div className="panel-item-name">{item.product?.name ?? item.name}</div>
-                            <div className="panel-item-location">{item.locationName}</div>
-                          </div>
-                          <div>
-                            <div className="panel-item-qty ok">{item.quantity}</div>
-                            {item.reorderAt > 0 && (
-                              <div className="panel-item-threshold">min {item.reorderAt}</div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* EDIT MODE SIDEBAR - only accessible to admins/owners */}
-        {isCanvasEditMode && canManage && (
-          <>
-            {isSidebarOpen ? (
-              <div style={{
-                width: "260px", minWidth: "260px", maxWidth: "260px",
-                flexShrink: 0, background: "var(--card-bg)",
-                display: "flex", flexDirection: "column",
-                overflow: "hidden", flex: 1,
-              }}>
-                <div className="section-title" style={{ padding: "14px", flexShrink: 0 }}>
-                  <span style={{ fontWeight: 700, color: "var(--text-dark)" }}>Edit Mode</span>
-                  <button
-                    onClick={() => setSidebarOpen(false)}
-                    style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
-                    aria-label="Collapse sidebar"
-                  >→</button>
-                </div>
-                <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
-                  <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                    <StoragePanel floorMapId={currentFloorMap?._id} />
+          {/* EDIT MODE SIDEBAR - only accessible to admins/owners */}
+          {isCanvasEditMode && canManage && (
+            <>
+              {isSidebarOpen ? (
+                <div style={{
+                  width: "260px", minWidth: "260px", maxWidth: "260px",
+                  flexShrink: 0, background: "var(--card-bg)",
+                  display: "flex", flexDirection: "column",
+                  overflow: "hidden", flex: 1,
+                }}>
+                  <div className="section-title" style={{ padding: "14px", flexShrink: 0 }}>
+                    <span style={{ fontWeight: 700, color: "var(--text-dark)" }}>Edit Mode</span>
+                    <button
+                      onClick={() => setSidebarOpen(false)}
+                      style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
+                      aria-label="Collapse sidebar"
+                    >→</button>
                   </div>
-                  <div style={{ height: "1px", background: "var(--border-light)" }} />
-                  <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                    <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
-                  </div>
-                  <div style={{ height: "1px", background: "var(--border-light)" }} />
-                  {selectedUnit && (
-                    <div style={{ padding: "12px", boxSizing: "border-box" }}>
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        style={{ width: "100%" }}
-                        onClick={handleDeleteSelectedUnit}
-                      >
-                        Delete "{selectedUnit.name}"
-                      </button>
+                  <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
+                    <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                      <StoragePanel floorMapId={currentFloorMap?._id} />
                     </div>
-                  )}
-                  <div style={{ height: "1px", background: "var(--border-light)" }} />
-                  <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                    <CanvasToolbar
-                      activeTool={activeTool} setActiveTool={setActiveTool}
-                      floorSize={floorSize}
-                      onSaveLayout={handleSaveLayout} onLoadLayout={handleLoadLayout}
-                      onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
-                      onUndo={handleUndo} onRedo={handleRedo}
-                      canUndo={canUndo} canRedo={canRedo}
-                    />
+                    <div style={{ height: "1px", background: "var(--border-light)" }} />
+                    <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                      <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
+                    </div>
+                    <div style={{ height: "1px", background: "var(--border-light)" }} />
+                    {selectedUnit && (
+                      <div style={{ padding: "12px", boxSizing: "border-box" }}>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          style={{ width: "100%" }}
+                          onClick={handleDeleteSelectedUnit}
+                        >
+                          Delete "{selectedUnit.name}"
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ height: "1px", background: "var(--border-light)" }} />
+                    <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                      <CanvasToolbar
+                        activeTool={activeTool} setActiveTool={setActiveTool}
+                        floorSize={floorSize}
+                        onSaveLayout={handleSaveLayout} onLoadLayout={handleLoadLayout}
+                        onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
+                        onOpenCreateShape={() => setIsCreateShapeOpen(true)}
+                        onUndo={handleUndo} onRedo={handleRedo}
+                        canUndo={canUndo} canRedo={canRedo}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ flexShrink: 0, borderTop: "1px solid var(--border-light)", padding: "14px" }}>
+                    <button onClick={() => setCanvasEditMode(false)} className="btn-primary" style={{ width: "100%" }}>
+                      Exit Edit Mode
+                    </button>
                   </div>
                 </div>
-                <div style={{ flexShrink: 0, borderTop: "1px solid var(--border-light)", padding: "14px" }}>
-                  <button onClick={() => setCanvasEditMode(false)} className="btn-primary" style={{ width: "100%" }}>
-                    Exit Edit Mode
-                  </button>
+              ) : (
+                <div style={{
+                  width: "32px", flexShrink: 0, background: "var(--card-bg)",
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", paddingTop: "14px", gap: "8px", flex: 1,
+                }}>
+                  <button
+                    onClick={() => setSidebarOpen(true)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px", padding: "4px" }}
+                    aria-label="Expand sidebar"
+                  >←</button>
                 </div>
-              </div>
-            ) : (
-              <div style={{
-                width: "32px", flexShrink: 0, background: "var(--card-bg)",
-                display: "flex", flexDirection: "column",
-                alignItems: "center", paddingTop: "14px", gap: "8px", flex: 1,
-              }}>
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px", padding: "4px" }}
-                  aria-label="Expand sidebar"
-                >←</button>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
 
         </div>{/* end right column */}
       </div>
@@ -354,6 +357,13 @@ function FloorMapPageInner() {
           snapToGrid={canvasSettings.snapToGrid}
           onSave={handleCanvasSettingsSave}
           onClose={() => setCanvasSettingsOpen(false)}
+        />
+      )}
+
+      {/* CREATE SHAPE MODAL */}
+      {isCreateShapeOpen && (
+        <CreateShapeModal
+          onClose={() => setIsCreateShapeOpen(false)}
         />
       )}
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
+import { CreateShapeModal } from "./CreateShapeModal";
 
 /**
  * Toolbar component for selecting tools and adjusting floor dimensions.
@@ -20,6 +21,7 @@ export function CanvasToolbar({
   activeTool,
   setActiveTool,
   onOpenCanvasSettings,
+  onOpenCreateShape,
   onSaveLayout,
   onLoadLayout,
   onUndo,
@@ -131,9 +133,7 @@ export function CanvasToolbar({
       <div style={toolbarStyles.rowSingle}>
         <button
           type="button"
-          onClick={() => {
-            console.log("Create New Shape clicked");
-          }}
+          onClick={onOpenCreateShape}
           style={{
             ...buttonStyles.base,
             ...buttonStyles.secondary,
