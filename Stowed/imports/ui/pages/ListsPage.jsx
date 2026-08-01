@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   SHOPPING_LIST_MODES,
   LIST_FREQUENCIES,
@@ -9,10 +9,7 @@ import {
 } from "/imports/api/shoppingLists/constants";
 
 // change when real data is used instead of mock
-import {
-  mockProducts,
-  getLowStockProducts,
-} from "/imports/api/mockProducts";
+import { mockProducts, getLowStockProducts } from "/imports/api/mockProducts";
 
 import "./ListsPage.css";
 
@@ -24,10 +21,7 @@ const FILTERS = {
 
 // change when real data is used instead of mock
 function quantityFor(product, frequency) {
-  const target = Math.max(
-    product.reorderAt ?? 0,
-    product.lowStockThreshold ?? 0,
-  );
+  const target = Math.max(product.reorderAt ?? 0, product.lowStockThreshold ?? 0);
   const shortfall = target - (product.quantity ?? 0);
   return Math.max(1, shortfall) * (FREQUENCY_WEEKS[frequency] ?? 1);
 }
@@ -42,10 +36,7 @@ function toItem(product, frequency, addMode) {
     reorderAt: product.reorderAt ?? 0,
     lowStockThreshold: product.lowStockThreshold ?? 0,
     unitCost: product.unitCost ?? 0,
-    quantityWanted:
-      addMode === ADD_PRODUCT_MODES.GENERATED
-        ? quantityFor(product, frequency)
-        : 1,
+    quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
   };
 }
@@ -61,8 +52,7 @@ function nextOrderDay(frequency) {
   });
 }
 
-const currency = (value) =>
-  value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
+const currency = (value) => value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
 export function ListsPage() {
   // change when real data is used instead of mock
@@ -75,23 +65,14 @@ export function ListsPage() {
 
   const items = list?.items ?? [];
 
-  const generated = items.filter(
-    (i) => i.addMode === ADD_PRODUCT_MODES.GENERATED,
-  );
+  const generated = items.filter((i) => i.addMode === ADD_PRODUCT_MODES.GENERATED);
   const manual = items.filter((i) => i.addMode === ADD_PRODUCT_MODES.MANUAL);
 
   const visibleItems =
-    filter === FILTERS.LOW_STOCK
-      ? generated
-      : filter === FILTERS.MANUAL
-        ? manual
-        : items;
+    filter === FILTERS.LOW_STOCK ? generated : filter === FILTERS.MANUAL ? manual : items;
 
   const totalUnits = items.reduce((sum, i) => sum + i.quantityWanted, 0);
-  const estimatedCost = items.reduce(
-    (sum, i) => sum + i.quantityWanted * i.unitCost,
-    0,
-  );
+  const estimatedCost = items.reduce((sum, i) => sum + i.quantityWanted * i.unitCost, 0);
 
   // change when real data is used instead of mock
 
@@ -179,9 +160,7 @@ export function ListsPage() {
             min="0"
             className="form-input lists-qty-input"
             value={item.quantityWanted}
-            onChange={(event) =>
-              updateQuantity(item.productId, event.target.value)
-            }
+            onChange={(event) => updateQuantity(item.productId, event.target.value)}
             aria-label={`Quantity for ${item.productName}`}
           />
         </td>
@@ -211,8 +190,7 @@ export function ListsPage() {
         </div>
 
         <p className="lists-subtitle">
-          Pulls every product at or below its reorder threshold. Budget is not
-          applied.
+          Pulls every product at or below its reorder threshold. Budget is not applied.
         </p>
       </div>
 
@@ -224,8 +202,7 @@ export function ListsPage() {
             </span>
             <h2 className="header-title">No active shopping list</h2>
             <p className="section-empty">
-              Generate one to pull in every product that&apos;s hit its reorder
-              point.
+              Generate one to pull in every product that&apos;s hit its reorder point.
             </p>
             <button type="button" className="btn-primary" onClick={generate}>
               Generate shopping list
@@ -243,9 +220,7 @@ export function ListsPage() {
                 <span className="lists-stat-label">Units to buy</span>
               </div>
               <div className="lists-stat lists-stat-cost">
-                <span className="lists-stat-value">
-                  {currency(estimatedCost)}
-                </span>
+                <span className="lists-stat-value">{currency(estimatedCost)}</span>
                 <span className="lists-stat-label">Estimated cost</span>
               </div>
             </div>
@@ -254,9 +229,7 @@ export function ListsPage() {
               <div className="detail-section lists-card">
                 <div className="section-title">
                   <span>Shopping list</span>
-                  <span
-                    className={isDraft ? "section-badge op" : "section-badge id"}
-                  >
+                  <span className={isDraft ? "section-badge op" : "section-badge id"}>
                     {isDraft ? "Draft" : "Saved"}
                   </span>
                 </div>
@@ -299,9 +272,7 @@ export function ListsPage() {
                   </div>
 
                   {visibleItems.length === 0 ? (
-                    <p className="section-empty lists-no-match">
-                      Nothing on this filter.
-                    </p>
+                    <p className="section-empty lists-no-match">Nothing on this filter.</p>
                   ) : (
                     <table className="lists-table">
                       <thead>
@@ -374,12 +345,7 @@ export function ListsPage() {
                 <div className="detail-section">
                   <div className="section-title">Actions</div>
                   <div className="section-content lists-sidebar-actions">
-                    <button
-                      type="button"
-                      className="btn-print"
-                      onClick={save}
-                      disabled={!isDraft}
-                    >
+                    <button type="button" className="btn-print" onClick={save} disabled={!isDraft}>
                       {isDraft ? "Save list" : "Saved"}
                     </button>
                     <button
@@ -389,11 +355,7 @@ export function ListsPage() {
                     >
                       Regenerate
                     </button>
-                    <button
-                      type="button"
-                      className="btn-danger lists-full-btn"
-                      onClick={discard}
-                    >
+                    <button type="button" className="btn-danger lists-full-btn" onClick={discard}>
                       Discard list
                     </button>
                   </div>
@@ -426,9 +388,7 @@ export function ListsPage() {
                       </div>
                     </div>
 
-                    <p className="lists-schedule-note">
-                      Skeleton only, no logic wired.
-                    </p>
+                    <p className="lists-schedule-note">Skeleton only, no logic wired.</p>
                   </div>
                 </div>
               </div>
