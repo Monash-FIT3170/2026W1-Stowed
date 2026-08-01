@@ -348,7 +348,7 @@ Meteor.methods({
         maxVal: { $max: "$shapeId"}
       }
     }]).toArray();
-    const newId = (lastId.length > 0) ? lastId[0].maxVal + 1 : 0;
+    const shapeId = (lastId.length > 0) ? lastId[0].maxVal + 1 : 0;
 
     // Check unique name (within organisation) - case-sensitive
     const existing = await MapShapes.findOneAsync({
