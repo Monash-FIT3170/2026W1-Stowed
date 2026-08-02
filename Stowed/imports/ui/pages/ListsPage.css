@@ -1,0 +1,305 @@
+/* ListsPage.css - shopping lists page */
+
+.lists-header,
+.lists-body {
+  width: 65%;
+  min-width: 860px;
+}
+
+.lists-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.lists-body {
+  padding: 20px 28px 48px 28px;
+}
+
+/* -- Empty state -- */
+
+.lists-empty-card {
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.lists-empty-icon {
+  display: block;
+  font-size: 34px;
+  margin-bottom: 16px;
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.lists-empty-card .header-title {
+  font-size: 24px;
+  margin: 0 0 8px 0;
+}
+
+.lists-empty-card .section-empty {
+  display: block;
+  margin-bottom: 20px;
+}
+
+/* -- Stat tiles -- */
+
+.lists-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.lists-stat {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+.lists-stat-items {
+  background: #f9e2da;
+}
+.lists-stat-units {
+  background: #fbf3d1;
+}
+.lists-stat-cost {
+  background: #d9ebe2;
+}
+
+.lists-stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.lists-stat-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--tag-text);
+}
+
+/* -- Layout -- */
+
+.lists-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  align-items: start;
+  gap: 20px;
+}
+
+.lists-card {
+  font-variant-numeric: tabular-nums;
+}
+
+.lists-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 20px;
+}
+
+/* -- List card header -- */
+
+/* -- Filter pills -- */
+
+.lists-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lists-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.lists-filter.is-active {
+  background: var(--tag-bg);
+  border-color: var(--accent-secondary);
+  color: var(--accent-primary);
+}
+
+.lists-filter-count {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.lists-filter.is-active .lists-filter-count {
+  color: var(--accent-primary);
+}
+
+/* -- Toolbar -- */
+
+.lists-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.lists-no-match {
+  display: block;
+  padding: 28px 0;
+  text-align: center;
+}
+
+/* -- Table -- */
+
+.lists-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lists-table th {
+  padding: 0 10px 10px 10px;
+  border-bottom: 1px dashed var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.lists-table td {
+  padding: 11px 10px;
+  border-bottom: 1px dotted var(--border-subtle);
+  font-size: 13px;
+  color: var(--text-dark);
+  vertical-align: middle;
+}
+
+.lists-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lists-table th.lists-col-num,
+.lists-table td.lists-col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lists-product-name {
+  display: block;
+  font-weight: 600;
+}
+
+.lists-product-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+input.lists-qty-input {
+  width: 64px;
+  text-align: right;
+  padding: 5px 7px;
+}
+
+/* -- Add manually -- */
+
+.lists-add-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.lists-add-product {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.lists-add-qty {
+  width: 96px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.lists-add-btn {
+  flex-shrink: 0;
+}
+
+.lists-divider td {
+  border-bottom: none;
+  border-top: 1px dashed var(--border-subtle);
+  padding: 16px 10px 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* -- Sidebar -- */
+
+.lists-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lists-schedule-note {
+  margin: 14px 0 0 0;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.lists-full-btn {
+  width: 100%;
+}
+
+/* -- Narrow screens -- */
+
+@media (max-width: 1340px) {
+  .lists-header,
+  .lists-body {
+    width: auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .lists-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lists-sidebar {
+    position: static;
+  }
+
+  .lists-stats {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 620px) {
+  .lists-toolbar,
+  .lists-add-row {
+    flex-wrap: wrap;
+  }
+
+  .lists-add-qty {
+    width: 100%;
+  }
+
+  .lists-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

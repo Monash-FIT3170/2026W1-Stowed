@@ -10,7 +10,6 @@ export const SHOPPING_LIST_MODES = {
   MANUAL: "manual",
 };
 
-
 /**
  * Ways for product to be on a shopping list.
  * GENERATED - added automatically because stock hit the reorder threshold.
@@ -20,7 +19,6 @@ export const ADD_PRODUCT_MODES = {
   GENERATED: "generated",
   MANUAL: "manual",
 };
-
 
 /**
  * How often an automated list is generated.
@@ -32,6 +30,14 @@ export const LIST_FREQUENCIES = {
   MONTHLY: "monthly",
 };
 
+/**
+ * Display labels for each frequency, so stored values are never shown raw.
+ */
+export const LIST_FREQUENCY_LABELS = {
+  [LIST_FREQUENCIES.WEEKLY]: "Weekly",
+  [LIST_FREQUENCIES.FORTNIGHTLY]: "Fortnightly",
+  [LIST_FREQUENCIES.MONTHLY]: "Monthly",
+};
 
 /**
  * Number of reorder cycles a generated list should cover, per frequency.
@@ -43,7 +49,6 @@ export const FREQUENCY_WEEKS = {
   [LIST_FREQUENCIES.MONTHLY]: 4,
 };
 
-
 /**
  * Lifecycle of a shopping list.
  * DRAFT - being built, not yet confirmed and saved.
@@ -53,5 +58,3 @@ export const LIST_STATUSES = {
   DRAFT: "draft",
   SAVED: "saved",
 };
-
-
