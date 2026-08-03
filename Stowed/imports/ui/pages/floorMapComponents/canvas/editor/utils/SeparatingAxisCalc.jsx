@@ -20,6 +20,38 @@ const getAxes = (points) =>
     })
 ;
 
+/**
+ * Projects shape's points onto given axis, finds the parts
+ * of the axis it overlaps with
+ * 
+ * @param {*} points the points on the shape
+ * @param {*} axis the axis to project onto
+ * @returns 
+ */
+const projectOntoAxis = (points, axis) => {
+
+    let min = dotProd(points[0], axis);
+    let max = min;
+
+    for (let i = 1; i < points.length; i++) {
+
+        const projection = dotProd(points[i], axis);
+
+        if (projection < min) {
+            min = projection;
+        }
+
+        if (projection > max) {
+            max = projection;
+        }
+    }
+
+    return {
+        min,
+        max
+    };
+}
+
 
 /**
  * Calculates the vector for the edge between two points
