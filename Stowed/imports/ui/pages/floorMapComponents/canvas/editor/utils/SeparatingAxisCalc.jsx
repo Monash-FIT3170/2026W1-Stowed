@@ -52,6 +52,17 @@ const projectOntoAxis = (points, axis) => {
     };
 }
 
+/**
+ * Checks if an overlap exists between two projections
+ * 
+ * @param {*} projection1 
+ * @param {*} projection2 
+ * @returns if an overlap has occurred
+ */
+const overlap = (projection1, projection2) => {
+    return !(projection1.max < projection2.min || projection2.max < projection1.min);
+}
+
 
 /**
  * Calculates the vector for the edge between two points
