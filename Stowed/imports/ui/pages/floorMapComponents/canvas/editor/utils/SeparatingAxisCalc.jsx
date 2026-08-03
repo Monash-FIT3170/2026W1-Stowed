@@ -1,6 +1,25 @@
 
 
 
+/**
+ * Gets all the axes that are used to check for collisions
+ * 
+ * @param {*} points the points on the shape
+ * @returns 
+ */
+const getAxes = (points) =>
+    points.map((point, i) => {
+        const endPoint = points[(i+1) % points.length];
+
+        const edgeVector = getEdgeVector(point, endPoint);
+
+        return normaliseVector({
+            x: -edgeVector.y,
+            y: edgeVector.x
+        });
+    })
+;
+
 
 /**
  * Calculates the vector for the edge between two points
@@ -17,7 +36,7 @@ const getEdgeVector = (p1, p2) => ({
  * @param {*} v2 vector 2 (the point to project from)
  * @returns 
  */
-const dotProd = (v1, v2) => p1.x * p2.x + p1.y + p2.y;
+const dotProd = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
 
 
 /**
@@ -26,7 +45,7 @@ const dotProd = (v1, v2) => p1.x * p2.x + p1.y + p2.y;
  * @param {*} vector the vector to get the normal of
  * @returns 
  */
-const getEdgeNormal = (vector) => {
+const normaliseVector = (vector) => {
 
     const vectorMagnitude = Math.sqrt(vector.x ** 2 + vector.y ** 2);
 
