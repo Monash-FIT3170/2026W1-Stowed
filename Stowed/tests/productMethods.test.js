@@ -18,6 +18,13 @@ const TEST_STORAGE_UNIT_ID = "test-storage-unit-id";
 const TEST_LOCATION_ID = "loc-1";
 const TEST_ROLE = 3; // ROLES.OWNER — passes all permission checks
 
+/** Returns a date `months` before now, so fixtures span the last 12 months. */
+function monthsAgo(months) {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date;
+}
+
 before(async function () {
   // Clean up any leftover test data
   await Meteor.users.removeAsync(TEST_USER_ID);
@@ -85,6 +92,7 @@ before(async function () {
     name: "Test Location",
     code: "LOC-1",
     storedItems: [],
+    lastStocktakeAt: monthsAgo(0),
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -171,6 +179,7 @@ describe("products.createWithAssignments", function () {
       name: "Test Location B",
       code: "LOC-B",
       storedItems: [],
+      lastStocktakeAt: monthsAgo(2),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -271,6 +280,7 @@ describe("products.delete", function () {
       name: "Test Location 2",
       code: "LOC-2",
       storedItems: [],
+      lastStocktakeAt: monthsAgo(4),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -357,6 +367,7 @@ describe("products.update", function () {
       name: "Test Location A",
       code: "LOC-A",
       storedItems: [],
+      lastStocktakeAt: monthsAgo(6),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -367,6 +378,7 @@ describe("products.update", function () {
       name: "Test Location B2",
       code: "LOC-B2",
       storedItems: [],
+      lastStocktakeAt: monthsAgo(9),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -537,6 +549,7 @@ describe("products.restock", function () {
       name: "Restock Location 2",
       code: "LOC-R2",
       storedItems: [],
+      lastStocktakeAt: monthsAgo(12),
       createdAt: new Date(),
       updatedAt: new Date(),
     });

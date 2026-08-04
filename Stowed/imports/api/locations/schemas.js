@@ -233,10 +233,9 @@ export const StorageLocationSchema = new SimpleSchema({
     optional: true,
   },
 
-  // Unset until the location has been stocktaken at least once.
+  // Seeded with the creation date, then stamped each time the location is stocktaken.
   lastStocktakeAt: {
     type: Date,
-    optional: true,
   },
 
   createdAt: {

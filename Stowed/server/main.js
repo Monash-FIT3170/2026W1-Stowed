@@ -237,6 +237,14 @@ async function seedLocations(seedOrgId) {
 
   const now = new Date();
 
+  // Spreads seeded stocktake dates across the last 12 months so the demo data
+  // shows a realistic mix of recently and overdue counted locations.
+  const monthsAgo = (months) => {
+    const date = new Date(now);
+    date.setMonth(date.getMonth() - months);
+    return date;
+  };
+
   // Single site for the demo
   const siteId = await Sites.insertAsync({
     orgId: seedOrgId,
@@ -333,6 +341,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 1",
     code: "SC-A1",
+    lastStocktakeAt: monthsAgo(0),
     createdAt: now,
     updatedAt: now,
   });
@@ -341,6 +350,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 2",
     code: "SC-A2",
+    lastStocktakeAt: monthsAgo(1),
     createdAt: now,
     updatedAt: now,
   });
@@ -351,6 +361,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 1",
     code: "SC-B1",
+    lastStocktakeAt: monthsAgo(2),
     createdAt: now,
     updatedAt: now,
   });
@@ -359,6 +370,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 2",
     code: "SC-B2",
+    lastStocktakeAt: monthsAgo(4),
     createdAt: now,
     updatedAt: now,
   });
@@ -369,6 +381,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 1",
     code: "IT-R1",
+    lastStocktakeAt: monthsAgo(5),
     createdAt: now,
     updatedAt: now,
   });
@@ -377,6 +390,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 2",
     code: "IT-R2",
+    lastStocktakeAt: monthsAgo(7),
     createdAt: now,
     updatedAt: now,
   });
@@ -387,6 +401,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itShelfId,
     name: "Bay 1",
     code: "IT-S1",
+    lastStocktakeAt: monthsAgo(9),
     createdAt: now,
     updatedAt: now,
   });
@@ -397,6 +412,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 1",
     code: "SR-A1",
+    lastStocktakeAt: monthsAgo(11),
     createdAt: now,
     updatedAt: now,
   });
@@ -405,6 +421,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 2",
     code: "SR-A2",
+    lastStocktakeAt: monthsAgo(12),
     createdAt: now,
     updatedAt: now,
   });

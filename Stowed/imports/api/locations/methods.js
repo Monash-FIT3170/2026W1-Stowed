@@ -310,6 +310,8 @@ Meteor.methods({
 
     const orgId = await getCallerOrgId(this.userId);
 
+    const now = new Date();
+
     return StorageLocations.insertAsync({
       orgId,
       storageUnitId,
@@ -317,8 +319,9 @@ Meteor.methods({
       code,
       imageUrl,
       storedItems: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      lastStocktakeAt: now,
+      createdAt: now,
+      updatedAt: now,
     });
   },
 
