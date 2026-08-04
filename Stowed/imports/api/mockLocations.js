@@ -15,6 +15,7 @@ export const mockSites = [
     _id: "site-1",
     name: "Mornington Hardware",
     description: "Main hardware shop floor.",
+    stocktakeIntervalDays: 180,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
