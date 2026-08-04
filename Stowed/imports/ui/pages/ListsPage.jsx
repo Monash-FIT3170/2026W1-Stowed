@@ -38,8 +38,8 @@ function toItem(product, frequency, addMode) {
     unitCost: product.unitCost ?? 0,
     quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
-    purchased: false,
-  };
+    purchased:false
+  }
 }
 
 function nextOrderDay(frequency) {
@@ -139,14 +139,13 @@ export function ListsPage() {
   }
 
   function togglePurchased(productId) {
-    const updated = visibleItems.map((item) =>
-      item.productId === productId ? { ...item, purchased: !item.purchased } : item,
-    );
+      const updated = visibleItems.map((item) =>
+        item.productId === productId ? {...item, purchased: !item.purchased} : item
+    )
 
     setList((current) => ({
-      ...current,
-      items: updated,
-    }));
+        ...current, items: updated
+    }))
   }
 
   function discard() {
@@ -155,11 +154,9 @@ export function ListsPage() {
 
   function renderRow(item) {
     return (
-      <tr key={item.productId}>
+      <tr key={item.productId} className={item.purchased ? 'lists-row-purchased' : undefined}>
         <td>
-          <span className={item.purchased ? "lists-product-name lists-purchased" : "lists-product-name"}>
-            {item.productName}
-          </span>
+          <span className="lists-product-name">{item.productName}</span>
           <span className="lists-product-meta">
             {item.sku} &middot; {item.category}
           </span>
@@ -169,34 +166,22 @@ export function ListsPage() {
         <td className="lists-col-num">{item.reorderAt}</td>
 
         <td className="lists-col-num">
-          <input
-            type="number"
-            min="0"
-            className="form-input lists-qty-input"
-            value={item.quantityWanted}
-            onChange={(event) => updateQuantity(item.productId, event.target.value)}
-            aria-label={`Quantity for ${item.productName}`}
-          />
+          <input type="number" min="0" className="form-input lists-qty-input" value={item.quantityWanted} onChange={(event) => updateQuantity(item.productId, event.target.value)} disabled={item.purchased} aria-label={`Quantity for ${item.productName}`} />
         </td>
 
-        {!isDraft && (
-          <td className="lists-col-check">
-            <input
-              type="checkbox"
-              checked={item.purchased}
-              onChange={() => togglePurchased(item.productId)}
-              aria-label={`Mark ${item.productName} as purchased`}
-            />
+        {!isDraft &&
+          <td className='lists-col-check'>
+            <input type='checkbox' checked={item.purchased} onChange={() => togglePurchased(item.productId)} aria-label={`Mark ${item.productName} as purchased`}/>
           </td>
-        )}
+        }
 
         {!isDraft && (
-          <td className="lists-col-check">
-            <input type="checkbox" disabled aria-label={`Mark ${item.productName} as received`} />
+          <td className='lists-col-check'>
+              <input type="checkbox" disabled aria-label={`Mark ${item.productName} as received`}/>
           </td>
         )}
       </tr>
-    );
+    )
   }
 
   const isDraft = list?.status === LIST_STATUSES.DRAFT;
@@ -312,8 +297,8 @@ export function ListsPage() {
                           <th className="lists-col-num">In stock</th>
                           <th className="lists-col-num">Reorder at</th>
                           <th className="lists-col-num">Qty</th>
-                          {!isDraft && <th className="lists-col-check">Purchased</th>}
-                          {!isDraft && <th className="lists-col-check">Received</th>}
+                          {!isDraft && <th className='lists-col-check'>Purchased</th>}
+                          {!isDraft && <th className='lists-col-check' >Received</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -322,7 +307,7 @@ export function ListsPage() {
                             {generated.map(renderRow)}
                             {manual.length > 0 && (
                               <tr className="lists-divider">
-                                <td colSpan={isDraft ? 4 : 6}>Added manually</td>
+                                <td colSpan={isDraft?4:6}>Added manually</td>
                               </tr>
                             )}
                             {manual.map(renderRow)}
