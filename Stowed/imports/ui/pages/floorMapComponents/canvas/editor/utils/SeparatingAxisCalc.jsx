@@ -1,6 +1,6 @@
 import { get } from "express/lib/response";
 
-
+export {satTestCollision};
 
 /**
  * Gets all the axes that are used to check for collisions
@@ -73,7 +73,7 @@ const overlap = (projection1, projection2) => {
  * @param {*} points2 second shape's set of points
  * @returns 
  */
-const collision = (points1, points2) => {
+const satTestCollision = (points1, points2) => {
     
     const axes = [
         ...getAxes(points1),
