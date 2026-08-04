@@ -139,12 +139,10 @@ export function ListsPage() {
   }
 
   function togglePurchased(productId) {
-      const updated = visibleItems.map((item) =>
+    setList((current) => ({
+        ...current, items: current.items.map((item) =>
         item.productId === productId ? {...item, purchased: !item.purchased} : item
     )
-
-    setList((current) => ({
-        ...current, items: updated
     }))
   }
 
