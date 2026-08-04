@@ -19,6 +19,7 @@ const PERMISSIONS = {
   "products.update": ROLES.ADMIN, // edit product details / reassign locations
   "products.delete": ROLES.ADMIN, // Allow Admin
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
+  "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
 
   // Location structure management (all CRUD across the hierarchy)

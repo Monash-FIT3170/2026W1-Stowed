@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
 import {
   SHOPPING_LIST_MODES,
   LIST_FREQUENCIES,
@@ -10,6 +12,7 @@ import {
 
 // change when real data is used instead of mock
 import { mockProducts, getLowStockProducts } from "/imports/api/mockProducts";
+import { Sites } from "/imports/api/locations/collections";
 
 import "./ListsPage.css";
 
@@ -38,7 +41,8 @@ function toItem(product, frequency, addMode) {
     unitCost: product.unitCost ?? 0,
     quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
-    purchased:false
+    purchased:false,
+    received: false,
   }
 }
 
@@ -64,6 +68,15 @@ export function ListsPage() {
   const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
   const [addQuantity, setAddQuantity] = useState(1);
 
+  const { sites } = useTracker(() => {
+    Meteor.subscribe("locations.all");
+    return {
+      sites: Sites.find().fetch(),
+    };
+  }, []);
+
+  const locationOptions = sites.map((site) => ({ id: site._id, label: site.name }));
+
   const items = list?.items ?? [];
 
   const generated = items.filter((i) => i.addMode === ADD_PRODUCT_MODES.GENERATED);
@@ -75,6 +88,8 @@ export function ListsPage() {
   const totalUnits = items.reduce((sum, i) => sum + i.quantityWanted, 0);
   const estimatedCost = items.reduce((sum, i) => sum + i.quantityWanted * i.unitCost, 0);
 
+  const hasReceivedItems = items.some((i) => i.received);
+
   // change when real data is used instead of mock
 
   function generate() {
@@ -82,6 +97,7 @@ export function ListsPage() {
       mode: SHOPPING_LIST_MODES.AUTOMATED,
       frequency,
       status: LIST_STATUSES.DRAFT,
+      siteId: "",
       items: getLowStockProducts(mockProducts).map((product) =>
         toItem(product, frequency, ADD_PRODUCT_MODES.GENERATED),
       ),
@@ -138,12 +154,53 @@ export function ListsPage() {
     setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
   }
 
+  function callStockMethod(methodName, item) {
+    Meteor.call(
+      methodName,
+      { productId: item.productId, siteId: list?.siteId, quantity: item.quantityWanted },
+      (error) => {
+        if (error) console.error(`${methodName} failed:`, error);
+      },
+    );
+  }
+
   function togglePurchased(productId) {
+    setList((current) => {
+      const target = current.items.find((i) => i.productId === productId);
+      if (!target) return current;
+
+      const nextPurchased = !target.purchased;
+
+      if (!nextPurchased && target.received) {
+        callStockMethod("products.unreceiveStock", target);
+      }
+
+      return {
+          ...current, items: current.items.map((item) =>
+          item.productId === productId
+            ? { ...item, purchased: nextPurchased, received: nextPurchased ? item.received : false }
+            : item
+      )
+      };
+    });
+  }
+
+  function setListLocation(siteId) {
+    setList((current) => ({...current, siteId}))
+  }
+
+  function toggleReceived(item) {
+    if (!item.purchased || !list?.siteId) return;
+
+    const nextReceived = !item.received;
+    callStockMethod(nextReceived ? "products.receiveStock" : "products.unreceiveStock", item);
+
     setList((current) => ({
-        ...current, items: current.items.map((item) =>
-        item.productId === productId ? {...item, purchased: !item.purchased} : item
-    )
-    }))
+      ...current,
+      items: current.items.map((i) =>
+        i.productId === item.productId ? { ...i, received: nextReceived } : i,
+      ),
+    }));
   }
 
   function discard() {
@@ -175,7 +232,7 @@ export function ListsPage() {
 
         {!isDraft && (
           <td className='lists-col-check'>
-              <input type="checkbox" disabled aria-label={`Mark ${item.productName} as received`}/>
+              <input type="checkbox" checked={item.received} onChange={() => toggleReceived(item)} disabled={!item.purchased || !list?.siteId} aria-label={`Mark ${item.productName} as received`}/>
           </td>
         )}
       </tr>
@@ -374,6 +431,22 @@ export function ListsPage() {
                     <button type="button" className="btn-danger lists-full-btn" onClick={discard}>
                       Discard list
                     </button>
+                  </div>
+                </div>
+
+                <div className='detail-section'>
+                  <div className="section-title">Delivery location</div>
+                  <div className='section-content'>
+                    <div className="form-group">
+                      <label htmlFor='list-location'>Received stock goes to</label>
+                      <select id='list-location' className='form-input selected' value={list?.siteId ?? ''} onChange={(event) => setListLocation(event.target.value)} disabled={hasReceivedItems}>
+                        <option value=''>Select site&hellip;</option>
+                        {locationOptions.map((loc) => (
+                          <option key={loc.id} value={loc.id}>{loc.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {hasReceivedItems && <p className='lists-schedule-note'>Undo received items to change location.</p>}
                   </div>
                 </div>
 
