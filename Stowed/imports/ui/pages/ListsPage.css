@@ -200,6 +200,18 @@
   color: var(--text-muted);
 }
 
+.lists-purchased {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.lists-table th.lists-col-check,
+.lists-table td.lists-col-check {
+  text-align: center;
+  width: 1%;
+  white-space: nowrap;
+}
+
 input.lists-qty-input {
   width: 64px;
   text-align: right;

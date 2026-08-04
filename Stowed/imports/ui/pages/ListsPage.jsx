@@ -38,6 +38,7 @@ function toItem(product, frequency, addMode) {
     unitCost: product.unitCost ?? 0,
     quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
+    purchased: false,
   };
 }
 
@@ -137,6 +138,17 @@ export function ListsPage() {
     setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
   }
 
+  function togglePurchased(productId) {
+    const updated = visibleItems.map((item) =>
+      item.productId === productId ? { ...item, purchased: !item.purchased } : item,
+    );
+
+    setList((current) => ({
+      ...current,
+      items: updated,
+    }));
+  }
+
   function discard() {
     setList(null);
   }
@@ -145,7 +157,9 @@ export function ListsPage() {
     return (
       <tr key={item.productId}>
         <td>
-          <span className="lists-product-name">{item.productName}</span>
+          <span className={item.purchased ? "lists-product-name lists-purchased" : "lists-product-name"}>
+            {item.productName}
+          </span>
           <span className="lists-product-meta">
             {item.sku} &middot; {item.category}
           </span>
@@ -164,6 +178,23 @@ export function ListsPage() {
             aria-label={`Quantity for ${item.productName}`}
           />
         </td>
+
+        {!isDraft && (
+          <td className="lists-col-check">
+            <input
+              type="checkbox"
+              checked={item.purchased}
+              onChange={() => togglePurchased(item.productId)}
+              aria-label={`Mark ${item.productName} as purchased`}
+            />
+          </td>
+        )}
+
+        {!isDraft && (
+          <td className="lists-col-check">
+            <input type="checkbox" disabled aria-label={`Mark ${item.productName} as received`} />
+          </td>
+        )}
       </tr>
     );
   }
@@ -281,6 +312,8 @@ export function ListsPage() {
                           <th className="lists-col-num">In stock</th>
                           <th className="lists-col-num">Reorder at</th>
                           <th className="lists-col-num">Qty</th>
+                          {!isDraft && <th className="lists-col-check">Purchased</th>}
+                          {!isDraft && <th className="lists-col-check">Received</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -289,7 +322,7 @@ export function ListsPage() {
                             {generated.map(renderRow)}
                             {manual.length > 0 && (
                               <tr className="lists-divider">
-                                <td colSpan={4}>Added manually</td>
+                                <td colSpan={isDraft ? 4 : 6}>Added manually</td>
                               </tr>
                             )}
                             {manual.map(renderRow)}
