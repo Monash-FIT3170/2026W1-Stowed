@@ -4,7 +4,7 @@ import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./collections";
-import { ProductRecords } from "../products/collections";
+import { Products, ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 
 Meteor.methods({
@@ -319,7 +319,8 @@ Meteor.methods({
       code,
       imageUrl,
       storedItems: [],
-      lastStocktakeAt: now,
+      locationStocktakeDue: false,
+      locationStocktakeDueList: [],
       createdAt: now,
       updatedAt: now,
     });
@@ -430,5 +431,47 @@ Meteor.methods({
     check(storageUnitId, String);
 
     return StorageLocations.find({ storageUnitId }, { sort: { code: 1 } }).fetchAsync();
+  },
+
+/**
+ * Checks whether storage locations require a stocktake.
+ *
+ * Cheks the stocktake status of all products stored within each location.
+ * If any product record in a location has a pending stocktake, the location is
+ * marked as requiring a stocktake and the overdue items are stored for reference.
+ *
+ */
+  async "locations.checkStocktakeDue"() {
+
+    const locations = await StorageLocations.find().fetchAsync();
+    for (const location of locations) {
+      // find any items in this location with a pending stocktake
+      const records = await ProductRecords.find({
+        locationId: location._id,
+        itemStocktakeDue: true,
+      }).fetchAsync();
+
+      // append all items with pending stocktake to a list
+      const dueItems = [];
+
+      for (const record of records) {
+        const product = await Products.findOneAsync(record.productId);
+        if (product) {
+          dueItems.push({
+            productId: product._id,
+            name: product.name,
+          });
+        }
+      }
+
+      await StorageLocations.updateAsync(location._id, {
+        $set: {
+          // location requires stocktake if at least one product is overdue
+          locationStocktakeDue: dueItems.length > 0,
+          locationStocktakeDueList: dueItems,
+        },
+      });
+    }
+
   },
 });

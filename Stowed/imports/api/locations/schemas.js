@@ -218,6 +218,29 @@ export const StorageLocationSchema = new SimpleSchema({
     allowedValues: ["OK", "LOW", "CRITICAL"],
   },
 
+
+  locationStocktakeDue: {
+    type: Boolean,
+    optional: false,
+  },
+
+  locationStocktakeDueList: {
+    type: Array,
+    defaultValue: [],
+  },
+
+  "locationStocktakeDueList.$": {
+    type: Object,
+  },
+
+  "locationStocktakeDueList.$.productId": {
+    type: String,
+  },
+
+  "locationStocktakeDueList.$.name": {
+    type: String,
+  },
+
   name: {
     type: String,
     optional: true,
@@ -244,6 +267,7 @@ export const StorageLocationSchema = new SimpleSchema({
   // Seeded with the creation date, then stamped each time the location is stocktaken.
   lastStocktakeAt: {
     type: Date,
+    optional: true,
   },
 
   createdAt: {

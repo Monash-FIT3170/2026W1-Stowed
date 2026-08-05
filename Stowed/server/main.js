@@ -181,13 +181,15 @@ async function seedProductRecords() {
 
   const now = new Date();
   const rec = (productId, locationId, quantity) =>
-    ProductRecords.insertAsync({
-      productId,
-      locationId,
-      quantity,
-      createdAt: now,
-      updatedAt: now,
-    });
+  ProductRecords.insertAsync({
+    productId,
+    locationId,
+    quantity,
+    lastStocktakeAt: now,
+    itemStocktakeDue: false,
+    createdAt: now,
+    updatedAt: now,
+  });
 
   // Lab Safety Goggles: split across science storage (total 60)
   await rec(goggles._id, sc1._id, 35);
@@ -341,7 +343,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 1",
     code: "SC-A1",
-    lastStocktakeAt: monthsAgo(0),
+    //lastStocktakeAt: monthsAgo(0),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -350,7 +354,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 2",
     code: "SC-A2",
-    lastStocktakeAt: monthsAgo(1),
+    //lastStocktakeAt: monthsAgo(1),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -361,7 +367,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 1",
     code: "SC-B1",
-    lastStocktakeAt: monthsAgo(2),
+    //lastStocktakeAt: monthsAgo(2),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -370,7 +378,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 2",
     code: "SC-B2",
-    lastStocktakeAt: monthsAgo(4),
+    //lastStocktakeAt: monthsAgo(4),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -381,7 +391,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 1",
     code: "IT-R1",
-    lastStocktakeAt: monthsAgo(5),
+    //lastStocktakeAt: monthsAgo(5),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -390,7 +402,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 2",
     code: "IT-R2",
-    lastStocktakeAt: monthsAgo(7),
+    //lastStocktakeAt: monthsAgo(7),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -401,7 +415,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itShelfId,
     name: "Bay 1",
     code: "IT-S1",
-    lastStocktakeAt: monthsAgo(9),
+    //lastStocktakeAt: monthsAgo(9),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -412,7 +428,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 1",
     code: "SR-A1",
-    lastStocktakeAt: monthsAgo(11),
+    //lastStocktakeAt: monthsAgo(11),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -421,7 +439,9 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 2",
     code: "SR-A2",
-    lastStocktakeAt: monthsAgo(12),
+    //lastStocktakeAt: monthsAgo(12),
+    locationStocktakeDue: false,
+    locationStocktakeDueList: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -454,6 +474,21 @@ Meteor.startup(async () => {
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
+
+/**
+ * Periodically checks stocktake due statuses.
+ *
+ * Runs an initial stocktake check when the server starts, then repeats
+ * the check every 24 hours to update product records and locations that
+ * require a stocktake.
+ */
+  await Meteor.callAsync("ProductRecords.checkStocktakeDue");
+  await Meteor.callAsync("locations.checkStocktakeDue");
+  
+  Meteor.setInterval(async () => {
+    await Meteor.callAsync("ProductRecords.checkStocktakeDue");
+    await Meteor.callAsync("locations.checkStocktakeDue");
+  }, 24 * 60 * 60 * 1000);
 });
 
 Meteor.publish("allUsers", async function () {
