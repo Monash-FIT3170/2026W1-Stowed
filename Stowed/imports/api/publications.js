@@ -1,6 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from './locations/collections';
+import { Sites, FloorMaps, StorageUnits, StorageLocations, MapShapes, } from './locations/collections';
 import { Products, ProductRecords } from './products/collections';
 import { getCallerOrgId } from './userMethods';
 import { Organisations } from '/imports/api/organisations';
@@ -15,6 +15,7 @@ Meteor.publish('locations.all', async function () {
     FloorMaps.find({ orgId }),
     StorageUnits.find({ orgId }),
     StorageLocations.find({ orgId }),
+    MapShapes.find({ orgId }),
   ];
 });
 
