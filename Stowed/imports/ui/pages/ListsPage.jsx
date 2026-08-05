@@ -41,9 +41,9 @@ function toItem(product, frequency, addMode) {
     unitCost: product.unitCost ?? 0,
     quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
-    purchased:false,
+    purchased: false,
     received: false,
-  }
+  };
 }
 
 function nextOrderDay(frequency) {
@@ -176,17 +176,18 @@ export function ListsPage() {
       }
 
       return {
-          ...current, items: current.items.map((item) =>
+        ...current,
+        items: current.items.map((item) =>
           item.productId === productId
             ? { ...item, purchased: nextPurchased, received: nextPurchased ? item.received : false }
-            : item
-      )
+            : item,
+        ),
       };
     });
   }
 
   function setListLocation(siteId) {
-    setList((current) => ({...current, siteId}))
+    setList((current) => ({ ...current, siteId }));
   }
 
   function toggleReceived(item) {
@@ -209,7 +210,7 @@ export function ListsPage() {
 
   function renderRow(item) {
     return (
-      <tr key={item.productId} className={item.purchased ? 'lists-row-purchased' : undefined}>
+      <tr key={item.productId} className={item.purchased ? "lists-row-purchased" : undefined}>
         <td>
           <span className="lists-product-name">{item.productName}</span>
           <span className="lists-product-meta">
@@ -221,22 +222,41 @@ export function ListsPage() {
         <td className="lists-col-num">{item.reorderAt}</td>
 
         <td className="lists-col-num">
-          <input type="number" min="0" className="form-input lists-qty-input" value={item.quantityWanted} onChange={(event) => updateQuantity(item.productId, event.target.value)} disabled={item.purchased} aria-label={`Quantity for ${item.productName}`} />
+          <input
+            type="number"
+            min="0"
+            className="form-input lists-qty-input"
+            value={item.quantityWanted}
+            onChange={(event) => updateQuantity(item.productId, event.target.value)}
+            disabled={item.purchased}
+            aria-label={`Quantity for ${item.productName}`}
+          />
         </td>
 
-        {!isDraft &&
-          <td className='lists-col-check'>
-            <input type='checkbox' checked={item.purchased} onChange={() => togglePurchased(item.productId)} aria-label={`Mark ${item.productName} as purchased`}/>
+        {!isDraft && (
+          <td className="lists-col-check">
+            <input
+              type="checkbox"
+              checked={item.purchased}
+              onChange={() => togglePurchased(item.productId)}
+              aria-label={`Mark ${item.productName} as purchased`}
+            />
           </td>
-        }
+        )}
 
         {!isDraft && (
-          <td className='lists-col-check'>
-              <input type="checkbox" checked={item.received} onChange={() => toggleReceived(item)} disabled={!item.purchased || !list?.siteId} aria-label={`Mark ${item.productName} as received`}/>
+          <td className="lists-col-check">
+            <input
+              type="checkbox"
+              checked={item.received}
+              onChange={() => toggleReceived(item)}
+              disabled={!item.purchased || !list?.siteId}
+              aria-label={`Mark ${item.productName} as received`}
+            />
           </td>
         )}
       </tr>
-    )
+    );
   }
 
   const isDraft = list?.status === LIST_STATUSES.DRAFT;
@@ -352,8 +372,8 @@ export function ListsPage() {
                           <th className="lists-col-num">In stock</th>
                           <th className="lists-col-num">Reorder at</th>
                           <th className="lists-col-num">Qty</th>
-                          {!isDraft && <th className='lists-col-check'>Purchased</th>}
-                          {!isDraft && <th className='lists-col-check' >Received</th>}
+                          {!isDraft && <th className="lists-col-check">Purchased</th>}
+                          {!isDraft && <th className="lists-col-check">Received</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -362,7 +382,7 @@ export function ListsPage() {
                             {generated.map(renderRow)}
                             {manual.length > 0 && (
                               <tr className="lists-divider">
-                                <td colSpan={isDraft?4:6}>Added manually</td>
+                                <td colSpan={isDraft ? 4 : 6}>Added manually</td>
                               </tr>
                             )}
                             {manual.map(renderRow)}
@@ -434,19 +454,29 @@ export function ListsPage() {
                   </div>
                 </div>
 
-                <div className='detail-section'>
+                <div className="detail-section">
                   <div className="section-title">Delivery location</div>
-                  <div className='section-content'>
+                  <div className="section-content">
                     <div className="form-group">
-                      <label htmlFor='list-location'>Received stock goes to</label>
-                      <select id='list-location' className='form-input selected' value={list?.siteId ?? ''} onChange={(event) => setListLocation(event.target.value)} disabled={hasReceivedItems}>
-                        <option value=''>Select site&hellip;</option>
+                      <label htmlFor="list-location">Received stock goes to</label>
+                      <select
+                        id="list-location"
+                        className="form-input selected"
+                        value={list?.siteId ?? ""}
+                        onChange={(event) => setListLocation(event.target.value)}
+                        disabled={hasReceivedItems}
+                      >
+                        <option value="">Select site&hellip;</option>
                         {locationOptions.map((loc) => (
-                          <option key={loc.id} value={loc.id}>{loc.label}</option>
+                          <option key={loc.id} value={loc.id}>
+                            {loc.label}
+                          </option>
                         ))}
                       </select>
                     </div>
-                    {hasReceivedItems && <p className='lists-schedule-note'>Undo received items to change location.</p>}
+                    {hasReceivedItems && (
+                      <p className="lists-schedule-note">Undo received items to change location.</p>
+                    )}
                   </div>
                 </div>
 
