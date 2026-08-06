@@ -4,11 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { StatusBadge } from "../imports/ui/components/StatusBadge";
 
 describe("statusBadge (boundary-safe)", function () {
-
   const render = (quantity, threshold) =>
-    renderToStaticMarkup(
-      React.createElement(StatusBadge, { quantity, threshold })
-    );
+    renderToStaticMarkup(React.createElement(StatusBadge, { quantity, threshold }));
 
   describe("NULL threshold", function () {
     it("renders In stock when threshold is null", function () {
@@ -18,7 +15,6 @@ describe("statusBadge (boundary-safe)", function () {
   });
 
   describe("LOW boundary (≤ threshold)", function () {
-
     it("Low! at exactly threshold", function () {
       const html = render(20, 20);
       assert.ok(html.includes("Low!"));
@@ -31,7 +27,6 @@ describe("statusBadge (boundary-safe)", function () {
   });
 
   describe("GETTING LOW boundary (threshold < q ≤ 1.5×threshold)", function () {
-
     it("Getting low just above threshold", function () {
       const html = render(21, 20);
       assert.ok(html.includes("Getting low"));
@@ -49,7 +44,6 @@ describe("statusBadge (boundary-safe)", function () {
   });
 
   describe("IN STOCK boundary (> 1.5× threshold)", function () {
-
     it("In stock just above 1.5x threshold", function () {
       const html = render(31, 20);
       assert.ok(html.includes("In stock"));
@@ -62,11 +56,9 @@ describe("statusBadge (boundary-safe)", function () {
   });
 
   describe("ZERO edge case", function () {
-
     it("Low! when quantity is 0", function () {
       const html = render(0, 20);
       assert.ok(html.includes("Low!"));
     });
   });
-
 });

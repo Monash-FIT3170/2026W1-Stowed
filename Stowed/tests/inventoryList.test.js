@@ -9,7 +9,10 @@ describe("product thumbnail", function () {
     mockProducts.forEach((item) => {
       if (!item.photoUrl) return;
       const html = renderToStaticMarkup(
-        React.createElement(ProductThumbnail, { photoUrl: item.photoUrl, name: item.name })
+        React.createElement(ProductThumbnail, {
+          photoUrl: item.photoUrl,
+          name: item.name,
+        }),
       );
       assert.ok(html.includes("img"));
       assert.ok(html.includes(item.photoUrl));
@@ -18,7 +21,10 @@ describe("product thumbnail", function () {
 
   it("renders initials fallback when no photoUrl is provided", function () {
     const html = renderToStaticMarkup(
-      React.createElement(ProductThumbnail, { photoUrl: "", name: "Safety Helmet" })
+      React.createElement(ProductThumbnail, {
+        photoUrl: "",
+        name: "Safety Helmet",
+      }),
     );
     assert.ok(!html.includes("img"));
     assert.ok(html.includes("SH"));
@@ -26,14 +32,14 @@ describe("product thumbnail", function () {
 
   it("renders fallback for single word name", function () {
     const html = renderToStaticMarkup(
-      React.createElement(ProductThumbnail, { photoUrl: "", name: "Gloves" })
+      React.createElement(ProductThumbnail, { photoUrl: "", name: "Gloves" }),
     );
     assert.ok(html.includes("G"));
   });
 
   it("renders fallback when name is undefined", function () {
     const html = renderToStaticMarkup(
-      React.createElement(ProductThumbnail, { photoUrl: "", name: undefined })
+      React.createElement(ProductThumbnail, { photoUrl: "", name: undefined }),
     );
     assert.ok(html.includes("?"));
   });

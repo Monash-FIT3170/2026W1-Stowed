@@ -8,10 +8,7 @@ import {
   StorageLocations,
   StorageUnits,
 } from "/imports/api/locations/collections";
-import {
-  getMockStorageLocationsByUnitId,
-  getMockStorageUnitById,
-} from "../../api/mockLocations";
+import { getMockStorageLocationsByUnitId, getMockStorageUnitById } from "../../api/mockLocations";
 import "./StorageUnitDetailPage.css";
 
 const STORAGE_UNIT_PHOTOS_KEY = "stowed.storageUnitPhotos";
@@ -59,7 +56,9 @@ export function StorageUnitDetailPage() {
   const mockUnit = getMockStorageUnitById(unitId);
   const unit = liveUnit || mockUnit;
   const locations = liveUnit ? liveLocations : getMockStorageLocationsByUnitId(unitId);
-  const [photoPreview, setPhotoPreview] = useState(() => getSavedPhotoForUnit(unitId, unit?.photoUrl));
+  const [photoPreview, setPhotoPreview] = useState(() =>
+    getSavedPhotoForUnit(unitId, unit?.photoUrl),
+  );
   const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
@@ -142,7 +141,9 @@ export function StorageUnitDetailPage() {
               <span>{unit.type} storage unit</span>
               <span>{locationCount} storage locations</span>
               <span>{storedItemCount} stored item types</span>
-              <span>{widthMeters}m x {heightMeters}m footprint</span>
+              <span>
+                {widthMeters}m x {heightMeters}m footprint
+              </span>
             </div>
           </div>
         </section>
@@ -262,7 +263,9 @@ export function StorageUnitDetailPage() {
                 </div>
               ))
             ) : (
-              <div className="storage-location-empty">No storage locations inside this unit yet.</div>
+              <div className="storage-location-empty">
+                No storage locations inside this unit yet.
+              </div>
             )}
           </div>
         </section>

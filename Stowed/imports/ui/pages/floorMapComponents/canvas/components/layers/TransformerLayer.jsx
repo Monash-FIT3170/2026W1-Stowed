@@ -1,12 +1,12 @@
 import { Layer, Transformer } from "react-konva";
-import { CANVAS_CONFIG }      from "../../CanvasConfig";
+import { CANVAS_CONFIG } from "../../CanvasConfig";
 
 /**
  * Transformer layer that allows for dynamic resizing of storage units
- * 
+ *
  * @param {Set<string>} selectedIds
- * @param {(id: string) => React.RefObject<Konva.Group>}  getGroupRef - Lookup function that returns the Konva Group ref for a given unit id 
- * 
+ * @param {(id: string) => React.RefObject<Konva.Group>}  getGroupRef - Lookup function that returns the Konva Group ref for a given unit id
+ *
  * @returns {JSX.Element|null} A Konva Layer containing a Transformer or null if the selection count is not one
  */
 export function TransformerLayer({ selectedIds, getGroupRef }) {

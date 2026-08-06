@@ -55,8 +55,7 @@ export function CanvasToolbar({
     ...(activeTool === tool ? buttonStyles.active : buttonStyles.secondary),
   });
 
-  const disabledStyle = (isDisabled) =>
-    isDisabled ? buttonStyles.disabled : null;
+  const disabledStyle = (isDisabled) => (isDisabled ? buttonStyles.disabled : null);
 
   return (
     <div style={toolbarStyles.bar}>

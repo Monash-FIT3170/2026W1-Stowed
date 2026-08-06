@@ -22,7 +22,9 @@ export function ForecastPage() {
           <span className="breadcrumb-current">Forecast</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">Demand <em>Forecast</em></h1>
+          <h1 className="header-title">
+            Demand <em>Forecast</em>
+          </h1>
         </div>
       </div>
     </div>
