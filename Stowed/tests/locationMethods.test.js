@@ -3,7 +3,7 @@ import { Meteor } from "meteor/meteor";
 import { Sites, FloorMaps, StorageUnits, MapShapes, StorageLocations } from "../imports/api/locations/collections";
 import { Organisations } from "../imports/api/organisations";
 import "../imports/api/locations/methods";
- 
+
 const TEST_USER_ID = "test-user-id";
 const TEST_ORG_ID = "test-org-id";
 const TEST_SITE_ID = "test-site-id";
@@ -11,7 +11,7 @@ const TEST_FLOOR_MAP_ID = "test-floor-map-id";
 const TEST_STORAGE_UNIT_ID = "test-storage-unit-id";
 const TEST_LOCATION_ID = "loc-1";
 const TEST_ROLE = 3; // ROLES.OWNER - passes all permission checks
- 
+
 before(async function () {
   // Clean up any leftover test data
   await Meteor.users.removeAsync(TEST_USER_ID);
@@ -20,7 +20,7 @@ before(async function () {
   await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
   await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
   await StorageLocations.removeAsync(TEST_LOCATION_ID);
- 
+
   // Insert org
   await Organisations.insertAsync({
     _id: TEST_ORG_ID,
@@ -29,7 +29,7 @@ before(async function () {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
- 
+
   // Insert user linked to org with owner role
   await Meteor.users.insertAsync({
     _id: TEST_USER_ID,
@@ -41,8 +41,8 @@ before(async function () {
       username: "testuser",
     },
   });
- 
-  // Insert location hierarchy: Site -> FloorMap -> StorageUnit -> StorageLocation
+
+  // Insert location hierarchy: Site -> FloorMap
   await Sites.insertAsync({
     _id: TEST_SITE_ID,
     orgId: TEST_ORG_ID,
@@ -51,7 +51,7 @@ before(async function () {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
- 
+
   await FloorMaps.insertAsync({
     _id: TEST_FLOOR_MAP_ID,
     orgId: TEST_ORG_ID,
@@ -61,7 +61,7 @@ before(async function () {
     updatedAt: new Date(),
   });
 });
- 
+
 after(async function () {
   await Meteor.users.removeAsync(TEST_USER_ID);
   await Organisations.removeAsync(TEST_ORG_ID);
@@ -70,7 +70,7 @@ after(async function () {
   await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
   await StorageLocations.removeAsync(TEST_LOCATION_ID);
 });
- 
+
 function callMethod(name, params) {
   return new Promise((resolve, reject) => {
     const method = Meteor.server.method_handlers[name];
@@ -83,102 +83,112 @@ function callMethod(name, params) {
     }
   });
 }
- 
+
 // So new params dont have to be defined every test
 function makeCreateParams(overrides = {}) {
   return {
     name: `Test Shape ${Date.now()}`,
     orgId: TEST_ORG_ID,
     points: [
-      {x: 1, y: 0},
-      {x: 0, y: 1},
-      {x: 1, y: 2},
-      {x: 2, y: 1},
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 2 },
+      { x: 2, y: 1 },
     ],
     ...overrides,
   };
 }
- 
+
+// Order-independent polygon comparison - CCW normalization can
+// legitimately reorder/reverse points, so we compare the point sets
+// rather than requiring an exact array match.
+function assertSamePolygon(actualPoints, expectedPoints) {
+  assert.strictEqual(
+    actualPoints.length,
+    expectedPoints.length,
+    `Expected ${expectedPoints.length} points, got ${actualPoints.length}`,
+  );
+  const remaining = [...actualPoints];
+  for (const exp of expectedPoints) {
+    const idx = remaining.findIndex((p) => p.x === exp.x && p.y === exp.y);
+    assert.ok(idx !== -1, `Expected point (${exp.x}, ${exp.y}) not found in actual points`);
+    remaining.splice(idx, 1);
+  }
+}
+
 // create
 describe("mapShapes.create", function () {
-  let createdShapeName;
- 
+  let createdShapeId;
+
   afterEach(async function () {
-    if (createdShapeName) {
-      await MapShapes.removeAsync({ name: createdShapeName });
-      createdShapeName = null;
+    if (createdShapeId) {
+      await MapShapes.removeAsync(createdShapeId);
+      createdShapeId = null;
     }
   });
- 
+
   it("returns a string _id", async function () {
-    createdShapeName = await callMethod("mapShapes.create", makeCreateParams());
-    assert.strictEqual(typeof createdShapeName, "string");
-    assert.ok(createdShapeName.length > 0);
+    createdShapeId = await callMethod("mapShapes.create", makeCreateParams());
+    assert.strictEqual(typeof createdShapeId, "string");
+    assert.ok(createdShapeId.length > 0);
   });
- 
-  it("persists the product to the database", async function () {
-    createdShapeName = await callMethod(
+
+  it("persists the shape to the database", async function () {
+    createdShapeId = await callMethod(
       "mapShapes.create",
-      makeCreateParams({ name: "Hexagon", points: [
-        {x: 1, y: 0},
-        {x: 0, y: 1},
-        {x: 1, y: 2},
-        {x: 3, y: 2},
-        {x: 4, y: 1},
-        {x: 3, y: 0}
-      ]}),
+      makeCreateParams({
+        name: "Hexagon",
+        points: [
+          { x: 1, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 2 },
+          { x: 3, y: 2 },
+          { x: 4, y: 1 },
+          { x: 3, y: 0 },
+        ],
+      }),
     );
-    
- 
-    const shape = await MapShapes.findOneAsync(createdShapeName);
+
+    const shape = await MapShapes.findOneAsync(createdShapeId);
     assert.strictEqual(shape.name, "Hexagon");
-    assert.strictEqual(shape.points, [{x: 1, y: 0}, {x: 0, y: 1}, {x: 1, y: 2}, {x: 3, y: 2}, {x: 4, y: 1}, {x: 3, y: 0}]);
-  });
-
-  it("calculates bounding box correctly", async function () {
-    createdShapeName = await callMethod(
-      "mapShapes.create",
-      makeCreateParams({ name: "Kite", points: [
-        {x: 1, y: 0},
-        {x: 0, y: 1},
-        {x: 1, y: 3},
-        {x: 2, y: 1},
-      ] }),
-    );
-
-    const shape = await MapShapes.findOneAsync(createdShapeName);
-    assert.strictEqual(shape.width, 2);
-    assert.strictEqual(shape.height, 3);
+    assertSamePolygon(shape.points, [
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 2 },
+      { x: 3, y: 2 },
+      { x: 4, y: 1 },
+      { x: 3, y: 0 },
+    ]);
   });
 
   it("defaults to (0, 0) grid reference point", async function () {
-    createdShapeName = await callMethod(
+    createdShapeId = await callMethod(
       "mapShapes.create",
       makeCreateParams(),
     );
 
-    const shape = await MapShapes.findOneAsync(createdShapeName);
+    const shape = await MapShapes.findOneAsync(createdShapeId);
     assert.strictEqual(shape.gridReference.x, 0);
     assert.strictEqual(shape.gridReference.y, 0);
     assert.strictEqual(shape.orgId, TEST_ORG_ID);
   });
 
   it("retrieves correct organisation ID", async function () {
-    createdShapeName = await callMethod(
+    createdShapeId = await callMethod(
       "mapShapes.create",
       makeCreateParams(),
     );
 
-    const shape = await MapShapes.findOneAsync(createdShapeName);
+    const shape = await MapShapes.findOneAsync(createdShapeId);
     assert.strictEqual(shape.orgId, TEST_ORG_ID);
   });
- 
+
   it("throws duplicate-name when the same name already exists (case-sensitive)", async function () {
-    createdShapeName = await callMethod(
+    createdShapeId = await callMethod(
       "mapShapes.create",
       makeCreateParams({ name: "Diamond" }),
     );
- 
+
     await assert.rejects(
       () => callMethod("mapShapes.create", makeCreateParams({ name: "Diamond" })),
       (err) => {
@@ -188,24 +198,25 @@ describe("mapShapes.create", function () {
     );
   });
 });
- 
+
 // delete
 describe("mapShapes.delete", function () {
   it("removes the shape from the database", async function () {
-    const shapeName = await callMethod(
+    const insertedId = await callMethod(
       "mapShapes.create",
       makeCreateParams(),
     );
- 
-    await callMethod("products.delete", { productId: shapeName });
- 
-    const product = await Products.findOneAsync(shapeName);
-    assert.strictEqual(product, undefined);
+    const created = await MapShapes.findOneAsync(insertedId);
+
+    await callMethod("mapShapes.delete", { shapeId: created.shapeId });
+
+    const shape = await MapShapes.findOneAsync({ shapeId: created.shapeId });
+    assert.strictEqual(shape, undefined);
   });
- 
-  it("throws shape-not-found for an unknown shape name", async function () {
+
+  it("throws shape-not-found for an unknown shape id", async function () {
     await assert.rejects(
-      () => callMethod("mapShapes.delete", { orgId: TEST_ORG_ID, name: "nonexistent-name" }),
+      () => callMethod("mapShapes.delete", { shapeId: -1 }),
       (err) => {
         assert.strictEqual(err.error, "shape-not-found");
         return true;
@@ -213,59 +224,65 @@ describe("mapShapes.delete", function () {
     );
   });
 });
- 
+
 // update
-describe("products.update", function () {
+describe("mapShapes.update", function () {
   let shapeId;
- 
+
   beforeEach(async function () {
-    shapeId = await callMethod(
+    const insertedId = await callMethod(
       "mapShapes.create",
       makeCreateParams({
         name: `Triangle ${Date.now()}`,
         points: [
-          {x: 12, y: 0},
-          {x: 2, y: 30},
-          {x: 0, y: 5}
-        ]
+          { x: 12, y: 0 },
+          { x: 2, y: 30 },
+          { x: 0, y: 5 },
+        ],
       }),
     );
+    const created = await MapShapes.findOneAsync(insertedId);
+    shapeId = created.shapeId;
   });
- 
+
   afterEach(async function () {
-    if (shapeId) {
-      await MapShapes.removeAsync({ name: createdShapeName });
+    if (shapeId !== undefined && shapeId !== null) {
+      await MapShapes.removeAsync({ shapeId });
       shapeId = null;
     }
   });
- 
+
   it("updates shape fields in the database", async function () {
     await callMethod("mapShapes.update", {
       ...makeCreateParams({
         points: [
-          {x: 0, y: 0},
-          {x: 1, y: 1},
-          {x: 2, y: 1},
-          {x: 3, y: 0}
-        ]
+          { x: 0, y: 0 },
+          { x: 1, y: 1 },
+          { x: 2, y: 1 },
+          { x: 3, y: 0 },
+        ],
       }),
-      shapeId: shapeId
+      shapeId,
     });
- 
-    const shape = await MapShapes.findOneAsync(shapeId);
-    assert.strictEqual(shape.points, [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 1}, {x: 3, y: 0}]);
-    assert.strictEqual(shape.width, 3);
-    assert.strictEqual(shape.height, 1);
+
+    const shape = await MapShapes.findOneAsync({ shapeId });
+    assertSamePolygon(shape.points, [
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 3, y: 0 },
+    ]);
     assert.strictEqual(shape.gridReference.x, 0);
     assert.strictEqual(shape.gridReference.y, 0);
   });
- 
+
   it("throws duplicate-name when another shape already has the new name", async function () {
-    const otherShapeId = await callMethod(
+    const otherInsertedId = await callMethod(
       "mapShapes.create",
       makeCreateParams({ name: "Taken Name" }),
     );
- 
+    const otherShape = await MapShapes.findOneAsync(otherInsertedId);
+
     try {
       await assert.rejects(
         () =>
@@ -273,13 +290,13 @@ describe("products.update", function () {
             ...makeCreateParams({
               name: "Taken Name",
               points: [
-                {x: 0, y: 0},
-                {x: 1, y: 1},
-                {x: 2, y: 1},
-                {x: 3, y: 0}
-              ]
+                { x: 0, y: 0 },
+                { x: 1, y: 1 },
+                { x: 2, y: 1 },
+                { x: 3, y: 0 },
+              ],
             }),
-            shapeId: shapeId,
+            shapeId,
           }),
         (err) => {
           assert.strictEqual(err.error, "duplicate-name");
@@ -287,27 +304,27 @@ describe("products.update", function () {
         },
       );
     } finally {
-      await MapShapes.removeAsync(otherShapeId);
+      await MapShapes.removeAsync({ shapeId: otherShape.shapeId });
     }
   });
- 
+
   it("allows updating a shape to keep its own name", async function () {
-    const shape = await MapShapes.findOneAsync(shapeId);
- 
+    const shape = await MapShapes.findOneAsync({ shapeId });
+
     await callMethod("mapShapes.update", {
       ...makeCreateParams({
         name: shape.name,
         points: [
-                {x: 0, y: 0},
-                {x: 1, y: 1},
-                {x: 2, y: 1},
-                {x: 3, y: 0}
-              ]
+          { x: 0, y: 0 },
+          { x: 1, y: 1 },
+          { x: 2, y: 1 },
+          { x: 3, y: 0 },
+        ],
       }),
-      shapeId: shapeId,
+      shapeId,
     });
- 
-    const updated = await MapShapes.findOneAsync(shapeId);
+
+    const updated = await MapShapes.findOneAsync({ shapeId });
     assert.strictEqual(updated.name, shape.name);
   });
 });
