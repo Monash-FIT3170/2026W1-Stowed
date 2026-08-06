@@ -239,7 +239,9 @@ export function EditorProvider({ children, floorMapId }) {
             floorMapId:    activeFloorMapId,
             name:          unit.name,
             type:          unit.type || "other",
-            position,
+            offset:        unit.offset,
+            rotation:      unit.rotation,
+            scale:         unit.scale,
             fill:          unit.fill || "lightblue",
           });
 
@@ -249,7 +251,15 @@ export function EditorProvider({ children, floorMapId }) {
             floorMapId: activeFloorMapId,
             name:       unit.name,
             type:       unit.type || "other",
-            position,
+            offset: {
+              x: Number(position.x),
+              y: Number(position.y),
+            },
+            rotation: Number(0),
+            scale : {
+              x: Number(1),
+              y: Number(1),
+            },
             fill:       unit.fill || "lightblue",
           });
 

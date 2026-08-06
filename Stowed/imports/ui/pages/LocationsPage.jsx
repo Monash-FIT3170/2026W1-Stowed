@@ -295,11 +295,14 @@ export function LocationsPage() {
         floorMapId: selectedFloorMapId,
         name: unitForm.name.trim(),
         type: unitForm.type,
-        position: {
+        offset: {
           x: Number(unitForm.x),
           y: Number(unitForm.y),
-          width: Number(unitForm.width),
-          height: Number(unitForm.height),
+        },
+        rotation: Number(0),
+        scale : {
+          x: Number(1),
+          y: Number(1),
         },
       });
       setUnitForm(DEFAULT_UNIT_FORM);
@@ -385,7 +388,7 @@ export function LocationsPage() {
     if (duplicate) { setStatus({ type: "error", message: "A storage unit with that name already exists on this floor map." }); return; }
     const unit = storageUnits.find((u) => u._id === unitId);
     await runSubmit(async () => {
-      await submitMeteorMethod("storageUnits.update", { storageUnitId: unitId, floorMapId: unit.floorMapId, name, type: editStorageUnitForm.type, position: unit.position });
+      await submitMeteorMethod("storageUnits.update", { storageUnitId: unitId, floorMapId: unit.floorMapId, name, type: editStorageUnitForm.type, offset: unit.offset, rotation: unit.rotation, scale: unit.scale});
       setEditingStorageUnitId(null);
     });
   }
@@ -462,7 +465,7 @@ export function LocationsPage() {
         <div className="header-top">
           <h1 className="header-title">Locations <em>Overview</em></h1>
           <div className="locations-page-status-indicator">
-            {isLoading ? "Loading location data…" : `${sites.length} sites loaded`}
+            {isLoading ? "Loading location data..." : `${sites.length} sites loaded`}
           </div>
         </div>
       </div>
@@ -752,7 +755,7 @@ export function LocationsPage() {
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setDeleteConfirm(null)} disabled={submitting}>Cancel</button>
               <button className="btn-danger" onClick={handleDeleteConfirmed} disabled={submitting}>
-                {submitting ? "Deleting…" : "Delete"}
+                {submitting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
