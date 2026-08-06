@@ -10,7 +10,9 @@ export function AlertsPage() {
           <span className="breadcrumb-current">Alerts</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">Stock <em>Alerts</em></h1>
+          <h1 className="header-title">
+            Stock <em>Alerts</em>
+          </h1>
         </div>
       </div>
     </div>

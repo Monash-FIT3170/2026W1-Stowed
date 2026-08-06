@@ -8,8 +8,7 @@ module.exports = defineConfig(() => {
 
     ignoreWarnings: [
       {
-        message:
-          /Critical dependency: the request of a dependency is an expression/,
+        message: /Critical dependency: the request of a dependency is an expression/,
       },
     ],
 

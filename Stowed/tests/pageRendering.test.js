@@ -10,10 +10,7 @@ import { QRCodesPage } from "../imports/ui/pages/QRCodesPage";
 import { InventoryPage } from "../imports/ui/pages/InventoryPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
 import { Products, ProductRecords } from "../imports/api/products/collections";
-import {
-  StorageLocations,
-  StorageUnits,
-} from "../imports/api/locations/collections";
+import { StorageLocations, StorageUnits } from "../imports/api/locations/collections";
 import { ROLES } from "../imports/api/roles";
 
 function renderWithRouter(element) {

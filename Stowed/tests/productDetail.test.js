@@ -9,9 +9,7 @@ function renderWithoutLayoutEffectWarning(element) {
   const originalError = console.error;
 
   console.error = (...args) => {
-    if (
-      String(args[0]).includes("useLayoutEffect does nothing on the server")
-    ) {
+    if (String(args[0]).includes("useLayoutEffect does nothing on the server")) {
       return;
     }
 
@@ -82,8 +80,7 @@ describe("ProductDetailView", function () {
       ),
     );
 
-    const firstImg =
-      (item.catalogImages && item.catalogImages[0]) || item.photoUrl;
+    const firstImg = (item.catalogImages && item.catalogImages[0]) || item.photoUrl;
     if (firstImg) {
       assert.ok(html.includes(firstImg));
       assert.ok(html.includes("main-image"));

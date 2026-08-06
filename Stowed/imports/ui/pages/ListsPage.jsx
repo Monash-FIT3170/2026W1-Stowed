@@ -1,5 +1,5 @@
 import "../Global.css";
- 
+
 export function ListsPage() {
   return (
     <div className="product-detail-container">
@@ -10,7 +10,9 @@ export function ListsPage() {
           <span className="breadcrumb-current">Lists</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">Shopping <em>Lists</em></h1>
+          <h1 className="header-title">
+            Shopping <em>Lists</em>
+          </h1>
         </div>
       </div>
     </div>

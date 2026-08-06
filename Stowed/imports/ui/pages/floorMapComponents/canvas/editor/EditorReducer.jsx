@@ -1,12 +1,12 @@
 import { CANVAS_ACTIONS } from "./Actions";
 
 export const initialCanvasState = {
-  selectedIds:  new Set(),
-  ghostUnit:    null,
-  dragOffsets:  { deltaX: 0, deltaY: 0, unitId: null },
-  scale:        1,
-  stagePos:     { x: 0, y: 0 },
-  displaySize:  { width: 0, height: 0 },
+  selectedIds: new Set(),
+  ghostUnit: null,
+  dragOffsets: { deltaX: 0, deltaY: 0, unitId: null },
+  scale: 1,
+  stagePos: { x: 0, y: 0 },
+  displaySize: { width: 0, height: 0 },
   clipboard: [],
 };
 
@@ -16,7 +16,7 @@ export const initialCanvasState = {
  *
  * @param {typeof initialCanvasState} state
  * @param {{ type: string, payload?: any }} action
- * 
+ *
  * @returns {typeof initialCanvasState}
  *
  * @example
@@ -31,7 +31,6 @@ export const initialCanvasState = {
  */
 export function canvasReducer(state, action) {
   switch (action.type) {
-
     case CANVAS_ACTIONS.SELECT_UNIT: {
       const { id, shiftKey } = action.payload;
       if (!shiftKey) return { ...state, selectedIds: new Set([id]) };
@@ -63,12 +62,12 @@ export function canvasReducer(state, action) {
 
     case CANVAS_ACTIONS.COPY_UNITS:
       return { ...state, clipboard: action.payload.units };
-    
+
     case CANVAS_ACTIONS.PASTE_UNITS:
       return { ...state, selectedIds: new Set(action.payload.ids) };
 
     case CANVAS_ACTIONS.DELETE_UNIT:
-      return { ...state, selectedIds: new Set() }
+      return { ...state, selectedIds: new Set() };
 
     default:
       return state;

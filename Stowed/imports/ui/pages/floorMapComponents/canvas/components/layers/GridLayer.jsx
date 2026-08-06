@@ -67,13 +67,7 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
   return (
     <Layer>
       {/* BACKGROUND */}
-      <Rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill={COLOURS.CANVAS_FILL}
-      />
+      <Rect x={0} y={0} width={width} height={height} fill={COLOURS.CANVAS_FILL} />
 
       {/* GRID LINES */}
       {vLines}

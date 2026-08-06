@@ -2,7 +2,12 @@ import assert from "assert";
 import { Meteor } from "meteor/meteor";
 import { Products, ProductRecords } from "../imports/api/products/collections";
 import { Organisations } from "../imports/api/organisations";
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../imports/api/locations/collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+} from "../imports/api/locations/collections";
 import "../imports/api/products/methods";
 
 const TEST_USER_ID = "test-user-id-products";

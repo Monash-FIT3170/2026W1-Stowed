@@ -5,17 +5,17 @@ import { useEditor } from "./canvas/editor/EditorContext";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 
 const TYPE_OPTIONS = [
-  { value: "shelf",   label: "Shelf" },
+  { value: "shelf", label: "Shelf" },
   { value: "cabinet", label: "Cabinet" },
-  { value: "rack",    label: "Rack" },
-  { value: "other",   label: "Other" },
+  { value: "rack", label: "Rack" },
+  { value: "other", label: "Other" },
 ];
 
 const TYPE_COLOURS = {
-  shelf:   "#d6ede8",
+  shelf: "#d6ede8",
   cabinet: "#dde8f5",
-  rack:    "#f5ece0",
-  other:   "#e8e8e8",
+  rack: "#f5ece0",
+  other: "#e8e8e8",
 };
 
 const EMPTY_FORM = { name: "", type: "shelf", width: "2", height: "1" };
@@ -30,11 +30,7 @@ function findFreePosition(unitW, unitH, existingUnits, floorW, floorH) {
   for (let y = 0; y + unitH <= floorH + 0.001; y += STEP) {
     for (let x = 0; x + unitW <= floorW + 0.001; x += STEP) {
       const overlaps = existingUnits.some(
-        (u) =>
-          x          < u.x + u.width  &&
-          x + unitW  > u.x            &&
-          y          < u.y + u.height &&
-          y + unitH  > u.y
+        (u) => x < u.x + u.width && x + unitW > u.x && y < u.y + u.height && y + unitH > u.y,
       );
       if (!overlaps) return { x, y };
     }
@@ -51,21 +47,19 @@ function findFreePosition(unitW, unitH, existingUnits, floorW, floorH) {
 export function StoragePanel({ floorMapId }) {
   const { units, floorSize } = useEditor();
 
-  const [form, setForm]           = useState(EMPTY_FORM);
-  const [showForm, setShowForm]   = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError]         = useState("");
-  const [success, setSuccess]     = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const unitW   = Number(form.width);
-  const unitH   = Number(form.height);
-  const floorWm = (floorSize.width  || 500) / CANVAS_CONFIG.PIXELS_PER_METER;
+  const unitW = Number(form.width);
+  const unitH = Number(form.height);
+  const floorWm = (floorSize.width || 500) / CANVAS_CONFIG.PIXELS_PER_METER;
   const floorHm = (floorSize.height || 500) / CANVAS_CONFIG.PIXELS_PER_METER;
 
   const isValid =
-    form.name.trim().length > 0 &&
-    !isNaN(unitW) && unitW >= 0.5 &&
-    !isNaN(unitH) && unitH >= 0.5;
+    form.name.trim().length > 0 && !isNaN(unitW) && unitW >= 0.5 && !isNaN(unitH) && unitH >= 0.5;
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -89,7 +83,7 @@ export function StoragePanel({ floorMapId }) {
     if (!freePos) {
       setError(
         `No free space for a ${unitW} × ${unitH} m unit. ` +
-        "Try a smaller size or move existing units first."
+          "Try a smaller size or move existing units first.",
       );
       setSubmitting(false);
       return;
@@ -113,7 +107,7 @@ export function StoragePanel({ floorMapId }) {
       });
       setSuccess(
         `"${form.name.trim()}" added at ` +
-        `(${freePos.x.toFixed(1)} m, ${freePos.y.toFixed(1)} m) - drag to reposition.`
+          `(${freePos.x.toFixed(1)} m, ${freePos.y.toFixed(1)} m) - drag to reposition.`,
       );
       setForm(EMPTY_FORM);
       setShowForm(false);
@@ -126,31 +120,30 @@ export function StoragePanel({ floorMapId }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-
       {/* Success banner */}
       {success && (
-        <div style={{
-          fontSize: 11, color: "#166534", background: "#dcfce7",
-          border: "1px solid #86efac", borderRadius: 8,
-          padding: "8px 10px",
-        }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: "#166534",
+            background: "#dcfce7",
+            border: "1px solid #86efac",
+            borderRadius: 8,
+            padding: "8px 10px",
+          }}
+        >
           {success}
         </div>
       )}
 
       {/* Toggle button */}
-      <button
-        type="button"
-        style={storagePanelStyles.createBtn}
-        onClick={handleToggle}
-      >
+      <button type="button" style={storagePanelStyles.createBtn} onClick={handleToggle}>
         {showForm ? "Cancel" : "+ Add Storage Unit"}
       </button>
 
       {/* Inline form */}
       {showForm && (
         <div style={storagePanelStyles.form}>
-
           {/* Name */}
           <label style={storagePanelStyles.label} htmlFor="su-name">
             Name <span style={{ color: "#d86f58" }}>*</span>
@@ -177,7 +170,9 @@ export function StoragePanel({ floorMapId }) {
             onChange={handleChange}
           >
             {TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
 
@@ -217,15 +212,20 @@ export function StoragePanel({ floorMapId }) {
 
           {/* Floor space preview */}
           {isValid && (
-            <p style={{ fontSize: 10, color: "var(--text-muted)", margin: "2px 0 0", fontStyle: "italic" }}>
+            <p
+              style={{
+                fontSize: 10,
+                color: "var(--text-muted)",
+                margin: "2px 0 0",
+                fontStyle: "italic",
+              }}
+            >
               {unitW} × {unitH} m on a {floorWm} × {floorHm} m floor
             </p>
           )}
 
           {/* Error */}
-          {error && (
-            <p style={{ fontSize: 11, color: "#d86f58", margin: 0 }}>{error}</p>
-          )}
+          {error && <p style={{ fontSize: 11, color: "#d86f58", margin: 0 }}>{error}</p>}
 
           {/* Submit */}
           <button
@@ -233,14 +233,13 @@ export function StoragePanel({ floorMapId }) {
             style={{
               ...storagePanelStyles.saveBtn,
               opacity: isValid && !submitting ? 1 : 0.45,
-              cursor:  isValid && !submitting ? "pointer" : "not-allowed",
+              cursor: isValid && !submitting ? "pointer" : "not-allowed",
             }}
             disabled={!isValid || submitting || !floorMapId}
             onClick={handleCreate}
           >
             {submitting ? "Creating..." : "Create Storage Unit"}
           </button>
-
         </div>
       )}
     </div>

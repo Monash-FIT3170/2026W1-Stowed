@@ -6,7 +6,7 @@ import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
 import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
-import { buttonStyles, pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
+import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { Meteor } from "meteor/meteor";
@@ -30,15 +30,24 @@ function FloorMapPageInner() {
   const canManage = hasClientPermission(role, "locations.manage");
 
   const {
-    activeTool, setActiveTool,
-    floorSize, canvasSettings,
-    isCanvasSettingsOpen, setCanvasSettingsOpen,
-    isCanvasEditMode, setCanvasEditMode,
-    units, commitUnits,
-    canUndo, canRedo, handleUndo, handleRedo,
-    handleSaveLayout, handleLoadLayout,
+    activeTool,
+    setActiveTool,
+    floorSize,
+    canvasSettings,
+    isCanvasSettingsOpen,
+    setCanvasSettingsOpen,
+    isCanvasEditMode,
+    setCanvasEditMode,
+    units,
+    canUndo,
+    canRedo,
+    handleUndo,
+    handleRedo,
+    handleSaveLayout,
+    handleLoadLayout,
     handleCanvasSettingsSave,
-    selectedUnit, setSelectedUnit, setIsPanelOpen, isPanelOpen,
+    selectedUnit,
+    setSelectedUnit,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
   } = useEditor();
@@ -67,6 +76,9 @@ function FloorMapPageInner() {
   const okItems = items.filter((i) => !i.isLow);
   const hasLow = lowItems.length > 0;
   const isEmpty = items.length === 0;
+  const okItems = items.filter((i) => !i.isLow);
+  const hasLow = lowItems.length > 0;
+  const isEmpty = items.length === 0;
 
   const handleUnitSelect = (unitId) => {
     setSelectedStorageUnitId(unitId);
@@ -75,14 +87,20 @@ function FloorMapPageInner() {
     setIsStockPanelOpen(!!unitId);
   };
 
-  // Current floor map and its site
+  // Current floor map
   const currentFloorMap = floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
-  const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
-  const floorMapsForSite = floorMaps.filter((f) => f.siteId === currentSite?._id);
 
   return (
-    <div className="product-detail-container" style={{ height: "100vh", minHeight: "unset", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
+    <div
+      className="product-detail-container"
+      style={{
+        height: "100vh",
+        minHeight: "unset",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       {/* -- Header -- */}
       <div className="product-detail-header">
         <div className="breadcrumb">
@@ -90,27 +108,29 @@ function FloorMapPageInner() {
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-link">Floor Map</span>
           <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-current">
-            {isCanvasEditMode ? "Edit mode" : "View mode"}
-          </span>
+          <span className="breadcrumb-current">{isCanvasEditMode ? "Edit mode" : "View mode"}</span>
         </div>
         <div className="header-top">
-          <h1 className="header-title">Floor <em>Map</em></h1>
+          <h1 className="header-title">
+            Floor <em>Map</em>
+          </h1>
         </div>
       </div>
 
       {/* -- Floor map tabs - only render once data is ready and there are multiple maps -- */}
       {locationsReady && floorMaps.length > 1 && (
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          padding: "0 28px",
-          borderBottom: "1px solid var(--border-light)",
-          background: "var(--card-bg)",
-          flexShrink: 0,
-          overflowX: "auto",
-        }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            padding: "0 28px",
+            borderBottom: "1px solid var(--border-light)",
+            background: "var(--card-bg)",
+            flexShrink: 0,
+            overflowX: "auto",
+          }}
+        >
           {/* Group by site */}
           {sites.map((site) => {
             const siteMaps = floorMaps.filter((f) => f.siteId === site._id);
@@ -146,10 +166,26 @@ function FloorMapPageInner() {
       )}
 
       {/* -- Map row -- */}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden", position: "relative" }}>
-
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
         {/* CANVAS - only render once data is ready */}
-        <div style={{ ...pageStyles.canvasArea, flex: 1, minHeight: 0, minWidth: 0, overflow: "hidden", background: COLOURS.PAGE_BG }}>
+        <div
+          style={{
+            ...pageStyles.canvasArea,
+            flex: 1,
+            minHeight: 0,
+            minWidth: 0,
+            overflow: "hidden",
+            background: COLOURS.PAGE_BG,
+          }}
+        >
           {locationsReady && (
             <Canvas
               key={floorMapId ?? "default"}
@@ -308,45 +344,95 @@ function FloorMapPageInner() {
       </div>
 
       {/* HOVER TOOLTIP */}
-      {tooltip && (() => {
-        const tipItems = tooltip.items ?? [];
-        const tipLow = tipItems.filter((i) => i.isLow);
-        const tipHasLow = tipLow.length > 0;
-        return (
-          <div style={{
-            position: "fixed", left: tooltip.x, top: tooltip.y,
-            background: "white",
-            border: `1px solid ${tipHasLow ? "#fca5a5" : tipItems.length === 0 ? "#d9cfc0" : "#86efac"}`,
-            borderRadius: "8px", padding: "10px 14px",
-            minWidth: "160px", maxWidth: "240px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-            fontSize: "12px", fontFamily: "Inter, sans-serif",
-            color: "#1a1a1a", pointerEvents: "none", zIndex: 200,
-          }}>
-            <div style={{ fontWeight: 700, marginBottom: "6px", color: tipItems.length === 0 ? "#998874" : tipHasLow ? "#991b1b" : "#166534" }}>
-              {tooltip.unit.name}
-            </div>
-            {tipItems.length === 0 ? (
-              <div style={{ color: "#998874", fontSize: "11px" }}>No products on this shelf</div>
-            ) : tipHasLow ? (
-              <>
-                <div style={{ fontSize: "11px", color: "#991b1b", marginBottom: "4px", fontWeight: 600 }}>Low stock products:</div>
-                {tipLow.map((item, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", padding: "4px 0", borderBottom: "0.5px solid #f5efe6" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontWeight: 600 }}>{item.product.name}</span>
-                      <span style={{ color: "#991b1b", fontWeight: 600, marginLeft: "8px" }}>{item.quantity} left</span>
-                    </div>
-                    <span style={{ fontSize: "10px", color: "#998874" }}>{item.locationName}</span>
+      {tooltip &&
+        (() => {
+          const tipItems = tooltip.items ?? [];
+          const tipLow = tipItems.filter((i) => i.isLow);
+          const tipHasLow = tipLow.length > 0;
+          return (
+            <div
+              style={{
+                position: "fixed",
+                left: tooltip.x,
+                top: tooltip.y,
+                background: "white",
+                border: `1px solid ${tipHasLow ? "#fca5a5" : tipItems.length === 0 ? "#d9cfc0" : "#86efac"}`,
+                borderRadius: "8px",
+                padding: "10px 14px",
+                minWidth: "160px",
+                maxWidth: "240px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                fontSize: "12px",
+                fontFamily: "Inter, sans-serif",
+                color: "#1a1a1a",
+                pointerEvents: "none",
+                zIndex: 200,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 700,
+                  marginBottom: "6px",
+                  color: tipItems.length === 0 ? "#998874" : tipHasLow ? "#991b1b" : "#166534",
+                }}
+              >
+                {tooltip.unit.name}
+              </div>
+              {tipItems.length === 0 ? (
+                <div style={{ color: "#998874", fontSize: "11px" }}>No products on this shelf</div>
+              ) : tipHasLow ? (
+                <>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#991b1b",
+                      marginBottom: "4px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Low stock products:
                   </div>
-                ))}
-              </>
-            ) : (
-              <div style={{ color: "#166534", fontSize: "11px" }}>All products on this shelf are stocked</div>
-            )}
-          </div>
-        );
-      })()}
+                  {tipLow.map((item, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        padding: "4px 0",
+                        borderBottom: "0.5px solid #f5efe6",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <span style={{ fontWeight: 600 }}>{item.product.name}</span>
+                        <span
+                          style={{
+                            color: "#991b1b",
+                            fontWeight: 600,
+                            marginLeft: "8px",
+                          }}
+                        >
+                          {item.quantity} left
+                        </span>
+                      </div>
+                      <span style={{ fontSize: "10px", color: "#998874" }}>
+                        {item.locationName}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div style={{ color: "#166534", fontSize: "11px" }}>
+                  All products on this shelf are stocked
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       {/* CANVAS SETTINGS MODAL */}
       {isCanvasSettingsOpen && (
@@ -369,7 +455,11 @@ function FloorMapPageInner() {
 
       {/* FLOATING EDIT BUTTON - admins and owners only */}
       {!isCanvasEditMode && canManage && (
-        <button onClick={() => setCanvasEditMode(true)} className="btn-primary" style={{ ...pageStyles.floatingButton }}>
+        <button
+          onClick={() => setCanvasEditMode(true)}
+          className="btn-primary"
+          style={{ ...pageStyles.floatingButton }}
+        >
           Edit Floor Map
         </button>
       )}
