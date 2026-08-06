@@ -13,6 +13,8 @@ import {
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 
+import {isSimple, makeCCW, removeCollinearPoints} from 'poly-decomp-es';
+
 Meteor.methods({
   /**
    * Creates a new Site.
@@ -184,12 +186,12 @@ Meteor.methods({
   /**
    * Creates a new StorageUnit under an existing FloorMap.
    */
-  async 'storageUnits.create'({ floorMapId, name, type, shape, position, fill }) {
+  async 'storageUnits.create'({ floorMapId, name, type, shape, offset, rotation, scale, fill }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
     check(shape, Object);
-    check(position, Object);
+    check(offset, Object);
     if (fill !== undefined) check(fill, String);
 
     // Prevent orphaned storage units by ensuring the parent FloorMap exists first.
@@ -209,7 +211,9 @@ Meteor.methods({
       name,
       type,
       shape,
-      position,
+      offset,
+      rotation,
+      scale,
       ...(fill !== undefined ? { fill } : {}),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -219,13 +223,13 @@ Meteor.methods({
   /**
    * Updates an existing StorageUnit.
    */
-  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, shape, position, fill }) {
+  async 'storageUnits.update'({ storageUnitId, floorMapId, name, type, shape, offset, rotation, scale, fill }) {
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
     check(type, String);
     check(shape, Object);
-    check(position, Object);
+    check(offset, Object);
     if (fill !== undefined) check(fill, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
@@ -261,7 +265,9 @@ Meteor.methods({
         name,
         type,
         shape,
-        position,
+        offset,
+        rotation,
+        scale,
         ...(fill !== undefined ? { fill } : {}),
         updatedAt: new Date(),
       },
@@ -352,8 +358,8 @@ Meteor.methods({
 
     // Check unique name (within organisation) - case-sensitive
     const existing = await MapShapes.findOneAsync({
-      orgId: { orgId },
-      name: { name }
+      orgId,
+      name,
     });
     if (existing) {
       throw new Meteor.Error(
@@ -362,17 +368,35 @@ Meteor.methods({
       );
     }
 
+    // Check if shape has any intersecting lines
+    const polygon = points.map(p => [p.x, p.y]);
+    if (!isSimple(polygon)) {
+      throw new Meteor.Error(
+        "intersecting-lines",
+        `The shape has intersecting lines.`,
+      );
+    }
+
+    // Remove redundant vertices that are close to eachother or in the line of antoher
+    removeCollinearPoints(polygon, 0.01);
+    // Ensure polygon follows CCW conventions
+    makeCCW(polygon);
+
+    // Convert polygon tuples back to {x,y} objects for db
+    const cleaned = polygon.map(([x, y]) => ({ x, y}));
+
     return MapShapes.insertAsync({
       orgId,
       shapeId,
       name,
-      width,
-      height,
-      points,
-      gridReference
+      points: cleaned,
+      gridReference: gridReference
     });
   },
 
+  /**
+   * Updates an existing shape object
+   */
   async 'mapShapes.update'({ orgId, shapeId, name, points, gridReference={x: 0, y: 0} }) {
     // validate inputs
     check(orgId, String);
@@ -390,7 +414,7 @@ Meteor.methods({
     }
 
     // build calculated values
-    
+
     // width and height
     const minX = Math.min(...(points.map(p => p.x)));
     const maxX = Math.max(...(points.map(p => p.x)));
@@ -403,10 +427,11 @@ Meteor.methods({
     if (width <= 0) throw new Meteor.Error('invalid-shape-width', `The width of the shape must be >0 but got "${width}"`);
     if (height <= 0) throw new Meteor.Error('invalid-shape-height', `The height of the shape must be >0 but got "${height}"`);
 
-    // Check unique name (within organisation) - case-sensitive
+    // Check unique name (within organisation) - case-sensitive, excluding this shape itself
     const existing = await MapShapes.findOneAsync({
-      orgId: { orgId },
-      name: { name }
+      orgId,
+      name,
+      shapeId: { $ne: shapeId },
     });
     if (existing) {
       throw new Meteor.Error(
@@ -415,13 +440,28 @@ Meteor.methods({
       );
     }
 
-    return MapShapes.updateAsync(shapeId, {
+    // Check if shape has any intersecting lines
+    const polygon = points.map(p => [p.x, p.y]);
+    if (!isSimple(polygon)) {
+      throw new Meteor.Error(
+        "intersecting-lines",
+        `The shape has intersecting lines.`,
+      );
+    }
+
+    // Remove redundant vertices that are close to eachother or in the line of antoher
+    removeCollinearPoints(polygon, 0.01);
+    // Ensure polygon follows CCW conventions
+    makeCCW(polygon);
+
+    // Convert polygon tuples back to {x,y} objects for db
+    const cleaned = polygon.map(([x, y]) => ({ x, y}));
+
+    return MapShapes.updateAsync({ shapeId }, {
       $set: {
         orgId: orgId,
         name: name,
-        width: width,
-        height: height,
-        points: points,
+        points: cleaned,
         gridReference: gridReference
       }
     });
@@ -448,7 +488,7 @@ Meteor.methods({
       );
     }
 
-    await StorageUnits.removeAsync({ shapeId: shapeId });
+    await MapShapes.removeAsync({ shapeId: shapeId });
   },
 
   /**

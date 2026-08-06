@@ -21,7 +21,7 @@ const TYPE_COLOURS = {
 const EMPTY_FORM = { name: "", type: "shelf", width: "2", height: "1" };
 
 /**
- * Scan the floor in 0.5 m steps (top-left → bottom-right) to find the first
+ * Scan the floor in 0.5 m steps (top-left -> bottom-right) to find the first
  * position where a unit of `unitW × unitH` metres does not overlap any existing
  * unit.  Returns `{ x, y }` in metres, or `null` if the floor is full.
  */
@@ -100,7 +100,15 @@ export function StoragePanel({ floorMapId }) {
         floorMapId,
         name:     form.name.trim(),
         type:     form.type,
-        position: { x: freePos.x, y: freePos.y, width: unitW, height: unitH },
+        offset: {
+          x: Number(freePos.x),
+          y: Number(freePos.y),
+        },
+        rotation: Number(0),
+        scale : {
+          x: Number(1),
+          y: Number(1),
+        },
         fill:     TYPE_COLOURS[form.type] ?? "#d6ede8",
       });
       setSuccess(
