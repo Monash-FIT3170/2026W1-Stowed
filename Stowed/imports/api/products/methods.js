@@ -303,6 +303,99 @@ Meteor.methods({
   },
 
   /**
+   * Marks shopping-list stock as received: increases a Product's total
+   * quantity and adds it to the given site's ProductRecord.
+   */
+  async "products.receiveStock"({ productId, siteId, quantity }) {
+    check(productId, String);
+    check(siteId, String);
+    check(quantity, Match.Integer);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "products.receiveStock");
+
+    const product = await Products.findOneAsync(productId);
+    if (!product) {
+      throw new Meteor.Error("product-not-found", "No product found with that ID.");
+    }
+
+    if (quantity <= 0) {
+      throw new Meteor.Error("invalid-quantity", "Received quantity must be greater than zero.");
+    }
+
+    const now = new Date();
+
+    await Products.updateAsync(productId, {
+      $set: { totalQuantity: product.totalQuantity + quantity, updatedAt: now },
+    });
+
+    const record = await ProductRecords.findOneAsync({ productId, locationId: siteId });
+    if (record) {
+      await ProductRecords.updateAsync(record._id, {
+        $set: { quantity: record.quantity + quantity, updatedAt: now },
+      });
+    } else {
+      await ProductRecords.insertAsync({
+        productId,
+        locationId: siteId,
+        quantity,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  },
+
+  /**
+   * Undoes a stock receipt — the inverse of "products.receiveStock".
+   */
+  async "products.unreceiveStock"({ productId, siteId, quantity }) {
+    check(productId, String);
+    check(siteId, String);
+    check(quantity, Match.Integer);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "products.receiveStock");
+
+    const product = await Products.findOneAsync(productId);
+    if (!product) {
+      throw new Meteor.Error("product-not-found", "No product found with that ID.");
+    }
+
+    if (quantity <= 0) {
+      throw new Meteor.Error("invalid-quantity", "Quantity must be greater than zero.");
+    }
+
+    const record = await ProductRecords.findOneAsync({ productId, locationId: siteId });
+    if (!record || record.quantity < quantity || product.totalQuantity < quantity) {
+      throw new Meteor.Error("insufficient-stock", "Not enough received stock left to undo.");
+    }
+
+    const now = new Date();
+
+    await Products.updateAsync(productId, {
+      $set: { totalQuantity: product.totalQuantity - quantity, updatedAt: now },
+    });
+
+    if (record.quantity === quantity) {
+      await ProductRecords.removeAsync(record._id);
+    } else {
+      await ProductRecords.updateAsync(record._id, {
+        $set: { quantity: record.quantity - quantity, updatedAt: now },
+      });
+    }
+  },
+
+  /**
    * Creates a new ProductRecord.
    */
   async "productRecords.create"({ productId, locationId, quantity }) {
