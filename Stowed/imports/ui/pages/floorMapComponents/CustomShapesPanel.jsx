@@ -39,9 +39,7 @@ export function CustomShapesPanel({
                   {shape.name}
                 </span>
 
-                <span style={customShapesPanelStyles.shapeSize}>
-                  {shape.width} × {shape.height}
-                </span>
+      
               </button>
             );
           })}

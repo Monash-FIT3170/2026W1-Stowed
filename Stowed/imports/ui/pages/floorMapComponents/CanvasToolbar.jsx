@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
+import { CustomShapesPanel } from "./CustomShapesPanel";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
 import { CreateShapeModal } from "./CreateShapeModal";

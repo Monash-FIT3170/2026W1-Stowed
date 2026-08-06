@@ -77,9 +77,7 @@ function FloorMapPageInner() {
   const okItems = items.filter((i) => !i.isLow);
   const hasLow = lowItems.length > 0;
   const isEmpty = items.length === 0;
-  const okItems = items.filter((i) => !i.isLow);
-  const hasLow = lowItems.length > 0;
-  const isEmpty = items.length === 0;
+
 
   const handleUnitSelect = (unitId) => {
     setSelectedStorageUnitId(unitId);
