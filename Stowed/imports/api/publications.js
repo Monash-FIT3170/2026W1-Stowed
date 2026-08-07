@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./locations/collections";
+import { Sites, FloorMaps, MapShapes, StorageUnits, StorageLocations } from "./locations/collections";
 import { Products, ProductRecords } from "./products/collections";
 import { getCallerOrgId } from "./userMethods";
 import { Organisations } from "/imports/api/organisations";
