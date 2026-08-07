@@ -126,8 +126,6 @@ Meteor.methods({
         productId,
         locationId,
         quantity,
-        lastStocktakeAt: now,
-        itemStocktakeDue: false,
         createdAt: now,
         updatedAt: now,
       });
@@ -235,8 +233,6 @@ Meteor.methods({
         productId,
         locationId,
         quantity,
-        lastStocktakeAt: oldRecord?.lastStocktakeAt ?? now,
-        itemStocktakeDue: oldRecord?.itemStocktakeDue ?? false,
         createdAt: oldRecord?.createdAt ?? now,
         updatedAt: now,
       });
@@ -314,8 +310,6 @@ Meteor.methods({
         quantity,
         createdAt: oldRecord?.createdAt ?? now,
         updatedAt: now,
-        lastStocktakeAt: oldRecord?.lastStocktakeAt ?? now,
-        itemStocktakeDue: oldRecord?.itemStocktakeDue ?? false,
       });
     }
   },
@@ -338,8 +332,6 @@ Meteor.methods({
       productId,
       locationId,
       quantity,
-      lastStocktakeAt: now,
-      itemStocktakeDue: false,
       createdAt: now,
       updatedAt: now,
     });
@@ -400,54 +392,5 @@ Meteor.methods({
       },
     );
   },
-
-/**
- *
- * Updates ProductRecord when a stocktake has been completed for an item in a specific location
- * 
- * This method sets the completion timestamp and resets the stocktake due status.
- *
- */
-  async "ProductRecords.stocktakeComplete"({ productRecordId }) {
-  check(productRecordId, String);
-
-  await ProductRecords.updateAsync(productRecordId, {
-    $set: {
-      lastStocktakeAt: new Date(),
-      itemStocktakeDue: false,
-    },
-  });
-},
-
-/**
- * Checks whether a stocktake is due for a specifid product in a specific location
- *
- * Compares each ProductRecord's next scheduled stocktake date against
- * the current date. If the stocktake deadline has passed, the record is
- * updated to indicate that a stocktake is required.
- *
- */
-async "ProductRecords.checkStocktakeDue"() {
-
-  const productRecords = await ProductRecords.find().fetchAsync();
-  const currentDate = new Date();
-  for (const record of productRecords) {
-
-    const nextStocktakeDate = new Date(record.lastStocktakeAt); //set to date of last stocktake taken
-
-    //determine the date of the next stocktake
-    nextStocktakeDate.setDate(
-      nextStocktakeDate.getDate() + record.stocktakeInterval
-    );
-    
-    if (currentDate >= nextStocktakeDate) {
-      await ProductRecords.updateAsync(record._id, {
-        $set: {
-          itemStocktakeDue: true
-        }
-      });
-    }
-  }
-},
 
 });

@@ -107,20 +107,4 @@ export const ProductRecordSchema = new SimpleSchema({
   updatedAt: {
     type: Date,
   },
-
-  lastStocktakeAt: {
-    type: Date,
-    optional: false,
-  },
-
-  itemStocktakeDue: {
-    type: Boolean,
-    optional: false,
-  },
-
-  stocktakeInterval: {
-    type: Number,
-    optional: false,
-    defaultValue: 180,
-  },
 });
