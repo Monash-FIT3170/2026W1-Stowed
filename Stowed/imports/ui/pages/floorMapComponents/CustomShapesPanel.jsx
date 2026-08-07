@@ -1,4 +1,9 @@
 import { buttonStyles, customShapesPanelStyles } from "./FloorMapStyles";
+import { dragState } from "./canvas/editor/DragState";
+import {
+  getShapeBounds,
+  normaliseShapePoints,
+} from "./canvas/editor/utils/ShapeGeometry";
 
 export function CustomShapesPanel({
   mapShapes = [],
@@ -13,6 +18,52 @@ export function CustomShapesPanel({
     ...customShapesPanelStyles.shapeButton,
     ...(activeTool === toolName ? buttonStyles.active : {}),
   });
+
+  function buildShapeTemplate(shape) {
+    const normalisedPoints = normaliseShapePoints(shape.points);
+    const { width, height } = getShapeBounds(normalisedPoints);
+
+    return {
+      name: shape.name,
+      type: "custom",
+
+      shape: {
+        orgId: shape.orgId,
+        shapeId: shape.shapeId,
+        name: shape.name,
+        points: normalisedPoints,
+        gridReference: shape.gridReference ?? {
+          x: 0,
+          y: 0,
+        },
+      },
+
+      width,
+      height,
+      fill: "#d6ede8",
+
+      rotation: 0,
+
+      scale: {
+        x: 1,
+        y: 1,
+      },
+    };
+  }
+
+  function handleDragStart(event, shape) {
+    const template = buildShapeTemplate(shape);
+
+    event.dataTransfer.setData("unit", JSON.stringify(template));
+
+    dragState.template = template;
+
+    event.dataTransfer.effectAllowed = "copy";
+  }
+
+  function handleDragEnd() {
+    dragState.template = null;
+  }
 
   return (
     <div style={customShapesPanelStyles.container}>
@@ -31,15 +82,19 @@ export function CustomShapesPanel({
               <button
                 key={shape._id}
                 type="button"
+                draggable
+                onDragStart={(event) => handleDragStart(event, shape)}
+                onDragEnd={handleDragEnd}
                 onClick={() => setActiveTool(toolName)}
-                style={getShapeButtonStyle(toolName)}
+                style={{
+                  ...getShapeButtonStyle(toolName),
+                  cursor: "grab",
+                }}
                 aria-pressed={activeTool === toolName}
               >
                 <span style={customShapesPanelStyles.shapeName}>
                   {shape.name}
                 </span>
-
-      
               </button>
             );
           })}
