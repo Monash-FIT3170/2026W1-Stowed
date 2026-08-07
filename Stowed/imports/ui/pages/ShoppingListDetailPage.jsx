@@ -41,6 +41,8 @@ export function ShoppingListDetailPage() {
   const [filter, setFilter] = useState(FILTERS.ALL);
   const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
   const [addQuantity, setAddQuantity] = useState(1);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(list?.name ?? "");
 
   const { sites } = useTracker(() => {
     Meteor.subscribe("locations.all");
@@ -182,6 +184,23 @@ export function ShoppingListDetailPage() {
     navigate("/lists");
   }
 
+  function startEditingName() {
+    setNameDraft(list.name);
+    setIsEditingName(true);
+  }
+
+  function saveName() {
+    const trimmed = nameDraft.trim();
+    if (trimmed) {
+      updateList(listId, (current) => ({ ...current, name: trimmed }));
+    }
+    setIsEditingName(false);
+  }
+
+  function cancelEditingName() {
+    setIsEditingName(false);
+  }
+
   function renderRow(item) {
     return (
       <tr key={item.productId} className={item.purchased ? "lists-row-purchased" : undefined}>
@@ -262,7 +281,40 @@ export function ShoppingListDetailPage() {
         </div>
 
         <div className="header-top">
-          <h1 className="header-title">{list.name}</h1>
+          {isEditingName ? (
+            <div className="lists-name-edit">
+              <input
+                type="text"
+                className="form-input"
+                value={nameDraft}
+                autoFocus
+                onChange={(event) => setNameDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveName();
+                  if (event.key === "Escape") cancelEditingName();
+                }}
+                aria-label="List name"
+              />
+              <button type="button" className="btn-secondary" onClick={saveName}>
+                Save
+              </button>
+              <button type="button" className="btn-secondary" onClick={cancelEditingName}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <h1 className="header-title">
+              {list.name}
+              <button
+                type="button"
+                className="lists-name-edit-btn"
+                onClick={startEditingName}
+                aria-label="Edit list name"
+              >
+                ✏️
+              </button>
+            </h1>
+          )}
         </div>
       </div>
 
