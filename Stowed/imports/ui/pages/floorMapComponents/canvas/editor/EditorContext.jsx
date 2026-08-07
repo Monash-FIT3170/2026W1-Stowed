@@ -384,27 +384,36 @@ export function EditorProvider({ children, floorMapId }) {
   }
 
   async function handleDeleteSelectedUnit() {
-    if (!selectedUnit) return;
-    const unitId = selectedUnit._id || selectedUnit.id;
-    if (!unitId) {
-      // Unit not saved to DB yet - just remove from canvas
-      commitUnits((prev) =>
-        prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id),
-      );
-      setSelectedUnit(null);
-      return;
-    }
-    try {
-      await callMethod("storageUnits.delete", { storageUnitId: unitId });
-      commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
-      setSelectedUnit(null);
-    } catch (error) {
-      alert(
-        error.reason ||
-        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
-      );
-    }
+  if (!selectedUnit) return;
+
+
+  if (!selectedUnit._id) {
+    commitUnits((prev) =>
+      prev.filter((u) => u.id !== selectedUnit.id),
+    );
+
+    setSelectedUnit(null);
+    return;
   }
+
+
+  try {
+    await callMethod("storageUnits.delete", {
+      storageUnitId: selectedUnit._id,
+    });
+
+    commitUnits((prev) =>
+      prev.filter((u) => u._id !== selectedUnit._id),
+    );
+
+    setSelectedUnit(null);
+  } catch (error) {
+    alert(
+      error.reason ||
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+    );
+  }
+}
 
   const value = {
     // Tool
