@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import {
@@ -16,6 +16,8 @@ import { getLists, addList, subscribeLists } from "/imports/api/shoppingLists/mo
 import { toItem } from "./shoppingListHelpers";
 
 import "./ListsPage.css";
+import "./InventoryListPage.css";
+import "../Global.css";
 
 export function ListsPage() {
   const navigate = useNavigate();
@@ -63,7 +65,7 @@ export function ListsPage() {
             Shopping <em>Lists</em>
           </h1>
 
-          <div>
+          <div className="lists-header-actions">
             {/* does nothing yet */}
             <button type="button" className="btn-secondary" onClick={() => {}}>
               Archived lists
@@ -94,38 +96,42 @@ export function ListsPage() {
             </button>
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Items</th>
-                <th>Site</th>
-                <th>Purchased</th>
-                <th>Received</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lists.map((l) => {
-                const site = sites.find((s) => s._id === l.siteId);
-                const purchasedCount = l.items.filter((i) => i.purchased).length;
-                const receivedCount = l.items.filter((i) => i.received).length;
+          <div className="detail-section">
+            <div style={{ padding: "16px 20px 0", marginBottom: "8px" }}>
+              <div className="recent-items-title">Active lists</div>
+              <div className="recent-items-subtitle">
+                {lists.length} shopping list{lists.length !== 1 ? "s" : ""}
+              </div>
+            </div>
 
-                return (
-                  <tr key={l.id} onClick={() => navigate(`/lists/${l.id}`)}>
-                    <td>{l.name}</td>
-                    <td>{l.items.length}</td>
-                    <td>{site ? site.name : "Unassigned"}</td>
-                    <td>
-                      {purchasedCount}/{l.items.length}
-                    </td>
-                    <td>
-                      {receivedCount}/{l.items.length}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+            <div className="lists-overview-header">
+              <span>Name</span>
+              <span>Items</span>
+              <span>Site</span>
+              <span>Purchased</span>
+              <span>Received</span>
+            </div>
+
+            {lists.map((l) => {
+              const site = sites.find((s) => s._id === l.siteId);
+              const purchasedCount = l.items.filter((i) => i.purchased).length;
+              const receivedCount = l.items.filter((i) => i.received).length;
+
+              return (
+                <Link key={l.id} to={`/lists/${l.id}`} className="lists-overview-row">
+                  <span className="item-name-link">{l.name}</span>
+                  <span>{l.items.length}</span>
+                  <span className="lists-overview-site">{site ? site.name : "Unassigned"}</span>
+                  <span>
+                    {purchasedCount}/{l.items.length}
+                  </span>
+                  <span>
+                    {receivedCount}/{l.items.length}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

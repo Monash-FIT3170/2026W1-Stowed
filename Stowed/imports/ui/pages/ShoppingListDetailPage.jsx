@@ -21,6 +21,7 @@ import {
 import { toItem, nextOrderDay, currency } from "./shoppingListHelpers";
 
 import "./ListsPage.css";
+import "../Global.css";
 
 const FILTERS = {
   LOW_STOCK: "lowStock",
