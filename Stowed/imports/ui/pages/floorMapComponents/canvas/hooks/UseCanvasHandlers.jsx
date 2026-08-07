@@ -347,17 +347,56 @@ export function useCanvasHandlers({
     }
 
     setUnits((prev) =>
-      prev.map((u) =>
-        u.id === unit.id
-          ? {
-              ...u,
-              x: clampedXPx / px,
-              y: clampedYPx / px,
-              width: finalWPx / px,
-              height: finalHPx / px,
-            }
-          : u,
-      ),
+      prev.map((u) => {
+        if (u.id !== unit.id) return u;
+
+        const newWidth = finalWPx / px;
+        const newHeight = finalHPx / px;
+
+        const isCustomShape =
+          u.type === "custom" &&
+          Array.isArray(u.shape?.points) &&
+          u.shape.points.length >= 3;
+
+        if (!isCustomShape) {
+          return {
+            ...u,
+            x: clampedXPx / px,
+            y: clampedYPx / px,
+            width: newWidth,
+            height: newHeight,
+          };
+        }
+
+        const widthScale =
+          u.width > 0 ? newWidth / u.width : 1;
+
+        const heightScale =
+          u.height > 0 ? newHeight / u.height : 1;
+
+        const scaledPoints = u.shape.points.map((point) => ({
+          x: point.x * widthScale,
+          y: point.y * heightScale,
+        }));
+
+        return {
+          ...u,
+          x: clampedXPx / px,
+          y: clampedYPx / px,
+          width: newWidth,
+          height: newHeight,
+
+          shape: {
+            ...u.shape,
+            points: scaledPoints,
+          },
+
+          scale: {
+            x: 1,
+            y: 1,
+          },
+        };
+      }),
     );
 
     node.x(clampedXPx);

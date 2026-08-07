@@ -151,16 +151,25 @@ export function EditorProvider({ children, floorMapId }) {
     // Threshold: if x or y or w or h > 20, assume pixels and convert to meters.
     const PX_PER_M = 50;
     const canvasUnits = savedUnits.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
+      const x = unit.offset?.x ?? 0;
+      const y = unit.offset?.y ?? 0;
+
+      const points = unit.shape?.points ?? [];
+      const xs = points.map((p) => p.x);
+      const ys = points.map((p) => p.y);
+
+      const w = xs.length > 0 ? Math.max(...xs) - Math.min(...xs) : 1;
+      const h = ys.length > 0 ? Math.max(...ys) - Math.min(...ys) : 1;
       const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
       return {
         id: unit._id,
         _id: unit._id,
         name: unit.name,
         type: unit.type,
+        shape: unit.shape,
+        offset: unit.offset,
+        rotation: unit.rotation ?? 0,
+        scale: unit.scale ?? { x: 1, y: 1 },
         x: isPixels ? x / PX_PER_M : x,
         y: isPixels ? y / PX_PER_M : y,
         width: isPixels ? w / PX_PER_M : w,
@@ -224,31 +233,39 @@ export function EditorProvider({ children, floorMapId }) {
         if (unit._id) {
           await callMethod("storageUnits.update", {
             storageUnitId: unit._id,
-            floorMapId:    activeFloorMapId,
-            name:          unit.name,
-            type:          unit.type || "other",
-            offset:        unit.offset,
-            rotation:      unit.rotation,
-            scale:         unit.scale,
-            fill:          unit.fill || "lightblue",
+            floorMapId: activeFloorMapId,
+            name: unit.name,
+            type: unit.type || "other",
+            shape: unit.shape,
+            offset: {
+              x: Number(unit.x),
+              y: Number(unit.y),
+            },
+            rotation: Number(unit.rotation ?? 0),
+            scale: unit.scale ?? {
+              x: 1,
+              y: 1,
+            },
+            fill: unit.fill || "lightblue",
           });
 
           savedCanvasUnits.push(unit);
         } else {
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
-            name:       unit.name,
-            type:       unit.type || "other",
+            name: unit.name,
+            type: unit.type || "other",
+            shape: unit.shape,
             offset: {
               x: Number(position.x),
               y: Number(position.y),
             },
             rotation: Number(0),
-            scale : {
+            scale: {
               x: Number(1),
               y: Number(1),
             },
-            fill:       unit.fill || "lightblue",
+            fill: unit.fill || "lightblue",
           });
 
           savedCanvasUnits.push({
@@ -289,16 +306,25 @@ export function EditorProvider({ children, floorMapId }) {
 
     const PX_PER_M = 50;
     const canvasUnits = savedUnits.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
+      const x = unit.offset?.x ?? 0;
+      const y = unit.offset?.y ?? 0;
+
+      const points = unit.shape?.points ?? [];
+      const xs = points.map((p) => p.x);
+      const ys = points.map((p) => p.y);
+
+      const w = xs.length > 0 ? Math.max(...xs) - Math.min(...xs) : 1;
+      const h = ys.length > 0 ? Math.max(...ys) - Math.min(...ys) : 1;
       const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
       return {
         id: unit._id,
         _id: unit._id,
         name: unit.name,
         type: unit.type,
+        shape: unit.shape,
+        offset: unit.offset,
+        rotation: unit.rotation ?? 0,
+        scale: unit.scale ?? { x: 1, y: 1 },
         x: isPixels ? x / PX_PER_M : x,
         y: isPixels ? y / PX_PER_M : y,
         width: isPixels ? w / PX_PER_M : w,
@@ -375,7 +401,7 @@ export function EditorProvider({ children, floorMapId }) {
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }
