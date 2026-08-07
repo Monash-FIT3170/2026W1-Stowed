@@ -8,6 +8,7 @@ import {
   FloorMaps,
   Sites,
   StorageLocations,
+  MapShapes,
   StorageUnits,
 } from "/imports/api/locations/collections";
 import "../Global.css";
@@ -20,10 +21,26 @@ const STORAGE_UNIT_TYPES = ["shelf", "cabinet", "rack", "drawer", "fridge", "oth
 const DEFAULT_UNIT_FORM = {
   name: "",
   type: "shelf",
-  x: "2",
-  y: "2",
-  width: "2",
-  height: "1",
+  offset: {
+    x: "2",
+    y: "2",
+  },
+  scale: {
+    x: "1",
+    y: "1",
+  },
+  rotation: 0,
+  shape: {
+    shapeId: -1,
+    name: "hacky rectangle",
+    points: [
+      { x: "0", y: "0" },
+      { x: "2", y: "0" },
+      { x: "2", y: "1" },
+      { x: "0", y: "1" }
+    ],
+    gridReference: { x: "0", y: "0" }
+  }
 };
 
 const DEFAULT_LOCATION_FORM = {
@@ -314,10 +331,10 @@ export function LocationsPage() {
     await runSubmit(async () => {
       if (
         !hasValidUnitPosition(unitForm) ||
-        Number(unitForm.width) < 1 ||
-        Number(unitForm.height) < 1
+        Number(unitForm.width) <= 0 ||
+        Number(unitForm.height) <= 0
       ) {
-        throw new Error("Position values must be numbers, and width/height must be at least 1.");
+        throw new Error("Position values must be numbers, and width/height must be greater than zero.");
       }
       await submitMeteorMethod("storageUnits.create", {
         floorMapId: selectedFloorMapId,
@@ -328,10 +345,11 @@ export function LocationsPage() {
           y: Number(unitForm.y),
         },
         rotation: Number(0),
-        scale : {
+        scale: {
           x: Number(1),
           y: Number(1),
         },
+        shape: { ...unitForm.shape, orgId: selectedSite.orgId },
       });
       setUnitForm(DEFAULT_UNIT_FORM);
     });
@@ -438,7 +456,7 @@ export function LocationsPage() {
     }
     const unit = storageUnits.find((u) => u._id === unitId);
     await runSubmit(async () => {
-      await submitMeteorMethod("storageUnits.update", { storageUnitId: unitId, floorMapId: unit.floorMapId, name, type: editStorageUnitForm.type, offset: unit.offset, rotation: unit.rotation, scale: unit.scale});
+      await submitMeteorMethod("storageUnits.update", { storageUnitId: unitId, floorMapId: unit.floorMapId, name, type: editStorageUnitForm.type, offset: unit.offset, rotation: unit.rotation, scale: unit.scale });
       setEditingStorageUnitId(null);
     });
   }
@@ -502,10 +520,18 @@ export function LocationsPage() {
 
     // Convert all to pixels first
     const converted = units.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
+      const x = unit.offset.x;
+      const y = unit.offset.y;
+      /* hacky, please update with utility method */
+      const xPoints = unit.shape.points.map(p => p.x);
+      const yPoints = unit.shape.points.map(p => p.y);
+      const customMin = (points) => points.reduce((acc, x) => acc <= x ? acc : x, points.indexOf(0));
+      const customMax = (points) => points.reduce((acc, x) => acc >= x ? acc : x, points.indexOf(0));
+      const w = unit.scale.x * customMax(xPoints) - customMin(xPoints);
+      const h = unit.scale.y * customMax(yPoints) - customMin(yPoints);
+
+      //x - unit.shape.points.map(p => p.x).reduce((acc, x) => acc >= x ? acc : x, 0) - unit.shape.points.map(p => p.x).reduce((acc, x) => acc <= x ? acc : x, 0);
+      //y - unit.shape.points.map(p => p.y).reduce((acc, y) => acc >= y ? acc : y, 0) - unit.shape.points.map(p => p.y).reduce((acc, y) => acc <= y ? acc : y, 0);
       const isMeters = x <= 20 && y <= 20 && w <= 20 && h <= 20;
       return {
         ...unit,
@@ -1027,7 +1053,7 @@ export function LocationsPage() {
                               {unit.type}
                             </span>
                           </div>
-                          <div className="unit-list-item-meta">{`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}</div>
+                          <div className="unit-list-item-meta">{`x:${unit.offset.x} y:${unit.offset.y} w:${/* hacky, please update with utility method */ Number(unit.scale.x * (unit.shape.points.map(p => p.x).reduce((acc, x) => acc >= x ? acc : x, 0) - unit.shape.points.map(p => p.x).reduce((acc, x) => acc <= x ? acc : x, 0)))} h:${Number(unit.scale.y * (unit.shape.points.map(p => p.y).reduce((acc, y) => acc >= y ? acc : y, 0) - unit.shape.points.map(p => p.y).reduce((acc, y) => acc <= y ? acc : y, 0)))}`}</div>
                         </button>
                         {canManage && (
                           <button

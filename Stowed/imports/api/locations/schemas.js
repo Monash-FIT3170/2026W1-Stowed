@@ -116,7 +116,7 @@ export const UnitShapeSchema = new SimpleSchema({
   "points.$.y": {
     type: Number,
   },
-  gridReference: Object,
+  gridReference: Object, // anchor point for the shape (usually 0, 0)
   "gridReference.x": {
     type: Number,
     defaultValue: 0
