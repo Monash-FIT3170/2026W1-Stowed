@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import {
@@ -60,8 +60,10 @@ function nextOrderDay(frequency) {
 const currency = (value) => value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
 export function ListsPage() {
-  // change when real data is used instead of mock
-  const [list, setList] = useState(null);
+  // change when real data is used instead of mock (should be all active shopping lists from the db)
+  const [lists, setLists] = useState([]);
+  const [openListId, setOpenListId] = useState(null);
+  const dialogRef = useRef(null);
 
   const [frequency, setFrequency] = useState(LIST_FREQUENCIES.WEEKLY);
   const [filter, setFilter] = useState(FILTERS.ALL);
@@ -76,6 +78,8 @@ export function ListsPage() {
   }, []);
 
   const locationOptions = sites.map((site) => ({ id: site._id, label: site.name }));
+
+  const list = lists.find((l) => l.id === openListId) ?? null;
 
   const items = list?.items ?? [];
 
@@ -92,16 +96,49 @@ export function ListsPage() {
 
   // change when real data is used instead of mock
 
+  function updateList(id, updater) {
+    setLists((current) => current.map((l) => (l.id === id ? updater(l) : l)));
+  }
+
+  function openPopup(id) {
+    setOpenListId(id);
+    dialogRef.current?.showModal();
+  }
+
+  function closePopup() {
+    dialogRef.current?.close();
+    setOpenListId(null);
+  }
+
   function generate() {
-    setList({
-      mode: SHOPPING_LIST_MODES.AUTOMATED,
-      frequency,
-      status: LIST_STATUSES.DRAFT,
-      siteId: "",
+    const id = `list-${Date.now()}`;
+
+    setLists((current) => [
+      ...current,
+      {
+        id,
+        name: `Shopping list ${current.length + 1}`,
+        mode: SHOPPING_LIST_MODES.AUTOMATED,
+        frequency,
+        status: LIST_STATUSES.DRAFT,
+        siteId: "",
+        items: getLowStockProducts(mockProducts).map((product) =>
+          toItem(product, frequency, ADD_PRODUCT_MODES.GENERATED),
+        ),
+      },
+    ]);
+
+    setFilter(FILTERS.ALL);
+    openPopup(id);
+  }
+
+  function regenerate() {
+    updateList(openListId, (current) => ({
+      ...current,
       items: getLowStockProducts(mockProducts).map((product) =>
-        toItem(product, frequency, ADD_PRODUCT_MODES.GENERATED),
+        toItem(product, current.frequency, ADD_PRODUCT_MODES.GENERATED),
       ),
-    });
+    }));
     setFilter(FILTERS.ALL);
   }
 
@@ -109,7 +146,7 @@ export function ListsPage() {
     const parsed = Number.parseInt(rawValue, 10);
     const quantityWanted = Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
 
-    setList((current) => ({
+    updateList(openListId, (current) => ({
       ...current,
       items: current.items.map((item) =>
         item.productId === productId ? { ...item, quantityWanted } : item,
@@ -123,7 +160,7 @@ export function ListsPage() {
 
     const quantityWanted = Math.max(1, Number(addQuantity) || 1);
 
-    setList((current) => {
+    updateList(openListId, (current) => {
       const onList = current.items.some((i) => i.productId === product._id);
 
       return {
@@ -151,7 +188,7 @@ export function ListsPage() {
   }
 
   function save() {
-    setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
+    updateList(openListId, (current) => ({ ...current, status: LIST_STATUSES.SAVED }));
   }
 
   function callStockMethod(methodName, item) {
@@ -165,7 +202,7 @@ export function ListsPage() {
   }
 
   function togglePurchased(productId) {
-    setList((current) => {
+    updateList(openListId, (current) => {
       const target = current.items.find((i) => i.productId === productId);
       if (!target) return current;
 
@@ -187,7 +224,7 @@ export function ListsPage() {
   }
 
   function setListLocation(siteId) {
-    setList((current) => ({ ...current, siteId }));
+    updateList(openListId, (current) => ({ ...current, siteId }));
   }
 
   function toggleReceived(item) {
@@ -196,7 +233,7 @@ export function ListsPage() {
     const nextReceived = !item.received;
     callStockMethod(nextReceived ? "products.receiveStock" : "products.unreceiveStock", item);
 
-    setList((current) => ({
+    updateList(openListId, (current) => ({
       ...current,
       items: current.items.map((i) =>
         i.productId === item.productId ? { ...i, received: nextReceived } : i,
@@ -205,7 +242,8 @@ export function ListsPage() {
   }
 
   function discard() {
-    setList(null);
+    setLists((current) => current.filter((l) => l.id !== openListId));
+    closePopup();
   }
 
   function renderRow(item) {
@@ -275,9 +313,15 @@ export function ListsPage() {
             Shopping <em>Lists</em>
           </h1>
 
-          <button type="button" className="btn-primary" onClick={generate}>
-            + Generate shopping list
-          </button>
+          <div>
+            {/* does nothing yet */}
+            <button type="button" className="btn-secondary" onClick={() => {}}>
+              Archived lists
+            </button>
+            <button type="button" className="btn-primary" onClick={generate}>
+              + Generate shopping list
+            </button>
+          </div>
         </div>
 
         <p className="lists-subtitle">
@@ -286,12 +330,12 @@ export function ListsPage() {
       </div>
 
       <div className="lists-body">
-        {list === null ? (
+        {lists.length === 0 ? (
           <div className="detail-section lists-empty-card">
             <span className="lists-empty-icon" aria-hidden="true">
               &#128722;
             </span>
-            <h2 className="header-title">No active shopping list</h2>
+            <h2 className="header-title">No active shopping lists</h2>
             <p className="section-empty">
               Generate one to pull in every product that&apos;s hit its reorder point.
             </p>
@@ -300,7 +344,48 @@ export function ListsPage() {
             </button>
           </div>
         ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Items</th>
+                <th>Site</th>
+                <th>Purchased</th>
+                <th>Received</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lists.map((l) => {
+                const site = sites.find((s) => s._id === l.siteId);
+                const purchasedCount = l.items.filter((i) => i.purchased).length;
+                const receivedCount = l.items.filter((i) => i.received).length;
+
+                return (
+                  <tr key={l.id} onClick={() => openPopup(l.id)}>
+                    <td>{l.name}</td>
+                    <td>{l.items.length}</td>
+                    <td>{site ? site.name : "Unassigned"}</td>
+                    <td>
+                      {purchasedCount}/{l.items.length}
+                    </td>
+                    <td>
+                      {receivedCount}/{l.items.length}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <dialog ref={dialogRef} onClose={() => setOpenListId(null)}>
+        {list && (
           <>
+            <button type="button" onClick={closePopup}>
+              Close
+            </button>
+
             <div className="lists-stats">
               <div className="lists-stat lists-stat-items">
                 <span className="lists-stat-value">{items.length}</span>
@@ -444,7 +529,7 @@ export function ListsPage() {
                     <button
                       type="button"
                       className="btn-secondary lists-full-btn"
-                      onClick={generate}
+                      onClick={regenerate}
                     >
                       Regenerate
                     </button>
@@ -514,7 +599,7 @@ export function ListsPage() {
             </div>
           </>
         )}
-      </div>
+      </dialog>
     </div>
   );
 }
