@@ -74,10 +74,6 @@ function FloorMapPageInner() {
 
   const items = selectedUnit?.mockItems ?? (lowStockByUnitId?.[selectedUnit?._id] ?? []);
   const lowItems = items.filter((i) => i.isLow);
-  const okItems = items.filter((i) => !i.isLow);
-  const hasLow = lowItems.length > 0;
-  const isEmpty = items.length === 0;
-
 
   const handleUnitSelect = (unitId) => {
     setSelectedStorageUnitId(unitId);
