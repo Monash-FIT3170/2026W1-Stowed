@@ -132,6 +132,7 @@ export function ProductDetailView({
   }
 
   const unitCost = Number(item.unitCost);
+  const purchaseCost = Number(item.purchaseCost);
   const reorderAt = item.reorderAt ?? null;
   const galleryImages = imageUrls.length > 0 ? imageUrls : item.images || [];
 
@@ -146,6 +147,7 @@ export function ProductDetailView({
   });
   const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
+  const hasPurchaseCost = Number.isFinite(purchaseCost) && item.purchaseCost != null;
   const storageAssignments = records.length
     ? records.map((record) => ({
         key: record._id,
@@ -364,7 +366,7 @@ export function ProductDetailView({
               <div className="section-content">
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="unit-cost">Unit cost</label>
+                    <label htmlFor="unit-cost">Sell price</label>
                     <input
                       id="unit-cost"
                       type="text"
@@ -373,6 +375,18 @@ export function ProductDetailView({
                       className="form-input"
                     />
                   </div>
+                  <div className="form-group">
+                    <label htmlFor="purchase-cost">Purchase price</label>
+                    <input
+                      id="purchase-cost"
+                      type="text"
+                      value={hasPurchaseCost ? `$${purchaseCost.toFixed(2)}` : "-"}
+                      readOnly
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="current-stock">Current stock</label>
                     <input
@@ -383,8 +397,6 @@ export function ProductDetailView({
                       className="form-input"
                     />
                   </div>
-                </div>
-                <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="reorder-at">Reorder at</label>
                     <input
@@ -395,10 +407,6 @@ export function ProductDetailView({
                       className="form-input"
                     />
                   </div>
-                  {/* <div className="form-group">
-                    <label>Location</label>
-                    <div className="form-tag">{item.location || "-"}</div>
-                  </div> */}
                 </div>
               </div>
             </div>
