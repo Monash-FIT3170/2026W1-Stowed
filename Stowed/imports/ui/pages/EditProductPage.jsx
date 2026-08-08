@@ -48,6 +48,7 @@ export function EditProductPage() {
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [purchaseCost, setPurchaseCost] = useState("");
   const [reorderAt, setReorderAt] = useState("");
   const [assignments, setAssignments] = useState([]);
   const [initialised, setInitialised] = useState(false);
@@ -85,6 +86,7 @@ export function EditProductPage() {
       setBrand(product.brand ?? "");
       setTotalQuantity(String(product.totalQuantity ?? ""));
       setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
+      setPurchaseCost(product.purchaseCost != null ? String(product.purchaseCost) : "");
       setReorderAt(product.reorderAt != null ? String(product.reorderAt) : "");
       setImageUrls(product.images || []);
       setMainImageIndex(product.mainImageIndex || 0);
@@ -120,6 +122,8 @@ export function EditProductPage() {
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
     if (parseFloat(unitCost) !== product.unitCost)
       result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
+    if (parseFloat(purchaseCost) !== product.purchaseCost)
+      result.purchaseCost = { from: product.purchaseCost, to: parseFloat(purchaseCost) };
     const parsedReorderAt = reorderAt !== "" ? parseInt(reorderAt, 10) : null;
     const originalReorderAt = product.reorderAt ?? null;
     if (parsedReorderAt !== originalReorderAt)
@@ -161,6 +165,7 @@ export function EditProductPage() {
     brand,
     parsedTotal,
     unitCost,
+    purchaseCost,
     reorderAt,
     imageUrls,
     validAssignments,
@@ -230,6 +235,7 @@ export function EditProductPage() {
         brand,
         totalQuantity: parsedTotal,
         unitCost: unitCost !== "" ? parseFloat(unitCost) : 0,
+        purchaseCost: purchaseCost !== "" ? parseFloat(purchaseCost) : 0,
         reorderAt: reorderAt !== "" ? parseInt(reorderAt, 10) : undefined,
         images: imageUrls,
         assignments: validAssignments.map((a) => ({
@@ -317,7 +323,7 @@ export function EditProductPage() {
             <div className="section-content">
               <div className="form-row">
                 <div className="form-group">
-                  <label>Unit cost</label>
+                  <label>Sell Price</label>
                   <input
                     type="number"
                     min="0"
@@ -329,6 +335,20 @@ export function EditProductPage() {
                   />
                 </div>
                 <div className="form-group">
+                  <label>Purchase Price</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={purchaseCost}
+                    onChange={(e) => setPurchaseCost(e.target.value)}
+                    className="form-input"
+                    placeholder="$0.00"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
                   <label>Total stock</label>
                   <input
                     type="number"
@@ -338,8 +358,6 @@ export function EditProductPage() {
                     min="0"
                   />
                 </div>
-              </div>
-              <div className="form-row">
                 <div className="form-group">
                   <label>Reorder at</label>
                   <input
@@ -631,10 +649,26 @@ export function EditProductPage() {
                       marginBottom: "2px",
                     }}
                   >
-                    Unit cost
+                    Sell price
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
                     ${changes.unitCost.from} → ${changes.unitCost.to}
+                  </div>
+                </div>
+              )}
+              {changes.purchaseCost && (
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Purchase price
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    ${changes.purchaseCost.from} → ${changes.purchaseCost.to}
                   </div>
                 </div>
               )}
