@@ -44,6 +44,7 @@ Meteor.methods({
     sku = "",
     brand = "",
     unitCost = 0,
+    purchaseCost = 0,
     reorderAt,
     photoUrl = "",
     images = [],
@@ -59,6 +60,7 @@ Meteor.methods({
     check(sku, String);
     check(brand, String);
     check(unitCost, Number);
+    check(purchaseCost, Number);
     if (reorderAt !== undefined) check(reorderAt, Match.Integer);
     check(photoUrl, String);
     check(images, [String]);
@@ -109,6 +111,7 @@ Meteor.methods({
       sku,
       brand,
       unitCost,
+      purchaseCost,
       reorderAt,
       photoUrl: primaryPhotoUrl,
       images: galleryImages,
@@ -146,6 +149,7 @@ Meteor.methods({
     sku = "",
     brand = "",
     unitCost = 0,
+    purchaseCost = 0,
     reorderAt,
     photoUrl = "",
     images = [],
@@ -162,6 +166,7 @@ Meteor.methods({
     check(sku, String);
     check(brand, String);
     check(unitCost, Number);
+    check(purchaseCost, Number);
     if (reorderAt !== undefined) check(reorderAt, Match.Integer);
     check(photoUrl, String);
     check(images, [String]);
@@ -208,6 +213,7 @@ Meteor.methods({
         sku,
         brand,
         unitCost,
+        purchaseCost,
         reorderAt,
         photoUrl: primaryPhotoUrl,
         images: galleryImages,

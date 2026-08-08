@@ -54,6 +54,7 @@ export function CreateProductPage() {
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [purchaseCost, setPurchaseCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [reorderAt, setReorderAt] = useState("");
   const [assignments, setAssignments] = useState([]);
@@ -158,6 +159,7 @@ export function CreateProductPage() {
         category,
         brand,
         unitCost: unitCost ? parseFloat(unitCost) : undefined,
+        purchaseCost: purchaseCost ? parseFloat(purchaseCost) : undefined,
         totalQuantity: parsedTotal,
         reorderAt: reorderAt ? parseInt(reorderAt, 10) : undefined,
         images: imageUrls,
@@ -252,7 +254,7 @@ export function CreateProductPage() {
               <div className="section-content">
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Unit cost</label>
+                    <label>Sell Price</label>
                     <input
                       type="number"
                       min="0"
@@ -264,6 +266,20 @@ export function CreateProductPage() {
                     />
                   </div>
                   <div className="form-group">
+                    <label>Purchase Price</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={purchaseCost}
+                      onChange={(e) => setPurchaseCost(e.target.value)}
+                      className="form-input"
+                      placeholder="$0.00"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
                     <label>Current stock</label>
                     <input
                       type="number"
@@ -274,17 +290,17 @@ export function CreateProductPage() {
                       placeholder="0"
                     />
                   </div>
-                </div>
-                <div className="form-group">
-                  <label>Reorder at</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={reorderAt}
-                    onChange={(e) => setReorderAt(e.target.value)}
-                    className="form-input"
-                    placeholder="Leave blank for no threshold"
-                  />
+                  <div className="form-group">
+                    <label>Reorder at</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={reorderAt}
+                      onChange={(e) => setReorderAt(e.target.value)}
+                      className="form-input"
+                      placeholder="Leave blank for no threshold"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
