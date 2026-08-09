@@ -48,6 +48,16 @@
   flex-wrap: wrap;
   font-size: 12px;
   color: var(--text-muted);
+  align-items: center;
+}
+
+.stocktake-dirty {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--tag-bg);
+  border: 1px solid var(--accent-secondary);
+  color: var(--accent-primary);
+  font-weight: 700;
 }
 
 /* -- Product panel -- */
@@ -143,8 +153,13 @@
   cursor: pointer;
 }
 
-.stocktake-step-btn:hover {
+.stocktake-step-btn:hover:not(:disabled) {
   border-color: var(--accent-secondary);
+}
+
+.stocktake-step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .stocktake-qty-input {
@@ -176,4 +191,22 @@
 
 .stocktake-add-btn {
   font-weight: 700;
+}
+
+.stocktake-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stocktake-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.stocktake-add-select {
+  flex: 1 1 260px;
+  max-width: 360px;
 }
