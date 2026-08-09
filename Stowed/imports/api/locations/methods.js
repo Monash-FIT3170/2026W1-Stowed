@@ -9,8 +9,9 @@ import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./collections";
-import { Products, ProductRecords } from "../products/collections";
+import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+import { isStocktakeDue, DEFAULT_STOCKTAKE_INTERVAL_DAYS } from "./stocktake";
 
 Meteor.methods({
   /**
@@ -447,36 +448,43 @@ Meteor.methods({
    *
    */
   async "storageLocations.checkStocktakeDue"() {
-
     // get all storage locations
     const storageLocations = await StorageLocations.find().fetchAsync();
-    
+
     // set current date to the current date
     const currentDate = new Date();
-    
+
+    // The interval lives on the Site, four levels up. Many locations share a
+    // site, so look each one up once.
+    const siteIntervalCache = new Map();
+
     // for each storage location
     for (const location of storageLocations) {
-        // Get the storage unit this location belongs to
-        const storageUnit = await StorageUnits.findOneAsync(location.storageUnitId);
-        // Get the floor map the storage unit belongs to
-        const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
-        // Get the site the floor map belongs to
-        const site = await Sites.findOneAsync(floorMap.siteId);
-        // Calculate the next stocktake date
+      // Get the storage unit this location belongs to
+      const storageUnit = await StorageUnits.findOneAsync(location.storageUnitId);
+      if (!storageUnit) continue;
 
-      // set the date of the next stock take to the date of the last stocktake
-      // then determine the date of the next stocktake by adding the stocktale 
-      // interval to it
-      const nextStocktakeDate = new Date(location.lastStocktakeAt); 
-      nextStocktakeDate.setDate(
-        nextStocktakeDate.getDate() + site.stocktakeInterval
-      );
-      
-      // if the currentDate of a storage location is more than the nextStocktakeDate 
-      // then set stocktakeDue to true, otherwise false
+      // Get the floor map the storage unit belongs to
+      const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+      if (!floorMap) continue;
+
+      // Get the stocktake interval from the site the floor map belongs to.
+      // Skipping orphans above keeps one broken branch from aborting the sweep
+      // for every other organisation.
+      let intervalDays = siteIntervalCache.get(floorMap.siteId);
+      if (intervalDays === undefined) {
+        const site = await Sites.findOneAsync(floorMap.siteId);
+        intervalDays = site?.stocktakeIntervalDays ?? DEFAULT_STOCKTAKE_INTERVAL_DAYS;
+        siteIntervalCache.set(floorMap.siteId, intervalDays);
+      }
+
+      // if the deadline has passed then set stocktakeDue to true, otherwise false
+      const due = isStocktakeDue(location.lastStocktakeAt, intervalDays, currentDate);
+      if (due === location.stocktakeDue) continue;
+
       await StorageLocations.updateAsync(location._id, {
         $set: {
-          stocktakeDue: currentDate >= nextStocktakeDate,
+          stocktakeDue: due,
         },
       });
     }
@@ -485,11 +493,11 @@ Meteor.methods({
   /**
    *
    * Updates StorageLocation attributes when a stocktake has been completed for an item in a specific location
-   * 
+   *
    * This method sets the completion timestamp and resets the stocktake due status.
    *
    */
-    async "storageLocations.stocktakeComplete"({ locationId }) {
+  async "storageLocations.stocktakeComplete"({ locationId }) {
     check(locationId, String);
 
     await StorageLocations.updateAsync(locationId, {
@@ -499,5 +507,4 @@ Meteor.methods({
       },
     });
   },
-
 });
