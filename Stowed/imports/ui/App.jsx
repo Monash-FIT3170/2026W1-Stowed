@@ -5,6 +5,7 @@ import { InventoryPage } from "./pages/InventoryPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
+import { SavedListsPage } from "./pages/SavedListsPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
@@ -136,6 +137,20 @@ export function App() {
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/lists") ? (
                     <ListsPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/lists/saved"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/lists") ? (
+                    <SavedListsPage />
                   ) : (
                     <Navigate to="/" replace />
                   )

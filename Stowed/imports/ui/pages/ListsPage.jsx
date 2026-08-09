@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useNavigate } from "react-router-dom";
 import {
   SHOPPING_LIST_MODES,
   LIST_FREQUENCIES,
@@ -8,6 +9,7 @@ import {
   LIST_STATUSES,
   ADD_PRODUCT_MODES,
   FREQUENCY_WEEKS,
+  SAVED_SHOPPING_LIST_STORAGE_KEY,
 } from "/imports/api/shoppingLists/constants";
 
 import { Products } from "/imports/api/products/collections";
@@ -62,6 +64,8 @@ function nextOrderDay(frequency) {
 const currency = (value) => value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
 export function ListsPage() {
+  const navigate = useNavigate();
+
   // change when real data is used instead of mock
   const [list, setList] = useState(null);
 
@@ -173,12 +177,18 @@ export function ListsPage() {
 
   function save() {
     if (list?.status === LIST_STATUSES.ARCHIVED) return;
-    setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
-  }
+    setList((current) => {
+      if (!current) return current;
 
-  function archiveList() {
-    if (list?.status === LIST_STATUSES.ARCHIVED) return;
-    setList((current) => ({ ...current, status: LIST_STATUSES.ARCHIVED }));
+      const savedList = {
+        ...current,
+        status: LIST_STATUSES.SAVED,
+        savedAt: new Date().toISOString(),
+      };
+      window.localStorage.setItem(SAVED_SHOPPING_LIST_STORAGE_KEY, JSON.stringify(savedList));
+      return savedList;
+    });
+    navigate("/lists/saved");
   }
 
   function callStockMethod(methodName, item) {
@@ -306,9 +316,11 @@ export function ListsPage() {
             Shopping <em>Lists</em>
           </h1>
 
-          <button type="button" className="btn-primary" onClick={generate}>
-            + Generate shopping list
-          </button>
+          <div className="lists-header-actions">
+            <button type="button" className="btn-primary" onClick={generate}>
+              + Generate shopping list
+            </button>
+          </div>
         </div>
 
         <p className="lists-subtitle">
@@ -482,11 +494,10 @@ export function ListsPage() {
                     </button>
                     <button
                       type="button"
-                      className="btn-primary lists-full-btn lists-archive-btn"
-                      onClick={archiveList}
-                      disabled={isArchived}
+                      className="btn-secondary lists-full-btn"
+                      onClick={() => navigate("/lists/saved")}
                     >
-                      {isArchived ? "Archived" : "Archive"}
+                      View saved list
                     </button>
                     <button
                       type="button"
