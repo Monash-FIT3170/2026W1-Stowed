@@ -61,3 +61,4 @@ export const LIST_STATUSES = {
 };
 
 export const SAVED_SHOPPING_LIST_STORAGE_KEY = "stowed:saved-shopping-list";
+export const ARCHIVED_SHOPPING_LIST_STORAGE_KEY = "stowed:archived-shopping-lists";

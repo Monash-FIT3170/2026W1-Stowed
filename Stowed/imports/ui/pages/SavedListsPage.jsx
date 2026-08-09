@@ -8,6 +8,7 @@ import {
   LIST_FREQUENCIES,
   LIST_FREQUENCY_LABELS,
   LIST_STATUSES,
+  ARCHIVED_SHOPPING_LIST_STORAGE_KEY,
   SAVED_SHOPPING_LIST_STORAGE_KEY,
 } from "/imports/api/shoppingLists/constants";
 import { Sites } from "/imports/api/locations/collections";
@@ -44,6 +45,16 @@ function readSavedList() {
   }
 }
 
+function readArchivedLists() {
+  try {
+    const stored = window.localStorage.getItem(ARCHIVED_SHOPPING_LIST_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error("Could not read archived shopping lists:", error);
+    return [];
+  }
+}
+
 export function SavedListsPage() {
   const navigate = useNavigate();
   const [savedList, setSavedList] = useState(() => readSavedList());
@@ -77,6 +88,7 @@ export function SavedListsPage() {
     filter === FILTERS.LOW_STOCK ? generated : filter === FILTERS.MANUAL ? manual : items;
   const isArchived = savedList?.status === LIST_STATUSES.ARCHIVED;
   const hasReceivedItems = items.some((item) => item.received);
+  const allItemsReceived = items.length > 0 && items.every((item) => item.received);
   const locationOptions = (sites.length > 0 ? sites : mockSites).map((site) => ({
     id: site._id,
     label: site.name,
@@ -144,7 +156,30 @@ export function SavedListsPage() {
   }
 
   function archiveList() {
-    updateSavedList({ status: LIST_STATUSES.ARCHIVED });
+    if (!savedList || isArchived) return;
+
+    if (!allItemsReceived) {
+      const shouldArchive = window.confirm(
+        "Not all items have been marked received. Archive this shopping list anyway?",
+      );
+      if (!shouldArchive) return;
+    }
+
+    const archivedList = {
+      ...savedList,
+      status: LIST_STATUSES.ARCHIVED,
+      archivedAt: new Date().toISOString(),
+      archivedWithPendingItems: !allItemsReceived,
+    };
+    const archivedLists = readArchivedLists();
+
+    window.localStorage.setItem(
+      ARCHIVED_SHOPPING_LIST_STORAGE_KEY,
+      JSON.stringify([archivedList, ...archivedLists]),
+    );
+    window.localStorage.removeItem(SAVED_SHOPPING_LIST_STORAGE_KEY);
+    setSavedList(null);
+    navigate("/lists/archive");
   }
 
   function discardList() {
@@ -188,9 +223,14 @@ export function SavedListsPage() {
             </span>
             <h2 className="header-title">No saved shopping list</h2>
             <p className="section-empty">Save a draft shopping list to send it here.</p>
-            <Link to="/lists" className="btn-primary lists-link-button">
-              Create a list
-            </Link>
+            <div className="lists-empty-actions">
+              <Link to="/lists" className="btn-primary lists-link-button">
+                Create a list
+              </Link>
+              <Link to="/lists/archive" className="btn-secondary lists-link-button">
+                View archive
+              </Link>
+            </div>
           </div>
         ) : (
           <>
@@ -381,9 +421,20 @@ export function SavedListsPage() {
                       className="btn-primary lists-full-btn lists-archive-btn"
                       onClick={archiveList}
                       disabled={isArchived}
+                      title={
+                        allItemsReceived
+                          ? "Archive this shopping list"
+                          : "Archives with a warning if not all items have arrived"
+                      }
                     >
                       {isArchived ? "Archived" : "Archive"}
                     </button>
+                    {!allItemsReceived && (
+                      <p className="lists-warning-note">
+                        {items.length - receivedCount} item
+                        {items.length - receivedCount === 1 ? "" : "s"} not received yet.
+                      </p>
+                    )}
                     <button
                       type="button"
                       className="btn-secondary lists-full-btn"

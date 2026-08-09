@@ -57,6 +57,13 @@
   margin-bottom: 20px;
 }
 
+.lists-empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* -- Stat tiles -- */
 
 .lists-stats {
@@ -360,6 +367,22 @@ input.lists-qty-input:disabled {
   font-size: 11px;
   font-style: italic;
   color: var(--text-muted);
+}
+
+.lists-warning-note {
+  margin: 12px 0 0 0;
+  padding: 10px 12px;
+  border: 1px solid #ead3a8;
+  border-radius: 10px;
+  background: #fff4dc;
+  color: #8a6a34;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.lists-table + .lists-warning-note,
+.lists-warning-note + .lists-table {
+  margin-top: 14px;
 }
 
 .lists-full-btn {
