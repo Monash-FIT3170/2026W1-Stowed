@@ -21,4 +21,14 @@ Meteor.methods({
       name: name.trim(),
     });
   },
+
+  async "productCategories.rename"({ categoryId, name }) {
+    check(categoryId, String);
+    check(name, String);
+    await assertOrgAccess(ProductCategories, categoryId, this.userId);
+    await requirePermission(this.userId, "productCategories.manage");
+    await ProductCategories.updateAsync(categoryId, {
+      $set: { name: name.trim() },
+    });
+  },
 });

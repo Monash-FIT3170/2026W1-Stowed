@@ -123,6 +123,18 @@ export function CreateProductPage() {
     }
   }
 
+  async function confirmRename(id) {
+    if (!editingName.trim()) return;
+    try {
+      await callMethod("productCategories.rename", { categoryId: id, name: editingName.trim() });
+      setEditingId(null);
+      setEditingName("");
+      setCategoryError("");
+    } catch (err) {
+      setCategoryError(err.reason || err.message || "Failed to rename category.");
+    }
+  }
+
   function startRename(id, currentName) {
     setEditingId(id);
     setEditingName(currentName);
@@ -545,13 +557,38 @@ export function CreateProductPage() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    padding: "10px 12px",
+                    gap: "8px",
+                    padding: "6px 12px",
                     borderRadius: "8px",
                     background: "var(--card-bg-subtle, #f5efe6)",
-                    fontSize: "14px",
                   }}
                 >
-                  {cat.name}
+                  {editingId === cat._id ? (
+                    <input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="form-input"
+                      style={{ flex: 1 }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span style={{ flex: 1, fontSize: "14px" }}>{cat.name}</span>
+                  )}
+
+                  {editingId === cat._id ? (
+                    <>
+                      <button className="btn-secondary" onClick={() => confirmRename(cat._id)}>
+                        Save
+                      </button>
+                      <button className="btn-secondary" onClick={() => setEditingId(null)}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button className="btn-secondary" onClick={() => startRename(cat._id, cat.name)}>
+                      Rename
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -584,6 +621,7 @@ export function CreateProductPage() {
                 className="btn-secondary"
                 onClick={() => {
                   setShowCategoryModal(false);
+                  setEditingId(null);
                   setCategoryError("");
                 }}
               >
