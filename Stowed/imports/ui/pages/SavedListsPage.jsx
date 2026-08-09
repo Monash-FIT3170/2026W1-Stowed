@@ -182,12 +182,6 @@ export function SavedListsPage() {
     navigate("/lists/archive");
   }
 
-  function discardList() {
-    window.localStorage.removeItem(SAVED_SHOPPING_LIST_STORAGE_KEY);
-    setSavedList(null);
-    navigate("/lists");
-  }
-
   return (
     <div className="product-detail-container">
       <div className="product-detail-header lists-header">
@@ -413,9 +407,6 @@ export function SavedListsPage() {
                     <button type="button" className="btn-print" disabled>
                       Save list
                     </button>
-                    <button type="button" className="btn-secondary lists-full-btn" disabled>
-                      View saved list
-                    </button>
                     <button
                       type="button"
                       className="btn-primary lists-full-btn lists-archive-btn"
@@ -435,16 +426,6 @@ export function SavedListsPage() {
                         {items.length - receivedCount === 1 ? "" : "s"} not received yet.
                       </p>
                     )}
-                    <button
-                      type="button"
-                      className="btn-secondary lists-full-btn"
-                      onClick={() => navigate("/lists")}
-                    >
-                      Regenerate
-                    </button>
-                    <button type="button" className="btn-danger lists-full-btn" onClick={discardList}>
-                      Discard list
-                    </button>
                   </div>
                 </div>
 
