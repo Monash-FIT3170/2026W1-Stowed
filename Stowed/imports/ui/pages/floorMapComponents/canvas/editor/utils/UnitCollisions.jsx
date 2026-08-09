@@ -1,7 +1,16 @@
 import { getBoundingBox } from "../../../../../../api/locations/shapeUtils";
 
 // File to check for collisions between different objects on the floor map designer page
-export { isRectRectIntersecting, calcDistance, isRangeIntersecting, isCircleCircleIntersecting, narrowPhaseTest };
+export { 
+  isRectRectIntersecting, 
+  calcDistance, 
+  isRangeIntersecting, 
+  isCircleCircleIntersecting, 
+  narrowPhaseTest,
+  getEdgeVector,
+  dotProd,
+  normaliseVector, 
+  broadPhaseTest };
 
 /**
  * A boolean check if two intervals overlap
@@ -13,6 +22,7 @@ export { isRectRectIntersecting, calcDistance, isRangeIntersecting, isCircleCirc
  */
 const isRangeIntersecting = (intervalA, intervalB) =>
   !(intervalA.upper <= intervalB.lower || intervalB.upper <= intervalA.lower);
+
 
 /**
  * A boolean check to see if two rectangles (in the same plane/orientation) overlap
@@ -76,8 +86,6 @@ const getAxes = (points) =>
 ;
 
 
-
-
 /**
  * Projects shape's points onto given axis, finds the parts
  * of the axis it overlaps with
@@ -88,37 +96,26 @@ const getAxes = (points) =>
  */
 const projectOntoAxis = (points, axis) => {
 
-    let min = dotProd(points[0], axis);
-    let max = min;
+    let lower = dotProd(points[0], axis);
+    let upper = lower;
 
     for (let i = 1; i < points.length; i++) {
 
         const projection = dotProd(points[i], axis);
 
-        if (projection < min) {
-            min = projection;
+        if (projection < lower) {
+            lower = projection;
         }
 
-        if (projection > max) {
-            max = projection;
+        if (projection > upper) {
+            upper = projection;
         }
     }
 
     return {
-        min,
-        max
+        lower: lower,
+        upper: upper
     };
-}
-
-/**
- * Checks if an overlap exists between two projections
- * 
- * @param {*} projection1 
- * @param {*} projection2 
- * @returns if an overlap has occurred
- */
-const overlap = (projection1, projection2) => {
-    return !(projection1.max < projection2.min || projection2.max < projection1.min);
 }
 
 
@@ -170,7 +167,7 @@ const narrowPhaseTest = (newPoints, units) => {
             const projection1 = projectOntoAxis(newPoints, axis);
             const projection2 = projectOntoAxis(existingPoints, axis);
 
-            return overlap(projection1, projection2);
+            return isRangeIntersecting(projection1, projection2);
         })
     })
 }
