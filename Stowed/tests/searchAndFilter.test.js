@@ -164,7 +164,7 @@ describe("filter chips", function () {
         filters,
         activeFilter: "all",
         onFilterChange: () => {},
-      })
+      }),
     );
     const buttonCount = (html.match(/<button/g) || []).length;
     assert.strictEqual(buttonCount, filters.length);
@@ -176,7 +176,7 @@ describe("filter chips", function () {
         filters,
         activeFilter: "all",
         onFilterChange: () => {},
-      })
+      }),
     );
     filters.forEach((f) => {
       assert.ok(html.includes(f.label));
@@ -189,7 +189,7 @@ describe("filter chips", function () {
         filters,
         activeFilter: "all",
         onFilterChange: () => {},
-      })
+      }),
     );
     assert.ok(html.includes(">8<"));
     assert.ok(html.includes(">3<"));
@@ -201,7 +201,7 @@ describe("filter chips", function () {
         filters: [{ id: "tag", label: "Tag" }],
         activeFilter: "tag",
         onFilterChange: () => {},
-      })
+      }),
     );
     assert.ok(!html.includes("opacity:0.7"));
   });

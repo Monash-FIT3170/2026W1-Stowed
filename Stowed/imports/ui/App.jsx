@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { InventoryPage } from "./pages/InventoryPage";
@@ -10,7 +10,6 @@ import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
-import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
@@ -25,7 +24,7 @@ const LocationsPage = lazy(() =>
 );
 
 export function App() {
-  const { user, loggingIn } = useTracker(() => {
+  const { user } = useTracker(() => {
     return {
       user: Meteor.user(),
       loggingIn: Meteor.loggingIn(),
@@ -61,10 +60,7 @@ export function App() {
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />
-            <Route
-              path="/login"
-              element={isLoggedIn ? <Navigate to="/" replace /> : <Login />}
-            />
+            <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <Login />} />
             <Route
               path="/"
               element={
@@ -81,33 +77,15 @@ export function App() {
             />
             <Route
               path="/inventory/new"
-              element={
-                canAccessInventory ? (
-                  <CreateProductPage />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
+              element={canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace />}
             />
             <Route
               path="/inventory/:productId/edit"
-              element={
-                canAccessInventory ? (
-                  <EditProductPage />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
+              element={canAccessInventory ? <EditProductPage /> : <Navigate to="/" replace />}
             />
             <Route
               path="/inventory/:productId"
-              element={
-                canAccessInventory ? (
-                  <ProductDetailPage />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
+              element={canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace />}
             />
             <Route path="/inventory/list" element={<InventoryListPage />} />
             <Route

@@ -1,11 +1,11 @@
-import { Meteor } from 'meteor/meteor';
+import { Meteor } from "meteor/meteor";
 
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from './locations/collections';
-import { Products, ProductRecords } from './products/collections';
-import { getCallerOrgId } from './userMethods';
-import { Organisations } from '/imports/api/organisations';
+import { Sites, FloorMaps, MapShapes, StorageUnits, StorageLocations } from "./locations/collections";
+import { Products, ProductRecords } from "./products/collections";
+import { getCallerOrgId } from "./userMethods";
+import { Organisations } from "/imports/api/organisations";
 
-Meteor.publish('locations.all', async function () {
+Meteor.publish("locations.all", async function () {
   if (!this.userId) return this.ready();
   const orgId = await getCallerOrgId(this.userId);
   if (!orgId) return this.ready();
@@ -18,7 +18,7 @@ Meteor.publish('locations.all', async function () {
   ];
 });
 
-Meteor.publish('products', async function () {
+Meteor.publish("products", async function () {
   if (!this.userId) return this.ready();
   const orgId = await getCallerOrgId(this.userId);
   if (!orgId) return this.ready();
@@ -26,22 +26,23 @@ Meteor.publish('products', async function () {
   return Products.find({ orgId });
 });
 
-Meteor.publish('productRecords', async function () {
+Meteor.publish("productRecords", async function () {
   if (!this.userId) return this.ready();
   const orgId = await getCallerOrgId(this.userId);
   if (!orgId) return this.ready();
 
-  const productIds = (await Products.find({ orgId }, { fields: { _id: 1 } }).fetchAsync()).map(p => p._id);
+  const productIds = (await Products.find({ orgId }, { fields: { _id: 1 } }).fetchAsync()).map(
+    (p) => p._id,
+  );
 
   return ProductRecords.find({ productId: { $in: productIds } });
 });
 
-Meteor.publish('currentOrganisation', async function () {
+Meteor.publish("currentOrganisation", async function () {
   if (!this.userId) return this.ready();
-  const user = await Meteor.users.findOneAsync(
-    this.userId,
-    { fields: { 'profile.organisationId': 1 } }
-  );
+  const user = await Meteor.users.findOneAsync(this.userId, {
+    fields: { "profile.organisationId": 1 },
+  });
   if (!user || !user.profile.organisationId) return this.ready();
   return Organisations.find(user.profile.organisationId);
 });

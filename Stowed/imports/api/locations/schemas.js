@@ -104,33 +104,27 @@ export const UnitShapeSchema = new SimpleSchema({
     type: String,
     max: 100
   },
-  width: {
-    type: Number,
-    min: 0  // in practice, should be >0
+  
+  points: {  // *local, stored counter clock wise
+    type: Array,
+    minCount: 3,
   },
-  height: {
-    type: Number,
-    min: 0  // in practice, should be >0
-  },
-  points: Array,
   "points.$": Object,
   "points.$.x": {
     type: Number,
-    min: 0
   },
   "points.$.y": {
     type: Number,
-    min: 0
   },
   gridReference: Object,
   "gridReference.x": {
     type: Number,
-    min: 0
+    defaultValue: 0
   },
   "gridReference.y": {
     type: Number,
-    min: 0
-  }
+    defaultValue: 0,
+  },
 });
 
 /**
@@ -153,44 +147,31 @@ export const StorageUnitSchema = new SimpleSchema({
 
   type: {
     type: String,
-    allowedValues: [
-      "shelf",
-      "cabinet",
-      "rack",
-      "drawer",
-      "fridge",
-      "other",
-      "custom",
-    ],
+    allowedValues: ["shelf", "cabinet", "rack", "drawer", "fridge", "other", "custom"],
   },
 
-  shape: { // reference to display shape
+  shape: { 
     type: UnitShapeSchema,
     required: true
   },
 
-  position: {
-    type: Object,
+  offset: Object,
+  "offset.x": Number,
+  "offset.y": Number,
+  
+  rotation: { 
+    type: Number, 
+    defaultValue: 0, // radians
   },
-
-  "position.x": {
+  
+  scale: Object,
+  "scale.x": {
     type: Number,
-    min: 0,
+    defaultValue: 1,
   },
-
-  "position.y": {
-    type: Number,
-    min: 0,
-  },
-
-  "position.width": {
-    type: Number,
-    min: 1,
-  },
-
-  "position.height": {
-    type: Number,
-    min: 1,
+  "scale.y": {
+    type: Number, 
+    defaultValue: 1,
   },
 
   fill: {

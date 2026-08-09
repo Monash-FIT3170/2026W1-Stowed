@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 export function ProductThumbnail({ photoUrl, name, images }) {
   const [imgError, setImgError] = useState(false);

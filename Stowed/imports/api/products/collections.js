@@ -1,6 +1,6 @@
-import { Mongo } from 'meteor/mongo';
-import 'meteor/aldeed:collection2/static';
-import { ProductSchema, ProductRecordSchema } from './schemas';
+import { Mongo } from "meteor/mongo";
+import "meteor/aldeed:collection2/static";
+import { ProductSchema, ProductRecordSchema } from "./schemas";
 
 /**
  * A Product represents a type of inventory item tracked in the system.
@@ -8,7 +8,7 @@ import { ProductSchema, ProductRecordSchema } from './schemas';
  *
  * The breakdown of stock per location is stored separately in ProductRecords.
  */
-export const Products = new Mongo.Collection('products');
+export const Products = new Mongo.Collection("products");
 
 /**
  * A ProductRecord represents the quantity of a specific Product stored at a
@@ -18,7 +18,7 @@ export const Products = new Mongo.Collection('products');
  * The sum of all ProductRecord quantities for a product should equal
  * the Product's totalQuantity.
  */
-export const ProductRecords = new Mongo.Collection('productRecords');
+export const ProductRecords = new Mongo.Collection("productRecords");
 
 ProductRecords.attachSchema(ProductRecordSchema);
 Products.attachSchema(ProductSchema);
