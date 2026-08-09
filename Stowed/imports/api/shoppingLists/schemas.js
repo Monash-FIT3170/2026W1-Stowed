@@ -15,6 +15,43 @@ export const ShoppingListProductSchema = new SimpleSchema({
     type: String,
   },
 
+  // Snapshot of the product's display info at the time it was added to the
+  // list, so the list still renders correctly without re-joining against
+  // live product data.
+  productName: {
+    type: String,
+  },
+
+  sku: {
+    type: String,
+    optional: true,
+  },
+
+  category: {
+    type: String,
+    optional: true,
+  },
+
+  inStock: {
+    type: SimpleSchema.Integer,
+    defaultValue: 0,
+  },
+
+  reorderAt: {
+    type: SimpleSchema.Integer,
+    defaultValue: 0,
+  },
+
+  lowStockThreshold: {
+    type: SimpleSchema.Integer,
+    defaultValue: 0,
+  },
+
+  unitCost: {
+    type: Number,
+    defaultValue: 0,
+  },
+
   quantityWanted: {
     type: SimpleSchema.Integer,
     min: 0,
@@ -51,6 +88,10 @@ export const ShoppingListSchema = new SimpleSchema({
     type: String,
   },
 
+  name: {
+    type: String,
+  },
+
   mode: {
     type: String,
     allowedValues: Object.values(SHOPPING_LIST_MODES),
@@ -81,6 +122,11 @@ export const ShoppingListSchema = new SimpleSchema({
     type: String,
     allowedValues: Object.values(LIST_STATUSES),
     defaultValue: LIST_STATUSES.DRAFT,
+  },
+
+  siteId: {
+    type: String,
+    optional: true,
   },
 
   items: {

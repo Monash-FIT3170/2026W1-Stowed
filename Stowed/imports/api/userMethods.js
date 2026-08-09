@@ -41,6 +41,9 @@ const PERMISSIONS = {
 
   // Shopping Lists
   "shoppingLists.create": ROLES.STANDARD,
+  "shoppingLists.update": ROLES.STANDARD,
+  "shoppingLists.rename": ROLES.STANDARD,
+  "shoppingLists.delete": ROLES.STANDARD,
 };
 
 // returns the role of the user
