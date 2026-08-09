@@ -16,6 +16,74 @@
   padding: 20px 28px 48px 28px;
 }
 
+/* -- Editable list name -- */
+
+.lists-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.lists-name-edit .form-input {
+  max-width: 360px;
+}
+
+.lists-name-edit-btn {
+  margin-left: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  vertical-align: middle;
+  opacity: 0.6;
+}
+
+.lists-name-edit-btn:hover {
+  opacity: 1;
+}
+
+/* -- Overview table (all active lists) -- */
+
+.lists-overview-header,
+.lists-overview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 1fr 0.6fr 1fr 0.8fr 0.8fr;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+}
+
+.lists-overview-header {
+  border-bottom: 1px dashed var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lists-overview-row {
+  border-bottom: 1px dotted var(--border-subtle);
+  font-size: 13px;
+  color: var(--text-dark);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+
+.lists-overview-row:last-child {
+  border-bottom: none;
+}
+
+.lists-overview-row:hover {
+  background: var(--tag-bg);
+}
+
+.lists-overview-site {
+  color: var(--text-muted);
+}
+
 /* -- Empty state -- */
 
 .lists-empty-card {

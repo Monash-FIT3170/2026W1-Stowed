@@ -1,11 +1,18 @@
 import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
 import { ShoppingLists } from "./collections";
-import { getCallerOrgId, requirePermission } from "../userMethods";
+import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 import { SHOPPING_LIST_MODES, LIST_STATUSES } from "./constants";
 
 const itemPattern = {
   productId: String,
+  productName: String,
+  sku: Match.Maybe(String),
+  category: Match.Maybe(String),
+  inStock: Match.Integer,
+  reorderAt: Match.Integer,
+  lowStockThreshold: Match.Integer,
+  unitCost: Number,
   quantityWanted: Match.Integer,
   addMode: String,
   purchased: Boolean,
@@ -13,10 +20,14 @@ const itemPattern = {
 };
 
 Meteor.methods({
-  async "shoppingLists.create"({ mode, frequency, items = [] }) {
+  async "shoppingLists.create"({ name, mode, frequency, items = [] }) {
+    check(name, String);
     check(mode, String);
     check(frequency, Match.Maybe(String));
     check(items, [itemPattern]);
+
+    const trimmedName = name.trim();
+    if (!trimmedName) throw new Meteor.Error("invalid-name", "List name cannot be empty.");
 
     const orgId = await getCallerOrgId(this.userId);
 
@@ -27,12 +38,59 @@ Meteor.methods({
     return await ShoppingLists.insertAsync({
       orgId,
       createdBy: this.userId,
+      name: trimmedName,
       mode,
       ...(mode === SHOPPING_LIST_MODES.AUTOMATED ? { frequency } : {}),
-      status: LIST_STATUSES.SAVED,
       items,
       createdAt: now,
       updatedAt: now,
     });
+  },
+
+  async "shoppingLists.rename"({ listId, name }) {
+    check(listId, String);
+    check(name, String);
+
+    const trimmedName = name.trim();
+    if (!trimmedName) throw new Meteor.Error("invalid-name", "List name cannot be empty.");
+
+    await assertOrgAccess(ShoppingLists, listId, this.userId);
+    await requirePermission(this.userId, "shoppingLists.rename");
+
+    await ShoppingLists.updateAsync(listId, {
+      $set: { name: trimmedName, updatedAt: new Date() },
+    });
+  },
+
+  async "shoppingLists.update"({ listId, items, siteId, status, frequency }) {
+    check(listId, String);
+    check(items, Match.Maybe([itemPattern]));
+    check(siteId, Match.Maybe(String));
+    check(status, Match.Maybe(String));
+    check(frequency, Match.Maybe(String));
+
+    if (status !== undefined && !Object.values(LIST_STATUSES).includes(status)) {
+      throw new Meteor.Error("invalid-status", "Unknown list status.");
+    }
+
+    await assertOrgAccess(ShoppingLists, listId, this.userId);
+    await requirePermission(this.userId, "shoppingLists.update");
+
+    const set = { updatedAt: new Date() };
+    if (items !== undefined) set.items = items;
+    if (siteId !== undefined) set.siteId = siteId;
+    if (status !== undefined) set.status = status;
+    if (frequency !== undefined) set.frequency = frequency;
+
+    await ShoppingLists.updateAsync(listId, { $set: set });
+  },
+
+  async "shoppingLists.delete"({ listId }) {
+    check(listId, String);
+
+    await assertOrgAccess(ShoppingLists, listId, this.userId);
+    await requirePermission(this.userId, "shoppingLists.delete");
+
+    await ShoppingLists.removeAsync(listId);
   },
 });
