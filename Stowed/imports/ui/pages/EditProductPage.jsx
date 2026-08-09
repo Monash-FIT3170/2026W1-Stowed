@@ -5,6 +5,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections"
 import {
   Sites,
   FloorMaps,
@@ -45,7 +46,7 @@ export function EditProductPage() {
 
   const [name, setName] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [purchaseCost, setPurchaseCost] = useState("");
@@ -62,16 +63,19 @@ export function EditProductPage() {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const { loading, product, originalRecords, sites, floorMaps, storageUnits, storageLocations } =
+  const { loading, product, originalRecords, categories, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
       const subProducts = Meteor.subscribe("products");
       const subRecords = Meteor.subscribe("productRecords");
+      const subCategories = Meteor.subscribe("productCategories");
       const subLocations = Meteor.subscribe("locations.all");
-      const loading = !subProducts.ready() || !subRecords.ready() || !subLocations.ready();
+      const loading =
+        !subProducts.ready() || !subRecords.ready() || !subCategories.ready() || !subLocations.ready();
       return {
         loading,
         product: Products.findOne(productId),
         originalRecords: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
+        categories: ProductCategories.find().fetch(),
         sites: Sites.find().fetch(),
         floorMaps: FloorMaps.find().fetch(),
         storageUnits: StorageUnits.find().fetch(),
@@ -82,7 +86,7 @@ export function EditProductPage() {
   useEffect(() => {
     if (!loading && product && !initialised) {
       setName(product.name ?? "");
-      setCategory(product.category ?? "");
+      setCategoryId(product.categoryId ?? "");
       setBrand(product.brand ?? "");
       setTotalQuantity(String(product.totalQuantity ?? ""));
       setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
@@ -115,8 +119,8 @@ export function EditProductPage() {
     const result = {};
 
     if (name.trim() !== product.name) result.name = { from: product.name, to: name.trim() };
-    if (category !== (product.category || ""))
-      result.category = { from: product.category || "", to: category };
+    if (categoryId !== (product.categoryId || ""))
+      result.categoryId = { from: product.categoryId || "", to: categoryId };
     if (brand !== (product.brand || "")) result.brand = { from: product.brand || "", to: brand };
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
@@ -161,7 +165,7 @@ export function EditProductPage() {
     initialised,
     product,
     name,
-    category,
+    categoryId,
     brand,
     parsedTotal,
     unitCost,
@@ -231,7 +235,7 @@ export function EditProductPage() {
       await callMethod("products.update", {
         productId,
         name: name.trim(),
-        category,
+        categoryId,
         brand,
         totalQuantity: parsedTotal,
         unitCost: unitCost !== "" ? parseFloat(unitCost) : 0,
@@ -295,12 +299,18 @@ export function EditProductPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Category</label>
-                  <input
-                    type="text"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
                     className="form-input"
-                  />
+                  >
+                    <option value="">Select a category...</option>
+                    {categories.map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Brand</label>
@@ -592,19 +602,14 @@ export function EditProductPage() {
                   </div>
                 </div>
               )}
-              {changes.category && (
+              {changes.categoryId && (
                 <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      color: "var(--text-dark)",
-                      marginBottom: "2px",
-                    }}
-                  >
+                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>
                     Category
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {changes.category.from} → {changes.category.to}
+                    {categories.find((c) => c._id === changes.categoryId.from)?.name || "None"} →{" "}
+                    {categories.find((c) => c._id === changes.categoryId.to)?.name || "None"}
                   </div>
                 </div>
               )}
