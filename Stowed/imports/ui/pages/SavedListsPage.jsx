@@ -11,8 +11,18 @@ import {
   ARCHIVED_SHOPPING_LIST_STORAGE_KEY,
   SAVED_SHOPPING_LIST_STORAGE_KEY,
 } from "/imports/api/shoppingLists/constants";
-import { Sites } from "/imports/api/locations/collections";
-import { mockSites } from "/imports/api/mockLocations";
+import {
+  FloorMaps,
+  Sites,
+  StorageLocations,
+  StorageUnits,
+} from "/imports/api/locations/collections";
+import {
+  mockFloorMaps,
+  mockSites,
+  mockStorageLocations,
+  mockStorageUnits,
+} from "/imports/api/mockLocations";
 
 import "./ListsPage.css";
 
@@ -55,14 +65,30 @@ function readArchivedLists() {
   }
 }
 
+function buildLocationLabel(location, storageUnits, floorMaps, sites) {
+  const unit = storageUnits.find((item) => item._id === location.storageUnitId);
+  const floorMap = unit ? floorMaps.find((item) => item._id === unit.floorMapId) : null;
+  const site = floorMap ? sites.find((item) => item._id === floorMap.siteId) : null;
+  return [site?.name, floorMap?.name, unit?.name, location.name, location.code]
+    .filter(Boolean)
+    .join(" / ");
+}
+
 export function SavedListsPage() {
   const navigate = useNavigate();
   const [savedList, setSavedList] = useState(() => readSavedList());
   const [filter, setFilter] = useState(FILTERS.ALL);
+  const [allocationLocationByProductId, setAllocationLocationByProductId] = useState({});
+  const [allocationError, setAllocationError] = useState("");
 
-  const sites = useTracker(() => {
+  const { sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
     Meteor.subscribe("locations.all");
-    return Sites.find().fetch();
+    return {
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+    };
   }, []);
 
   useEffect(() => {
@@ -89,9 +115,19 @@ export function SavedListsPage() {
   const isArchived = savedList?.status === LIST_STATUSES.ARCHIVED;
   const hasReceivedItems = items.some((item) => item.received);
   const allItemsReceived = items.length > 0 && items.every((item) => item.received);
+  const pendingAllocationItems = items.filter((item) => item.received && !item.allocatedLocationId);
   const locationOptions = (sites.length > 0 ? sites : mockSites).map((site) => ({
     id: site._id,
     label: site.name,
+  }));
+  const safeSites = sites.length > 0 ? sites : mockSites;
+  const safeFloorMaps = floorMaps.length > 0 ? floorMaps : mockFloorMaps;
+  const safeStorageUnits = storageUnits.length > 0 ? storageUnits : mockStorageUnits;
+  const safeStorageLocations =
+    storageLocations.length > 0 ? storageLocations : mockStorageLocations;
+  const storageLocationOptions = safeStorageLocations.map((location) => ({
+    id: location._id,
+    label: buildLocationLabel(location, safeStorageUnits, safeFloorMaps, safeSites),
   }));
   const frequency = savedList?.frequency ?? LIST_FREQUENCIES.WEEKLY;
 
@@ -182,6 +218,47 @@ export function SavedListsPage() {
     navigate("/lists/archive");
   }
 
+  function allocateReceivedItem(item) {
+    const storageLocationId = allocationLocationByProductId[item.productId];
+    if (!storageLocationId || !savedList?.siteId) {
+      setAllocationError("Choose a storage location before assigning received stock.");
+      return;
+    }
+
+    const location = storageLocationOptions.find((option) => option.id === storageLocationId);
+    const updates = {
+      allocatedLocationId: storageLocationId,
+      allocatedLocationName: location?.label ?? storageLocationId,
+      allocatedAt: new Date().toISOString(),
+    };
+
+    Meteor.call(
+      "products.allocateReceivedStock",
+      {
+        productId: item.productId,
+        siteId: savedList.siteId,
+        storageLocationId,
+        quantity: item.quantityWanted,
+      },
+      (error) => {
+        if (error) {
+          console.error("products.allocateReceivedStock failed:", error);
+          setAllocationError(
+            "Saved locally for the prototype, but the stock move could not be written to inventory.",
+          );
+        } else {
+          setAllocationError("");
+        }
+      },
+    );
+
+    updateSavedItem(item.productId, updates);
+    setAllocationLocationByProductId((current) => ({
+      ...current,
+      [item.productId]: "",
+    }));
+  }
+
   return (
     <div className="product-detail-container">
       <div className="product-detail-header lists-header">
@@ -244,159 +321,236 @@ export function SavedListsPage() {
             </div>
 
             <div className="lists-layout">
-              <div className="detail-section lists-card saved-list-card">
-                <div className="section-title">
-                  <span>Shopping list</span>
-                  <span className={isArchived ? "section-badge im" : "section-badge id"}>
-                    {isArchived ? "Archived" : "Saved"}
-                  </span>
-                  <span className="lists-progress">
-                    {purchasedCount} purchased &middot; {receivedCount} received
-                  </span>
-                </div>
-
-                <div className="section-content">
-                  <div className="lists-toolbar">
-                    <div className="lists-filters">
-                      {[
-                        {
-                          key: FILTERS.LOW_STOCK,
-                          label: "Low stock",
-                          count: generated.length,
-                        },
-                        {
-                          key: FILTERS.ALL,
-                          label: "All",
-                          count: items.length,
-                        },
-                        {
-                          key: FILTERS.MANUAL,
-                          label: "Added manually",
-                          count: manual.length,
-                        },
-                      ].map(({ key, label, count }) => (
-                        <button
-                          key={key}
-                          type="button"
-                          className={
-                            filter === key
-                              ? "btn-secondary lists-filter is-active"
-                              : "btn-secondary lists-filter"
-                          }
-                          onClick={() => setFilter(key)}
-                        >
-                          {label}
-                          <span className="lists-filter-count">{count}</span>
-                        </button>
-                      ))}
-                    </div>
+              <div className="lists-main-column">
+                <div className="detail-section lists-card saved-list-card">
+                  <div className="section-title">
+                    <span>Shopping list</span>
+                    <span className={isArchived ? "section-badge im" : "section-badge id"}>
+                      {isArchived ? "Archived" : "Saved"}
+                    </span>
+                    <span className="lists-progress">
+                      {purchasedCount} purchased &middot; {receivedCount} received
+                    </span>
                   </div>
 
-                  {visibleItems.length === 0 ? (
-                    <p className="section-empty lists-no-match">Nothing on this filter.</p>
-                  ) : (
-                    <table className="lists-table">
-                      <thead>
-                        <tr>
-                          <th>Product</th>
-                          <th className="lists-col-num">In stock</th>
-                          <th className="lists-col-num">Reorder at</th>
-                          <th className="lists-col-num">Qty</th>
-                          <th className="lists-col-check">Purchased</th>
-                          <th className="lists-col-check">Received</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(filter === FILTERS.ALL ? generated : visibleItems).map((item) => (
-                          <tr
-                            key={item.productId}
-                            className={item.purchased ? "lists-row-purchased" : undefined}
+                  <div className="section-content">
+                    <div className="lists-toolbar">
+                      <div className="lists-filters">
+                        {[
+                          {
+                            key: FILTERS.LOW_STOCK,
+                            label: "Low stock",
+                            count: generated.length,
+                          },
+                          {
+                            key: FILTERS.ALL,
+                            label: "All",
+                            count: items.length,
+                          },
+                          {
+                            key: FILTERS.MANUAL,
+                            label: "Added manually",
+                            count: manual.length,
+                          },
+                        ].map(({ key, label, count }) => (
+                          <button
+                            key={key}
+                            type="button"
+                            className={
+                              filter === key
+                                ? "btn-secondary lists-filter is-active"
+                                : "btn-secondary lists-filter"
+                            }
+                            onClick={() => setFilter(key)}
                           >
-                            <td>
-                              <span className="lists-product-name">{item.productName}</span>
-                              <span className="lists-product-meta">
-                                {item.sku} &middot; {item.category}
-                              </span>
-                            </td>
-                            <td className="lists-col-num">{item.inStock}</td>
-                            <td className="lists-col-num">{item.reorderAt}</td>
-                            <td className="lists-col-num">
-                              <span className="form-tag lists-saved-qty">
-                                {item.quantityWanted}
-                              </span>
-                            </td>
-                            <td className="lists-col-check">
-                              <input
-                                type="checkbox"
-                                checked={item.purchased}
-                                onChange={() => togglePurchased(item)}
-                                disabled={isArchived}
-                                aria-label={`Mark ${item.productName} as purchased`}
-                              />
-                            </td>
-                            <td className="lists-col-check">
-                              <input
-                                type="checkbox"
-                                checked={item.received}
-                                onChange={() => toggleReceived(item)}
-                                disabled={isArchived || !item.purchased || !savedList.siteId}
-                                aria-label={`Mark ${item.productName} as received`}
-                              />
-                            </td>
-                          </tr>
+                            {label}
+                            <span className="lists-filter-count">{count}</span>
+                          </button>
                         ))}
-                        {filter === FILTERS.ALL && manual.length > 0 && (
-                          <tr className="lists-divider">
-                            <td colSpan={6}>Added manually</td>
-                          </tr>
-                        )}
-                        {filter === FILTERS.ALL && manual.map((item) => (
-                          <tr
-                            key={item.productId}
-                            className={item.purchased ? "lists-row-purchased" : undefined}
-                          >
-                            <td>
-                              <span className="lists-product-name">{item.productName}</span>
-                              <span className="lists-product-meta">
-                                {item.sku} &middot; {item.category}
-                              </span>
-                            </td>
-                            <td className="lists-col-num">{item.inStock}</td>
-                            <td className="lists-col-num">{item.reorderAt}</td>
-                            <td className="lists-col-num">
-                              <span className="form-tag lists-saved-qty">
-                                {item.quantityWanted}
-                              </span>
-                            </td>
-                            <td className="lists-col-check">
-                              <input
-                                type="checkbox"
-                                checked={item.purchased}
-                                onChange={() => togglePurchased(item)}
-                                disabled={isArchived}
-                                aria-label={`Mark ${item.productName} as purchased`}
-                              />
-                            </td>
-                            <td className="lists-col-check">
-                              <input
-                                type="checkbox"
-                                checked={item.received}
-                                onChange={() => toggleReceived(item)}
-                                disabled={isArchived || !item.purchased || !savedList.siteId}
-                                aria-label={`Mark ${item.productName} as received`}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+                      </div>
+                    </div>
 
-                  {!savedList.siteId && (
-                    <p className="lists-schedule-note">
-                      Choose a delivery location before receiving stock.
-                    </p>
-                  )}
+                    {visibleItems.length === 0 ? (
+                      <p className="section-empty lists-no-match">Nothing on this filter.</p>
+                    ) : (
+                      <table className="lists-table">
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th className="lists-col-num">In stock</th>
+                            <th className="lists-col-num">Reorder at</th>
+                            <th className="lists-col-num">Qty</th>
+                            <th className="lists-col-check">Purchased</th>
+                            <th className="lists-col-check">Received</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(filter === FILTERS.ALL ? generated : visibleItems).map((item) => (
+                            <tr
+                              key={item.productId}
+                              className={item.purchased ? "lists-row-purchased" : undefined}
+                            >
+                              <td>
+                                <span className="lists-product-name">{item.productName}</span>
+                                <span className="lists-product-meta">
+                                  {item.allocatedLocationName
+                                    ? `Allocated to ${item.allocatedLocationName}`
+                                    : `${item.sku} - ${item.category}`}
+                                </span>
+                              </td>
+                              <td className="lists-col-num">{item.inStock}</td>
+                              <td className="lists-col-num">{item.reorderAt}</td>
+                              <td className="lists-col-num">
+                                <span className="form-tag lists-saved-qty">
+                                  {item.quantityWanted}
+                                </span>
+                              </td>
+                              <td className="lists-col-check">
+                                <input
+                                  type="checkbox"
+                                  checked={item.purchased}
+                                  onChange={() => togglePurchased(item)}
+                                  disabled={isArchived || !!item.allocatedLocationId}
+                                  aria-label={`Mark ${item.productName} as purchased`}
+                                />
+                              </td>
+                              <td className="lists-col-check">
+                                <input
+                                  type="checkbox"
+                                  checked={item.received}
+                                  onChange={() => toggleReceived(item)}
+                                  disabled={
+                                    isArchived ||
+                                    !!item.allocatedLocationId ||
+                                    !item.purchased ||
+                                    !savedList.siteId
+                                  }
+                                  aria-label={`Mark ${item.productName} as received`}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                          {filter === FILTERS.ALL && manual.length > 0 && (
+                            <tr className="lists-divider">
+                              <td colSpan={6}>Added manually</td>
+                            </tr>
+                          )}
+                          {filter === FILTERS.ALL &&
+                            manual.map((item) => (
+                              <tr
+                                key={item.productId}
+                                className={item.purchased ? "lists-row-purchased" : undefined}
+                              >
+                                <td>
+                                  <span className="lists-product-name">{item.productName}</span>
+                                  <span className="lists-product-meta">
+                                    {item.allocatedLocationName
+                                      ? `Allocated to ${item.allocatedLocationName}`
+                                      : `${item.sku} - ${item.category}`}
+                                  </span>
+                                </td>
+                                <td className="lists-col-num">{item.inStock}</td>
+                                <td className="lists-col-num">{item.reorderAt}</td>
+                                <td className="lists-col-num">
+                                  <span className="form-tag lists-saved-qty">
+                                    {item.quantityWanted}
+                                  </span>
+                                </td>
+                                <td className="lists-col-check">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.purchased}
+                                    onChange={() => togglePurchased(item)}
+                                    disabled={isArchived || !!item.allocatedLocationId}
+                                    aria-label={`Mark ${item.productName} as purchased`}
+                                  />
+                                </td>
+                                <td className="lists-col-check">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.received}
+                                    onChange={() => toggleReceived(item)}
+                                    disabled={
+                                      isArchived ||
+                                      !!item.allocatedLocationId ||
+                                      !item.purchased ||
+                                      !savedList.siteId
+                                    }
+                                    aria-label={`Mark ${item.productName} as received`}
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {!savedList.siteId && (
+                      <p className="lists-schedule-note">
+                        Choose a delivery location before receiving stock.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="detail-section lists-card">
+                  <div className="section-title">
+                    <span>Pending allocation</span>
+                    <span className="section-badge op">
+                      {pendingAllocationItems.length} waiting
+                    </span>
+                  </div>
+
+                  <div className="section-content">
+                    {pendingAllocationItems.length === 0 ? (
+                      <p className="section-empty lists-no-match">
+                        No received stock waiting for a storage location.
+                      </p>
+                    ) : (
+                      <div className="lists-allocation-list">
+                        {pendingAllocationItems.map((item) => (
+                          <div className="lists-allocation-row" key={item.productId}>
+                            <div className="lists-allocation-product">
+                              <span className="lists-product-name">{item.productName}</span>
+                              <span className="lists-product-meta">
+                                {item.quantityWanted} received &middot; {item.sku}
+                              </span>
+                            </div>
+
+                            <select
+                              className="form-input selected lists-allocation-select"
+                              value={allocationLocationByProductId[item.productId] ?? ""}
+                              onChange={(event) =>
+                                setAllocationLocationByProductId((current) => ({
+                                  ...current,
+                                  [item.productId]: event.target.value,
+                                }))
+                              }
+                            >
+                              <option value="">Select storage location...</option>
+                              {storageLocationOptions.map((location) => (
+                                <option key={location.id} value={location.id}>
+                                  {location.label}
+                                </option>
+                              ))}
+                            </select>
+
+                            <button
+                              type="button"
+                              className="btn-primary lists-allocation-btn"
+                              onClick={() => allocateReceivedItem(item)}
+                            >
+                              Assign
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {allocationError && (
+                      <p className="lists-warning-note">{allocationError}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 

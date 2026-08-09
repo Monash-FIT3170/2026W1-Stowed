@@ -396,6 +396,66 @@ Meteor.methods({
   },
 
   /**
+   * Moves received shopping-list stock from the temporary site holding record
+   * into a concrete storage location.
+   */
+  async "products.allocateReceivedStock"({ productId, siteId, storageLocationId, quantity }) {
+    check(productId, String);
+    check(siteId, String);
+    check(storageLocationId, String);
+    check(quantity, Match.Integer);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await assertOrgAccess(Sites, siteId, this.userId);
+    await assertLocationOrgAccess(storageLocationId, this.userId);
+    await requirePermission(this.userId, "products.receiveStock");
+
+    if (quantity <= 0) {
+      throw new Meteor.Error("invalid-quantity", "Allocated quantity must be greater than zero.");
+    }
+
+    const holdingRecord = await ProductRecords.findOneAsync({ productId, locationId: siteId });
+    if (!holdingRecord || holdingRecord.quantity < quantity) {
+      throw new Meteor.Error(
+        "insufficient-received-stock",
+        "There is not enough received stock waiting at this site.",
+      );
+    }
+
+    const now = new Date();
+
+    if (holdingRecord.quantity === quantity) {
+      await ProductRecords.removeAsync(holdingRecord._id);
+    } else {
+      await ProductRecords.updateAsync(holdingRecord._id, {
+        $set: { quantity: holdingRecord.quantity - quantity, updatedAt: now },
+      });
+    }
+
+    const storageRecord = await ProductRecords.findOneAsync({
+      productId,
+      locationId: storageLocationId,
+    });
+    if (storageRecord) {
+      await ProductRecords.updateAsync(storageRecord._id, {
+        $set: { quantity: storageRecord.quantity + quantity, updatedAt: now },
+      });
+    } else {
+      await ProductRecords.insertAsync({
+        productId,
+        locationId: storageLocationId,
+        quantity,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  },
+
+  /**
    * Creates a new ProductRecord.
    */
   async "productRecords.create"({ productId, locationId, quantity }) {
