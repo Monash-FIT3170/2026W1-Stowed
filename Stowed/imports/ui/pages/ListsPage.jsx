@@ -14,8 +14,6 @@ import {
 
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
-import { mockProducts } from "/imports/api/mockProducts";
-import { mockSites } from "/imports/api/mockLocations";
 
 import "./ListsPage.css";
 
@@ -25,7 +23,6 @@ const FILTERS = {
   MANUAL: "manual",
 };
 
-// change when real data is used instead of mock
 function quantityFor(product, frequency) {
   const target = product.reorderAt ?? product.lowStockThreshold ?? 0;
   const stock = product.totalQuantity ?? product.quantity ?? 0;
@@ -66,7 +63,6 @@ const currency = (value) => value.toLocaleString("en-AU", { style: "currency", c
 export function ListsPage() {
   const navigate = useNavigate();
 
-  // change when real data is used instead of mock
   const [list, setList] = useState(null);
 
   const [frequency, setFrequency] = useState(LIST_FREQUENCIES.WEEKLY);
@@ -83,11 +79,11 @@ export function ListsPage() {
     };
   }, []);
 
-  const locationOptions = (sites.length > 0 ? sites : mockSites).map((site) => ({
+  const locationOptions = sites.map((site) => ({
     id: site._id,
     label: site.name,
   }));
-  const availableProducts = products.length > 0 ? products : mockProducts;
+  const availableProducts = products;
 
   useEffect(() => {
     if (!addProductId && availableProducts[0]) {
@@ -107,8 +103,6 @@ export function ListsPage() {
   const estimatedCost = items.reduce((sum, i) => sum + i.quantityWanted * i.unitCost, 0);
 
   const hasReceivedItems = items.some((i) => i.received);
-
-  // change when real data is used instead of mock
 
   function generate() {
     const lowStockProducts = availableProducts.filter(
@@ -459,6 +453,9 @@ export function ListsPage() {
                             {product.name} ({product.totalQuantity ?? product.quantity ?? 0} in stock)
                           </option>
                         ))}
+                        {availableProducts.length === 0 && (
+                          <option value="">No products in database</option>
+                        )}
                       </select>
                     </div>
 
@@ -478,6 +475,7 @@ export function ListsPage() {
                       type="button"
                       className="btn-secondary lists-add-btn"
                       onClick={addManually}
+                      disabled={!addProductId}
                     >
                       Add to list
                     </button>
@@ -543,6 +541,9 @@ export function ListsPage() {
                             {loc.label}
                           </option>
                         ))}
+                        {locationOptions.length === 0 && (
+                          <option value="">No sites in database</option>
+                        )}
                       </select>
                     </div>
                     {hasReceivedItems && (

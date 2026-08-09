@@ -17,12 +17,6 @@ import {
   StorageLocations,
   StorageUnits,
 } from "/imports/api/locations/collections";
-import {
-  mockFloorMaps,
-  mockSites,
-  mockStorageLocations,
-  mockStorageUnits,
-} from "/imports/api/mockLocations";
 
 import "./ListsPage.css";
 
@@ -116,18 +110,13 @@ export function SavedListsPage() {
   const hasReceivedItems = items.some((item) => item.received);
   const allItemsReceived = items.length > 0 && items.every((item) => item.received);
   const pendingAllocationItems = items.filter((item) => item.received && !item.allocatedLocationId);
-  const locationOptions = (sites.length > 0 ? sites : mockSites).map((site) => ({
+  const locationOptions = sites.map((site) => ({
     id: site._id,
     label: site.name,
   }));
-  const safeSites = sites.length > 0 ? sites : mockSites;
-  const safeFloorMaps = floorMaps.length > 0 ? floorMaps : mockFloorMaps;
-  const safeStorageUnits = storageUnits.length > 0 ? storageUnits : mockStorageUnits;
-  const safeStorageLocations =
-    storageLocations.length > 0 ? storageLocations : mockStorageLocations;
-  const storageLocationOptions = safeStorageLocations.map((location) => ({
+  const storageLocationOptions = storageLocations.map((location) => ({
     id: location._id,
-    label: buildLocationLabel(location, safeStorageUnits, safeFloorMaps, safeSites),
+    label: buildLocationLabel(location, storageUnits, floorMaps, sites),
   }));
   const frequency = savedList?.frequency ?? LIST_FREQUENCIES.WEEKLY;
 
@@ -533,6 +522,9 @@ export function SavedListsPage() {
                                   {location.label}
                                 </option>
                               ))}
+                              {storageLocationOptions.length === 0 && (
+                                <option value="">No storage locations in database</option>
+                              )}
                             </select>
 
                             <button
@@ -608,6 +600,9 @@ export function SavedListsPage() {
                             {loc.label}
                           </option>
                         ))}
+                        {locationOptions.length === 0 && (
+                          <option value="">No sites in database</option>
+                        )}
                       </select>
                     </div>
                     {hasReceivedItems && (
