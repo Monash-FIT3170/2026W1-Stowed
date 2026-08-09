@@ -38,7 +38,7 @@ function toItem(product, frequency, addMode) {
     inStock: product.quantity ?? 0,
     reorderAt: product.reorderAt ?? 0,
     lowStockThreshold: product.lowStockThreshold ?? 0,
-    unitCost: product.unitCost ?? 0,
+    unitCost: product.purchaseCost ?? product.unitCost ?? 0,
     quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
     purchased: false,
@@ -59,12 +59,21 @@ function nextOrderDay(frequency) {
 
 const currency = (value) => value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
+function sortByCategory(items) {
+  return [...items].sort((a, b) => {
+    const catCompare = (a.category || "Uncategorized").localeCompare(b.category || "Uncategorized");
+    if (catCompare !== 0) return catCompare;
+    return a.productName.localeCompare(b.productName);
+  });
+}
+
 export function ListsPage() {
   // change when real data is used instead of mock
   const [list, setList] = useState(null);
 
   const [frequency, setFrequency] = useState(LIST_FREQUENCIES.WEEKLY);
   const [filter, setFilter] = useState(FILTERS.ALL);
+  const [groupByCategory, setGroupByCategory] = useState(false);
   const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
   const [addQuantity, setAddQuantity] = useState(1);
 
@@ -89,6 +98,8 @@ export function ListsPage() {
   const estimatedCost = items.reduce((sum, i) => sum + i.quantityWanted * i.unitCost, 0);
 
   const hasReceivedItems = items.some((i) => i.received);
+
+  const isDraft = list?.status === LIST_STATUSES.DRAFT;
 
   // change when real data is used instead of mock
 
@@ -259,7 +270,32 @@ export function ListsPage() {
     );
   }
 
-  const isDraft = list?.status === LIST_STATUSES.DRAFT;
+  function renderCategoryGroupedRows(groupItems) {
+    const sorted = sortByCategory(groupItems);
+    const rows = [];
+    let lastCategory = null;
+
+    sorted.forEach((item) => {
+      const cat = item.category || "Uncategorized";
+      if (cat !== lastCategory) {
+        rows.push(
+          <tr key={`divider-${cat}`} className="lists-divider">
+            <td colSpan={isDraft ? 4 : 6}>{cat}</td>
+          </tr>,
+        );
+        lastCategory = cat;
+      }
+      rows.push(renderRow(item));
+    });
+
+    return rows;
+  }
+
+  function renderGroup(groupItems) {
+    return groupByCategory
+      ? renderCategoryGroupedRows(groupItems)
+      : sortByCategory(groupItems).map(renderRow);
+  }
 
   return (
     <div className="product-detail-container">
@@ -359,6 +395,18 @@ export function ListsPage() {
                           <span className="lists-filter-count">{count}</span>
                         </button>
                       ))}
+
+                      <button
+                        type="button"
+                        className={
+                          groupByCategory
+                            ? "btn-secondary lists-filter is-active"
+                            : "btn-secondary lists-filter"
+                        }
+                        onClick={() => setGroupByCategory((v) => !v)}
+                      >
+                        Categorised
+                      </button>
                     </div>
                   </div>
 
@@ -379,16 +427,16 @@ export function ListsPage() {
                       <tbody>
                         {filter === FILTERS.ALL ? (
                           <>
-                            {generated.map(renderRow)}
+                            {renderGroup(generated)}
                             {manual.length > 0 && (
                               <tr className="lists-divider">
                                 <td colSpan={isDraft ? 4 : 6}>Added manually</td>
                               </tr>
                             )}
-                            {manual.map(renderRow)}
+                            {renderGroup(manual)}
                           </>
                         ) : (
-                          visibleItems.map(renderRow)
+                          renderGroup(visibleItems)
                         )}
                       </tbody>
                     </table>
