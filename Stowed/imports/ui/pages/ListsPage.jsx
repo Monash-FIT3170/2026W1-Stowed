@@ -29,6 +29,15 @@ function quantityFor(product, frequency) {
   return Math.max(1, shortfall) * (FREQUENCY_WEEKS[frequency] ?? 1);
 }
 
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
+
 function toItem(product, frequency, addMode) {
   return {
     productId: product._id,
@@ -38,7 +47,7 @@ function toItem(product, frequency, addMode) {
     inStock: product.quantity ?? 0,
     reorderAt: product.reorderAt ?? 0,
     lowStockThreshold: product.lowStockThreshold ?? 0,
-    unitCost: product.unitCost ?? 0,
+    unitCost: product.purchaseCost ?? product.unitCost ?? 0,
     quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
     purchased: false,
@@ -59,15 +68,26 @@ function nextOrderDay(frequency) {
 
 const currency = (value) => value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
+function sortByCategory(items) {
+  return [...items].sort((a, b) => {
+    const catCompare = (a.category || "Uncategorized").localeCompare(b.category || "Uncategorized");
+    if (catCompare !== 0) return catCompare;
+    return a.productName.localeCompare(b.productName);
+  });
+}
+
 export function ListsPage() {
   // change when real data is used instead of mock
   const [list, setList] = useState(null);
 
   const [frequency, setFrequency] = useState(LIST_FREQUENCIES.WEEKLY);
   const [filter, setFilter] = useState(FILTERS.ALL);
+  const [groupByCategory, setGroupByCategory] = useState(false);
   const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
   const [addQuantity, setAddQuantity] = useState(1);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const { sites } = useTracker(() => {
     Meteor.subscribe("locations.all");
@@ -90,6 +110,8 @@ export function ListsPage() {
   const estimatedCost = items.reduce((sum, i) => sum + i.quantityWanted * i.unitCost, 0);
 
   const hasReceivedItems = items.some((i) => i.received);
+
+  const isDraft = list?.status === LIST_STATUSES.DRAFT;
 
   // change when real data is used instead of mock
 
@@ -160,8 +182,28 @@ export function ListsPage() {
     setAddQuantity(1);
   }
 
-  function save() {
-    setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
+  async function save() {
+    setIsSaving(true);
+    setSaveError("");
+    try {
+      await callMethod("shoppingLists.create", {
+        mode: list.mode,
+        frequency: list.frequency,
+        items: list.items.map((item) => ({
+          productId: item.productId,
+          quantityWanted: item.quantityWanted,
+          addMode: item.addMode,
+          purchased: item.purchased,
+          received: item.received,
+        })),
+      });
+      setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
+    } catch (error) {
+      console.error("Failed to save shopping list:", error);
+      setSaveError(error.reason || error.message || "Failed to save list.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function callStockMethod(methodName, item) {
@@ -302,7 +344,32 @@ export function ListsPage() {
     );
   }
 
-  const isDraft = list?.status === LIST_STATUSES.DRAFT;
+  function renderCategoryGroupedRows(groupItems) {
+    const sorted = sortByCategory(groupItems);
+    const rows = [];
+    let lastCategory = null;
+
+    sorted.forEach((item) => {
+      const cat = item.category || "Uncategorized";
+      if (cat !== lastCategory) {
+        rows.push(
+          <tr key={`divider-${cat}`} className="lists-divider">
+            <td colSpan={isDraft ? 5 : 7}>{cat}</td>
+          </tr>,
+        );
+        lastCategory = cat;
+      }
+      rows.push(renderRow(item));
+    });
+
+    return rows;
+  }
+
+  function renderGroup(groupItems) {
+    return groupByCategory
+      ? renderCategoryGroupedRows(groupItems)
+      : sortByCategory(groupItems).map(renderRow);
+  }
 
   return (
     <div className="product-detail-container">
@@ -405,6 +472,18 @@ export function ListsPage() {
                           <span className="lists-filter-count">{count}</span>
                         </button>
                       ))}
+
+                      <button
+                        type="button"
+                        className={
+                          groupByCategory
+                            ? "btn-secondary lists-filter is-active"
+                            : "btn-secondary lists-filter"
+                        }
+                        onClick={() => setGroupByCategory((v) => !v)}
+                      >
+                        Categorised
+                      </button>
                     </div>
                   </div>
 
@@ -432,16 +511,16 @@ export function ListsPage() {
                       <tbody>
                         {filter === FILTERS.ALL ? (
                           <>
-                            {generated.map(renderRow)}
+                            {renderGroup(generated)}
                             {manual.length > 0 && (
                               <tr className="lists-divider">
                                 <td colSpan={isDraft ? 5 : 7}>Added manually</td>
                               </tr>
                             )}
-                            {manual.map(renderRow)}
+                            {renderGroup(manual)}
                           </>
                         ) : (
-                          visibleItems.map(renderRow)
+                          renderGroup(visibleItems)
                         )}
                       </tbody>
                     </table>
@@ -491,9 +570,15 @@ export function ListsPage() {
                 <div className="detail-section">
                   <div className="section-title">Actions</div>
                   <div className="section-content lists-sidebar-actions">
-                    <button type="button" className="btn-print" onClick={save} disabled={!isDraft}>
-                      {isDraft ? "Save list" : "Saved"}
+                    <button
+                      type="button"
+                      className="btn-print"
+                      onClick={save}
+                      disabled={!isDraft || isSaving}
+                    >
+                      {isSaving ? "Saving..." : isDraft ? "Save list" : "Saved"}
                     </button>
+                    {saveError && <p className="warning-text" style={{ marginTop: "8px" }}>{saveError}</p>}
                     <button
                       type="button"
                       className="btn-secondary lists-full-btn"
