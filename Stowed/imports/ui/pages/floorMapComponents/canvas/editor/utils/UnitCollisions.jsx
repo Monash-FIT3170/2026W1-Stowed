@@ -1,5 +1,7 @@
+import { getBoundingBox } from "../../../../../../api/locations/shapeUtils";
+
 // File to check for collisions between different objects on the floor map designer page
-export { isRectRectIntersecting, calcDistance, isRangeIntersecting, isCircleCircleIntersecting, satTestCollision };
+export { isRectRectIntersecting, calcDistance, isRangeIntersecting, isCircleCircleIntersecting, narrowPhaseTest };
 
 /**
  * A boolean check if two intervals overlap
@@ -121,13 +123,40 @@ const overlap = (projection1, projection2) => {
 
 
 /**
+ * 
+ * Conducts a broad phase test using object bounding boxes to check which units
+ * are in close proximity to the new one
+ * 
+ * @param {*} newPoints the points of the new unit to be placed
+ * @param {*} units the units already existing on the floormap
+ * @returns a list of units whose bounding box intersects with the new one
+ */
+const broadPhaseTest = (newPoints, units) => {
+
+  newBoundBox = getBoundingBox(newPoints);
+
+  return units.filter((unit) => {
+      const oldBoundBox = getBoundingBox(unit.shape.points);
+
+      const xOverlap = newBoundBox.minX < oldBoundBox.maxX && newBoundBox.maxX < oldBoundBox.minX;
+      const yOverlap = newBoundBox.minY < oldBoundBox.maxY && newBoundBox.maxY < oldBoundBox.minY;
+
+      return xOverlap && yOverlap;
+
+  })
+  
+
+}
+
+
+/**
  * Checks if a collision exists between a newly created unit and other units on the map
  * 
  * @param {*} newPoints new shape's set of points
  * @param {Object[]} units other units on the map
  * @returns 
  */
-const satTestCollision = (newPoints, units) => {
+const narrowPhaseTest = (newPoints, units) => {
     
     const newAxes = getAxes(newPoints);
 
