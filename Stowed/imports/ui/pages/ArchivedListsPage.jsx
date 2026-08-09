@@ -1,5 +1,9 @@
-import { Link } from "react-router-dom";
-import { ARCHIVED_SHOPPING_LIST_STORAGE_KEY } from "/imports/api/shoppingLists/constants";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  ARCHIVED_SHOPPING_LIST_STORAGE_KEY,
+  LIST_STATUSES,
+  SAVED_SHOPPING_LIST_STORAGE_KEY,
+} from "/imports/api/shoppingLists/constants";
 
 import "./ListsPage.css";
 
@@ -26,6 +30,7 @@ function formatArchivedAt(value) {
 }
 
 export function ArchivedListsPage() {
+  const navigate = useNavigate();
   const archivedLists = readArchivedLists();
   const latestArchive = archivedLists[0] ?? null;
   const items = latestArchive?.items ?? [];
@@ -35,6 +40,35 @@ export function ArchivedListsPage() {
     0,
   );
   const receivedCount = items.filter((item) => item.received).length;
+
+  function unarchiveList() {
+    if (!latestArchive) return;
+
+    const existingSavedList = window.localStorage.getItem(SAVED_SHOPPING_LIST_STORAGE_KEY);
+    if (existingSavedList) {
+      const shouldReplace = window.confirm(
+        "This will replace the current saved shopping list. Continue?",
+      );
+      if (!shouldReplace) return;
+    }
+
+    const restoredList = { ...latestArchive };
+    delete restoredList.archivedAt;
+    delete restoredList.archivedWithPendingItems;
+    window.localStorage.setItem(
+      SAVED_SHOPPING_LIST_STORAGE_KEY,
+      JSON.stringify({
+        ...restoredList,
+        status: LIST_STATUSES.SAVED,
+        unarchivedAt: new Date().toISOString(),
+      }),
+    );
+    window.localStorage.setItem(
+      ARCHIVED_SHOPPING_LIST_STORAGE_KEY,
+      JSON.stringify(archivedLists.slice(1)),
+    );
+    navigate("/lists/saved");
+  }
 
   return (
     <div className="product-detail-container">
@@ -55,9 +89,19 @@ export function ArchivedListsPage() {
             <p className="lists-subtitle">Read-only record of archived shopping lists.</p>
           </div>
 
-          <Link to="/lists/saved" className="btn-secondary lists-link-button">
-            Back to saved list
-          </Link>
+          <div className="lists-header-actions">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={unarchiveList}
+              disabled={!latestArchive}
+            >
+              Unarchive
+            </button>
+            <Link to="/lists/saved" className="btn-secondary lists-link-button">
+              Back to saved list
+            </Link>
+          </div>
         </div>
       </div>
 
