@@ -31,4 +31,19 @@ Meteor.methods({
       $set: { name: name.trim() },
     });
   },
+
+    async "productCategories.delete"({ categoryId }) {
+    check(categoryId, String);
+    await assertOrgAccess(ProductCategories, categoryId, this.userId);
+    await requirePermission(this.userId, "productCategories.manage");
+
+    const inUseCount = await Products.find({ categoryId }).countAsync();
+    if (inUseCount > 0) {
+      throw new Meteor.Error(
+        "category-in-use",
+        `Cannot delete this category — it is currently assigned to ${inUseCount} product${inUseCount !== 1 ? "s" : ""}.`,
+      );
+    }
+    await ProductCategories.removeAsync(categoryId);
+  },
 });

@@ -135,6 +135,16 @@ export function CreateProductPage() {
     }
   }
 
+  async function handleDeleteCategory(id) {
+  try {
+    await callMethod("productCategories.delete", { categoryId: id });
+    if (categoryId === id) setCategoryId("");
+    setCategoryError("");
+  } catch (err) {
+    setCategoryError(err.reason || err.message || "Failed to delete category.");
+  }
+}
+
   function startRename(id, currentName) {
     setEditingId(id);
     setEditingName(currentName);
@@ -585,9 +595,14 @@ export function CreateProductPage() {
                       </button>
                     </>
                   ) : (
-                    <button className="btn-secondary" onClick={() => startRename(cat._id, cat.name)}>
-                      Rename
-                    </button>
+                    <>
+                      <button className="btn-secondary" onClick={() => startRename(cat._id, cat.name)}>
+                        Rename
+                      </button>
+                      <button className="btn-danger" onClick={() => handleDeleteCategory(cat._id)}>
+                        Delete
+                      </button>
+                    </>
                   )}
                 </div>
               ))}
