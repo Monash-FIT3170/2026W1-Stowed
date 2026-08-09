@@ -20,6 +20,7 @@ const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
   { to: "/forecast", label: "Forecast", icon: "🔮" },
   { to: "/alerts", label: "Alerts", icon: "⚠️" },
+  { to: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
 function SidebarLink({ to, label, icon, end }) {
@@ -101,9 +102,11 @@ export function Sidebar() {
 
           <section className="sidebar-section">
             <SectionLabel label="Tools" />
-            {TOOL_LINKS.map((link) => (
-              <SidebarLink key={link.to} {...link} />
-            ))}
+            {TOOL_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
+              (link) => (
+                <SidebarLink key={link.to} {...link} />
+              ),
+            )}
           </section>
 
           <section className="sidebar-section">

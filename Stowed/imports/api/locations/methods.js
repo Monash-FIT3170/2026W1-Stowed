@@ -15,6 +15,55 @@ import { isStocktakeDue, DEFAULT_STOCKTAKE_INTERVAL_DAYS } from "./stocktake";
 
 Meteor.methods({
   /**
+   * Updates the stocktake schedule for one Site and immediately refreshes the
+   * cached due flags for every location below it.
+   */
+  async "sites.updateStocktakeInterval"({ siteId, intervalDays }) {
+    check(siteId, String);
+    check(intervalDays, Number);
+
+    if (!Number.isInteger(intervalDays) || intervalDays < 1 || intervalDays > 3650) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
+
+    await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "settings.manage");
+
+    const now = new Date();
+    await Sites.updateAsync(siteId, {
+      $set: { stocktakeIntervalDays: intervalDays, updatedAt: now },
+    });
+
+    const floorMapIds = (await FloorMaps.find({ siteId }, { fields: { _id: 1 } }).fetchAsync()).map(
+      (floorMap) => floorMap._id,
+    );
+    const storageUnitIds = (
+      await StorageUnits.find(
+        { floorMapId: { $in: floorMapIds } },
+        { fields: { _id: 1 } },
+      ).fetchAsync()
+    ).map((storageUnit) => storageUnit._id);
+    const locations = await StorageLocations.find({
+      storageUnitId: { $in: storageUnitIds },
+    }).fetchAsync();
+
+    await Promise.all(
+      locations.map((location) => {
+        const due = isStocktakeDue(location.lastStocktakeAt, intervalDays, now);
+        if (due === location.stocktakeDue) return Promise.resolve();
+        return StorageLocations.updateAsync(location._id, {
+          $set: { stocktakeDue: due, updatedAt: now },
+        });
+      }),
+    );
+
+    return { siteId, intervalDays, locationsChecked: locations.length };
+  },
+
+  /**
    * Creates a new Site.
    */
   async "sites.create"({ name, description = "" }) {
