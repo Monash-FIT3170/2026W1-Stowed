@@ -3,7 +3,7 @@ import { FREQUENCY_WEEKS, ADD_PRODUCT_MODES } from "/imports/api/shoppingLists/c
 // change when real data is used instead of mock
 export function quantityFor(product, frequency) {
   const target = Math.max(product.reorderAt ?? 0, product.lowStockThreshold ?? 0);
-  const shortfall = target - (product.quantity ?? 0);
+  const shortfall = target - (product.totalQuantity ?? 0);
   return Math.max(1, shortfall) * (FREQUENCY_WEEKS[frequency] ?? 1);
 }
 
@@ -11,9 +11,8 @@ export function toItem(product, frequency, addMode) {
   return {
     productId: product._id,
     productName: product.name,
-    sku: product.sku,
     category: product.category,
-    inStock: product.quantity ?? 0,
+    inStock: product.totalQuantity ?? 0,
     reorderAt: product.reorderAt ?? 0,
     lowStockThreshold: product.lowStockThreshold ?? 0,
     unitCost: product.purchaseCost ?? product.unitCost ?? 0,
