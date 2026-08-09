@@ -5,6 +5,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import "./ProductDetailPage.css";
@@ -34,6 +35,7 @@ export function ProductDetailView({
   item,
   productId,
   records = [],
+  categories = [],
   sites = [],
   floorMaps = [],
   storageUnits = [],
@@ -133,6 +135,7 @@ export function ProductDetailView({
 
   const unitCost = Number(item.unitCost);
   const purchaseCost = Number(item.purchaseCost);
+  const categoryName = categories.find((c) => c._id === item.categoryId)?.name || "-";
   const reorderAt = item.reorderAt ?? null;
   const galleryImages = imageUrls.length > 0 ? imageUrls : item.images || [];
 
@@ -348,7 +351,7 @@ export function ProductDetailView({
                 <div className="form-row">
                   <div className="form-group">
                     <label>Category</label>
-                    <div className="form-tag">{item.category || "-"}</div>
+                    <div className="form-tag">{categoryName}</div>
                   </div>
                   <div className="form-group">
                     <label>Brand</label>
@@ -725,15 +728,21 @@ export function ProductDetailView({
 export function ProductDetailPage() {
   const { productId } = useParams();
 
-  const { item, isLoading, records, sites, floorMaps, storageUnits, storageLocations } =
+  const { item, isLoading, records, categories, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
       const handleProducts = Meteor.subscribe("products");
       const handleRecords = Meteor.subscribe("productRecords");
+      const handleCategories = Meteor.subscribe("productCategories");
       const handleLocations = Meteor.subscribe("locations.all");
       return {
-        isLoading: !handleProducts.ready() || !handleRecords.ready() || !handleLocations.ready(),
+        isLoading:
+          !handleProducts.ready() ||
+          !handleRecords.ready() ||
+          !handleCategories.ready() ||
+          !handleLocations.ready(),
         item: Products.findOne(productId),
         records: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
+        categories: ProductCategories.find().fetch(),
         sites: Sites.find().fetch(),
         floorMaps: FloorMaps.find().fetch(),
         storageUnits: StorageUnits.find().fetch(),
@@ -750,6 +759,7 @@ export function ProductDetailPage() {
       item={item}
       productId={productId}
       records={records}
+      categories={categories}
       sites={sites}
       floorMaps={floorMaps}
       storageUnits={storageUnits}
