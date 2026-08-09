@@ -67,6 +67,7 @@ export function ListsPage() {
   const [filter, setFilter] = useState(FILTERS.ALL);
   const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
   const [addQuantity, setAddQuantity] = useState(1);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   const { sites } = useTracker(() => {
     Meteor.subscribe("locations.all");
@@ -103,6 +104,7 @@ export function ListsPage() {
       ),
     });
     setFilter(FILTERS.ALL);
+    setConfirmRemoveId(null);
   }
 
   function updateQuantity(productId, rawValue) {
@@ -115,6 +117,14 @@ export function ListsPage() {
         item.productId === productId ? { ...item, quantityWanted } : item,
       ),
     }));
+  }
+
+  function removeItem(productId) {
+    setList((current) => ({
+      ...current,
+      items: current.items.filter((item) => item.productId !== productId),
+    }));
+    setConfirmRemoveId(null);
   }
 
   function addManually() {
@@ -206,6 +216,7 @@ export function ListsPage() {
 
   function discard() {
     setList(null);
+    setConfirmRemoveId(null);
   }
 
   function renderRow(item) {
@@ -255,6 +266,38 @@ export function ListsPage() {
             />
           </td>
         )}
+
+        <td className="lists-col-remove">
+          {confirmRemoveId === item.productId ? (
+            <span className="lists-remove-confirm">
+              <button
+                type="button"
+                className="lists-remove-yes"
+                onClick={() => removeItem(item.productId)}
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                className="lists-remove-no"
+                onClick={() => setConfirmRemoveId(null)}
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="lists-remove-btn"
+              onClick={() => setConfirmRemoveId(item.productId)}
+              disabled={item.received}
+              title={item.received ? "Undo received before removing" : undefined}
+              aria-label={`Remove ${item.productName} from the list`}
+            >
+              &times;
+            </button>
+          )}
+        </td>
       </tr>
     );
   }
@@ -353,7 +396,10 @@ export function ListsPage() {
                               ? "btn-secondary lists-filter is-active"
                               : "btn-secondary lists-filter"
                           }
-                          onClick={() => setFilter(key)}
+                          onClick={() => {
+                            setFilter(key);
+                            setConfirmRemoveId(null);
+                          }}
                         >
                           {label}
                           <span className="lists-filter-count">{count}</span>
@@ -363,7 +409,11 @@ export function ListsPage() {
                   </div>
 
                   {visibleItems.length === 0 ? (
-                    <p className="section-empty lists-no-match">Nothing on this filter.</p>
+                    <p className="section-empty lists-no-match">
+                      {items.length === 0
+                        ? "Every item has been removed. Add one below or regenerate."
+                        : "Nothing on this filter."}
+                    </p>
                   ) : (
                     <table className="lists-table">
                       <thead>
@@ -374,6 +424,9 @@ export function ListsPage() {
                           <th className="lists-col-num">Qty</th>
                           {!isDraft && <th className="lists-col-check">Purchased</th>}
                           {!isDraft && <th className="lists-col-check">Received</th>}
+                          <th className="lists-col-remove">
+                            <span className="lists-visually-hidden">Remove</span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -382,7 +435,7 @@ export function ListsPage() {
                             {generated.map(renderRow)}
                             {manual.length > 0 && (
                               <tr className="lists-divider">
-                                <td colSpan={isDraft ? 4 : 6}>Added manually</td>
+                                <td colSpan={isDraft ? 5 : 7}>Added manually</td>
                               </tr>
                             )}
                             {manual.map(renderRow)}

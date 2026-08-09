@@ -205,12 +205,12 @@
   color: var(--text-muted);
 }
 
-.lists-row-purchased td:not(.lists-col-check) {
+.lists-row-purchased td:not(.lists-col-check):not(.lists-col-remove) {
   position: relative;
   color: var(--text-muted);
 }
 
-.lists-row-purchased td:not(.lists-col-check)::after {
+.lists-row-purchased td:not(.lists-col-check):not(.lists-col-remove)::after {
   content: "";
   position: absolute;
   left: 0;
@@ -273,6 +273,84 @@ input.lists-qty-input:disabled {
   background: var(--tag-bg, #f2f2f2);
   color: var(--text-muted);
   cursor: not-allowed;
+}
+
+/* -- Remove -- */
+
+.lists-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.lists-table th.lists-col-remove,
+.lists-table td.lists-col-remove {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lists-remove-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.lists-remove-btn:hover:not(:disabled) {
+  background: var(--tag-bg);
+  border-color: var(--border-subtle);
+  color: var(--accent-primary);
+}
+
+.lists-remove-btn:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.lists-remove-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.lists-remove-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lists-remove-yes,
+.lists-remove-no {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lists-remove-yes {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.lists-remove-no {
+  background: #ffffff;
+  color: var(--text-muted);
 }
 
 /* -- Add manually -- */
