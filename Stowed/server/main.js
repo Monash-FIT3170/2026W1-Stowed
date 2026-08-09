@@ -1,6 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
 import "/imports/api/products/methods";
+import "/imports/api/categories/methods";
 import "/imports/api/locations/methods";
 import "/imports/api/publications";
 import "/imports/api/userMethods";
