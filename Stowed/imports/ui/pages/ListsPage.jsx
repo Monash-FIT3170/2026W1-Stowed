@@ -12,7 +12,7 @@ import { ShoppingLists } from "/imports/api/shoppingLists/collections";
 
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
-import { toItem } from "./shoppingListHelpers";
+import { toItem, isLowStock } from "./shoppingListHelpers";
 
 import "./ListsPage.css";
 
@@ -23,10 +23,6 @@ function callMethod(methodName, params) {
       else resolve(result);
     });
   });
-}
-
-function isLowStock(product) {
-  return typeof product.reorderAt === "number" && (product.totalQuantity ?? 0) <= product.reorderAt;
 }
 
 export function ListsPage() {
