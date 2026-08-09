@@ -29,6 +29,15 @@ function quantityFor(product, frequency) {
   return Math.max(1, shortfall) * (FREQUENCY_WEEKS[frequency] ?? 1);
 }
 
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
+
 function toItem(product, frequency, addMode) {
   return {
     productId: product._id,
@@ -76,6 +85,8 @@ export function ListsPage() {
   const [groupByCategory, setGroupByCategory] = useState(false);
   const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
   const [addQuantity, setAddQuantity] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const { sites } = useTracker(() => {
     Meteor.subscribe("locations.all");
@@ -161,8 +172,28 @@ export function ListsPage() {
     setAddQuantity(1);
   }
 
-  function save() {
-    setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
+  async function save() {
+    setIsSaving(true);
+    setSaveError("");
+    try {
+      await callMethod("shoppingLists.create", {
+        mode: list.mode,
+        frequency: list.frequency,
+        items: list.items.map((item) => ({
+          productId: item.productId,
+          quantityWanted: item.quantityWanted,
+          addMode: item.addMode,
+          purchased: item.purchased,
+          received: item.received,
+        })),
+      });
+      setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
+    } catch (error) {
+      console.error("Failed to save shopping list:", error);
+      setSaveError(error.reason || error.message || "Failed to save list.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function callStockMethod(methodName, item) {
@@ -486,9 +517,15 @@ export function ListsPage() {
                 <div className="detail-section">
                   <div className="section-title">Actions</div>
                   <div className="section-content lists-sidebar-actions">
-                    <button type="button" className="btn-print" onClick={save} disabled={!isDraft}>
-                      {isDraft ? "Save list" : "Saved"}
+                    <button
+                      type="button"
+                      className="btn-print"
+                      onClick={save}
+                      disabled={!isDraft || isSaving}
+                    >
+                      {isSaving ? "Saving..." : isDraft ? "Save list" : "Saved"}
                     </button>
+                    {saveError && <p className="warning-text" style={{ marginTop: "8px" }}>{saveError}</p>}
                     <button
                       type="button"
                       className="btn-secondary lists-full-btn"

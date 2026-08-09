@@ -38,6 +38,9 @@ const PERMISSIONS = {
   "route:/edit-product": ROLES.ADMIN,
   "route:/product-detail": ROLES.STANDARD,
   "route:/accounts": ROLES.OWNER,
+
+  // Shopping Lists
+  "shoppingLists.create": ROLES.STANDARD,
 };
 
 // returns the role of the user
