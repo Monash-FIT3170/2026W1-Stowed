@@ -10,8 +10,7 @@ import {
 } from "/imports/api/shoppingLists/constants";
 import { ShoppingLists } from "/imports/api/shoppingLists/collections";
 
-// change when real data is used instead of mock
-import { mockProducts, getLowStockProducts } from "/imports/api/mockProducts";
+import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
 import { toItem } from "./shoppingListHelpers";
 
@@ -26,34 +25,38 @@ function callMethod(methodName, params) {
   });
 }
 
+function isLowStock(product) {
+  return typeof product.reorderAt === "number" && (product.totalQuantity ?? 0) <= product.reorderAt;
+}
+
 export function ListsPage() {
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState("");
+  const [showEmptyNotice, setShowEmptyNotice] = useState(false);
 
-  const { lists, sites } = useTracker(() => {
+  const { lists, sites, products } = useTracker(() => {
     Meteor.subscribe("shoppingLists");
     Meteor.subscribe("locations.all");
+    Meteor.subscribe("products");
     return {
       lists: ShoppingLists.find({}, { sort: { createdAt: -1 } }).fetch(),
       sites: Sites.find().fetch(),
+      products: Products.find({}, { sort: { name: 1 } }).fetch(),
     };
   }, []);
 
-  async function generate() {
+    async function createList(items) {
     setIsGenerating(true);
     setGenerateError("");
-
-    const frequency = LIST_FREQUENCIES.WEEKLY;
+    setShowEmptyNotice(false);
 
     try {
       const listId = await callMethod("shoppingLists.create", {
         name: `Shopping list ${lists.length + 1}`,
         mode: SHOPPING_LIST_MODES.AUTOMATED,
-        frequency,
-        items: getLowStockProducts(mockProducts).map((product) =>
-          toItem(product, frequency, ADD_PRODUCT_MODES.GENERATED),
-        ),
+        frequency: LIST_FREQUENCIES.WEEKLY,
+        items,
       });
       navigate(`/lists/${listId}`);
     } catch (error) {
@@ -62,6 +65,21 @@ export function ListsPage() {
     } finally {
       setIsGenerating(false);
     }
+  }
+
+  function generate() {
+    const lowStock = products.filter(isLowStock);
+
+    if (lowStock.length === 0) {
+      setShowEmptyNotice(true);
+      return;
+    }
+
+    createList(
+      lowStock.map((product) =>
+        toItem(product, LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.GENERATED),
+      ),
+    );
   }
 
   return (
@@ -90,6 +108,22 @@ export function ListsPage() {
       </div>
 
       <div className="lists-body">
+        {showEmptyNotice && (
+          <div className="lists-empty-warning">
+            <p className="lists-empty-warning-text">
+              No low stock products found. Every product is either above its reorder point or
+              has no reorder point set.
+            </p>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => createList([])}
+              disabled={isGenerating}
+            >
+              Continue with empty shopping list
+            </button>
+          </div>
+        )}
         {lists.length === 0 ? (
           <div className="detail-section lists-empty-card">
             <span className="lists-empty-icon" aria-hidden="true">

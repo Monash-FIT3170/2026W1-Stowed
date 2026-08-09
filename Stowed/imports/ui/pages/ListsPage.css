@@ -109,6 +109,20 @@
   margin-bottom: 20px;
 }
 
+.lists-empty-warning {
+  border: 1px solid #e5b4b4;
+  border-left: 4px solid #c0392b;
+  border-radius: 6px;
+  background: #fdf3f2;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.lists-empty-warning-text {
+  color: #c0392b;
+  margin: 0 0 12px;
+}
+
 /* -- Stat tiles -- */
 
 .lists-stats {
