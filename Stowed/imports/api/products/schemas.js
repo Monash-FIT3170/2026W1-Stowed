@@ -22,6 +22,11 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
   },
 
+  categoryId: {
+    type: String,
+    optional: true,
+  },
+
   category: {
     type: String,
     optional: true,

@@ -41,6 +41,7 @@ Meteor.methods({
     description = "",
     tag = "",
     category = "",
+    categoryId = "",
     sku = "",
     brand = "",
     unitCost = 0,
@@ -57,6 +58,7 @@ Meteor.methods({
     check(description, String);
     check(tag, String);
     check(category, String);
+    check(categoryId, String);
     check(sku, String);
     check(brand, String);
     check(unitCost, Number);
@@ -108,6 +110,7 @@ Meteor.methods({
       description,
       tag,
       category,
+      categoryId,
       sku,
       brand,
       unitCost,
