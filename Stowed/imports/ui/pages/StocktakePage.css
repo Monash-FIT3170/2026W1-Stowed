@@ -104,12 +104,38 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 12px 0;
+  /* Horizontal padding on every row so the removed shading below does not
+     shift the layout when it appears. */
+  padding: 12px 10px;
   border-bottom: 1px solid var(--border-light);
 }
 
 .stocktake-row:last-child {
   border-bottom: none;
+}
+
+/* -- Removed (pending delete on save) -- */
+
+.stocktake-row-removed {
+  background: rgba(204, 0, 0, 0.06);
+  border-radius: 8px;
+}
+
+.stocktake-row-removed .stocktake-row-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.stocktake-row-removed .stocktake-row-sku {
+  color: var(--danger);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stocktake-row-removed .stocktake-qty-input {
+  text-decoration: line-through;
+  color: var(--text-muted);
 }
 
 .stocktake-row-product {
@@ -165,6 +191,11 @@
 .stocktake-qty-input {
   width: 72px;
   text-align: center;
+}
+
+.stocktake-qty-input:disabled {
+  background: transparent;
+  cursor: not-allowed;
 }
 
 .stocktake-delete-btn {

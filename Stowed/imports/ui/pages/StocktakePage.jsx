@@ -28,18 +28,22 @@ function toDraft(rows) {
     name: row.name,
     sku: row.sku,
     quantity: String(row.quantity),
+    // Deleting marks the line rather than dropping it, so it stays on screen
+    // struck through and can be undone before saving.
+    removed: false,
   }));
 }
 
 /**
  * True once the draft differs from what is stored, which is what enables Save.
- * Added and removed lines both change the length; edits are compared per product.
+ * Lines marked removed are treated as gone, matching what Save will write.
  */
 function hasChanges(draft, rows) {
-  if (draft.length !== rows.length) return true;
+  const kept = draft.filter((line) => !line.removed);
+  if (kept.length !== rows.length) return true;
 
   const stored = new Map(rows.map((row) => [row.productId, row.quantity]));
-  return draft.some(
+  return kept.some(
     (line) => !stored.has(line.productId) || toCount(line.quantity) !== stored.get(line.productId),
   );
 }
@@ -90,8 +94,10 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
     );
   }
 
-  function removeLine(productId) {
-    setDraft((prev) => prev.filter((line) => line.productId !== productId));
+  function setRemoved(productId, removed) {
+    setDraft((prev) =>
+      prev.map((line) => (line.productId === productId ? { ...line, removed } : line)),
+    );
   }
 
   function addLine() {
@@ -105,6 +111,7 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
         name: product.name,
         sku: product.sku || "",
         quantity: "0",
+        removed: false,
       },
     ]);
     setAddingProductId("");
@@ -118,8 +125,10 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
   }
 
   const isDirty = hasChanges(draft, rows);
-  const countedTotal = draft.reduce((total, line) => total + toCount(line.quantity), 0);
-  // A product can only be counted once per location, so hide the ones already listed.
+  const keptLines = draft.filter((line) => !line.removed);
+  const countedTotal = keptLines.reduce((total, line) => total + toCount(line.quantity), 0);
+  // A product can only be counted once per location, so hide the ones already
+  // listed — including removed ones, which are undone rather than re-added.
   const availableProducts = products
     .filter((product) => !draft.some((line) => line.productId === product._id))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -160,7 +169,8 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
         <div className="stocktake-meta">
           <span>{location.code ? `Code ${location.code}` : "No code"}</span>
           <span>
-            {draft.length} product{draft.length === 1 ? "" : "s"} · {countedTotal} units counted
+            {keptLines.length} product{keptLines.length === 1 ? "" : "s"} · {countedTotal} units
+            counted
           </span>
           <span>Last counted {formatDate(location.lastStocktakeAt)}</span>
           {isDirty && <span className="stocktake-dirty">Unsaved changes</span>}
@@ -176,10 +186,15 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
         {draft.length > 0 ? (
           <ul className="stocktake-rows">
             {draft.map((line) => (
-              <li className="stocktake-row" key={line.productId}>
+              <li
+                className={`stocktake-row${line.removed ? " stocktake-row-removed" : ""}`}
+                key={line.productId}
+              >
                 <div className="stocktake-row-product">
                   <span className="stocktake-row-name">{line.name}</span>
-                  <small className="stocktake-row-sku">{line.sku ? line.sku : "No SKU"}</small>
+                  <small className="stocktake-row-sku">
+                    {line.removed ? "Removed" : line.sku ? line.sku : "No SKU"}
+                  </small>
                 </div>
 
                 <div className="stocktake-row-controls">
@@ -187,7 +202,7 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
                     type="button"
                     className="stocktake-step-btn"
                     onClick={() => stepQuantity(line.productId, -1)}
-                    disabled={toCount(line.quantity) === 0}
+                    disabled={line.removed || toCount(line.quantity) === 0}
                     aria-label={`Decrease quantity of ${line.name}`}
                   >
                     −
@@ -198,24 +213,37 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
                     className="form-input stocktake-qty-input"
                     value={line.quantity}
                     onChange={(event) => setQuantity(line.productId, event.target.value)}
+                    disabled={line.removed}
                     aria-label={`Counted quantity of ${line.name}`}
                   />
                   <button
                     type="button"
                     className="stocktake-step-btn"
                     onClick={() => stepQuantity(line.productId, 1)}
+                    disabled={line.removed}
                     aria-label={`Increase quantity of ${line.name}`}
                   >
                     +
                   </button>
-                  <button
-                    type="button"
-                    className="btn-danger stocktake-delete-btn"
-                    onClick={() => removeLine(line.productId)}
-                    aria-label={`Remove ${line.name} from this location`}
-                  >
-                    Delete
-                  </button>
+                  {line.removed ? (
+                    <button
+                      type="button"
+                      className="btn-secondary stocktake-delete-btn"
+                      onClick={() => setRemoved(line.productId, false)}
+                      aria-label={`Undo removing ${line.name}`}
+                    >
+                      Undo
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-danger stocktake-delete-btn"
+                      onClick={() => setRemoved(line.productId, true)}
+                      aria-label={`Remove ${line.name} from this location`}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
