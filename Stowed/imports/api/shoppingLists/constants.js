@@ -57,4 +57,5 @@ export const FREQUENCY_WEEKS = {
 export const LIST_STATUSES = {
   DRAFT: "draft",
   SAVED: "saved",
+  ARCHIVED: "archived",
 };

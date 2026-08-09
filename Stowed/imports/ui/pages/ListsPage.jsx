@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import {
@@ -10,9 +10,10 @@ import {
   FREQUENCY_WEEKS,
 } from "/imports/api/shoppingLists/constants";
 
-// change when real data is used instead of mock
-import { mockProducts, getLowStockProducts } from "/imports/api/mockProducts";
+import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
+import { mockProducts } from "/imports/api/mockProducts";
+import { mockSites } from "/imports/api/mockLocations";
 
 import "./ListsPage.css";
 
@@ -24,8 +25,9 @@ const FILTERS = {
 
 // change when real data is used instead of mock
 function quantityFor(product, frequency) {
-  const target = Math.max(product.reorderAt ?? 0, product.lowStockThreshold ?? 0);
-  const shortfall = target - (product.quantity ?? 0);
+  const target = product.reorderAt ?? product.lowStockThreshold ?? 0;
+  const stock = product.totalQuantity ?? product.quantity ?? 0;
+  const shortfall = target - stock;
   return Math.max(1, shortfall) * (FREQUENCY_WEEKS[frequency] ?? 1);
 }
 
@@ -33,11 +35,11 @@ function toItem(product, frequency, addMode) {
   return {
     productId: product._id,
     productName: product.name,
-    sku: product.sku,
-    category: product.category,
-    inStock: product.quantity ?? 0,
-    reorderAt: product.reorderAt ?? 0,
-    lowStockThreshold: product.lowStockThreshold ?? 0,
+    sku: product.sku ?? "",
+    category: product.category ?? "Uncategorized",
+    inStock: product.totalQuantity ?? product.quantity ?? 0,
+    reorderAt: product.reorderAt ?? product.lowStockThreshold ?? 0,
+    lowStockThreshold: product.lowStockThreshold ?? product.reorderAt ?? 0,
     unitCost: product.unitCost ?? 0,
     quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
     addMode,
@@ -65,17 +67,29 @@ export function ListsPage() {
 
   const [frequency, setFrequency] = useState(LIST_FREQUENCIES.WEEKLY);
   const [filter, setFilter] = useState(FILTERS.ALL);
-  const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
+  const [addProductId, setAddProductId] = useState("");
   const [addQuantity, setAddQuantity] = useState(1);
 
-  const { sites } = useTracker(() => {
+  const { sites, products } = useTracker(() => {
     Meteor.subscribe("locations.all");
+    Meteor.subscribe("products");
     return {
       sites: Sites.find().fetch(),
+      products: Products.find().fetch(),
     };
   }, []);
 
-  const locationOptions = sites.map((site) => ({ id: site._id, label: site.name }));
+  const locationOptions = (sites.length > 0 ? sites : mockSites).map((site) => ({
+    id: site._id,
+    label: site.name,
+  }));
+  const availableProducts = products.length > 0 ? products : mockProducts;
+
+  useEffect(() => {
+    if (!addProductId && availableProducts[0]) {
+      setAddProductId(availableProducts[0]._id);
+    }
+  }, [addProductId, availableProducts]);
 
   const items = list?.items ?? [];
 
@@ -93,12 +107,18 @@ export function ListsPage() {
   // change when real data is used instead of mock
 
   function generate() {
+    const lowStockProducts = availableProducts.filter(
+      (product) =>
+        (product.totalQuantity ?? product.quantity ?? 0) <=
+        (product.reorderAt ?? product.lowStockThreshold ?? 0),
+    );
+
     setList({
       mode: SHOPPING_LIST_MODES.AUTOMATED,
       frequency,
       status: LIST_STATUSES.DRAFT,
       siteId: "",
-      items: getLowStockProducts(mockProducts).map((product) =>
+      items: lowStockProducts.map((product) =>
         toItem(product, frequency, ADD_PRODUCT_MODES.GENERATED),
       ),
     });
@@ -111,39 +131,40 @@ export function ListsPage() {
 
     setList((current) => ({
       ...current,
-      items: current.items.map((item) =>
+      items: (current?.items ?? []).map((item) =>
         item.productId === productId ? { ...item, quantityWanted } : item,
       ),
     }));
   }
 
   function addManually() {
-    const product = mockProducts.find((p) => p._id === addProductId);
+    const product = availableProducts.find((p) => p._id === addProductId);
     if (!product) return;
 
     const quantityWanted = Math.max(1, Number(addQuantity) || 1);
 
     setList((current) => {
-      const onList = current.items.some((i) => i.productId === product._id);
+      const safeCurrent = current ?? { items: [] };
+      const onList = safeCurrent.items.some((i) => i.productId === product._id);
 
       return {
-        ...current,
+        ...safeCurrent,
         items: onList
-          ? current.items.map((item) =>
-              item.productId === product._id
-                ? {
-                    ...item,
-                    quantityWanted: item.quantityWanted + quantityWanted,
-                  }
-                : item,
-            )
+          ? safeCurrent.items.map((item) =>
+            item.productId === product._id
+              ? {
+                ...item,
+                quantityWanted: item.quantityWanted + quantityWanted,
+              }
+              : item,
+          )
           : [
-              ...current.items,
-              {
-                ...toItem(product, current.frequency, ADD_PRODUCT_MODES.MANUAL),
-                quantityWanted,
-              },
-            ],
+            ...safeCurrent.items,
+            {
+              ...toItem(product, safeCurrent.frequency, ADD_PRODUCT_MODES.MANUAL),
+              quantityWanted,
+            },
+          ],
       };
     });
 
@@ -151,7 +172,13 @@ export function ListsPage() {
   }
 
   function save() {
+    if (list?.status === LIST_STATUSES.ARCHIVED) return;
     setList((current) => ({ ...current, status: LIST_STATUSES.SAVED }));
+  }
+
+  function archiveList() {
+    if (list?.status === LIST_STATUSES.ARCHIVED) return;
+    setList((current) => ({ ...current, status: LIST_STATUSES.ARCHIVED }));
   }
 
   function callStockMethod(methodName, item) {
@@ -209,6 +236,8 @@ export function ListsPage() {
   }
 
   function renderRow(item) {
+    const rowReadOnly = isArchived;
+
     return (
       <tr key={item.productId} className={item.purchased ? "lists-row-purchased" : undefined}>
         <td>
@@ -228,7 +257,7 @@ export function ListsPage() {
             className="form-input lists-qty-input"
             value={item.quantityWanted}
             onChange={(event) => updateQuantity(item.productId, event.target.value)}
-            disabled={item.purchased}
+            disabled={rowReadOnly || item.purchased}
             aria-label={`Quantity for ${item.productName}`}
           />
         </td>
@@ -239,6 +268,7 @@ export function ListsPage() {
               type="checkbox"
               checked={item.purchased}
               onChange={() => togglePurchased(item.productId)}
+              disabled={rowReadOnly}
               aria-label={`Mark ${item.productName} as purchased`}
             />
           </td>
@@ -250,7 +280,7 @@ export function ListsPage() {
               type="checkbox"
               checked={item.received}
               onChange={() => toggleReceived(item)}
-              disabled={!item.purchased || !list?.siteId}
+              disabled={rowReadOnly || !item.purchased || !list?.siteId}
               aria-label={`Mark ${item.productName} as received`}
             />
           </td>
@@ -260,6 +290,7 @@ export function ListsPage() {
   }
 
   const isDraft = list?.status === LIST_STATUSES.DRAFT;
+  const isArchived = list?.status === LIST_STATUSES.ARCHIVED;
 
   return (
     <div className="product-detail-container">
@@ -320,8 +351,16 @@ export function ListsPage() {
               <div className="detail-section lists-card">
                 <div className="section-title">
                   <span>Shopping list</span>
-                  <span className={isDraft ? "section-badge op" : "section-badge id"}>
-                    {isDraft ? "Draft" : "Saved"}
+                  <span
+                    className={
+                      isDraft
+                        ? "section-badge op"
+                        : isArchived
+                          ? "section-badge im"
+                          : "section-badge id"
+                    }
+                  >
+                    {isDraft ? "Draft" : isArchived ? "Archived" : "Saved"}
                   </span>
                 </div>
 
@@ -403,9 +442,9 @@ export function ListsPage() {
                         value={addProductId}
                         onChange={(event) => setAddProductId(event.target.value)}
                       >
-                        {mockProducts.map((product) => (
+                        {availableProducts.map((product) => (
                           <option key={product._id} value={product._id}>
-                            {product.name} ({product.quantity} in stock)
+                            {product.name} ({product.totalQuantity ?? product.quantity ?? 0} in stock)
                           </option>
                         ))}
                       </select>
@@ -443,12 +482,26 @@ export function ListsPage() {
                     </button>
                     <button
                       type="button"
+                      className="btn-primary lists-full-btn lists-archive-btn"
+                      onClick={archiveList}
+                      disabled={isArchived}
+                    >
+                      {isArchived ? "Archived" : "Archive"}
+                    </button>
+                    <button
+                      type="button"
                       className="btn-secondary lists-full-btn"
                       onClick={generate}
+                      disabled={isArchived}
                     >
                       Regenerate
                     </button>
-                    <button type="button" className="btn-danger lists-full-btn" onClick={discard}>
+                    <button
+                      type="button"
+                      className="btn-danger lists-full-btn"
+                      onClick={discard}
+                      disabled={isArchived}
+                    >
                       Discard list
                     </button>
                   </div>

@@ -332,6 +332,13 @@ input.lists-qty-input:disabled {
   width: 100%;
 }
 
+.lists-archive-btn {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  font-size: 14px;
+  box-shadow: 0 10px 22px rgba(181, 83, 42, 0.16);
+}
+
 /* -- Narrow screens -- */
 
 @media (max-width: 1340px) {
