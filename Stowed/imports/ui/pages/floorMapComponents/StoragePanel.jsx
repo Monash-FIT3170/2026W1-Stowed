@@ -3,6 +3,7 @@ import { Meteor } from "meteor/meteor";
 import { storagePanelStyles } from "./FloorMapStyles";
 import { useEditor } from "./canvas/editor/EditorContext";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
+import { buildRectShape } from "/imports/api/locations/shapeUtils";
 
 const TYPE_OPTIONS = [
   { value: "shelf", label: "Shelf" },
@@ -90,27 +91,12 @@ export function StoragePanel({ floorMapId }) {
     }
 
     try {
+      // Replace with the actual shape when that is implemented
       await Meteor.callAsync("storageUnits.create", {
         floorMapId,
         name: form.name.trim(),
         type: form.type,
-
-        shape: {
-          orgId: "temporary",
-          shapeId: 0,
-          name: form.name.trim(),
-          points: [
-            { x: 0, y: 0 },
-            { x: unitW, y: 0 },
-            { x: unitW, y: unitH },
-            { x: 0, y: unitH },
-          ],
-          gridReference: {
-            x: 0,
-            y: 0,
-          },
-        },
-
+        shape: buildRectShape({ width: unitW, height: unitH, name: form.name.trim() }),
         offset: {
           x: Number(freePos.x),
           y: Number(freePos.y),

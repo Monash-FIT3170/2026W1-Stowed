@@ -204,7 +204,7 @@ Meteor.methods({
       floorMapId,
       name,
       type,
-      shape,
+      shape: { ...shape, orgId },
       offset,
       rotation,
       scale,
@@ -250,12 +250,15 @@ Meteor.methods({
     }
     await assertOrgAccess(Sites, newFloorMap.siteId, this.userId);
 
+    // Fetch orgID from server to attach to shape
+    const orgId = await getCallerOrgId(this.userId);
+
     await StorageUnits.updateAsync(storageUnitId, {
       $set: {
         floorMapId,
         name,
         type,
-        shape,
+        shape: { ...shape, orgId },
         offset,
         rotation,
         scale,
