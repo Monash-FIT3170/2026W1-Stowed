@@ -532,3 +532,51 @@ input.lists-qty-input:disabled {
     white-space: nowrap;
   }
 }
+
+
+
+.lists-budget-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.lists-budget-row .form-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.lists-budget-row .form-group > label {
+  display: block;
+  margin: 0 0 6px;
+  line-height: 1.2;
+  min-height: 1.2em;
+}
+
+.lists-budget-row .form-input {
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.lists-budget-amount {
+  flex: 0 0 160px;
+}
+
+.lists-budget-strategy {
+  flex: 1 1 280px;
+  max-width: 380px;
+}
+
+.lists-preview {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.lists-preview-skipped {
+  margin-top: 4px;
+}

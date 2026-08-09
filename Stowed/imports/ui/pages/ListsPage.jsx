@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
@@ -6,13 +6,14 @@ import {
   SHOPPING_LIST_MODES,
   LIST_FREQUENCIES,
   LIST_STATUSES,
-  ADD_PRODUCT_MODES,
+  BUDGET_STRATEGIES,
+  BUDGET_STRATEGY_LABELS,
 } from "/imports/api/shoppingLists/constants";
 import { ShoppingLists } from "/imports/api/shoppingLists/collections";
 
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
-import { toItem, isLowStock } from "./shoppingListHelpers";
+import { allocateWithinBudget, isLowStock, toCents, fromCents, currency } from "./shoppingListHelpers";
 
 import "./ListsPage.css";
 
@@ -30,6 +31,8 @@ export function ListsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState("");
   const [showEmptyNotice, setShowEmptyNotice] = useState(false);
+  const [budgetInput, setBudgetInput] = useState("");
+  const [strategy, setStrategy] = useState(BUDGET_STRATEGIES.MAX_PRODUCTS);
 
   const { lists, sites, products } = useTracker(() => {
     Meteor.subscribe("shoppingLists");
@@ -41,6 +44,37 @@ export function ListsPage() {
       products: Products.find({}, { sort: { name: 1 } }).fetch(),
     };
   }, []);
+
+  const lowStock = products.filter(isLowStock);
+
+  // null means no budget. An empty, negative or unparseable input is treated
+  // as no budget; a deliberate 0 is a real budget that only free items fit.
+  const budgetCents = useMemo(() => {
+    const trimmed = budgetInput.trim();
+    if (trimmed === "") return null;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return toCents(parsed);
+  }, [budgetInput]);
+
+  const preview = allocateWithinBudget(lowStock, {
+    frequency: LIST_FREQUENCIES.WEEKLY,
+    strategy,
+    budgetCents,
+  });
+
+  let previewText;
+  if (lowStock.length === 0) {
+    previewText = "No low stock products right now.";
+  } else if (budgetCents === null) {
+    previewText = `${lowStock.length} low stock products, ${currency(
+      fromCents(preview.spentCents),
+    )} estimated.`;
+  } else {
+    previewText = `${preview.items.length} of ${lowStock.length} products fit. Spending ${currency(
+      fromCents(preview.spentCents),
+    )}, ${currency(fromCents(preview.remainingCents))} unspent.`;
+  }
 
     async function createList(items) {
     setIsGenerating(true);
@@ -58,24 +92,18 @@ export function ListsPage() {
     } catch (error) {
       console.error("Failed to generate shopping list:", error);
       setGenerateError(error.reason || error.message || "Failed to generate list.");
-    } finally {
-      setIsGenerating(false);
-    }
+    } 
+    setIsGenerating(false);
+    
   }
 
   function generate() {
-    const lowStock = products.filter(isLowStock);
-
-    if (lowStock.length === 0) {
+    if (preview.items.length === 0) {
       setShowEmptyNotice(true);
       return;
     }
 
-    createList(
-      lowStock.map((product) =>
-        toItem(product, LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.GENERATED),
-      ),
-    );
+    createList(preview.items);
   }
 
   return (
@@ -98,8 +126,60 @@ export function ListsPage() {
         </div>
 
         <p className="lists-subtitle">
-          Pulls every product at or below its reorder threshold. Budget is not applied.
+          Pulls every product at or below its reorder threshold. Leave the budget blank to include
+          everything.
         </p>
+
+        <div className="lists-budget-row">
+          <div className="form-group lists-budget-amount">
+            <label htmlFor="list-budget">Budget (optional)</label>
+            <input
+              id="list-budget"
+              type="number"
+              min="0"
+              step="0.01"
+              className="form-input"
+              placeholder="No limit"
+              value={budgetInput}
+              onChange={(event) => {
+                setBudgetInput(event.target.value);
+                setShowEmptyNotice(false);
+              }}
+            />
+          </div>
+
+          {budgetCents !== null && (
+            <div className="form-group lists-budget-strategy">
+              <label htmlFor="list-strategy">Allocation strategy</label>
+              <select
+                id="list-strategy"
+                className="form-input selected"
+                value={strategy}
+                onChange={(event) => {
+                  setStrategy(event.target.value);
+                  setShowEmptyNotice(false);
+                }}
+              >
+                {Object.values(BUDGET_STRATEGIES).map((value) => (
+                  <option key={value} value={value}>
+                    {BUDGET_STRATEGY_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        <p className="lists-preview">{previewText}</p>
+
+        {preview.skipped.length > 0 && (
+          <p className="warning-text lists-preview-skipped">
+            {preview.skipped.length}{" "}
+            {preview.skipped.length === 1 ? "product does" : "products do"} not fit:{" "}
+            {preview.skipped.map((product) => product.name).join(", ")}
+          </p>
+        )}
+
         {generateError && <p className="warning-text">{generateError}</p>}
       </div>
 
@@ -107,8 +187,9 @@ export function ListsPage() {
         {showEmptyNotice && (
           <div className="lists-empty-warning">
             <p className="lists-empty-warning-text">
-              No low stock products found. Every product is either above its reorder point or
-              has no reorder point set.
+              {lowStock.length === 0
+                ? "No low stock products found. Every product is either above its reorder point or has no reorder point set."
+                : `Nothing fits this budget. The cheapest of the ${lowStock.length} low stock products costs more than ${currency(fromCents(budgetCents ?? 0))}.`}
             </p>
             <button
               type="button"

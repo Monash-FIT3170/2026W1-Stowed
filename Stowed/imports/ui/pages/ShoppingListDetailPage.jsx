@@ -612,7 +612,7 @@ export function ShoppingListDetailPage() {
               </div>
             </div>
 
-            {/* change when real data is used instead of mock */}
+            
             <div className="detail-section">
               <div className="section-title">Schedule</div>
               <div className="section-content">
