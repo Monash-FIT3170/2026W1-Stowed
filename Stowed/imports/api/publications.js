@@ -15,6 +15,7 @@ Meteor.publish("locations.all", async function () {
     FloorMaps.find({ orgId }),
     StorageUnits.find({ orgId }),
     StorageLocations.find({ orgId }),
+    MapShapes.find({ orgId }),
   ];
 });
 

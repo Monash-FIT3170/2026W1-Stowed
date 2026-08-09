@@ -334,7 +334,7 @@ export function LocationsPage() {
           y: Number(unitForm.y),
         },
         rotation: Number(0),
-        scale : {
+        scale: {
           x: Number(1),
           y: Number(1),
         },
@@ -444,7 +444,7 @@ export function LocationsPage() {
     }
     const unit = storageUnits.find((u) => u._id === unitId);
     await runSubmit(async () => {
-      await submitMeteorMethod("storageUnits.update", { storageUnitId: unitId, floorMapId: unit.floorMapId, name, type: editStorageUnitForm.type, shape: unit.shape, offset: unit.offset, rotation: unit.rotation, scale: unit.scale});
+      await submitMeteorMethod("storageUnits.update", { storageUnitId: unitId, floorMapId: unit.floorMapId, name, type: editStorageUnitForm.type, shape: unit.shape, offset: unit.offset, rotation: unit.rotation, scale: unit.scale });
       setEditingStorageUnitId(null);
     });
   }

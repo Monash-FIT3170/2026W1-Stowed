@@ -240,6 +240,71 @@ export const toolbarStyles = {
     background: COLOURS.CARD_BORDER,
   },
 };
+export const customShapesPanelStyles = {
+  container: {
+  width: "100%",
+  padding: "12px",
+  border: `1px solid ${COLOURS.BUTTON_BORDER}`,
+  borderRadius: 12,
+  background: "transparent",
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  boxSizing: "border-box",
+},
+
+  title: {
+    margin: 0,
+    color: COLOURS.TEXT_MUTED,
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+
+  list: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+
+  shapeButton: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    minHeight: 34,
+    padding: "6px 10px",
+    borderRadius: 8,
+    fontSize: 11,
+    textAlign: "left",
+  },
+
+  shapeName: {
+    flex: 1,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontWeight: 600,
+  },
+
+  shapeSize: {
+    flexShrink: 0,
+    marginLeft: 12,
+    color: COLOURS.TEXT_MUTED,
+    fontSize: 9,
+    fontWeight: 500,
+  },
+
+  emptyState: {
+    padding: "10px",
+    border: `1px dashed ${COLOURS.BUTTON_BORDER}`,
+    borderRadius: 8,
+    color: COLOURS.TEXT_MUTED,
+    fontSize: 11,
+    textAlign: "center",
+  },
+};
 
 export const storagePanelStyles = {
   panel: {

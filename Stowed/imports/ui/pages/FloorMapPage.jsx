@@ -11,7 +11,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, MapShapes, } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -62,11 +62,12 @@ function FloorMapPageInner() {
   const [isCreateShapeOpen, setIsCreateShapeOpen] = useState(false);
 
   // Fetch all sites and floor maps for the tab bar
-  const { sites, floorMaps, locationsReady } = useTracker(() => {
+  const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      mapShapes: MapShapes.find({}, { sort: { name: 1 } }).fetch(),
       locationsReady: handle.ready(),
     };
   }, []);
@@ -303,6 +304,7 @@ function FloorMapPageInner() {
                     <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                       <CanvasToolbar
                         activeTool={activeTool} setActiveTool={setActiveTool}
+                        mapShapes={mapShapes}
                         floorSize={floorSize}
                         onSaveLayout={handleSaveLayout} onLoadLayout={handleLoadLayout}
                         onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}

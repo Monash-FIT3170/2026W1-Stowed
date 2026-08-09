@@ -1,4 +1,4 @@
-import { Group, Rect, Text } from "react-konva";
+import { Group, Rect, Text, Line } from "react-konva";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
 import { COLOURS } from "../../../FloorMapStyles";
 
@@ -29,6 +29,18 @@ export function StorageUnit({
   const canMove = activeTool === "move";
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
+  const isCustomShape =
+    unit.type === "custom" &&
+    Array.isArray(unit.shape?.points) &&
+    unit.shape.points.length >= 3;
+
+  const polygonPoints = isCustomShape
+    ? unit.shape.points.flatMap((point) => [
+      point.x * px,
+      point.y * px,
+    ])
+    : [];
+
   return (
     <Group
       ref={groupRef}
@@ -42,15 +54,27 @@ export function StorageUnit({
       onTransformEnd={onTransformEnd}
     >
       {/* MAIN BODY */}
-      <Rect
-        width={unit.width * px}
-        height={unit.height * px}
-        fill={unit.fill}
-        stroke={isSelected ? COLOURS.ACCENT : "transparent"}
-        strokeWidth={2}
-        cornerRadius={4}
-        opacity={0.85}
-      />
+      {isCustomShape ? (
+        <Line
+          points={polygonPoints}
+          closed
+          fill={unit.fill}
+          stroke={isSelected ? COLOURS.ACCENT : "transparent"}
+          strokeWidth={2}
+          opacity={0.85}
+        />
+      ) : (
+        <Rect
+          width={unit.width * px}
+          height={unit.height * px}
+          fill={unit.fill}
+          stroke={isSelected ? COLOURS.ACCENT : "transparent"}
+          strokeWidth={2}
+          cornerRadius={4}
+          opacity={0.85}
+        />
+      )}
+
       {/* UNIT NAME */}
       <Text
         width={unit.width * px}
@@ -60,6 +84,7 @@ export function StorageUnit({
         text={unit.name}
         fontSize={12}
         fill="white"
+        listening={false}
       />
     </Group>
   );
