@@ -18,10 +18,7 @@ Meteor.methods({
     check(frequency, Match.Maybe(String));
     check(items, [itemPattern]);
 
-    if (!this.userId) throw new Meteor.Error("not-authorised", "You must be logged in.");
-
     const orgId = await getCallerOrgId(this.userId);
-    if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
 
     await requirePermission(this.userId, "shoppingLists.create");
 
