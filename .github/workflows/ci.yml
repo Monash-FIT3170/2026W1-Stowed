@@ -42,8 +42,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Meteor ${{ '3.0.4' }}
-        run: curl https://install.meteor.com/?release=3.0.4 | sh
+      - name: Install Meteor 3.4.1
+        run: curl https://install.meteor.com/?release=3.4.1 | sh
 
       - name: Add Meteor to PATH
         run: echo "$HOME/.meteor" >> $GITHUB_PATH
