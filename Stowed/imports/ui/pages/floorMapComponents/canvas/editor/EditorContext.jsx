@@ -254,8 +254,8 @@ export function EditorProvider({ children, floorMapId }) {
 
           savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
         } else {
-          // Create new shape does not work correctly right now so just initialise all new units with the same shape
-          const shape = buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
+          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+          const shape = hasCustomShape ? unit.shape: buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
           const offset = { x: Number(unit.x), y: Number(unit.y) };
           const scale = { x: 1, y: 1 };
 
