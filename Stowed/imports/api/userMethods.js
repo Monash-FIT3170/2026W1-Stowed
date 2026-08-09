@@ -21,6 +21,7 @@ const PERMISSIONS = {
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
   "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "productCategories.manage": ROLES.ADMIN, // create new categories for products
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
@@ -37,6 +38,9 @@ const PERMISSIONS = {
   "route:/edit-product": ROLES.ADMIN,
   "route:/product-detail": ROLES.STANDARD,
   "route:/accounts": ROLES.OWNER,
+
+  // Shopping Lists
+  "shoppingLists.create": ROLES.STANDARD,
 };
 
 // returns the role of the user
