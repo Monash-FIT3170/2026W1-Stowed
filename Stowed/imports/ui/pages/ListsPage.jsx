@@ -502,6 +502,13 @@ export function ListsPage() {
                     <button
                       type="button"
                       className="btn-secondary lists-full-btn"
+                      onClick={() => navigate("/lists/archive")}
+                    >
+                      View archived list
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary lists-full-btn"
                       onClick={generate}
                       disabled={isArchived}
                     >

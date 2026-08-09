@@ -580,6 +580,13 @@ export function SavedListsPage() {
                         {items.length - receivedCount === 1 ? "" : "s"} not received yet.
                       </p>
                     )}
+                    <button
+                      type="button"
+                      className="btn-secondary lists-full-btn"
+                      onClick={() => navigate("/lists/archive")}
+                    >
+                      View archived list
+                    </button>
                   </div>
                 </div>
 
