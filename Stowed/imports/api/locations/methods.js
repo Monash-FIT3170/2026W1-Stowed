@@ -6,14 +6,27 @@ import { check } from "meteor/check";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./collections";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isValidStocktakeInterval } from "./stocktake";
 
 Meteor.methods({
   /**
    * Creates a new Site.
    */
-  async "sites.create"({ name, description = "" }) {
+  async "sites.create"({
+    name,
+    description = "",
+    stocktakeIntervalDays = DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+  }) {
     check(name, String);
     check(description, String);
+    check(stocktakeIntervalDays, Number);
+
+    if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -28,6 +41,7 @@ Meteor.methods({
       orgId,
       name,
       description,
+      stocktakeIntervalDays,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -36,16 +50,24 @@ Meteor.methods({
   /**
    * Updates an existing Site.
    */
-  async "sites.update"({ siteId, name, description = "" }) {
+  async "sites.update"({ siteId, name, description = "", stocktakeIntervalDays }) {
     check(siteId, String);
     check(name, String);
     check(description, String);
+    check(stocktakeIntervalDays, Number);
+
+    if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
 
     await assertOrgAccess(Sites, siteId, this.userId);
     await requirePermission(this.userId, "locations.manage");
 
     await Sites.updateAsync(siteId, {
-      $set: { name, description, updatedAt: new Date() },
+      $set: { name, description, stocktakeIntervalDays, updatedAt: new Date() },
     });
   },
 

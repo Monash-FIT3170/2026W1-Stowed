@@ -1,4 +1,5 @@
 export const DEFAULT_STOCKTAKE_INTERVAL_DAYS = 180;
+export const MAX_STOCKTAKE_INTERVAL_DAYS = 3650;
 export const DUE_SOON_DAYS = 14;
 
 export const STOCKTAKE_STATUS = {
@@ -10,6 +11,14 @@ export const STOCKTAKE_STATUS = {
 function normaliseInterval(intervalDays) {
   const interval = Number(intervalDays);
   return Number.isFinite(interval) && interval > 0 ? interval : DEFAULT_STOCKTAKE_INTERVAL_DAYS;
+}
+
+export function isValidStocktakeInterval(intervalDays) {
+  return (
+    Number.isInteger(intervalDays) &&
+    intervalDays >= 1 &&
+    intervalDays <= MAX_STOCKTAKE_INTERVAL_DAYS
+  );
 }
 
 export function getNextStocktakeDate(lastStocktakeAt, intervalDays) {

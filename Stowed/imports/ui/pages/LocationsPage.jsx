@@ -16,6 +16,8 @@ import { isImageFile, uploadImageToServer } from "/imports/api/upload";
 import {
   DEFAULT_STOCKTAKE_INTERVAL_DAYS,
   getLocationStocktakeStatus,
+  isValidStocktakeInterval,
+  MAX_STOCKTAKE_INTERVAL_DAYS,
   STOCKTAKE_STATUS,
 } from "../../api/locations/stocktake";
 import "../Global.css";
@@ -30,7 +32,11 @@ const TABS = {
 const EMPTY_FORMS = {
   location: { storageUnitId: "", name: "", code: "", imageUrl: "" },
   floorMap: { siteId: "", name: "", imageUrl: "" },
-  site: { name: "", description: "" },
+  site: {
+    name: "",
+    description: "",
+    stocktakeIntervalDays: String(DEFAULT_STOCKTAKE_INTERVAL_DAYS),
+  },
 };
 
 function callMethod(methodName, params) {
@@ -211,6 +217,9 @@ export function LocationsPage() {
       setForm({
         name: record.name,
         description: record.description ?? "",
+        stocktakeIntervalDays: String(
+          record.stocktakeIntervalDays ?? DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+        ),
       });
     }
   }
@@ -259,16 +268,24 @@ export function LocationsPage() {
           });
         }
       } else {
+        const stocktakeIntervalDays = Number(form.stocktakeIntervalDays);
+        if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+          throw new Error(
+            `Stocktake interval must be a whole number between 1 and ${MAX_STOCKTAKE_INTERVAL_DAYS} days.`,
+          );
+        }
         if (editing) {
           await callMethod("sites.update", {
             siteId: editing._id,
             name: form.name.trim(),
             description: form.description.trim(),
+            stocktakeIntervalDays,
           });
         } else {
           await callMethod("sites.create", {
             name: form.name.trim(),
             description: form.description.trim(),
+            stocktakeIntervalDays,
           });
         }
       }
@@ -744,6 +761,25 @@ export function LocationsPage() {
                       setForm((current) => ({ ...current, description: event.target.value }))
                     }
                   />
+                </FormField>
+                <FormField label="Stocktake interval (days)">
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    max={MAX_STOCKTAKE_INTERVAL_DAYS}
+                    step="1"
+                    value={form.stocktakeIntervalDays}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        stocktakeIntervalDays: event.target.value,
+                      }))
+                    }
+                  />
+                  <small>
+                    Locations at this site become overdue after this many days without a stocktake.
+                  </small>
                 </FormField>
               </>
             )}
