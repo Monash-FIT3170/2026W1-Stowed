@@ -26,7 +26,8 @@ import { CANVAS_CONFIG } from "../CanvasConfig";
  *
  * @returns {{ getGroupRef, handleDragOver, handleDragLeave, handleDrop,
  *             handleUnitClick, handleStageClick, handleDragMove, handleDragEnd,
- *             handleDragEndGrid, handleTransformEnd, handleWheel, handleCopy, handlePaste, handleDelete }}
+ *             handleDragEndGrid, handleTransformEnd, handleWheel, handleZoomIn, handleZoomOut,
+ *             handleFitToScreen, handleCopy, handlePaste, handleDuplicate, handleDelete }}
  */
 export function useCanvasHandlers({
   dispatch,
@@ -411,6 +412,10 @@ export function useCanvasHandlers({
 
   //  VIEWPORT
 
+  function clampScale(scale) {
+    return Math.min(CANVAS_CONFIG.MAX_SCALE, Math.max(CANVAS_CONFIG.MIN_SCALE, scale));
+  }
+
   function handleWheel(e) {
     e.evt.preventDefault();
 
@@ -424,7 +429,9 @@ export function useCanvasHandlers({
       y: (mouse.y - stage.y()) / oldScale,
     };
 
-    const newScale = e.evt.deltaY > 0 ? oldScale / scaleFactor : oldScale * scaleFactor;
+    const newScale = clampScale(
+      e.evt.deltaY > 0 ? oldScale / scaleFactor : oldScale * scaleFactor,
+    );
 
     dispatch({ type: CANVAS_ACTIONS.SET_SCALE, payload: { scale: newScale } });
 
@@ -434,27 +441,74 @@ export function useCanvasHandlers({
     });
   }
 
-  // COPY / PASTE
+  // Zooms toward the centre of the visible canvas (as opposed to handleWheel,
+  // which zooms toward the pointer) - used by the +/- zoom buttons.
+  function zoomByFactor(factor) {
+    const stage = stageRef.current;
+    if (!stage) return;
 
-  const handleCopy = useCallback(() => {
-    const copied = units.filter((u) => selectedIds.has(u.id));
-    dispatch({ type: CANVAS_ACTIONS.COPY_UNITS, payload: { units: copied } });
-  }, [units, selectedIds]);
+    const oldScale = stage.scaleX();
+    const newScale = clampScale(oldScale * factor);
+    const center = { x: stage.width() / 2, y: stage.height() / 2 };
+    const worldPoint = {
+      x: (center.x - stage.x()) / oldScale,
+      y: (center.y - stage.y()) / oldScale,
+    };
+    const newPos = {
+      x: center.x - worldPoint.x * newScale,
+      y: center.y - worldPoint.y * newScale,
+    };
 
-  const handlePaste = useCallback(() => {
+    dispatch({ type: CANVAS_ACTIONS.SET_SCALE, payload: { scale: newScale } });
+    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: newPos });
+  }
+
+  function handleZoomIn() {
+    zoomByFactor(1.2);
+  }
+
+  function handleZoomOut() {
+    zoomByFactor(1 / 1.2);
+  }
+
+  function handleFitToScreen() {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const displayW = stage.width();
+    const displayH = stage.height();
+    if (!displayW || !displayH || !width || !height) return;
+
+    const PADDING = 0.9;
+    const newScale = clampScale(Math.min(displayW / width, displayH / height) * PADDING);
+    const newPos = {
+      x: (displayW - width * newScale) / 2,
+      y: (displayH - height * newScale) / 2,
+    };
+
+    dispatch({ type: CANVAS_ACTIONS.SET_SCALE, payload: { scale: newScale } });
+    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: newPos });
+  }
+
+  // COPY / PASTE / DUPLICATE
+
+  // Places copies of `sourceUnits` offset diagonally from their originals, searching
+  // for the first non-colliding spot. Shared by paste (from clipboard) and duplicate
+  // (from the current selection).
+  function placeOffsetCopies(sourceUnits) {
     const OFFSET = 1;
     const MAX_SEARCH = 100;
 
     const placedUnits = [];
 
-    clipboard.forEach((unit) => {
+    sourceUnits.forEach((unit) => {
       for (let step = 1; step <= MAX_SEARCH; step++) {
         const testX = unit.x + OFFSET * step;
         const testY = unit.y + OFFSET * step;
 
         const proposedUnit = { ...unit, x: testX, y: testY };
 
-        // Make sure to check against newly placed units from paste
+        // Make sure to check against newly placed units from this batch
         const collides = hasCollisions(proposedUnit, [...units, ...placedUnits]);
 
         if (!collides) {
@@ -469,6 +523,16 @@ export function useCanvasHandlers({
       }
     });
 
+    return placedUnits;
+  }
+
+  const handleCopy = useCallback(() => {
+    const copied = units.filter((u) => selectedIds.has(u.id));
+    dispatch({ type: CANVAS_ACTIONS.COPY_UNITS, payload: { units: copied } });
+  }, [units, selectedIds]);
+
+  const handlePaste = useCallback(() => {
+    const placedUnits = placeOffsetCopies(clipboard);
     if (placedUnits.length === 0) return;
 
     setUnits((prev) => [...prev, ...placedUnits]);
@@ -478,6 +542,19 @@ export function useCanvasHandlers({
       payload: { ids: placedUnits.map((u) => u.id) },
     });
   }, [clipboard, units]);
+
+  const handleDuplicate = useCallback(() => {
+    const selectedUnits = units.filter((u) => selectedIds.has(u.id));
+    const placedUnits = placeOffsetCopies(selectedUnits);
+    if (placedUnits.length === 0) return;
+
+    setUnits((prev) => [...prev, ...placedUnits]);
+
+    dispatch({
+      type: CANVAS_ACTIONS.PASTE_UNITS,
+      payload: { ids: placedUnits.map((u) => u.id) },
+    });
+  }, [units, selectedIds]);
 
   function handleDelete() {
     const idsToDelete = selectedIds;
@@ -518,8 +595,12 @@ export function useCanvasHandlers({
     handleDragEndGrid,
     handleTransformEnd,
     handleWheel,
+    handleZoomIn,
+    handleZoomOut,
+    handleFitToScreen,
     handleCopy,
     handlePaste,
+    handleDuplicate,
     handleDelete,
   };
 }

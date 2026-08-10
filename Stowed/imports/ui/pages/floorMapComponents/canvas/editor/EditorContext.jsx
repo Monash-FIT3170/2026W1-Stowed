@@ -38,7 +38,6 @@ function mapStorageUnitToCanvasUnit(unit) {
 // --- TOOL OPTIONS ---
 export const TOOLS = {
   SELECT: "select",
-  MOVE: "move",
   ADD: "add",
 };
 

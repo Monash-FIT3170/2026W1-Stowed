@@ -56,13 +56,6 @@ export function CanvasToolbar({
         >
           Select
         </button>
-        <button
-          onClick={() => setActiveTool("move")}
-          style={toolButtonStyle("move")}
-          aria-pressed={activeTool === "move"}
-        >
-          Move
-        </button>
       </div>
 
       <div style={toolbarStyles.sectionDivider} />

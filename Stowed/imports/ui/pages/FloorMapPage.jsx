@@ -460,11 +460,6 @@ function FloorMapPageInner() {
                       </>
                     )}
                   </div>
-                  <div style={{ flexShrink: 0, borderTop: "1px solid var(--border-light)", padding: "14px" }}>
-                    <button onClick={() => setCanvasEditMode(false)} className="btn-primary" style={{ width: "100%" }}>
-                      Exit Edit Mode
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <div style={{

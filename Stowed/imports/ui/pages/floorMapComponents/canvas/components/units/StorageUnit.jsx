@@ -26,7 +26,7 @@ export function StorageUnit({
   onTransformEnd,
   groupRef,
 }) {
-  const canMove = activeTool === "move";
+  const canMove = activeTool === "select";
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
   const isCustomShape =
