@@ -5,7 +5,7 @@ export const COLOURS = {
   TEXT_MUTED: "#998874",
 
   // Layout Colours
-  PAGE_BG: "#e9e9e9",
+  PAGE_BG: "#f5efe6",
   CARD_BG: "#ffffff",
   CARD_BORDER: "#efe7da",
   INPUT_BG: "#fdf7f2",
@@ -20,9 +20,9 @@ export const COLOURS = {
   // Canvas Colours
   TOOL_BAR_COLOUR: "#ffffff",
   UNIT_CARD_HOVER: "#f8efe6",
-  CANVAS_FILL: "#ffffff",
-  CANVAS_LABEL: "#6b7280",
-  CANVAS_GRID: "#b0b0b0",
+  CANVAS_FILL: "#fdf7f2",
+  CANVAS_LABEL: "#998874",
+  CANVAS_GRID: "#d9cfc0",
 };
 
 const baseButton = {

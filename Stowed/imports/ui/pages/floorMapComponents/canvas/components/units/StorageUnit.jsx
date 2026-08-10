@@ -7,7 +7,7 @@ import { COLOURS } from "../../../FloorMapStyles";
  *
  * @param {Object}                  unit
  * @param {boolean}                 isSelected
- * @param {string}                  activeTool
+ * @param {boolean}                 isCanvasEditMode
  * @param {(e) => void}             onSelect
  * @param {(e) => void}             onDragMove
  * @param {(e) => void}             onDragEnd
@@ -19,14 +19,14 @@ import { COLOURS } from "../../../FloorMapStyles";
 export function StorageUnit({
   unit,
   isSelected,
-  activeTool,
+  isCanvasEditMode,
   onSelect,
   onDragMove,
   onDragEnd,
   onTransformEnd,
   groupRef,
 }) {
-  const canMove = activeTool === "select";
+  const canMove = isCanvasEditMode;
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
   const isCustomShape =

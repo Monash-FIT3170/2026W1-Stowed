@@ -19,7 +19,7 @@ if (typeof window !== "undefined") {
 }
 
 export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
-  const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
+  const { units, commitUnits, floorSize, canvasSettings } = useEditor();
 
   const width = floorSize.width;
   const height = floorSize.height;
@@ -68,7 +68,6 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
     gridInterval,
     width,
     height,
-    activeTool,
     wrapperRef,
     clipboard,
     isCanvasEditMode,
@@ -152,7 +151,7 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
             <UnitLayer
               units={units}
               selectedIds={selectedIds}
-              activeTool={activeTool}
+              isCanvasEditMode={isCanvasEditMode}
               getGroupRef={getGroupRef}
               onUnitClick={(unit, e) => {
                 setSelectedStorageUnitId?.(unit._id || unit.id);

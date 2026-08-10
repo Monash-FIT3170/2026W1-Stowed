@@ -1,11 +1,9 @@
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
 
 /**
- * Horizontal top toolbar for selecting tools, undo/redo and layout actions.
+ * Horizontal top toolbar for undo/redo and layout actions.
  * Shape templates live in the right panel's Templates tab, not here.
  *
- * @param {string} activeTool - Currently selected tool
- * @param {(tool: string) => void} setActiveTool - State setter for updating the active tool
  * @param {() => void} onOpenCanvasSettings - Callback to open canvas settings modal
  * @param {() => void} onUndo - Callback to undo last action
  * @param {() => void} onRedo - Callback to redo last undone action
@@ -15,8 +13,6 @@ import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
  * @returns {JSX.Element} Toolbar UI element
  */
 export function CanvasToolbar({
-  activeTool,
-  setActiveTool,
   onOpenCanvasSettings,
   onSaveLayout,
   onLoadLayout,
@@ -25,41 +21,10 @@ export function CanvasToolbar({
   canUndo,
   canRedo,
 }) {
-  const activeToolLabel = activeTool
-    ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
-    : "None";
-
-  const toolButtonStyle = (tool) => ({
-    ...buttonStyles.base,
-    ...toolbarStyles.buttonInline,
-    ...(activeTool === tool ? buttonStyles.active : buttonStyles.secondary),
-  });
-
   const disabledStyle = (isDisabled) => (isDisabled ? buttonStyles.disabled : null);
 
   return (
     <div style={toolbarStyles.bar}>
-      {/* ACTIVE TOOL */}
-      <div style={toolbarStyles.status}>
-        <span>Tool</span>
-        <span style={toolbarStyles.statusBadge}>{activeToolLabel}</span>
-      </div>
-
-      <div style={toolbarStyles.sectionDivider} />
-
-      {/* TOOLS */}
-      <div style={toolbarStyles.section}>
-        <button
-          onClick={() => setActiveTool("select")}
-          style={toolButtonStyle("select")}
-          aria-pressed={activeTool === "select"}
-        >
-          Select
-        </button>
-      </div>
-
-      <div style={toolbarStyles.sectionDivider} />
-
       {/* UNDO / REDO */}
       <div style={toolbarStyles.section}>
         <button

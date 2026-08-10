@@ -104,8 +104,8 @@ function FloorMapPageInner() {
           justifyContent: "space-between",
           gap: "12px",
           padding: "10px 28px",
-          borderBottom: "1px solid var(--border-light)",
-          background: "var(--card-bg)",
+          borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+          background: COLOURS.CARD_BG,
           flexShrink: 0,
         }}
       >
@@ -119,7 +119,7 @@ function FloorMapPageInner() {
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
-                  color: "var(--text-muted)",
+                  color: COLOURS.TEXT_MUTED,
                 }}
               >
                 Site
@@ -135,9 +135,9 @@ function FloorMapPageInner() {
                 style={{
                   fontSize: "13px",
                   fontWeight: 700,
-                  color: "var(--text-dark)",
-                  background: "var(--card-bg)",
-                  border: "1px solid var(--border-light)",
+                  color: COLOURS.TEXT_PRIMARY,
+                  background: COLOURS.CARD_BG,
+                  border: `1px solid ${COLOURS.CARD_BORDER}`,
                   borderRadius: "8px",
                   padding: "6px 10px",
                   cursor: "pointer",
@@ -161,7 +161,7 @@ function FloorMapPageInner() {
                     fontWeight: 700,
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    color: "var(--text-muted)",
+                    color: COLOURS.TEXT_MUTED,
                   }}
                 >
                   Floor Map
@@ -173,9 +173,9 @@ function FloorMapPageInner() {
                   style={{
                     fontSize: "13px",
                     fontWeight: 600,
-                    color: "var(--text-muted)",
-                    background: "var(--card-bg)",
-                    border: "1px solid var(--border-light)",
+                    color: COLOURS.TEXT_MUTED,
+                    background: COLOURS.CARD_BG,
+                    border: `1px solid ${COLOURS.CARD_BORDER}`,
                     borderRadius: "8px",
                     padding: "6px 10px",
                     cursor: "pointer",
@@ -192,10 +192,11 @@ function FloorMapPageInner() {
             )}
           </div>
         ) : (
-          <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-dark)" }}>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
             {currentFloorMap?.name ?? "Floor Map"}
           </span>
         )}
+
         <button
           type="button"
           onClick={() => canManage && setCanvasEditMode(!isCanvasEditMode)}
@@ -207,9 +208,9 @@ function FloorMapPageInner() {
             letterSpacing: "0.5px",
             padding: "4px 10px",
             borderRadius: "999px",
-            border: `1px solid ${isCanvasEditMode ? "var(--accent-primary)" : "var(--border-light)"}`,
-            color: isCanvasEditMode ? "var(--accent-primary)" : "var(--text-muted)",
-            background: isCanvasEditMode ? "var(--accent-soft, #fde8d8)" : "var(--input-bg, #fdf7f2)",
+            border: `1px solid ${isCanvasEditMode ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
+            color: isCanvasEditMode ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+            background: isCanvasEditMode ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
             cursor: canManage ? "pointer" : "default",
             fontFamily: "inherit",
           }}
@@ -221,8 +222,6 @@ function FloorMapPageInner() {
       {/* -- Edit mode toolbar - horizontal top bar with tools, undo/redo, layout -- */}
       {isCanvasEditMode && canManage && (
         <CanvasToolbar
-          activeTool={activeTool} setActiveTool={setActiveTool}
-          floorSize={floorSize}
           onSaveLayout={handleSaveLayout} onLoadLayout={handleLoadLayout}
           onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
           onUndo={handleUndo} onRedo={handleRedo}
@@ -265,7 +264,7 @@ function FloorMapPageInner() {
         </div>
 
         {/* RIGHT COLUMN - stock panel + edit sidebar stacked */}
-        <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, height: "100%", borderLeft: "1px solid var(--border-light)" }}>
+        <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, height: "100%", borderLeft: `1px solid ${COLOURS.CARD_BORDER}` }}>
 
           {/* STOCK SLIDE-OUT PANEL - view mode only */}
           {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
@@ -337,31 +336,28 @@ function FloorMapPageInner() {
               {isSidebarOpen ? (
                 <div style={{
                   width: "260px", minWidth: "260px", maxWidth: "260px",
-                  flexShrink: 0, background: "var(--card-bg)",
+                  flexShrink: 0, background: COLOURS.CARD_BG,
                   display: "flex", flexDirection: "column",
                   overflow: "hidden", flex: 1,
                 }}>
-                  <div className="section-title" style={{ padding: "14px", flexShrink: 0, display: "flex", alignItems: "center" }}>
-                    {selectedUnit ? (
+                  {selectedUnit ? (
+                    <div className="section-title" style={{ padding: "14px", flexShrink: 0, display: "flex", alignItems: "center" }}>
                       <button
                         onClick={() => handleUnitSelect(null)}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "13px", padding: 0, marginRight: "8px" }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: COLOURS.TEXT_MUTED, fontSize: "13px", padding: 0, marginRight: "8px" }}
                         aria-label="Back to list"
                       >←</button>
-                    ) : null}
-                    <span style={{ fontWeight: 700, color: "var(--text-dark)" }}>
-                      {selectedUnit ? `Edit "${selectedUnit.name}"` : "Edit Mode"}
-                    </span>
-                    <button
-                      onClick={() => setSidebarOpen(false)}
-                      style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
-                      aria-label="Collapse sidebar"
-                    >→</button>
-                  </div>
-
-                  {/* TABS - hidden while editing a specific storage unit's settings */}
-                  {!selectedUnit && (
-                    <div style={{ display: "flex", gap: "4px", padding: "0 14px", flexShrink: 0, borderBottom: "1px solid var(--border-light)" }}>
+                      <span style={{ fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
+                        Edit &quot;{selectedUnit.name}&quot;
+                      </span>
+                      <button
+                        onClick={() => setSidebarOpen(false)}
+                        style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
+                        aria-label="Collapse sidebar"
+                      >→</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "0 8px 0 14px", flexShrink: 0, borderBottom: `1px solid ${COLOURS.CARD_BORDER}` }}>
                       {[
                         { key: "units", label: "Storage Units" },
                         { key: "templates", label: "Templates" },
@@ -374,12 +370,12 @@ function FloorMapPageInner() {
                             style={{
                               padding: "8px 10px",
                               border: "none",
-                              borderBottom: isActive ? "2px solid var(--accent-primary)" : "2px solid transparent",
+                              borderBottom: isActive ? `2px solid ${COLOURS.ACCENT}` : "2px solid transparent",
                               background: "transparent",
                               cursor: "pointer",
                               fontSize: "12px",
                               fontWeight: isActive ? 700 : 400,
-                              color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
+                              color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
                               fontFamily: "inherit",
                             }}
                           >
@@ -387,6 +383,11 @@ function FloorMapPageInner() {
                           </button>
                         );
                       })}
+                      <button
+                        onClick={() => setSidebarOpen(false)}
+                        style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
+                        aria-label="Collapse sidebar"
+                      >→</button>
                     </div>
                   )}
 
@@ -397,7 +398,7 @@ function FloorMapPageInner() {
                         <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                           <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
                         </div>
-                        <div style={{ height: "1px", background: "var(--border-light)" }} />
+                        <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
                         <div style={{ padding: "12px", boxSizing: "border-box" }}>
                           <button
                             type="button"
@@ -415,10 +416,10 @@ function FloorMapPageInner() {
                         <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                           <StoragePanel floorMapId={currentFloorMap?._id} />
                         </div>
-                        <div style={{ height: "1px", background: "var(--border-light)" }} />
+                        <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
                         <div style={{ padding: "12px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8 }}>
                           {units.length === 0 ? (
-                            <div style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>
+                            <div style={{ fontSize: "11px", color: COLOURS.TEXT_MUTED, textAlign: "center", padding: "8px 0" }}>
                               No storage units on this floor map yet.
                             </div>
                           ) : (
@@ -463,13 +464,13 @@ function FloorMapPageInner() {
                 </div>
               ) : (
                 <div style={{
-                  width: "32px", flexShrink: 0, background: "var(--card-bg)",
+                  width: "32px", flexShrink: 0, background: COLOURS.CARD_BG,
                   display: "flex", flexDirection: "column",
                   alignItems: "center", paddingTop: "14px", gap: "8px", flex: 1,
                 }}>
                   <button
                     onClick={() => setSidebarOpen(true)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px", padding: "4px" }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: COLOURS.TEXT_MUTED, fontSize: "14px", padding: "4px" }}
                     aria-label="Expand sidebar"
                   >←</button>
                 </div>

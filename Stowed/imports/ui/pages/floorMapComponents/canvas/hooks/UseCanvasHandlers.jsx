@@ -21,7 +21,6 @@ import { CANVAS_CONFIG } from "../CanvasConfig";
  * @param {number}      gridInterval    - Snap interval in metres
  * @param {number}      width           - Floor width in pixels
  * @param {number}      height          - Floor height in pixel.
- * @param {string}      activeTool
  * @param {React.Ref}   wrapperRef
  *
  * @returns {{ getGroupRef, handleDragOver, handleDragLeave, handleDrop,
