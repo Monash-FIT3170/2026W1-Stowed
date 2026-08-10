@@ -30,12 +30,10 @@ describe("Role-Based Access Control", function () {
     assert.strictEqual(hasClientPermission(ROLES.OWNER, "products.create"), true);
   });
 
-  it("restricts stocktake settings to admins and owners", function () {
-    assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/settings"), false);
-    assert.strictEqual(hasClientPermission(ROLES.ADMIN, "route:/settings"), true);
-    assert.strictEqual(hasClientPermission(ROLES.OWNER, "route:/settings"), true);
+  it("restricts stocktake schedule management to admins and owners", function () {
     assert.strictEqual(hasClientPermission(ROLES.STANDARD, "settings.manage"), false);
     assert.strictEqual(hasClientPermission(ROLES.ADMIN, "settings.manage"), true);
+    assert.strictEqual(hasClientPermission(ROLES.OWNER, "settings.manage"), true);
   });
 
   it("enforces standard-level restock permission", function () {

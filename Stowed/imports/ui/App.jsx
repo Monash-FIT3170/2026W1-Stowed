@@ -8,7 +8,6 @@ import { ListsPage } from "./pages/ListsPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
-import { SettingsPage } from "./pages/SettingsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
@@ -180,20 +179,6 @@ export function App() {
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/alerts") ? (
                     <AlertsPage />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/settings") ? (
-                    <SettingsPage />
                   ) : (
                     <Navigate to="/" replace />
                   )
