@@ -137,15 +137,6 @@ export function AlertsPage() {
     { id: STOCKTAKE_STATUS.DUE_SOON, label: "Due soon", count: dueSoonCount },
   ];
 
-  // TODO(backend): replace with a navigation to the stocktake/restock flow for
-  // this location once that screen exists.
-  const handleUpdateStock = (alert) => {
-    setPlaceholderNotice({
-      locationId: alert.location._id,
-      message: "“Update stock” is not connected yet — no stock levels were changed.",
-    });
-  };
-
   // TODO(backend): call the existing `storageLocations.stocktakeComplete`
   // method with { locationId }. It already stamps lastStocktakeAt and clears
   // stocktakeDue, but needs permission + org checks added before being exposed.
@@ -269,13 +260,9 @@ export function AlertsPage() {
                       </a>
 
                       <div className="alert-actions">
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => handleUpdateStock(alert)}
-                        >
+                        <a className="btn-secondary" href={`/stocktake/${alert.location._id}`}>
                           Update stock
-                        </button>
+                        </a>
                         <button
                           type="button"
                           className="btn-primary"

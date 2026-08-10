@@ -163,6 +163,12 @@
   flex-wrap: wrap;
 }
 
+.alert-actions a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 /* Placeholder buttons: styled as real actions but deliberately unwired. */
 .alert-placeholder-note {
   margin-top: 10px;
