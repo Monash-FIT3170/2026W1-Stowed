@@ -1,5 +1,6 @@
 import { useRef, useEffect, useReducer } from "react";
 import { Stage } from "react-konva";
+import Konva from "konva";
 
 import { useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
@@ -12,6 +13,10 @@ import { UnitLayer } from "./layers/UnitLayer";
 import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
+
+if (typeof window !== "undefined") {
+  Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
+}
 
 export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
   const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
