@@ -210,57 +210,63 @@ export function AlertsPage() {
 
                   return (
                     <article key={alert.location._id} className={`alert-card ${alert.status}`}>
-                      <div className="alert-card-top">
-                        <div>
-                          <h2 className="alert-title">
-                            {alert.location.name || "Unnamed location"}
-                            {alert.location.code && (
-                              <span className="alert-code">{alert.location.code}</span>
-                            )}
-                          </h2>
-                          <p className="alert-path">{alert.path || "Unlinked location"}</p>
-                        </div>
-                        <span className={`alert-badge ${alert.status}`}>
-                          {isOverdue && "⚠ "}
-                          {describeTiming(alert.daysUntilDue)}
-                        </span>
-                      </div>
-
-                      <dl className="alert-dates">
-                        <div>
-                          <dt>Last counted</dt>
-                          <dd>{formatDate(alert.location.lastStocktakeAt)}</dd>
-                        </div>
-                        <div>
-                          <dt>Due</dt>
-                          <dd>{formatDate(alert.dueDate)}</dd>
-                        </div>
-                        <div>
-                          <dt>Interval</dt>
-                          <dd>{alert.intervalDays} days</dd>
-                        </div>
-                      </dl>
-
-                      <div className="alert-items">
-                        <div className="alert-items-title">
-                          {alert.items.length === 0
-                            ? "No products recorded in this location"
-                            : `Items to count (${alert.items.length})`}
-                        </div>
-                        {shownItems.length > 0 && (
-                          <div className="alert-item-chips">
-                            {shownItems.map((item, index) => (
-                              <span key={`${item.name}-${index}`} className="alert-item-chip">
-                                {item.name}
-                                <span>×{item.quantity}</span>
-                              </span>
-                            ))}
-                            {hiddenItemCount > 0 && (
-                              <span className="alert-item-chip">+{hiddenItemCount} more</span>
-                            )}
+                      <a
+                        className="alert-location-link"
+                        href={`/locations/${alert.location._id}`}
+                        aria-label={`View details for ${alert.location.name || "unnamed location"}`}
+                      >
+                        <div className="alert-card-top">
+                          <div>
+                            <h2 className="alert-title">
+                              {alert.location.name || "Unnamed location"}
+                              {alert.location.code && (
+                                <span className="alert-code">{alert.location.code}</span>
+                              )}
+                            </h2>
+                            <p className="alert-path">{alert.path || "Unlinked location"}</p>
                           </div>
-                        )}
-                      </div>
+                          <span className={`alert-badge ${alert.status}`}>
+                            {isOverdue && "⚠ "}
+                            {describeTiming(alert.daysUntilDue)}
+                          </span>
+                        </div>
+
+                        <dl className="alert-dates">
+                          <div>
+                            <dt>Last counted</dt>
+                            <dd>{formatDate(alert.location.lastStocktakeAt)}</dd>
+                          </div>
+                          <div>
+                            <dt>Due</dt>
+                            <dd>{formatDate(alert.dueDate)}</dd>
+                          </div>
+                          <div>
+                            <dt>Interval</dt>
+                            <dd>{alert.intervalDays} days</dd>
+                          </div>
+                        </dl>
+
+                        <div className="alert-items">
+                          <div className="alert-items-title">
+                            {alert.items.length === 0
+                              ? "No products recorded in this location"
+                              : `Items to count (${alert.items.length})`}
+                          </div>
+                          {shownItems.length > 0 && (
+                            <div className="alert-item-chips">
+                              {shownItems.map((item, index) => (
+                                <span key={`${item.name}-${index}`} className="alert-item-chip">
+                                  {item.name}
+                                  <span>×{item.quantity}</span>
+                                </span>
+                              ))}
+                              {hiddenItemCount > 0 && (
+                                <span className="alert-item-chip">+{hiddenItemCount} more</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </a>
 
                       <div className="alert-actions">
                         <button
