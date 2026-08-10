@@ -58,3 +58,25 @@ export const LIST_STATUSES = {
   DRAFT: "draft",
   SAVED: "saved",
 };
+
+
+/**
+ * How an optional budget is spread across low stock products at generation
+ * time. The budget itself is not stored on the list; it only shapes the
+ * generated items.
+ *
+ * MAX_PRODUCTS - whole shortfall each, cheapest line first.
+ * SPREAD       - one unit each, cheapest unit first, then top up.
+ * URGENT       - whole shortfall each, closest to stockout first.
+ */
+export const BUDGET_STRATEGIES = {
+  MAX_PRODUCTS: "maxProducts",
+  SPREAD: "spread",
+  URGENT: "urgent",
+};
+
+export const BUDGET_STRATEGY_LABELS = {
+  [BUDGET_STRATEGIES.MAX_PRODUCTS]: "Restock as many products as possible",
+  [BUDGET_STRATEGIES.SPREAD]: "Spread across as many products as possible",
+  [BUDGET_STRATEGIES.URGENT]: "Most urgent first",
+};

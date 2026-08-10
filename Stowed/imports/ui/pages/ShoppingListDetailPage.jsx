@@ -10,10 +10,9 @@ import {
 } from "/imports/api/shoppingLists/constants";
 import { ShoppingLists } from "/imports/api/shoppingLists/collections";
 
-// change when real data is used instead of mock
-import { mockProducts, getLowStockProducts } from "/imports/api/mockProducts";
+import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
-import { toItem, nextOrderDay, currency, sortByCategory } from "./shoppingListHelpers";
+import { toItem, isLowStock, nextOrderDay, currency, sortByCategory } from "./shoppingListHelpers";
 
 import "./ListsPage.css";
 
@@ -38,7 +37,7 @@ export function ShoppingListDetailPage() {
 
   const [filter, setFilter] = useState(FILTERS.ALL);
   const [groupByCategory, setGroupByCategory] = useState(false);
-  const [addProductId, setAddProductId] = useState(mockProducts[0]?._id ?? "");
+  const [addProductId, setAddProductId] = useState("");
   const [addQuantity, setAddQuantity] = useState(1);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -46,12 +45,14 @@ export function ShoppingListDetailPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
 
-  const { list, sites, listsReady } = useTracker(() => {
+  const { list, sites, products, listsReady } = useTracker(() => {
     const listsSub = Meteor.subscribe("shoppingLists");
     Meteor.subscribe("locations.all");
+    Meteor.subscribe("products");
     return {
       list: ShoppingLists.findOne(listId),
       sites: Sites.find().fetch(),
+      products: Products.find({}, { sort: { name: 1 } }).fetch(),
       listsReady: listsSub.ready(),
     };
   }, [listId]);
@@ -81,11 +82,12 @@ export function ShoppingListDetailPage() {
     }
   }
 
-  // change when real data is used instead of mock
   async function regenerate() {
-    const nextItems = getLowStockProducts(mockProducts).map((product) =>
-      toItem(product, list.frequency ?? LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.GENERATED),
-    );
+    const nextItems = products
+      .filter(isLowStock)
+      .map((product) =>
+        toItem(product, list.frequency ?? LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.GENERATED),
+      );
     await updateItems(nextItems);
     setFilter(FILTERS.ALL);
   }
@@ -105,7 +107,8 @@ export function ShoppingListDetailPage() {
   }
 
   function addManually() {
-    const product = mockProducts.find((p) => p._id === addProductId);
+    const productId = addProductId || products[0]?._id;
+    const product = products.find((p) => p._id === productId);
     if (!product) return;
 
     const quantityWanted = Math.max(1, Number(addQuantity) || 1);
@@ -224,7 +227,8 @@ export function ShoppingListDetailPage() {
         <td>
           <span className="lists-product-name">{item.productName}</span>
           <span className="lists-product-meta">
-            {item.sku} &middot; {item.category}
+            {item.brand ? `${item.brand} · ` : ""}
+            {item.category}
           </span>
         </td>
 
@@ -526,12 +530,12 @@ export function ShoppingListDetailPage() {
                   <select
                     id="add-product"
                     className="form-input selected"
-                    value={addProductId}
+                    value={addProductId || products[0]?._id || ""}
                     onChange={(event) => setAddProductId(event.target.value)}
                   >
-                    {mockProducts.map((product) => (
+                    {products.map((product) => (
                       <option key={product._id} value={product._id}>
-                        {product.name} ({product.quantity} in stock)
+                        {product.name} ({product.totalQuantity ?? 0} in stock)
                       </option>
                     ))}
                   </select>
@@ -608,7 +612,7 @@ export function ShoppingListDetailPage() {
               </div>
             </div>
 
-            {/* change when real data is used instead of mock */}
+            
             <div className="detail-section">
               <div className="section-title">Schedule</div>
               <div className="section-content">
