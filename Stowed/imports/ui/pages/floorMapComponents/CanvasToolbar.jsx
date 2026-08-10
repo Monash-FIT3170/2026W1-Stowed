@@ -1,13 +1,8 @@
-import { useState } from "react";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
-import { CustomShapesPanel } from "./CustomShapesPanel";
-import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
-import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
-import { CreateShapeModal } from "./CreateShapeModal";
-import { CustomShapesPanel } from "./CustomShapesPanel";
 
 /**
- * Toolbar component for selecting tools and adjusting floor dimensions.
+ * Horizontal top toolbar for selecting tools, undo/redo and layout actions.
+ * Shape templates live in the right panel's Templates tab, not here.
  *
  * @param {string} activeTool - Currently selected tool
  * @param {(tool: string) => void} setActiveTool - State setter for updating the active tool
@@ -22,9 +17,7 @@ import { CustomShapesPanel } from "./CustomShapesPanel";
 export function CanvasToolbar({
   activeTool,
   setActiveTool,
-  mapShapes = [],
   onOpenCanvasSettings,
-  onOpenCreateShape,
   onSaveLayout,
   onLoadLayout,
   onUndo,
@@ -36,23 +29,9 @@ export function CanvasToolbar({
     ? activeTool.charAt(0).toUpperCase() + activeTool.slice(1)
     : "None";
 
-  // floor dimension validation
-  const updateDimension = (dimensionType, rawValue) => {
-    setInputMeters((prev) => ({ ...prev, [dimensionType]: rawValue }));
-    const val = Number(rawValue);
-    if (rawValue === "" || Number.isNaN(val) || val <= 0) return;
-    setFloorSize((prev) => ({
-      ...prev,
-      [dimensionType]: val * CANVAS_CONFIG.PIXELS_PER_METER,
-    }));
-  };
-
-
   const toolButtonStyle = (tool) => ({
     ...buttonStyles.base,
-    padding: "6px 10px",
-    fontSize: 11,
-    borderRadius: 8,
+    ...toolbarStyles.buttonInline,
     ...(activeTool === tool ? buttonStyles.active : buttonStyles.secondary),
   });
 
@@ -60,13 +39,16 @@ export function CanvasToolbar({
 
   return (
     <div style={toolbarStyles.bar}>
+      {/* ACTIVE TOOL */}
       <div style={toolbarStyles.status}>
-        <span>Active tool</span>
+        <span>Tool</span>
         <span style={toolbarStyles.statusBadge}>{activeToolLabel}</span>
       </div>
 
+      <div style={toolbarStyles.sectionDivider} />
+
       {/* TOOLS */}
-      <div style={toolbarStyles.row}>
+      <div style={toolbarStyles.section}>
         <button
           onClick={() => setActiveTool("select")}
           style={toolButtonStyle("select")}
@@ -83,37 +65,17 @@ export function CanvasToolbar({
         </button>
       </div>
 
-      <div style={toolbarStyles.row}>
-        <button
-          onClick={onSaveLayout}
-          style={{
-            ...buttonStyles.base,
-            ...buttonStyles.primary,
-            ...toolbarStyles.button,
-          }}
-        >
-          Save Layout
-        </button>
-        <button
-          onClick={onLoadLayout}
-          style={{
-            ...buttonStyles.base,
-            ...buttonStyles.secondary,
-            ...toolbarStyles.button,
-          }}
-        >
-          Load Layout
-        </button>
-      </div>
+      <div style={toolbarStyles.sectionDivider} />
 
-      <div style={toolbarStyles.row}>
+      {/* UNDO / REDO */}
+      <div style={toolbarStyles.section}>
         <button
           onClick={onUndo}
           disabled={!canUndo}
           style={{
             ...buttonStyles.base,
             ...buttonStyles.secondary,
-            ...toolbarStyles.button,
+            ...toolbarStyles.buttonInline,
             ...disabledStyle(!canUndo),
           }}
         >
@@ -125,42 +87,47 @@ export function CanvasToolbar({
           style={{
             ...buttonStyles.base,
             ...buttonStyles.secondary,
-            ...toolbarStyles.button,
+            ...toolbarStyles.buttonInline,
             ...disabledStyle(!canRedo),
           }}
         >
           Redo
         </button>
       </div>
-      <CustomShapesPanel
-        mapShapes={mapShapes}
-        activeTool={activeTool}
-        setActiveTool={setActiveTool}
-      />
 
-      <div style={toolbarStyles.rowSingle}>
-        <button
-          type="button"
-          onClick={onOpenCreateShape}
-          style={{
-            ...buttonStyles.base,
-            ...buttonStyles.secondary,
-            ...toolbarStyles.button,
-          }}
-        >
-          Create New Shape
-        </button>
-      </div>
-      <div style={toolbarStyles.rowSingle}>
+      <div style={toolbarStyles.spacer} />
+
+      {/* LAYOUT + SETTINGS */}
+      <div style={toolbarStyles.section}>
         <button
           onClick={onOpenCanvasSettings}
           style={{
             ...buttonStyles.base,
             ...buttonStyles.secondary,
-            ...toolbarStyles.button,
+            ...toolbarStyles.buttonInline,
           }}
         >
           Canvas Settings
+        </button>
+        <button
+          onClick={onLoadLayout}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.secondary,
+            ...toolbarStyles.buttonInline,
+          }}
+        >
+          Load Layout
+        </button>
+        <button
+          onClick={onSaveLayout}
+          style={{
+            ...buttonStyles.base,
+            ...buttonStyles.primary,
+            ...toolbarStyles.buttonInline,
+          }}
+        >
+          Save Layout
         </button>
       </div>
     </div>

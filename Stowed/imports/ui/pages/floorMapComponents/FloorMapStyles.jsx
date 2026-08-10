@@ -186,15 +186,32 @@ export const pageStyles = {
 export const toolbarStyles = {
   bar: {
     display: "flex",
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: "8px",
-    padding: "10px",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: "10px",
+    padding: "10px 20px",
     background: COLOURS.TOOL_BAR_COLOUR,
-    border: `1px solid ${COLOURS.CARD_BORDER}`,
-    borderRadius: 13,
-    boxShadow: "0 8px 20px rgba(26, 26, 26, 0.06)",
+    borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+    boxShadow: "0 2px 8px rgba(26, 26, 26, 0.04)",
     width: "100%",
+    boxSizing: "border-box",
+    flexShrink: 0,
+  },
+  section: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 0,
+  },
+  sectionDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    minHeight: 22,
+    background: COLOURS.CARD_BORDER,
+    flexShrink: 0,
+  },
+  spacer: {
+    flex: 1,
   },
   row: {
     display: "grid",
@@ -213,16 +230,24 @@ export const toolbarStyles = {
     padding: "6px 10px",
     fontSize: 11,
   },
+  buttonInline: {
+    borderRadius: 8,
+    textAlign: "center",
+    justifyContent: "center",
+    padding: "6px 12px",
+    fontSize: 11,
+    whiteSpace: "nowrap",
+  },
   status: {
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    justifyContent: "space-between",
     color: COLOURS.TEXT_MUTED,
     fontSize: 9,
     fontWeight: 600,
     textTransform: "uppercase",
     letterSpacing: 0.6,
+    flexShrink: 0,
   },
   statusBadge: {
     padding: "4px 8px",
@@ -234,6 +259,7 @@ export const toolbarStyles = {
     fontSize: 9,
     textTransform: "none",
     letterSpacing: 0,
+    whiteSpace: "nowrap",
   },
   divider: {
     height: 1,
@@ -242,16 +268,12 @@ export const toolbarStyles = {
 };
 export const customShapesPanelStyles = {
   container: {
-  width: "100%",
-  padding: "12px",
-  border: `1px solid ${COLOURS.BUTTON_BORDER}`,
-  borderRadius: 12,
-  background: "transparent",
-  display: "flex",
-  flexDirection: "column",
-  gap: 8,
-  boxSizing: "border-box",
-},
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    boxSizing: "border-box",
+  },
 
   title: {
     margin: 0,
