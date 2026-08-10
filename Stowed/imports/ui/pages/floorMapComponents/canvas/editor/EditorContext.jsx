@@ -61,7 +61,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
-  const [isCanvasSettingsOpen, setCanvasSettingsOpen] = useState(false);
+  const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
+  const [isEditorSettingsOpen, setEditorSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
 
@@ -325,13 +326,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     setActiveTool(TOOLS.SELECT);
   }
 
-  // --- CANVAS SETTINGS ---
-  function handleCanvasSettingsSave({
-    floorSize: newFloorSize,
-    gridInterval,
-    showGrid,
-    snapToGrid,
-  }) {
+  // --- FLOOR MAP SETTINGS ---
+  function handleFloorMapSettingsSave({ floorSize: newFloorSize }) {
     const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
     const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
     const unitsInsideFloor = units.filter(
@@ -356,6 +352,11 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
 
     setFloorSize(newFloorSize);
+    return true;
+  }
+
+  // --- EDITOR SETTINGS ---
+  function handleEditorSettingsSave({ gridInterval, showGrid, snapToGrid }) {
     setCanvasSettings({ gridInterval, showGrid, snapToGrid });
     return true;
   }
@@ -400,12 +401,15 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     // Floor
     floorSize,
     setFloorSize,
+    isFloorMapSettingsOpen,
+    setFloorMapSettingsOpen,
+    handleFloorMapSettingsSave,
 
-    // Canvas settings
+    // Editor settings
     canvasSettings,
-    isCanvasSettingsOpen,
-    setCanvasSettingsOpen,
-    handleCanvasSettingsSave,
+    isEditorSettingsOpen,
+    setEditorSettingsOpen,
+    handleEditorSettingsSave,
 
     // Mode toggling
     isCanvasEditMode,

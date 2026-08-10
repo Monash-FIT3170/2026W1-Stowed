@@ -3,9 +3,9 @@ import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
-import { CanvasToolbar } from "./floorMapComponents/CanvasToolbar";
 import { StoragePanel } from "./floorMapComponents/StoragePanel";
-import { CanvasSettingsModal } from "./floorMapComponents/CanvasSettingsModal";
+import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
+import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
 import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
@@ -19,6 +19,19 @@ import { UnitCard } from "./floorMapComponents/UnitCard";
 import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { buttonStyles } from "./floorMapComponents/FloorMapStyles";
 
+const statusBarButtonStyle = {
+  fontSize: "12px",
+  fontWeight: 600,
+  color: COLOURS.TEXT_PRIMARY,
+  background: COLOURS.CARD_BG,
+  border: `1px solid ${COLOURS.CARD_BORDER}`,
+  borderRadius: "8px",
+  padding: "6px 10px",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  whiteSpace: "nowrap",
+};
+
 function FloorMapPageInner() {
   const { role } = useAuth();
   const canManage = hasClientPermission(role, "locations.manage");
@@ -27,19 +40,17 @@ function FloorMapPageInner() {
     activeTool,
     setActiveTool,
     floorSize,
+    isFloorMapSettingsOpen,
+    setFloorMapSettingsOpen,
+    handleFloorMapSettingsSave,
     canvasSettings,
-    isCanvasSettingsOpen,
-    setCanvasSettingsOpen,
+    isEditorSettingsOpen,
+    setEditorSettingsOpen,
+    handleEditorSettingsSave,
     isCanvasEditMode,
     setCanvasEditMode,
     units,
-    canUndo,
-    canRedo,
-    handleUndo,
-    handleRedo,
     handleSaveLayout,
-    handleLoadLayout,
-    handleCanvasSettingsSave,
     selectedUnit,
     setSelectedUnit,
     lowStockByUnitId,
@@ -109,6 +120,7 @@ function FloorMapPageInner() {
           flexShrink: 0,
         }}
       >
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
         {sites.length > 0 ? (
           <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
             {/* WAREHOUSE (SITE) SELECT */}
@@ -197,37 +209,61 @@ function FloorMapPageInner() {
           </span>
         )}
 
-        <button
-          type="button"
-          onClick={() => canManage && setCanvasEditMode(!isCanvasEditMode)}
-          disabled={!canManage}
-          style={{
-            fontSize: "10px",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-            padding: "4px 10px",
-            borderRadius: "999px",
-            border: `1px solid ${isCanvasEditMode ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
-            color: isCanvasEditMode ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
-            background: isCanvasEditMode ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
-            cursor: canManage ? "pointer" : "default",
-            fontFamily: "inherit",
-          }}
-        >
-          {isCanvasEditMode ? "Edit mode" : "View mode"}
-        </button>
-      </div>
+        {/* SAVE LAYOUT */}
+        {isCanvasEditMode && canManage && (
+          <button
+            type="button"
+            onClick={handleSaveLayout}
+            style={{ ...statusBarButtonStyle, background: COLOURS.ACCENT, borderColor: COLOURS.ACCENT, color: "white" }}
+          >
+            Save Layout
+          </button>
+        )}
+        </div>
 
-      {/* -- Edit mode toolbar - horizontal top bar with tools, undo/redo, layout -- */}
-      {isCanvasEditMode && canManage && (
-        <CanvasToolbar
-          onSaveLayout={handleSaveLayout} onLoadLayout={handleLoadLayout}
-          onOpenCanvasSettings={() => setCanvasSettingsOpen(true)}
-          onUndo={handleUndo} onRedo={handleRedo}
-          canUndo={canUndo} canRedo={canRedo}
-        />
-      )}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {/* FLOOR MAP / EDITOR SETTINGS */}
+          {isCanvasEditMode && canManage && (
+            <>
+              <button
+                type="button"
+                onClick={() => setFloorMapSettingsOpen(true)}
+                style={statusBarButtonStyle}
+              >
+                Floor Map Settings
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorSettingsOpen(true)}
+                style={statusBarButtonStyle}
+              >
+                Editor Settings
+              </button>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={() => canManage && setCanvasEditMode(!isCanvasEditMode)}
+            disabled={!canManage}
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              padding: "4px 10px",
+              borderRadius: "999px",
+              border: `1px solid ${isCanvasEditMode ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
+              color: isCanvasEditMode ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+              background: isCanvasEditMode ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
+              cursor: canManage ? "pointer" : "default",
+              fontFamily: "inherit",
+            }}
+          >
+            {isCanvasEditMode ? "Edit mode" : "View mode"}
+          </button>
+        </div>
+      </div>
 
       {/* -- Map row -- */}
       <div
@@ -572,15 +608,23 @@ function FloorMapPageInner() {
           );
         })()}
 
-      {/* CANVAS SETTINGS MODAL */}
-      {isCanvasSettingsOpen && (
-        <CanvasSettingsModal
+      {/* FLOOR MAP SETTINGS MODAL */}
+      {isFloorMapSettingsOpen && (
+        <FloorMapSettingsModal
           floorSize={floorSize}
+          onSave={handleFloorMapSettingsSave}
+          onClose={() => setFloorMapSettingsOpen(false)}
+        />
+      )}
+
+      {/* EDITOR SETTINGS MODAL*/}
+      {isEditorSettingsOpen && (
+        <EditorSettingsModal
           gridInterval={canvasSettings.gridInterval}
           showGrid={canvasSettings.showGrid}
           snapToGrid={canvasSettings.snapToGrid}
-          onSave={handleCanvasSettingsSave}
-          onClose={() => setCanvasSettingsOpen(false)}
+          onSave={handleEditorSettingsSave}
+          onClose={() => setEditorSettingsOpen(false)}
         />
       )}
 
