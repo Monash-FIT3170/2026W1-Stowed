@@ -56,7 +56,7 @@ function FloorMapPageInner() {
   const [isCreateShapeOpen, setIsCreateShapeOpen] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
-  // Fetch all sites and floor maps for the tab bar
+  // Fetch all sites and floor maps
   const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
     return {
@@ -83,6 +83,7 @@ function FloorMapPageInner() {
   // Current floor map
   const currentFloorMap = floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
   const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
+  const siteFloorMaps = currentSite ? floorMaps.filter((f) => f.siteId === currentSite._id) : [];
 
   return (
     <div
@@ -108,9 +109,93 @@ function FloorMapPageInner() {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-dark)" }}>
-          {currentSite ? `${currentSite.name} - ` : ""}{currentFloorMap?.name ?? "Floor Map"}
-        </span>
+        {sites.length > 0 ? (
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+            {/* WAREHOUSE (SITE) SELECT */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <span
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Site
+              </span>
+              <select
+                value={currentSite?._id ?? ""}
+                onChange={(e) => {
+                  const targetSiteId = e.target.value;
+                  const targetMap = floorMaps.find((f) => f.siteId === targetSiteId);
+                  if (targetMap) navigate(`/floor-map/${targetMap._id}`);
+                }}
+                aria-label="Select site"
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "var(--text-dark)",
+                  background: "var(--card-bg)",
+                  border: "1px solid var(--border-light)",
+                  borderRadius: "8px",
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {sites.map((site) => (
+                  <option key={site._id} value={site._id}>
+                    {site.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* FLOOR MAP SELECT - only shown when the selected site has more than one floor map */}
+            {currentSite && siteFloorMaps.length > 1 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span
+                  style={{
+                    fontSize: "9px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Floor Map
+                </span>
+                <select
+                  value={currentFloorMap?._id ?? ""}
+                  onChange={(e) => navigate(`/floor-map/${e.target.value}`)}
+                  aria-label="Select floor map"
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "var(--text-muted)",
+                    background: "var(--card-bg)",
+                    border: "1px solid var(--border-light)",
+                    borderRadius: "8px",
+                    padding: "6px 10px",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {siteFloorMaps.map((fm) => (
+                    <option key={fm._id} value={fm._id}>
+                      {fm.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        ) : (
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-dark)" }}>
+            {currentFloorMap?.name ?? "Floor Map"}
+          </span>
+        )}
         <button
           type="button"
           onClick={() => canManage && setCanvasEditMode(!isCanvasEditMode)}
@@ -132,54 +217,6 @@ function FloorMapPageInner() {
           {isCanvasEditMode ? "Edit mode" : "View mode"}
         </button>
       </div>
-
-      {/* -- Floor map tabs - only render once data is ready and there are multiple maps -- */}
-      {locationsReady && floorMaps.length > 1 && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            padding: "0 28px",
-            borderBottom: "1px solid var(--border-light)",
-            background: "var(--card-bg)",
-            flexShrink: 0,
-            overflowX: "auto",
-          }}
-        >
-          {/* Group by site */}
-          {sites.map((site) => {
-            const siteMaps = floorMaps.filter((f) => f.siteId === site._id);
-            if (!siteMaps.length) return null;
-            return siteMaps.map((fm) => {
-              const isActive = fm._id === (floorMapId ?? floorMaps[0]?._id);
-              return (
-                <button
-                  key={fm._id}
-                  onClick={() => navigate(`/floor-map/${fm._id}`)}
-                  style={{
-                    padding: "10px 16px",
-                    border: "none",
-                    borderBottom: isActive
-                      ? "2px solid var(--accent-primary)"
-                      : "2px solid transparent",
-                    background: "transparent",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: isActive ? 700 : 400,
-                    color: isActive ? "var(--accent-primary)" : "var(--text-muted)",
-                    whiteSpace: "nowrap",
-                    fontFamily: "inherit",
-                    flexShrink: 0,
-                  }}
-                >
-                  {site.name} - {fm.name}
-                </button>
-              );
-            });
-          })}
-        </div>
-      )}
 
       {/* -- Edit mode toolbar - horizontal top bar with tools, undo/redo, layout -- */}
       {isCanvasEditMode && canManage && (
@@ -564,8 +601,16 @@ function FloorMapPageInner() {
 
 export function FloorMapPage() {
   const { floorMapId } = useParams();
+  // Owned here (outside the remounted EditorProvider) so edit/view mode
+  // persists when switching between floor maps / warehouses.
+  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
   return (
-    <EditorProvider key={floorMapId ?? "default"} floorMapId={floorMapId}>
+    <EditorProvider
+      key={floorMapId ?? "default"}
+      floorMapId={floorMapId}
+      isCanvasEditMode={isCanvasEditMode}
+      setCanvasEditMode={setCanvasEditMode}
+    >
       <FloorMapPageInner />
     </EditorProvider>
   );

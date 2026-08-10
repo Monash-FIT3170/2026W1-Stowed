@@ -56,14 +56,13 @@ const EditorContext = createContext(null);
  * Owns all shared editor state: active tool, floor dimensions, canvas settings,
  * placed units, undo/redo history, save/load, and low stock alert data.
  *
- * @param {{ children: React.ReactNode, floorMapId: string }} props
+ * @param {{ children: React.ReactNode, floorMapId: string, isCanvasEditMode: boolean, setCanvasEditMode: (v: boolean) => void }} props
  */
-export function EditorProvider({ children, floorMapId }) {
+export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanvasEditMode }) {
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
   const [isCanvasSettingsOpen, setCanvasSettingsOpen] = useState(false);
-  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
 
