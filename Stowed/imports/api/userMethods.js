@@ -20,6 +20,7 @@ const PERMISSIONS = {
   "products.delete": ROLES.ADMIN, // Allow Admin
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations

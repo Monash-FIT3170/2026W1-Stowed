@@ -51,6 +51,21 @@
   align-items: center;
 }
 
+.stocktake-error,
+.stocktake-saved {
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stocktake-error {
+  color: var(--danger);
+}
+
+.stocktake-saved {
+  color: var(--text-muted);
+}
+
 .stocktake-dirty {
   padding: 3px 10px;
   border-radius: 999px;

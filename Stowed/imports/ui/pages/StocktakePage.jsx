@@ -7,6 +7,15 @@ import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/loca
 import "./StocktakePage.css";
 import "../Global.css";
 
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
+
 function formatDate(date) {
   if (!date) return "Never";
   return new Date(date).toLocaleDateString(undefined, {
@@ -60,6 +69,9 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
   const [draft, setDraft] = useState(() => toDraft(rows));
   const [addingProductId, setAddingProductId] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [savedMessage, setSavedMessage] = useState("");
 
   // Reseed when the page moves to a different location. Deliberately not keyed
   // on `rows` itself: that identity changes on every reactive re-run, which
@@ -69,6 +81,8 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
     setDraft(toDraft(rows));
     setAddingProductId("");
     setIsAdding(false);
+    setSaveError("");
+    setSavedMessage("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationId]);
 
@@ -122,6 +136,38 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
     setDraft(toDraft(rows));
     setAddingProductId("");
     setIsAdding(false);
+    setSaveError("");
+    setSavedMessage("");
+  }
+
+  async function saveStocktake() {
+    setIsSaving(true);
+    setSaveError("");
+    setSavedMessage("");
+
+    try {
+      // The kept lines are the location's new contents; the server deletes
+      // whatever is missing from them.
+      await callMethod("stocktake.save", {
+        locationId: location._id,
+        lines: draft
+          .filter((line) => !line.removed)
+          .map((line) => ({ productId: line.productId, quantity: toCount(line.quantity) })),
+      });
+
+      // Clear the struck-through lines and normalise any half-typed field,
+      // leaving the draft matching what was just written.
+      setDraft((prev) =>
+        prev
+          .filter((line) => !line.removed)
+          .map((line) => ({ ...line, quantity: String(toCount(line.quantity)) })),
+      );
+      setSavedMessage("Stocktake saved");
+    } catch (error) {
+      setSaveError(error.reason || error.message || "Could not save the stocktake.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const isDirty = hasChanges(draft, rows);
@@ -151,13 +197,22 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
               Back
             </button>
             {isDirty && (
-              <button type="button" className="btn-secondary" onClick={discardChanges}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={discardChanges}
+                disabled={isSaving}
+              >
                 Discard
               </button>
             )}
-            {/* Reconciling the ProductRecords is the next piece of work. */}
-            <button type="button" className="btn-primary" disabled={!isDirty}>
-              Save stocktake
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={saveStocktake}
+              disabled={!isDirty || isSaving}
+            >
+              {isSaving ? "Saving..." : "Save stocktake"}
             </button>
           </div>
         </div>
@@ -175,6 +230,9 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
           <span>Last counted {formatDate(location.lastStocktakeAt)}</span>
           {isDirty && <span className="stocktake-dirty">Unsaved changes</span>}
         </div>
+
+        {saveError && <p className="stocktake-error">{saveError}</p>}
+        {savedMessage && !isDirty && <p className="stocktake-saved">{savedMessage}</p>}
       </header>
 
       <section className="stocktake-panel">
