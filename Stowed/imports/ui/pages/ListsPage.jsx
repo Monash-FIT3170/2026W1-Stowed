@@ -13,7 +13,13 @@ import { ShoppingLists } from "/imports/api/shoppingLists/collections";
 
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
-import { allocateWithinBudget, isLowStock, toCents, fromCents, currency } from "./shoppingListHelpers";
+import {
+  allocateWithinBudget,
+  isLowStock,
+  toCents,
+  fromCents,
+  currency,
+} from "./shoppingListHelpers";
 
 import "./ListsPage.css";
 
@@ -24,6 +30,18 @@ function callMethod(methodName, params) {
       else resolve(result);
     });
   });
+}
+
+const STATUS_LABELS = {
+  [LIST_STATUSES.DRAFT]: "Draft",
+  [LIST_STATUSES.SAVED]: "Saved",
+  [LIST_STATUSES.ARCHIVED]: "Archived",
+};
+
+function statusBadgeClass(status) {
+  if (status === LIST_STATUSES.DRAFT) return "section-badge op";
+  if (status === LIST_STATUSES.ARCHIVED) return "section-badge im";
+  return "section-badge id";
 }
 
 export function ListsPage() {
@@ -76,7 +94,7 @@ export function ListsPage() {
     )}, ${currency(fromCents(preview.remainingCents))} unspent.`;
   }
 
-    async function createList(items) {
+  async function createList(items) {
     setIsGenerating(true);
     setGenerateError("");
     setShowEmptyNotice(false);
@@ -92,9 +110,8 @@ export function ListsPage() {
     } catch (error) {
       console.error("Failed to generate shopping list:", error);
       setGenerateError(error.reason || error.message || "Failed to generate list.");
-    } 
+    }
     setIsGenerating(false);
-    
   }
 
   function generate() {
@@ -174,9 +191,8 @@ export function ListsPage() {
 
         {preview.skipped.length > 0 && (
           <p className="warning-text lists-preview-skipped">
-            {preview.skipped.length}{" "}
-            {preview.skipped.length === 1 ? "product does" : "products do"} not fit:{" "}
-            {preview.skipped.map((product) => product.name).join(", ")}
+            {preview.skipped.length} {preview.skipped.length === 1 ? "product does" : "products do"}{" "}
+            not fit: {preview.skipped.map((product) => product.name).join(", ")}
           </p>
         )}
 
@@ -210,7 +226,12 @@ export function ListsPage() {
             <p className="section-empty">
               Generate one to pull in every product that&apos;s hit its reorder point.
             </p>
-            <button type="button" className="btn-primary" onClick={generate} disabled={isGenerating}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={generate}
+              disabled={isGenerating}
+            >
               Generate shopping list
             </button>
           </div>
@@ -239,12 +260,8 @@ export function ListsPage() {
                 return (
                   <Link key={list._id} to={`/lists/${list._id}`} className="lists-overview-row">
                     <span className="item-name-link">{list.name}</span>
-                    <span
-                      className={
-                        list.status === LIST_STATUSES.DRAFT ? "section-badge op" : "section-badge id"
-                      }
-                    >
-                      {list.status === LIST_STATUSES.DRAFT ? "Draft" : "Saved"}
+                    <span className={statusBadgeClass(list.status)}>
+                      {STATUS_LABELS[list.status] ?? list.status}
                     </span>
                     <span>{list.items.length}</span>
                     <span className="lists-overview-site">{site ? site.name : "Unassigned"}</span>

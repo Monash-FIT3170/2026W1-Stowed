@@ -57,8 +57,8 @@ export const FREQUENCY_WEEKS = {
 export const LIST_STATUSES = {
   DRAFT: "draft",
   SAVED: "saved",
+  ARCHIVED: "archived",
 };
-
 
 /**
  * How an optional budget is spread across low stock products at generation

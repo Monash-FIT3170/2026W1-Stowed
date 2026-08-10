@@ -17,6 +17,9 @@ const itemPattern = {
   addMode: String,
   purchased: Boolean,
   received: Boolean,
+  allocatedLocationId: Match.Maybe(String),
+  allocatedLocationName: Match.Maybe(String),
+  allocatedAt: Match.Maybe(Date),
 };
 
 Meteor.methods({
@@ -62,12 +65,22 @@ Meteor.methods({
     });
   },
 
-  async "shoppingLists.update"({ listId, items, siteId, status, frequency }) {
+  async "shoppingLists.update"({
+    listId,
+    items,
+    siteId,
+    status,
+    frequency,
+    archivedAt,
+    archivedWithPendingItems,
+  }) {
     check(listId, String);
     check(items, Match.Maybe([itemPattern]));
     check(siteId, Match.Maybe(String));
     check(status, Match.Maybe(String));
     check(frequency, Match.Maybe(String));
+    check(archivedAt, Match.Maybe(Date));
+    check(archivedWithPendingItems, Match.Maybe(Boolean));
 
     if (status !== undefined && !Object.values(LIST_STATUSES).includes(status)) {
       throw new Meteor.Error("invalid-status", "Unknown list status.");
@@ -81,6 +94,9 @@ Meteor.methods({
     if (siteId !== undefined) set.siteId = siteId;
     if (status !== undefined) set.status = status;
     if (frequency !== undefined) set.frequency = frequency;
+    if (archivedAt !== undefined) set.archivedAt = archivedAt;
+    if (archivedWithPendingItems !== undefined)
+      set.archivedWithPendingItems = archivedWithPendingItems;
 
     await ShoppingLists.updateAsync(listId, { $set: set });
   },

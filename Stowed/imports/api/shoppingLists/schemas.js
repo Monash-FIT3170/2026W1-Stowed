@@ -72,6 +72,23 @@ export const ShoppingListProductSchema = new SimpleSchema({
     type: Boolean,
     defaultValue: false,
   },
+
+  // Set once received stock has been assigned to a concrete storage
+  // location, via products.allocateReceivedStock.
+  allocatedLocationId: {
+    type: String,
+    optional: true,
+  },
+
+  allocatedLocationName: {
+    type: String,
+    optional: true,
+  },
+
+  allocatedAt: {
+    type: Date,
+    optional: true,
+  },
 });
 
 /**
@@ -126,6 +143,19 @@ export const ShoppingListSchema = new SimpleSchema({
 
   siteId: {
     type: String,
+    optional: true,
+  },
+
+  // Set when a list is archived. archivedWithPendingItems records whether
+  // that happened before every item was marked received, so the UI can
+  // still show the warning after the fact.
+  archivedAt: {
+    type: Date,
+    optional: true,
+  },
+
+  archivedWithPendingItems: {
+    type: Boolean,
     optional: true,
   },
 
