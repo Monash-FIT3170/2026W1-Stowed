@@ -5,7 +5,7 @@ export const COLOURS = {
   TEXT_MUTED: "#998874",
 
   // Layout Colours
-  PAGE_BG: "#f5efe6",
+  PAGE_BG: "#eeece5",
   CARD_BG: "#ffffff",
   CARD_BORDER: "#efe7da",
   INPUT_BG: "#fdf7f2",

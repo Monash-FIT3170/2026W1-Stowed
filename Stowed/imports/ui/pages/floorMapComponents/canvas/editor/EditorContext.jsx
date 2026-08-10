@@ -31,7 +31,7 @@ function mapStorageUnitToCanvasUnit(unit) {
     offset: unit.offset,
     rotation: unit.rotation ?? 0,
     scale: unit.scale,
-    fill: unit.fill || "lightblue",
+    fill: unit.fill || "#7a5230",
   };
 }
 
@@ -248,7 +248,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             offset: newOffset,
             rotation: unit.rotation ?? 0,
             scale: newScale,
-            fill: unit.fill || "lightblue",
+            fill: unit.fill || "#7a5230",
           });
 
           savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
@@ -266,7 +266,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             offset,
             rotation: 0,
             scale,
-            fill: unit.fill || "lightblue",
+            fill: unit.fill || "#7a5230",
           });
 
           savedCanvasUnits.push({

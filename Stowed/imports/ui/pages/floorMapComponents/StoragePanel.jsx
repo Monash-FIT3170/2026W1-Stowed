@@ -13,10 +13,10 @@ const TYPE_OPTIONS = [
 ];
 
 const TYPE_COLOURS = {
-  shelf: "#d6ede8",
-  cabinet: "#dde8f5",
-  rack: "#f5ece0",
-  other: "#e8e8e8",
+  shelf: "#7a5230",
+  cabinet: "#5c3d24",
+  rack: "#452c19",
+  other: "#8f6a44",
 };
 
 const EMPTY_FORM = { name: "", type: "shelf", width: "2", height: "1" };
@@ -109,7 +109,7 @@ export function StoragePanel({ floorMapId }) {
           y: 1,
         },
 
-        fill: TYPE_COLOURS[form.type] ?? "#d6ede8",
+        fill: TYPE_COLOURS[form.type] ?? "#7a5230",
       });
       setSuccess(
         `"${form.name.trim()}" added at ` +

@@ -77,13 +77,24 @@ export function StorageUnit({
 
       {/* UNIT NAME */}
       <Text
+        x={0}
+        y={0}
         width={unit.width * px}
         height={unit.height * px}
+        padding={6}
         align="center"
         verticalAlign="middle"
         text={unit.name}
         fontSize={12}
-        fill="white"
+        fontFamily="Inter, sans-serif"
+        fontStyle="bold"
+        fill="#fdf7f2"
+        wrap="none"
+        ellipsis
+        shadowColor="black"
+        shadowOpacity={0.35}
+        shadowBlur={3}
+        shadowOffset={{ x: 0, y: 1 }}
         listening={false}
       />
     </Group>
