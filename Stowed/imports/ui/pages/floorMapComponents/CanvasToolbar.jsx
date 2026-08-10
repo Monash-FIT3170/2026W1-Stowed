@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
+import { CustomShapesPanel } from "./CustomShapesPanel";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { buttonStyles, toolbarStyles } from "./FloorMapStyles";
 import { CreateShapeModal } from "./CreateShapeModal";
+import { CustomShapesPanel } from "./CustomShapesPanel";
 
 /**
  * Toolbar component for selecting tools and adjusting floor dimensions.
@@ -20,6 +22,7 @@ import { CreateShapeModal } from "./CreateShapeModal";
 export function CanvasToolbar({
   activeTool,
   setActiveTool,
+  mapShapes = [],
   onOpenCanvasSettings,
   onOpenCreateShape,
   onSaveLayout,
@@ -129,6 +132,12 @@ export function CanvasToolbar({
           Redo
         </button>
       </div>
+      <CustomShapesPanel
+        mapShapes={mapShapes}
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+      />
+
       <div style={toolbarStyles.rowSingle}>
         <button
           type="button"

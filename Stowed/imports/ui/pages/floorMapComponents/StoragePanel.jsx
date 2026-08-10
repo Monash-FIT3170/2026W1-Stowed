@@ -84,7 +84,7 @@ export function StoragePanel({ floorMapId }) {
     if (!freePos) {
       setError(
         `No free space for a ${unitW} × ${unitH} m unit. ` +
-          "Try a smaller size or move existing units first.",
+        "Try a smaller size or move existing units first.",
       );
       setSubmitting(false);
       return;
@@ -94,23 +94,26 @@ export function StoragePanel({ floorMapId }) {
       // Replace with the actual shape when that is implemented
       await Meteor.callAsync("storageUnits.create", {
         floorMapId,
-        name:     form.name.trim(),
-        type:     form.type,
-        shape:    buildRectShape({ width: unitW, height: unitH, name: form.name.trim() }),
+        name: form.name.trim(),
+        type: form.type,
+        shape: buildRectShape({ width: unitW, height: unitH, name: form.name.trim() }),
         offset: {
           x: Number(freePos.x),
           y: Number(freePos.y),
         },
-        rotation: Number(0),
-        scale : {
-          x: Number(1),
-          y: Number(1),
+
+        rotation: 0,
+
+        scale: {
+          x: 1,
+          y: 1,
         },
-        fill:     TYPE_COLOURS[form.type] ?? "#d6ede8",
+
+        fill: TYPE_COLOURS[form.type] ?? "#d6ede8",
       });
       setSuccess(
         `"${form.name.trim()}" added at ` +
-          `(${freePos.x.toFixed(1)} m, ${freePos.y.toFixed(1)} m) - drag to reposition.`,
+        `(${freePos.x.toFixed(1)} m, ${freePos.y.toFixed(1)} m) - drag to reposition.`,
       );
       setForm(EMPTY_FORM);
       setShowForm(false);

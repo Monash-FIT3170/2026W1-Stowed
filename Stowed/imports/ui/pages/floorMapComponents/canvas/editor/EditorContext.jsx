@@ -242,32 +242,32 @@ export function EditorProvider({ children, floorMapId }) {
 
           await callMethod("storageUnits.update", {
             storageUnitId: unit._id,
-            floorMapId:    activeFloorMapId,
-            name:          unit.name,
-            type:          unit.type || "other",
-            shape:         unit.shape,
-            offset:        newOffset,
-            rotation:      unit.rotation ?? 0,
-            scale:         newScale,
-            fill:          unit.fill || "lightblue",
+            floorMapId: activeFloorMapId,
+            name: unit.name,
+            type: unit.type || "other",
+            shape: unit.shape,
+            offset: newOffset,
+            rotation: unit.rotation ?? 0,
+            scale: newScale,
+            fill: unit.fill || "lightblue",
           });
 
           savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
         } else {
-          // Create new shape does not work correctly right now so just initialise all new units with the same shape
-          const shape = buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
+          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+          const shape = hasCustomShape ? unit.shape: buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
           const offset = { x: Number(unit.x), y: Number(unit.y) };
           const scale = { x: 1, y: 1 };
 
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
-            name:       unit.name,
-            type:       unit.type || "other",
+            name: unit.name,
+            type: unit.type || "other",
             shape,
             offset,
             rotation: 0,
             scale,
-            fill:       unit.fill || "lightblue",
+            fill: unit.fill || "lightblue",
           });
 
           savedCanvasUnits.push({
@@ -363,27 +363,36 @@ export function EditorProvider({ children, floorMapId }) {
   }
 
   async function handleDeleteSelectedUnit() {
-    if (!selectedUnit) return;
-    const unitId = selectedUnit._id || selectedUnit.id;
-    if (!unitId) {
-      // Unit not saved to DB yet - just remove from canvas
-      commitUnits((prev) =>
-        prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id),
-      );
-      setSelectedUnit(null);
-      return;
-    }
-    try {
-      await callMethod("storageUnits.delete", { storageUnitId: unitId });
-      commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
-      setSelectedUnit(null);
-    } catch (error) {
-      alert(
-        error.reason ||
-          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
-      );
-    }
+  if (!selectedUnit) return;
+
+
+  if (!selectedUnit._id) {
+    commitUnits((prev) =>
+      prev.filter((u) => u.id !== selectedUnit.id),
+    );
+
+    setSelectedUnit(null);
+    return;
   }
+
+
+  try {
+    await callMethod("storageUnits.delete", {
+      storageUnitId: selectedUnit._id,
+    });
+
+    commitUnits((prev) =>
+      prev.filter((u) => u._id !== selectedUnit._id),
+    );
+
+    setSelectedUnit(null);
+  } catch (error) {
+    alert(
+      error.reason ||
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+    );
+  }
+}
 
   const value = {
     // Tool
