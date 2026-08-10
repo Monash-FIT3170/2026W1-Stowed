@@ -1,300 +1,127 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { useNavigate } from "react-router-dom";
 import {
   SHOPPING_LIST_MODES,
   LIST_FREQUENCIES,
-  LIST_FREQUENCY_LABELS,
   LIST_STATUSES,
-  ADD_PRODUCT_MODES,
-  FREQUENCY_WEEKS,
-  SAVED_SHOPPING_LIST_STORAGE_KEY,
+  BUDGET_STRATEGIES,
+  BUDGET_STRATEGY_LABELS,
 } from "/imports/api/shoppingLists/constants";
+import { ShoppingLists } from "/imports/api/shoppingLists/collections";
 
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
+import {
+  allocateWithinBudget,
+  isLowStock,
+  toCents,
+  fromCents,
+  currency,
+} from "./shoppingListHelpers";
 
 import "./ListsPage.css";
 
-const FILTERS = {
-  LOW_STOCK: "lowStock",
-  ALL: "all",
-  MANUAL: "manual",
-};
-
-function quantityFor(product, frequency) {
-  const target = product.reorderAt ?? product.lowStockThreshold ?? 0;
-  const stock = product.totalQuantity ?? product.quantity ?? 0;
-  const shortfall = target - stock;
-  return Math.max(1, shortfall) * (FREQUENCY_WEEKS[frequency] ?? 1);
-}
-
-function toItem(product, frequency, addMode) {
-  return {
-    productId: product._id,
-    productName: product.name,
-    sku: product.sku ?? "",
-    category: product.category ?? "Uncategorized",
-    inStock: product.totalQuantity ?? product.quantity ?? 0,
-    reorderAt: product.reorderAt ?? product.lowStockThreshold ?? 0,
-    lowStockThreshold: product.lowStockThreshold ?? product.reorderAt ?? 0,
-    unitCost: product.unitCost ?? 0,
-    quantityWanted: addMode === ADD_PRODUCT_MODES.GENERATED ? quantityFor(product, frequency) : 1,
-    addMode,
-    purchased: false,
-    received: false,
-  };
-}
-
-function nextOrderDay(frequency) {
-  const date = new Date();
-  date.setDate(date.getDate() + (FREQUENCY_WEEKS[frequency] ?? 1) * 7);
-  return date.toLocaleDateString("en-AU", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
   });
 }
 
-const currency = (value) => value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
+const STATUS_LABELS = {
+  [LIST_STATUSES.DRAFT]: "Draft",
+  [LIST_STATUSES.SAVED]: "Saved",
+  [LIST_STATUSES.ARCHIVED]: "Archived",
+};
+
+function statusBadgeClass(status) {
+  if (status === LIST_STATUSES.DRAFT) return "section-badge op";
+  if (status === LIST_STATUSES.ARCHIVED) return "section-badge im";
+  return "section-badge id";
+}
 
 export function ListsPage() {
   const navigate = useNavigate();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
+  const [showEmptyNotice, setShowEmptyNotice] = useState(false);
+  const [budgetInput, setBudgetInput] = useState("");
+  const [strategy, setStrategy] = useState(BUDGET_STRATEGIES.MAX_PRODUCTS);
 
-  const [list, setList] = useState(null);
-
-  const [frequency, setFrequency] = useState(LIST_FREQUENCIES.WEEKLY);
-  const [filter, setFilter] = useState(FILTERS.ALL);
-  const [addProductId, setAddProductId] = useState("");
-  const [addQuantity, setAddQuantity] = useState(1);
-
-  const { sites, products } = useTracker(() => {
+  const { lists, sites, products } = useTracker(() => {
+    Meteor.subscribe("shoppingLists");
     Meteor.subscribe("locations.all");
     Meteor.subscribe("products");
     return {
+      lists: ShoppingLists.find({}, { sort: { createdAt: -1 } }).fetch(),
       sites: Sites.find().fetch(),
-      products: Products.find().fetch(),
+      products: Products.find({}, { sort: { name: 1 } }).fetch(),
     };
   }, []);
 
-  const locationOptions = sites.map((site) => ({
-    id: site._id,
-    label: site.name,
-  }));
-  const availableProducts = products;
+  const lowStock = products.filter(isLowStock);
 
-  useEffect(() => {
-    if (!addProductId && availableProducts[0]) {
-      setAddProductId(availableProducts[0]._id);
+  // null means no budget. An empty, negative or unparseable input is treated
+  // as no budget; a deliberate 0 is a real budget that only free items fit.
+  const budgetCents = useMemo(() => {
+    const trimmed = budgetInput.trim();
+    if (trimmed === "") return null;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return toCents(parsed);
+  }, [budgetInput]);
+
+  const preview = allocateWithinBudget(lowStock, {
+    frequency: LIST_FREQUENCIES.WEEKLY,
+    strategy,
+    budgetCents,
+  });
+
+  let previewText;
+  if (lowStock.length === 0) {
+    previewText = "No low stock products right now.";
+  } else if (budgetCents === null) {
+    previewText = `${lowStock.length} low stock products, ${currency(
+      fromCents(preview.spentCents),
+    )} estimated.`;
+  } else {
+    previewText = `${preview.items.length} of ${lowStock.length} products fit. Spending ${currency(
+      fromCents(preview.spentCents),
+    )}, ${currency(fromCents(preview.remainingCents))} unspent.`;
+  }
+
+  async function createList(items) {
+    setIsGenerating(true);
+    setGenerateError("");
+    setShowEmptyNotice(false);
+
+    try {
+      const listId = await callMethod("shoppingLists.create", {
+        name: `Shopping list ${lists.length + 1}`,
+        mode: SHOPPING_LIST_MODES.AUTOMATED,
+        frequency: LIST_FREQUENCIES.WEEKLY,
+        items,
+      });
+      navigate(`/lists/${listId}`);
+    } catch (error) {
+      console.error("Failed to generate shopping list:", error);
+      setGenerateError(error.reason || error.message || "Failed to generate list.");
     }
-  }, [addProductId, availableProducts]);
-
-  const items = list?.items ?? [];
-
-  const generated = items.filter((i) => i.addMode === ADD_PRODUCT_MODES.GENERATED);
-  const manual = items.filter((i) => i.addMode === ADD_PRODUCT_MODES.MANUAL);
-
-  const visibleItems =
-    filter === FILTERS.LOW_STOCK ? generated : filter === FILTERS.MANUAL ? manual : items;
-
-  const totalUnits = items.reduce((sum, i) => sum + i.quantityWanted, 0);
-  const estimatedCost = items.reduce((sum, i) => sum + i.quantityWanted * i.unitCost, 0);
-
-  const hasReceivedItems = items.some((i) => i.received);
+    setIsGenerating(false);
+  }
 
   function generate() {
-    const lowStockProducts = availableProducts.filter(
-      (product) =>
-        (product.totalQuantity ?? product.quantity ?? 0) <=
-        (product.reorderAt ?? product.lowStockThreshold ?? 0),
-    );
+    if (preview.items.length === 0) {
+      setShowEmptyNotice(true);
+      return;
+    }
 
-    setList({
-      mode: SHOPPING_LIST_MODES.AUTOMATED,
-      frequency,
-      status: LIST_STATUSES.DRAFT,
-      siteId: "",
-      items: lowStockProducts.map((product) =>
-        toItem(product, frequency, ADD_PRODUCT_MODES.GENERATED),
-      ),
-    });
-    setFilter(FILTERS.ALL);
+    createList(preview.items);
   }
-
-  function updateQuantity(productId, rawValue) {
-    const parsed = Number.parseInt(rawValue, 10);
-    const quantityWanted = Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
-
-    setList((current) => ({
-      ...current,
-      items: (current?.items ?? []).map((item) =>
-        item.productId === productId ? { ...item, quantityWanted } : item,
-      ),
-    }));
-  }
-
-  function addManually() {
-    const product = availableProducts.find((p) => p._id === addProductId);
-    if (!product) return;
-
-    const quantityWanted = Math.max(1, Number(addQuantity) || 1);
-
-    setList((current) => {
-      const safeCurrent = current ?? { items: [] };
-      const onList = safeCurrent.items.some((i) => i.productId === product._id);
-
-      return {
-        ...safeCurrent,
-        items: onList
-          ? safeCurrent.items.map((item) =>
-            item.productId === product._id
-              ? {
-                ...item,
-                quantityWanted: item.quantityWanted + quantityWanted,
-              }
-              : item,
-          )
-          : [
-            ...safeCurrent.items,
-            {
-              ...toItem(product, safeCurrent.frequency, ADD_PRODUCT_MODES.MANUAL),
-              quantityWanted,
-            },
-          ],
-      };
-    });
-
-    setAddQuantity(1);
-  }
-
-  function save() {
-    if (list?.status === LIST_STATUSES.ARCHIVED) return;
-    setList((current) => {
-      if (!current) return current;
-
-      const savedList = {
-        ...current,
-        status: LIST_STATUSES.SAVED,
-        savedAt: new Date().toISOString(),
-      };
-      window.localStorage.setItem(SAVED_SHOPPING_LIST_STORAGE_KEY, JSON.stringify(savedList));
-      return savedList;
-    });
-    navigate("/lists/saved");
-  }
-
-  function callStockMethod(methodName, item) {
-    Meteor.call(
-      methodName,
-      { productId: item.productId, siteId: list?.siteId, quantity: item.quantityWanted },
-      (error) => {
-        if (error) console.error(`${methodName} failed:`, error);
-      },
-    );
-  }
-
-  function togglePurchased(productId) {
-    setList((current) => {
-      const target = current.items.find((i) => i.productId === productId);
-      if (!target) return current;
-
-      const nextPurchased = !target.purchased;
-
-      if (!nextPurchased && target.received) {
-        callStockMethod("products.unreceiveStock", target);
-      }
-
-      return {
-        ...current,
-        items: current.items.map((item) =>
-          item.productId === productId
-            ? { ...item, purchased: nextPurchased, received: nextPurchased ? item.received : false }
-            : item,
-        ),
-      };
-    });
-  }
-
-  function setListLocation(siteId) {
-    setList((current) => ({ ...current, siteId }));
-  }
-
-  function toggleReceived(item) {
-    if (!item.purchased || !list?.siteId) return;
-
-    const nextReceived = !item.received;
-    callStockMethod(nextReceived ? "products.receiveStock" : "products.unreceiveStock", item);
-
-    setList((current) => ({
-      ...current,
-      items: current.items.map((i) =>
-        i.productId === item.productId ? { ...i, received: nextReceived } : i,
-      ),
-    }));
-  }
-
-  function discard() {
-    setList(null);
-  }
-
-  function renderRow(item) {
-    const rowReadOnly = isArchived;
-
-    return (
-      <tr key={item.productId} className={item.purchased ? "lists-row-purchased" : undefined}>
-        <td>
-          <span className="lists-product-name">{item.productName}</span>
-          <span className="lists-product-meta">
-            {item.sku} &middot; {item.category}
-          </span>
-        </td>
-
-        <td className="lists-col-num">{item.inStock}</td>
-        <td className="lists-col-num">{item.reorderAt}</td>
-
-        <td className="lists-col-num">
-          <input
-            type="number"
-            min="0"
-            className="form-input lists-qty-input"
-            value={item.quantityWanted}
-            onChange={(event) => updateQuantity(item.productId, event.target.value)}
-            disabled={rowReadOnly || item.purchased}
-            aria-label={`Quantity for ${item.productName}`}
-          />
-        </td>
-
-        {!isDraft && (
-          <td className="lists-col-check">
-            <input
-              type="checkbox"
-              checked={item.purchased}
-              onChange={() => togglePurchased(item.productId)}
-              disabled={rowReadOnly}
-              aria-label={`Mark ${item.productName} as purchased`}
-            />
-          </td>
-        )}
-
-        {!isDraft && (
-          <td className="lists-col-check">
-            <input
-              type="checkbox"
-              checked={item.received}
-              onChange={() => toggleReceived(item)}
-              disabled={rowReadOnly || !item.purchased || !list?.siteId}
-              aria-label={`Mark ${item.productName} as received`}
-            />
-          </td>
-        )}
-      </tr>
-    );
-  }
-
-  const isDraft = list?.status === LIST_STATUSES.DRAFT;
-  const isArchived = list?.status === LIST_STATUSES.ARCHIVED;
 
   return (
     <div className="product-detail-container">
@@ -310,281 +137,145 @@ export function ListsPage() {
             Shopping <em>Lists</em>
           </h1>
 
-          <div className="lists-header-actions">
-            <button type="button" className="btn-primary" onClick={generate}>
-              + Generate shopping list
-            </button>
-          </div>
+          <button type="button" className="btn-primary" onClick={generate} disabled={isGenerating}>
+            {isGenerating ? "Generating..." : "+ Generate shopping list"}
+          </button>
         </div>
 
         <p className="lists-subtitle">
-          Pulls every product at or below its reorder threshold. Budget is not applied.
+          Pulls every product at or below its reorder threshold. Leave the budget blank to include
+          everything.
         </p>
+
+        <div className="lists-budget-row">
+          <div className="form-group lists-budget-amount">
+            <label htmlFor="list-budget">Budget (optional)</label>
+            <input
+              id="list-budget"
+              type="number"
+              min="0"
+              step="0.01"
+              className="form-input"
+              placeholder="No limit"
+              value={budgetInput}
+              onChange={(event) => {
+                setBudgetInput(event.target.value);
+                setShowEmptyNotice(false);
+              }}
+            />
+          </div>
+
+          {budgetCents !== null && (
+            <div className="form-group lists-budget-strategy">
+              <label htmlFor="list-strategy">Allocation strategy</label>
+              <select
+                id="list-strategy"
+                className="form-input selected"
+                value={strategy}
+                onChange={(event) => {
+                  setStrategy(event.target.value);
+                  setShowEmptyNotice(false);
+                }}
+              >
+                {Object.values(BUDGET_STRATEGIES).map((value) => (
+                  <option key={value} value={value}>
+                    {BUDGET_STRATEGY_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        <p className="lists-preview">{previewText}</p>
+
+        {preview.skipped.length > 0 && (
+          <p className="warning-text lists-preview-skipped">
+            {preview.skipped.length} {preview.skipped.length === 1 ? "product does" : "products do"}{" "}
+            not fit: {preview.skipped.map((product) => product.name).join(", ")}
+          </p>
+        )}
+
+        {generateError && <p className="warning-text">{generateError}</p>}
       </div>
 
       <div className="lists-body">
-        {list === null ? (
+        {showEmptyNotice && (
+          <div className="lists-empty-warning">
+            <p className="lists-empty-warning-text">
+              {lowStock.length === 0
+                ? "No low stock products found. Every product is either above its reorder point or has no reorder point set."
+                : `Nothing fits this budget. The cheapest of the ${lowStock.length} low stock products costs more than ${currency(fromCents(budgetCents ?? 0))}.`}
+            </p>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => createList([])}
+              disabled={isGenerating}
+            >
+              Continue with empty shopping list
+            </button>
+          </div>
+        )}
+        {lists.length === 0 ? (
           <div className="detail-section lists-empty-card">
             <span className="lists-empty-icon" aria-hidden="true">
               &#128722;
             </span>
-            <h2 className="header-title">No active shopping list</h2>
+            <h2 className="header-title">No active shopping lists</h2>
             <p className="section-empty">
               Generate one to pull in every product that&apos;s hit its reorder point.
             </p>
-            <button type="button" className="btn-primary" onClick={generate}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={generate}
+              disabled={isGenerating}
+            >
               Generate shopping list
             </button>
           </div>
         ) : (
-          <>
-            <div className="lists-stats">
-              <div className="lists-stat lists-stat-items">
-                <span className="lists-stat-value">{items.length}</span>
-                <span className="lists-stat-label">Items on list</span>
-              </div>
-              <div className="lists-stat lists-stat-units">
-                <span className="lists-stat-value">{totalUnits}</span>
-                <span className="lists-stat-label">Units to buy</span>
-              </div>
-              <div className="lists-stat lists-stat-cost">
-                <span className="lists-stat-value">{currency(estimatedCost)}</span>
-                <span className="lists-stat-label">Estimated cost</span>
-              </div>
+          <div className="detail-section">
+            <div className="section-title">
+              <span>Active lists</span>
+              <span className="section-badge id">{lists.length}</span>
             </div>
 
-            <div className="lists-layout">
-              <div className="detail-section lists-card">
-                <div className="section-title">
-                  <span>Shopping list</span>
-                  <span
-                    className={
-                      isDraft
-                        ? "section-badge op"
-                        : isArchived
-                          ? "section-badge im"
-                          : "section-badge id"
-                    }
-                  >
-                    {isDraft ? "Draft" : isArchived ? "Archived" : "Saved"}
-                  </span>
-                </div>
-
-                <div className="section-content">
-                  <div className="lists-toolbar">
-                    <div className="lists-filters">
-                      {[
-                        {
-                          key: FILTERS.LOW_STOCK,
-                          label: "Low stock",
-                          count: generated.length,
-                        },
-                        {
-                          key: FILTERS.ALL,
-                          label: "All",
-                          count: items.length,
-                        },
-                        {
-                          key: FILTERS.MANUAL,
-                          label: "Added manually",
-                          count: manual.length,
-                        },
-                      ].map(({ key, label, count }) => (
-                        <button
-                          key={key}
-                          type="button"
-                          className={
-                            filter === key
-                              ? "btn-secondary lists-filter is-active"
-                              : "btn-secondary lists-filter"
-                          }
-                          onClick={() => setFilter(key)}
-                        >
-                          {label}
-                          <span className="lists-filter-count">{count}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {visibleItems.length === 0 ? (
-                    <p className="section-empty lists-no-match">Nothing on this filter.</p>
-                  ) : (
-                    <table className="lists-table">
-                      <thead>
-                        <tr>
-                          <th>Product</th>
-                          <th className="lists-col-num">In stock</th>
-                          <th className="lists-col-num">Reorder at</th>
-                          <th className="lists-col-num">Qty</th>
-                          {!isDraft && <th className="lists-col-check">Purchased</th>}
-                          {!isDraft && <th className="lists-col-check">Received</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filter === FILTERS.ALL ? (
-                          <>
-                            {generated.map(renderRow)}
-                            {manual.length > 0 && (
-                              <tr className="lists-divider">
-                                <td colSpan={isDraft ? 4 : 6}>Added manually</td>
-                              </tr>
-                            )}
-                            {manual.map(renderRow)}
-                          </>
-                        ) : (
-                          visibleItems.map(renderRow)
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-
-                  <div className="lists-add-row">
-                    <div className="form-group lists-add-product">
-                      <label htmlFor="add-product">Add a product manually</label>
-                      <select
-                        id="add-product"
-                        className="form-input selected"
-                        value={addProductId}
-                        onChange={(event) => setAddProductId(event.target.value)}
-                      >
-                        {availableProducts.map((product) => (
-                          <option key={product._id} value={product._id}>
-                            {product.name} ({product.totalQuantity ?? product.quantity ?? 0} in stock)
-                          </option>
-                        ))}
-                        {availableProducts.length === 0 && (
-                          <option value="">No products in database</option>
-                        )}
-                      </select>
-                    </div>
-
-                    <div className="form-group lists-add-qty">
-                      <label htmlFor="add-qty">Qty wanted</label>
-                      <input
-                        id="add-qty"
-                        type="number"
-                        min="1"
-                        className="form-input"
-                        value={addQuantity}
-                        onChange={(event) => setAddQuantity(event.target.value)}
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      className="btn-secondary lists-add-btn"
-                      onClick={addManually}
-                      disabled={!addProductId}
-                    >
-                      Add to list
-                    </button>
-                  </div>
-                </div>
+            <div className="section-content">
+              <div className="lists-overview-header">
+                <span>Name</span>
+                <span>Status</span>
+                <span>Items</span>
+                <span>Site</span>
+                <span>Purchased</span>
+                <span>Received</span>
               </div>
 
-              <div className="lists-sidebar">
-                <div className="detail-section">
-                  <div className="section-title">Actions</div>
-                  <div className="section-content lists-sidebar-actions">
-                    <button type="button" className="btn-print" onClick={save} disabled={!isDraft}>
-                      {isDraft ? "Save list" : "Saved"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary lists-full-btn"
-                      onClick={() => navigate("/lists/saved")}
-                    >
-                      View saved list
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary lists-full-btn"
-                      onClick={() => navigate("/lists/archive")}
-                    >
-                      View archived list
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary lists-full-btn"
-                      onClick={generate}
-                      disabled={isArchived}
-                    >
-                      Regenerate
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-danger lists-full-btn"
-                      onClick={discard}
-                      disabled={isArchived}
-                    >
-                      Discard list
-                    </button>
-                  </div>
-                </div>
+              {lists.map((list) => {
+                const site = sites.find((s) => s._id === list.siteId);
+                const purchasedCount = list.items.filter((i) => i.purchased).length;
+                const receivedCount = list.items.filter((i) => i.received).length;
 
-                <div className="detail-section">
-                  <div className="section-title">Delivery location</div>
-                  <div className="section-content">
-                    <div className="form-group">
-                      <label htmlFor="list-location">Received stock goes to</label>
-                      <select
-                        id="list-location"
-                        className="form-input selected"
-                        value={list?.siteId ?? ""}
-                        onChange={(event) => setListLocation(event.target.value)}
-                        disabled={hasReceivedItems}
-                      >
-                        <option value="">Select site&hellip;</option>
-                        {locationOptions.map((loc) => (
-                          <option key={loc.id} value={loc.id}>
-                            {loc.label}
-                          </option>
-                        ))}
-                        {locationOptions.length === 0 && (
-                          <option value="">No sites in database</option>
-                        )}
-                      </select>
-                    </div>
-                    {hasReceivedItems && (
-                      <p className="lists-schedule-note">Undo received items to change location.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* change when real data is used instead of mock */}
-                <div className="detail-section">
-                  <div className="section-title">Schedule</div>
-                  <div className="section-content">
-                    <div className="form-group">
-                      <label htmlFor="schedule-frequency">Generate every</label>
-                      <select
-                        id="schedule-frequency"
-                        className="form-input selected"
-                        value={frequency}
-                        onChange={(event) => setFrequency(event.target.value)}
-                      >
-                        {Object.values(LIST_FREQUENCIES).map((value) => (
-                          <option key={value} value={value}>
-                            {LIST_FREQUENCY_LABELS[value]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="next-order-day">Next order day</label>
-                      <div className="form-tag" id="next-order-day">
-                        {nextOrderDay(frequency)}
-                      </div>
-                    </div>
-
-                    <p className="lists-schedule-note">Skeleton only, no logic wired.</p>
-                  </div>
-                </div>
-              </div>
+                return (
+                  <Link key={list._id} to={`/lists/${list._id}`} className="lists-overview-row">
+                    <span className="item-name-link">{list.name}</span>
+                    <span className={statusBadgeClass(list.status)}>
+                      {STATUS_LABELS[list.status] ?? list.status}
+                    </span>
+                    <span>{list.items.length}</span>
+                    <span className="lists-overview-site">{site ? site.name : "Unassigned"}</span>
+                    <span>
+                      {purchasedCount}/{list.items.length}
+                    </span>
+                    <span>
+                      {receivedCount}/{list.items.length}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

@@ -15,6 +15,43 @@ export const ShoppingListProductSchema = new SimpleSchema({
     type: String,
   },
 
+  // Snapshot of the product's display info at the time it was added to the
+  // list, so the list still renders correctly without re-joining against
+  // live product data.
+  productName: {
+    type: String,
+  },
+
+  sku: {
+    type: String,
+    optional: true,
+  },
+
+  category: {
+    type: String,
+    optional: true,
+  },
+
+  inStock: {
+    type: SimpleSchema.Integer,
+    defaultValue: 0,
+  },
+
+  reorderAt: {
+    type: SimpleSchema.Integer,
+    defaultValue: 0,
+  },
+
+  lowStockThreshold: {
+    type: SimpleSchema.Integer,
+    defaultValue: 0,
+  },
+
+  unitCost: {
+    type: Number,
+    defaultValue: 0,
+  },
+
   quantityWanted: {
     type: SimpleSchema.Integer,
     min: 0,
@@ -35,6 +72,23 @@ export const ShoppingListProductSchema = new SimpleSchema({
     type: Boolean,
     defaultValue: false,
   },
+
+  // Set once received stock has been assigned to a concrete storage
+  // location, via products.allocateReceivedStock.
+  allocatedLocationId: {
+    type: String,
+    optional: true,
+  },
+
+  allocatedLocationName: {
+    type: String,
+    optional: true,
+  },
+
+  allocatedAt: {
+    type: Date,
+    optional: true,
+  },
 });
 
 /**
@@ -48,6 +102,10 @@ export const ShoppingListSchema = new SimpleSchema({
   },
 
   createdBy: {
+    type: String,
+  },
+
+  name: {
     type: String,
   },
 
@@ -81,6 +139,24 @@ export const ShoppingListSchema = new SimpleSchema({
     type: String,
     allowedValues: Object.values(LIST_STATUSES),
     defaultValue: LIST_STATUSES.DRAFT,
+  },
+
+  siteId: {
+    type: String,
+    optional: true,
+  },
+
+  // Set when a list is archived. archivedWithPendingItems records whether
+  // that happened before every item was marked received, so the UI can
+  // still show the warning after the fact.
+  archivedAt: {
+    type: Date,
+    optional: true,
+  },
+
+  archivedWithPendingItems: {
+    type: Boolean,
+    optional: true,
   },
 
   items: {

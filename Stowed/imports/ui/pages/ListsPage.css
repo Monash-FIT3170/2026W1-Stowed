@@ -32,6 +32,74 @@
   padding: 20px 28px 48px 28px;
 }
 
+/* -- Editable list name -- */
+
+.lists-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.lists-name-edit .form-input {
+  max-width: 360px;
+}
+
+.lists-name-edit-btn {
+  margin-left: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  vertical-align: middle;
+  opacity: 0.6;
+}
+
+.lists-name-edit-btn:hover {
+  opacity: 1;
+}
+
+/* -- Overview table (all active lists) -- */
+
+.lists-overview-header,
+.lists-overview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 1fr 0.6fr 1fr 0.8fr 0.8fr;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+}
+
+.lists-overview-header {
+  border-bottom: 1px dashed var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lists-overview-row {
+  border-bottom: 1px dotted var(--border-subtle);
+  font-size: 13px;
+  color: var(--text-dark);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+
+.lists-overview-row:last-child {
+  border-bottom: none;
+}
+
+.lists-overview-row:hover {
+  background: var(--tag-bg);
+}
+
+.lists-overview-site {
+  color: var(--text-muted);
+}
+
 /* -- Empty state -- */
 
 .lists-empty-card {
@@ -62,6 +130,20 @@
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.lists-empty-warning {
+  border: 1px solid #e5b4b4;
+  border-left: 4px solid #c0392b;
+  border-radius: 6px;
+  background: #fdf3f2;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.lists-empty-warning-text {
+  color: #c0392b;
+  margin: 0 0 12px;
 }
 
 /* -- Stat tiles -- */
@@ -240,12 +322,12 @@
   color: var(--text-muted);
 }
 
-.lists-row-purchased td:not(.lists-col-check) {
+.lists-row-purchased td:not(.lists-col-check):not(.lists-col-remove) {
   position: relative;
   color: var(--text-muted);
 }
 
-.lists-row-purchased td:not(.lists-col-check)::after {
+.lists-row-purchased td:not(.lists-col-check):not(.lists-col-remove)::after {
   content: "";
   position: absolute;
   left: 0;
@@ -321,6 +403,84 @@ input.lists-qty-input:disabled {
   background: var(--tag-bg, #f2f2f2);
   color: var(--text-muted);
   cursor: not-allowed;
+}
+
+/* -- Remove -- */
+
+.lists-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.lists-table th.lists-col-remove,
+.lists-table td.lists-col-remove {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lists-remove-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.lists-remove-btn:hover:not(:disabled) {
+  background: var(--tag-bg);
+  border-color: var(--border-subtle);
+  color: var(--accent-primary);
+}
+
+.lists-remove-btn:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.lists-remove-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.lists-remove-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lists-remove-yes,
+.lists-remove-no {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lists-remove-yes {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.lists-remove-no {
+  background: #ffffff;
+  color: var(--text-muted);
 }
 
 /* -- Add manually -- */
@@ -479,4 +639,50 @@ input.lists-qty-input:disabled {
     overflow-x: auto;
     white-space: nowrap;
   }
+}
+
+.lists-budget-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.lists-budget-row .form-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.lists-budget-row .form-group > label {
+  display: block;
+  margin: 0 0 6px;
+  line-height: 1.2;
+  min-height: 1.2em;
+}
+
+.lists-budget-row .form-input {
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.lists-budget-amount {
+  flex: 0 0 160px;
+}
+
+.lists-budget-strategy {
+  flex: 1 1 280px;
+  max-width: 380px;
+}
+
+.lists-preview {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.lists-preview-skipped {
+  margin-top: 4px;
 }

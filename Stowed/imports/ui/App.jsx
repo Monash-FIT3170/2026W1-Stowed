@@ -5,8 +5,7 @@ import { InventoryPage } from "./pages/InventoryPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
-import { SavedListsPage } from "./pages/SavedListsPage";
-import { ArchivedListsPage } from "./pages/ArchivedListsPage";
+import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
@@ -147,25 +146,11 @@ export function App() {
               }
             />
             <Route
-              path="/lists/saved"
+              path="/lists/:listId"
               element={
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/lists") ? (
-                    <SavedListsPage />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/lists/archive"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/lists") ? (
-                    <ArchivedListsPage />
+                    <ShoppingListDetailPage />
                   ) : (
                     <Navigate to="/" replace />
                   )
