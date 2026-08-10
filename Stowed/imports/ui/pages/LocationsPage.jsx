@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
@@ -13,6 +13,11 @@ import {
 } from "/imports/api/locations/collections";
 import { ProductRecords } from "/imports/api/products/collections";
 import { isImageFile, uploadImageToServer } from "/imports/api/upload";
+import {
+  DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+  getLocationStocktakeStatus,
+  STOCKTAKE_STATUS,
+} from "../../api/locations/stocktake";
 import "../Global.css";
 import "./LocationsPage.css";
 
@@ -21,22 +26,6 @@ const TABS = {
   FLOOR_MAPS: "floor-maps",
   SITES: "sites",
 };
-
-const DEFAULT_STOCKTAKE_INTERVAL_DAYS = 180;
-const DUE_SOON_DAYS = 14;
-const STOCKTAKE_STATUS = { OVERDUE: "overdue", DUE_SOON: "due-soon", OK: "ok" };
-
-export function getLocationStocktakeStatus(lastStocktakeAt, intervalDays, now = new Date()) {
-  const lastStocktake = new Date(lastStocktakeAt);
-  if (Number.isNaN(lastStocktake.getTime())) return STOCKTAKE_STATUS.OK;
-  const interval = Number(intervalDays) || DEFAULT_STOCKTAKE_INTERVAL_DAYS;
-  const dueAt = new Date(lastStocktake);
-  dueAt.setDate(dueAt.getDate() + interval);
-  const daysUntilDue = Math.ceil((dueAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-  if (daysUntilDue <= 0) return STOCKTAKE_STATUS.OVERDUE;
-  if (daysUntilDue <= DUE_SOON_DAYS) return STOCKTAKE_STATUS.DUE_SOON;
-  return STOCKTAKE_STATUS.OK;
-}
 
 const EMPTY_FORMS = {
   location: { storageUnitId: "", name: "", code: "", imageUrl: "" },
@@ -459,7 +448,12 @@ export function LocationsPage() {
                     {visibleLocations.map((row) => (
                       <tr key={row.location._id}>
                         <td>
-                          <strong>{row.location.name || "Unnamed location"}</strong>
+                          <Link
+                            className="locations-name-link"
+                            to={`/locations/${row.location._id}`}
+                          >
+                            <strong>{row.location.name || "Unnamed location"}</strong>
+                          </Link>
                           <span className="locations-code">{row.location.code || "No code"}</span>
                         </td>
                         <td>
@@ -472,6 +466,7 @@ export function LocationsPage() {
                         <td>{formatDate(row.location.lastStocktakeAt)}</td>
                         <td>
                           <div className="locations-row-actions">
+                            <Link to={`/locations/${row.location._id}`}>View</Link>
                             {row.floorMap && (
                               <button
                                 type="button"

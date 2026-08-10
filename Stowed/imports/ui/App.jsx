@@ -12,6 +12,7 @@ import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { StocktakePage } from "./pages/StocktakePage";
+import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -123,6 +124,20 @@ export function App() {
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/locations") ? (
                     <LocationsPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/locations/:locationId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/locations") ? (
+                    <LocationDetailPage />
                   ) : (
                     <Navigate to="/" replace />
                   )

@@ -1,5 +1,5 @@
 import assert from "assert";
-import { getLocationStocktakeStatus } from "../imports/ui/pages/LocationsPage";
+import { getLocationStocktakeStatus } from "../imports/api/locations/stocktake";
 
 describe("Locations page stocktake status", function () {
   const now = new Date("2026-08-10T00:00:00.000Z");
