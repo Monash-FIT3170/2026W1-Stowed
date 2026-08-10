@@ -7,6 +7,33 @@ on:
     branches: [main, develop]
 
 jobs:
+  lint:
+    name: Lint & format check (ESLint + Prettier)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Stowed/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: Stowed
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: Stowed
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        working-directory: Stowed
+        run: npm run format:check
+
   test:
     name: Run product tests (Meteor + Mocha)
     runs-on: ubuntu-latest
@@ -15,8 +42,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Meteor ${{ '3.0.4' }}
-        run: curl https://install.meteor.com/?release=3.0.4 | sh
+      - name: Install Meteor 3.4.1
+        run: curl https://install.meteor.com/?release=3.4.1 | sh
 
       - name: Add Meteor to PATH
         run: echo "$HOME/.meteor" >> $GITHUB_PATH
