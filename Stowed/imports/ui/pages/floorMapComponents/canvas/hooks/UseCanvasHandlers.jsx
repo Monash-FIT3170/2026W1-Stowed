@@ -52,23 +52,16 @@ export function useCanvasHandlers({
     return groupRefs.current[id];
   }
 
-  function checkCollisions(newBounds, excludeId = null) {
-    return hasCollisions(newBounds, units, excludeId);
+  function checkCollisions(proposedUnit, excludeId = null) {
+    return hasCollisions(proposedUnit, units, excludeId);
   }
 
-  // Helper: get clamped bounds for any unit at an offset position
-  function getMovedBounds(unit, deltaX, deltaY) {
+  // Helper: get clamped position (in metres) for any unit at an offset position
+  function getMovedPosition(unit, deltaX, deltaY) {
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
     const newX = Math.max(0, Math.min(unit.x + deltaX, width / px - unit.width));
     const newY = Math.max(0, Math.min(unit.y + deltaY, height / px - unit.height));
-    return {
-      bounds: {
-        dom: { lower: newX * px, upper: (newX + unit.width) * px },
-        ran: { lower: newY * px, upper: (newY + unit.height) * px },
-      },
-      x: newX,
-      y: newY,
-    };
+    return { x: newX, y: newY };
   }
 
   function buildGhostFromEvent(e) {
@@ -97,12 +90,17 @@ export function useCanvasHandlers({
     const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
 
-    const thisBounds = {
-      dom: { lower: clampedX, upper: clampedX + wPixels },
-      ran: { lower: clampedY, upper: clampedY + hPixels },
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+    const proposedUnit = {
+      type: template.type,
+      shape: template.shape,
+      x: clampedX / px,
+      y: clampedY / px,
+      width: template.width,
+      height: template.height,
     };
 
-    if (checkCollisions(thisBounds)) return null;
+    if (checkCollisions(proposedUnit)) return null;
 
     return {
       ...template,
@@ -160,19 +158,24 @@ export function useCanvasHandlers({
     const clampedX = Math.max(0, Math.min(snappedX, width - wPixels));
     const clampedY = Math.max(0, Math.min(snappedY, height - hPixels));
 
-    const thisBounds = {
-      dom: { lower: clampedX, upper: clampedX + wPixels },
-      ran: { lower: clampedY, upper: clampedY + hPixels },
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+    const proposedUnit = {
+      type: template.type,
+      shape: template.shape,
+      x: clampedX / px,
+      y: clampedY / px,
+      width: template.width,
+      height: template.height,
     };
-    if (checkCollisions(thisBounds)) return;
+    if (checkCollisions(proposedUnit)) return;
 
     setUnits((prev) => [
       ...prev,
       {
         ...template,
         id: `unit-${Date.now()}`,
-        x: clampedX / CANVAS_CONFIG.PIXELS_PER_METER,
-        y: clampedY / CANVAS_CONFIG.PIXELS_PER_METER,
+        x: clampedX / px,
+        y: clampedY / px,
         width: template.width,
         height: template.height,
       },
@@ -264,8 +267,8 @@ export function useCanvasHandlers({
     const wouldCollide = movedIds.some((id) => {
       const unit = units.find((u) => u.id === id);
       if (!unit) return false;
-      const { bounds } = getMovedBounds(unit, deltaX, deltaY);
-      return checkCollisions(bounds, id);
+      const { x, y } = getMovedPosition(unit, deltaX, deltaY);
+      return checkCollisions({ ...unit, x, y }, id);
     });
 
     // Reset all units
@@ -287,7 +290,7 @@ export function useCanvasHandlers({
       const unit = units.find((u) => u.id === id);
       const ref = getGroupRef(id);
       if (!unit || !ref.current) return;
-      const { x, y } = getMovedBounds(unit, deltaX, deltaY);
+      const { x, y } = getMovedPosition(unit, deltaX, deltaY);
       ref.current.x(x * px);
       ref.current.y(y * px);
     });
@@ -298,7 +301,7 @@ export function useCanvasHandlers({
     setUnits((prev) =>
       prev.map((u) => {
         if (!movedIds.includes(u.id)) return u;
-        const { x, y } = getMovedBounds(u, deltaX, deltaY);
+        const { x, y } = getMovedPosition(u, deltaX, deltaY);
         return { ...u, x, y };
       }),
     );
@@ -332,15 +335,37 @@ export function useCanvasHandlers({
     const clampedXPx = Math.max(0, Math.min(node.x(), width - finalWPx));
     const clampedYPx = Math.max(0, Math.min(node.y(), height - finalHPx));
 
-    const proposedBounds = {
-      dom: { lower: clampedXPx, upper: clampedXPx + finalWPx },
-      ran: { lower: clampedYPx, upper: clampedYPx + finalHPx },
-    };
-
     node.scaleX(1);
     node.scaleY(1);
 
-    if (checkCollisions(proposedBounds, unit.id)) {
+    const newWidth = finalWPx / px;
+    const newHeight = finalHPx / px;
+
+    const isCustomShape =
+      unit.type === "custom" &&
+      Array.isArray(unit.shape?.points) &&
+      unit.shape.points.length >= 3;
+
+    const widthScale = unit.width > 0 ? newWidth / unit.width : 1;
+    const heightScale = unit.height > 0 ? newHeight / unit.height : 1;
+
+    const scaledPoints = isCustomShape
+      ? unit.shape.points.map((point) => ({
+          x: point.x * widthScale,
+          y: point.y * heightScale,
+        }))
+      : null;
+
+    const proposedUnit = {
+      ...unit,
+      x: clampedXPx / px,
+      y: clampedYPx / px,
+      width: newWidth,
+      height: newHeight,
+      shape: isCustomShape ? { ...unit.shape, points: scaledPoints } : unit.shape,
+    };
+
+    if (checkCollisions(proposedUnit, unit.id)) {
       node.x(unit.x * px);
       node.y(unit.y * px);
       return;
@@ -350,39 +375,20 @@ export function useCanvasHandlers({
       prev.map((u) => {
         if (u.id !== unit.id) return u;
 
-        const newWidth = finalWPx / px;
-        const newHeight = finalHPx / px;
-
-        const isCustomShape =
-          u.type === "custom" &&
-          Array.isArray(u.shape?.points) &&
-          u.shape.points.length >= 3;
-
         if (!isCustomShape) {
           return {
             ...u,
-            x: clampedXPx / px,
-            y: clampedYPx / px,
+            x: proposedUnit.x,
+            y: proposedUnit.y,
             width: newWidth,
             height: newHeight,
           };
         }
 
-        const widthScale =
-          u.width > 0 ? newWidth / u.width : 1;
-
-        const heightScale =
-          u.height > 0 ? newHeight / u.height : 1;
-
-        const scaledPoints = u.shape.points.map((point) => ({
-          x: point.x * widthScale,
-          y: point.y * heightScale,
-        }));
-
         return {
           ...u,
-          x: clampedXPx / px,
-          y: clampedYPx / px,
+          x: proposedUnit.x,
+          y: proposedUnit.y,
           width: newWidth,
           height: newHeight,
 
@@ -439,7 +445,6 @@ export function useCanvasHandlers({
     const OFFSET = 1;
     const MAX_SEARCH = 100;
 
-    const px = CANVAS_CONFIG.PIXELS_PER_METER;
     const placedUnits = [];
 
     clipboard.forEach((unit) => {
@@ -447,13 +452,10 @@ export function useCanvasHandlers({
         const testX = unit.x + OFFSET * step;
         const testY = unit.y + OFFSET * step;
 
-        const bounds = {
-          dom: { lower: testX * px, upper: (testX + unit.width) * px },
-          ran: { lower: testY * px, upper: (testY + unit.height) * px },
-        };
+        const proposedUnit = { ...unit, x: testX, y: testY };
 
         // Make sure to check against newly placed units from paste
-        const collides = hasCollisions(bounds, [...units, ...placedUnits]);
+        const collides = hasCollisions(proposedUnit, [...units, ...placedUnits]);
 
         if (!collides) {
           placedUnits.push({

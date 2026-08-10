@@ -1,36 +1,40 @@
-import { isRectRectIntersecting } from "./UnitCollisions";
-import { CANVAS_CONFIG } from "../../CanvasConfig";
+import { hasPolygonCollision } from "./UnitCollisions";
 
 /**
- * Converts all units (except excludeId) to pixel-space bounds objects
+ * Returns a unit's outline as world-space (metre) points: its custom shape
+ * points if it has one, otherwise its axis-aligned width/height rectangle,
+ * both offset by the unit's (x, y) placement.
  *
- * @param {Object[]}    units
- * @param {string|null} excludeId - Unit to omit, typically the one being moved
- *
- * @returns {{ dom: { lower: number, upper: number }, ran: { lower: number, upper: number } }[]}
+ * @param {{ x: number, y: number, width: number, height: number, type?: string, shape?: { points: {x: number, y: number}[] } }} unit
+ * @returns {{ x: number, y: number }[]}
  */
-export function getOtherUnitBounds(units, excludeId = null) {
-  const px = CANVAS_CONFIG.PIXELS_PER_METER;
-  return units
-    .filter((u) => u.id !== excludeId)
-    .map(({ x, y, width: w, height: h }) => ({
-      dom: { lower: x * px, upper: (x + w) * px },
-      ran: { lower: y * px, upper: (y + h) * px },
-    }));
+function getUnitPolygon(unit) {
+  const isCustomShape = unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+
+  const localPoints = isCustomShape ? unit.shape.points : 
+    [
+      { x: 0, y: 0 },
+      { x: unit.width, y: 0 },
+      { x: unit.width, y: unit.height },
+      { x: 0, y: unit.height },
+    ];
+
+  return localPoints.map((p) => ({ x: p.x + unit.x, y: p.y + unit.y }));
 }
 
 /**
- * Returns true if newBounds intersects any existing unit on the canvas.
+ * Returns true if proposedUnit's outline (rectangle or, for custom shapes,
+ * its potentially non-convex polygon) overlaps any other unit on the canvas.
  *
- * @param {{ dom: { lower: number, upper: number }, ran: { lower: number, upper: number } }} newBounds
+ * @param {{ x: number, y: number, width: number, height: number, type?: string, shape?: { points: {x: number, y: number}[] } }} proposedUnit
  * @param {Object[]}    units
  * @param {string|null} excludeId - Unit to ignore during collision check (e.g. the unit being dragged).
  *
  * @returns {boolean}
  */
-export function hasCollisions(newBounds, units, excludeId = null) {
-  const intersectsThis = isRectRectIntersecting(newBounds);
-  return getOtherUnitBounds(units, excludeId)
-    .map((other) => intersectsThis(other))
-    .reduce((acc, i) => acc || i, false);
+export function hasCollisions(proposedUnit, units, excludeId = null) {
+  const newPoints = getUnitPolygon(proposedUnit);
+  const candidates = units.filter((u) => u.id !== excludeId).map((u) => ({ id: u.id, points: getUnitPolygon(u) }));
+
+  return hasPolygonCollision(newPoints, candidates);
 }
