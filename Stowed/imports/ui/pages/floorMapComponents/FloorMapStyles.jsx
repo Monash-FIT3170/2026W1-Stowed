@@ -468,6 +468,16 @@ export const locationPanelStyles = {
     gap: "6px",
     marginTop: "10px",
   },
+  label: {
+    margin: 0,
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    color: COLOURS.TEXT_MUTED,
+    fontFamily:
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
   input: {
     padding: "8px 10px",
     borderRadius: "8px",
@@ -476,6 +486,8 @@ export const locationPanelStyles = {
     background: COLOURS.INPUT_BG,
     color: COLOURS.TEXT_PRIMARY,
     fontSize: 11,
+    fontFamily:
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   addButton: {
     padding: "8px 10px",
@@ -486,6 +498,8 @@ export const locationPanelStyles = {
     cursor: "pointer",
     color: COLOURS.TEXT_PRIMARY,
     fontSize: 11,
+    fontFamily:
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   list: {
     marginTop: "10px",

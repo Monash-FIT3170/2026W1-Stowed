@@ -3,12 +3,12 @@ import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
-import { StoragePanel } from "./floorMapComponents/StoragePanel";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
 import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
+import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites, MapShapes, } from "/imports/api/locations/collections";
@@ -50,6 +50,7 @@ function FloorMapPageInner() {
     isCanvasEditMode,
     setCanvasEditMode,
     units,
+    commitUnits,
     handleSaveLayout,
     selectedUnit,
     setSelectedUnit,
@@ -89,6 +90,15 @@ function FloorMapPageInner() {
     const unit = units.find((u) => u._id === unitId || u.id === unitId) ?? null;
     setSelectedUnit(unit);
     setIsStockPanelOpen(!!unitId);
+  };
+
+  const updateSelectedUnit = (patch) => {
+    if (!selectedUnit) return;
+    const uid = selectedUnit.id ?? selectedUnit._id;
+    commitUnits((prev) =>
+      prev.map((u) => ((u.id ?? u._id) === uid ? { ...u, ...patch } : u)),
+    );
+    setSelectedUnit((prev) => (prev ? { ...prev, ...patch } : prev));
   };
 
   // Current floor map
@@ -432,6 +442,14 @@ function FloorMapPageInner() {
                       <>
                         {/* SETTINGS for the selected storage unit */}
                         <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                          <UnitDetailsPanel
+                            unit={selectedUnit}
+                            onRename={(name) => updateSelectedUnit({ name })}
+                            onColourChange={(fill) => updateSelectedUnit({ fill })}
+                          />
+                        </div>
+                        <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
+                        <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
                           <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
                         </div>
                         <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
@@ -448,15 +466,11 @@ function FloorMapPageInner() {
                       </>
                     ) : rightPanelTab === "units" ? (
                       <>
-                        {/* STORAGE UNITS TAB - all unique storage units placed on this floor map */}
-                        <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-                          <StoragePanel floorMapId={currentFloorMap?._id} />
-                        </div>
-                        <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
+                        {/* STORAGE UNITS TAB */}
                         <div style={{ padding: "12px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8 }}>
                           {units.length === 0 ? (
                             <div style={{ fontSize: "11px", color: COLOURS.TEXT_MUTED, textAlign: "center", padding: "8px 0" }}>
-                              No storage units on this floor map yet.
+                              No storage units on this floor map yet. Drag a shape from the Templates tab onto the canvas to create one.
                             </div>
                           ) : (
                             units.map((unit) => (
