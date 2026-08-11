@@ -20,6 +20,7 @@ const PERMISSIONS = {
   "products.delete": ROLES.ADMIN, // Allow Admin
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
@@ -29,6 +30,7 @@ const PERMISSIONS = {
   "route:/locations": ROLES.STANDARD,
   "route:/floor-map": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,
+  "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
   "route:/qr-codes": ROLES.ADMIN,
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
