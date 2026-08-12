@@ -1,8 +1,8 @@
 // imports/api/locations/stocktake.js
 //
-// Shared stocktake scheduling maths. Both the server-side sweep
-// ("storageLocations.checkStocktakeDue") and the Alerts page derive due dates
-// from here so the persisted `stocktakeDue` flag and the UI can never disagree.
+// Shared stocktake scheduling maths. The Alerts, Locations, and Location
+// detail pages all derive due dates from here, so a location's status is
+// computed on the fly from its lastStocktakeAt and its Site's interval.
 
 /** Used when a Site has no interval configured. Matches SiteSchema's default. */
 export const DEFAULT_STOCKTAKE_INTERVAL_DAYS = 180;
@@ -51,16 +51,6 @@ export function getDaysUntilDue(lastStocktakeAt, intervalDays, now = new Date())
   const next = getNextStocktakeDate(lastStocktakeAt, intervalDays);
   if (!next) return null;
   return Math.ceil((next.getTime() - now.getTime()) / MS_PER_DAY);
-}
-
-/**
- * Whether a location's stocktake deadline has passed. This is the value
- * persisted to StorageLocations.stocktakeDue.
- */
-export function isStocktakeDue(lastStocktakeAt, intervalDays, now = new Date()) {
-  const next = getNextStocktakeDate(lastStocktakeAt, intervalDays);
-  if (!next) return false;
-  return now.getTime() >= next.getTime();
 }
 
 export function isValidStocktakeInterval(intervalDays) {

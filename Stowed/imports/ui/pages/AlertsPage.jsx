@@ -52,10 +52,9 @@ function describeTiming(daysUntilDue) {
  * about to), so staff know what still needs counting. Deadlines come from the
  * parent Site's `stocktakeIntervalDays` — 180 by default.
  *
- * Due dates are recomputed here rather than read straight off the persisted
- * `stocktakeDue` flag: the server only sweeps that flag once every 24 hours,
- * so deriving it keeps the list correct between sweeps. Both paths share the
- * maths in `/imports/api/locations/stocktake`.
+ * Due dates are derived on the fly from each location's `lastStocktakeAt` and
+ * its parent Site's interval, using the shared maths in
+ * `/imports/api/locations/stocktake`, so the list is always current.
  */
 export function AlertsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -138,8 +137,8 @@ export function AlertsPage() {
   ];
 
   // TODO(backend): call the existing `storageLocations.stocktakeComplete`
-  // method with { locationId }. It already stamps lastStocktakeAt and clears
-  // stocktakeDue, but needs permission + org checks added before being exposed.
+  // method with { locationId }. It already stamps lastStocktakeAt, but needs
+  // permission + org checks added before being exposed.
   const handleMarkComplete = (alert) => {
     setPlaceholderNotice({
       locationId: alert.location._id,

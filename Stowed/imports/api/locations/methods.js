@@ -11,7 +11,7 @@ import { check } from "meteor/check";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./collections";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
-import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isStocktakeDue, isValidStocktakeInterval } from "./stocktake";
+import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isValidStocktakeInterval } from "./stocktake";
 
 Meteor.methods({
   /**
@@ -46,19 +46,10 @@ Meteor.methods({
         { fields: { _id: 1 } },
       ).fetchAsync()
     ).map((storageUnit) => storageUnit._id);
-    const locations = await StorageLocations.find({
-      storageUnitId: { $in: storageUnitIds },
-    }).fetchAsync();
-
-    await Promise.all(
-      locations.map((location) => {
-        const due = isStocktakeDue(location.lastStocktakeAt, intervalDays, now);
-        if (due === location.stocktakeDue) return Promise.resolve();
-        return StorageLocations.updateAsync(location._id, {
-          $set: { stocktakeDue: due, updatedAt: now },
-        });
-      }),
-    );
+    const locations = await StorageLocations.find(
+      { storageUnitId: { $in: storageUnitIds } },
+      { fields: { _id: 1 } },
+    ).fetchAsync();
 
     return { siteId, intervalDays, locationsChecked: locations.length };
   },
@@ -395,7 +386,6 @@ Meteor.methods({
       code,
       imageUrl,
       storedItems: [],
-      stocktakeDue: false,
       lastStocktakeAt: now,
       createdAt: now,
       updatedAt: now,
@@ -510,61 +500,10 @@ Meteor.methods({
   },
 
   /**
-   * Checks whether a stocktake is due for a storage location
-   *
-   * Compares each StorageLocations's next scheduled stocktake date against
-   * the current date. If the stocktake deadline has passed, the record is
-   * updated to indicate that a stocktake is required.
-   *
-   */
-  async "storageLocations.checkStocktakeDue"() {
-    // get all storage locations
-    const storageLocations = await StorageLocations.find().fetchAsync();
-
-    // set current date to the current date
-    const currentDate = new Date();
-
-    // The interval lives on the Site, four levels up. Many locations share a
-    // site, so look each one up once.
-    const siteIntervalCache = new Map();
-
-    // for each storage location
-    for (const location of storageLocations) {
-      // Get the storage unit this location belongs to
-      const storageUnit = await StorageUnits.findOneAsync(location.storageUnitId);
-      if (!storageUnit) continue;
-
-      // Get the floor map the storage unit belongs to
-      const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
-      if (!floorMap) continue;
-
-      // Get the stocktake interval from the site the floor map belongs to.
-      // Skipping orphans above keeps one broken branch from aborting the sweep
-      // for every other organisation.
-      let intervalDays = siteIntervalCache.get(floorMap.siteId);
-      if (intervalDays === undefined) {
-        const site = await Sites.findOneAsync(floorMap.siteId);
-        intervalDays = site?.stocktakeIntervalDays ?? DEFAULT_STOCKTAKE_INTERVAL_DAYS;
-        siteIntervalCache.set(floorMap.siteId, intervalDays);
-      }
-
-      // if the deadline has passed then set stocktakeDue to true, otherwise false
-      const due = isStocktakeDue(location.lastStocktakeAt, intervalDays, currentDate);
-      if (due === location.stocktakeDue) continue;
-
-      await StorageLocations.updateAsync(location._id, {
-        $set: {
-          stocktakeDue: due,
-        },
-      });
-    }
-  },
-
-  /**
    *
    * Updates StorageLocation attributes when a stocktake has been completed for an item in a specific location
    *
-   * This method sets the completion timestamp and resets the stocktake due status.
+   * This method sets the completion timestamp.
    *
    */
   async "storageLocations.stocktakeComplete"({ locationId }) {
@@ -573,7 +512,6 @@ Meteor.methods({
     await StorageLocations.updateAsync(locationId, {
       $set: {
         lastStocktakeAt: new Date(),
-        stocktakeDue: false,
       },
     });
   },
