@@ -218,14 +218,20 @@ Meteor.methods({
       },
     });
 
+    // preserve previous product record
+    const oldRecords = await ProductRecords.find({ productId }).fetchAsync();
+
     await ProductRecords.removeAsync({ productId });
     for (const { locationId, quantity } of mergedAssignments) {
       await assertLocationOrgAccess(locationId, this.userId);
+
+      const oldRecord = oldRecords.find((record) => record.locationId === locationId);
+
       await ProductRecords.insertAsync({
         productId,
         locationId,
         quantity,
-        createdAt: now,
+        createdAt: oldRecord?.createdAt ?? now,
         updatedAt: now,
       });
     }
@@ -290,13 +296,15 @@ Meteor.methods({
       $set: { totalQuantity: newTotal, updatedAt: now },
     });
 
+    const oldRecords = await ProductRecords.find({ productId }).fetchAsync();
     await ProductRecords.removeAsync({ productId });
     for (const { locationId, quantity } of mergedAssignments) {
+      const oldRecord = oldRecords.find((record) => record.locationId === locationId);
       await ProductRecords.insertAsync({
         productId,
         locationId,
         quantity,
-        createdAt: now,
+        createdAt: oldRecord?.createdAt ?? now,
         updatedAt: now,
       });
     }
