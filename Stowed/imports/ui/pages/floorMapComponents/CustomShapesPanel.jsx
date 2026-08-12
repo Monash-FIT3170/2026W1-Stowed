@@ -40,7 +40,7 @@ export function CustomShapesPanel({
 
       width,
       height,
-      fill: "#d6ede8",
+      fill: "#7a5230",
 
       rotation: 0,
 

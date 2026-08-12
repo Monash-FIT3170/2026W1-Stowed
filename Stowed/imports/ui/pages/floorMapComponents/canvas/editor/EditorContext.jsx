@@ -31,14 +31,13 @@ function mapStorageUnitToCanvasUnit(unit) {
     offset: unit.offset,
     rotation: unit.rotation ?? 0,
     scale: unit.scale,
-    fill: unit.fill || "lightblue",
+    fill: unit.fill || "#7a5230",
   };
 }
 
 // --- TOOL OPTIONS ---
 export const TOOLS = {
   SELECT: "select",
-  MOVE: "move",
   ADD: "add",
 };
 
@@ -56,14 +55,14 @@ const EditorContext = createContext(null);
  * Owns all shared editor state: active tool, floor dimensions, canvas settings,
  * placed units, undo/redo history, save/load, and low stock alert data.
  *
- * @param {{ children: React.ReactNode, floorMapId: string }} props
+ * @param {{ children: React.ReactNode, floorMapId: string, isCanvasEditMode: boolean, setCanvasEditMode: (v: boolean) => void }} props
  */
-export function EditorProvider({ children, floorMapId }) {
+export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanvasEditMode }) {
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
-  const [isCanvasSettingsOpen, setCanvasSettingsOpen] = useState(false);
-  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
+  const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
+  const [isEditorSettingsOpen, setEditorSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
 
@@ -249,7 +248,7 @@ export function EditorProvider({ children, floorMapId }) {
             offset: newOffset,
             rotation: unit.rotation ?? 0,
             scale: newScale,
-            fill: unit.fill || "lightblue",
+            fill: unit.fill || "#7a5230",
           });
 
           savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
@@ -267,7 +266,7 @@ export function EditorProvider({ children, floorMapId }) {
             offset,
             rotation: 0,
             scale,
-            fill: unit.fill || "lightblue",
+            fill: unit.fill || "#7a5230",
           });
 
           savedCanvasUnits.push({
@@ -327,13 +326,8 @@ export function EditorProvider({ children, floorMapId }) {
     setActiveTool(TOOLS.SELECT);
   }
 
-  // --- CANVAS SETTINGS ---
-  function handleCanvasSettingsSave({
-    floorSize: newFloorSize,
-    gridInterval,
-    showGrid,
-    snapToGrid,
-  }) {
+  // --- FLOOR MAP SETTINGS ---
+  function handleFloorMapSettingsSave({ floorSize: newFloorSize }) {
     const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
     const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
     const unitsInsideFloor = units.filter(
@@ -358,6 +352,11 @@ export function EditorProvider({ children, floorMapId }) {
     }
 
     setFloorSize(newFloorSize);
+    return true;
+  }
+
+  // --- EDITOR SETTINGS ---
+  function handleEditorSettingsSave({ gridInterval, showGrid, snapToGrid }) {
     setCanvasSettings({ gridInterval, showGrid, snapToGrid });
     return true;
   }
@@ -402,12 +401,15 @@ export function EditorProvider({ children, floorMapId }) {
     // Floor
     floorSize,
     setFloorSize,
+    isFloorMapSettingsOpen,
+    setFloorMapSettingsOpen,
+    handleFloorMapSettingsSave,
 
-    // Canvas settings
+    // Editor settings
     canvasSettings,
-    isCanvasSettingsOpen,
-    setCanvasSettingsOpen,
-    handleCanvasSettingsSave,
+    isEditorSettingsOpen,
+    setEditorSettingsOpen,
+    handleEditorSettingsSave,
 
     // Mode toggling
     isCanvasEditMode,
