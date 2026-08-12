@@ -12,6 +12,8 @@ export const DUE_SOON_DAYS = 14;
 
 export const MAX_STOCKTAKE_INTERVAL_DAYS = 3650;
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export const STOCKTAKE_STATUS = {
   OVERDUE: "overdue",
   DUE_SOON: "due-soon",
@@ -72,7 +74,7 @@ export function isValidStocktakeInterval(intervalDays) {
 export function getLocationStocktakeStatus(lastStocktakeAt, intervalDays, now = new Date()) {
   const dueAt = getNextStocktakeDate(lastStocktakeAt, intervalDays);
   if (!dueAt) return STOCKTAKE_STATUS.OK;
-  const daysUntilDue = Math.ceil((dueAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+  const daysUntilDue = Math.ceil((dueAt.getTime() - now.getTime()) / MS_PER_DAY);
   if (daysUntilDue <= 0) return STOCKTAKE_STATUS.OVERDUE;
   if (daysUntilDue <= DUE_SOON_DAYS) return STOCKTAKE_STATUS.DUE_SOON;
   return STOCKTAKE_STATUS.OK;

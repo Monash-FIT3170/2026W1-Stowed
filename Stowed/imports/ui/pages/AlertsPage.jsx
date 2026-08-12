@@ -10,11 +10,11 @@ import {
 } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import {
-  getStocktakeStatus,
+  getLocationStocktakeStatus,
   getDaysUntilDue,
   getNextStocktakeDate,
   DEFAULT_STOCKTAKE_INTERVAL_DAYS,
-  DUE_SOON_WINDOW_DAYS,
+  DUE_SOON_DAYS,
   STOCKTAKE_STATUS,
 } from "/imports/api/locations/stocktake";
 import { FilterChips } from "../components/FilterChips";
@@ -109,7 +109,7 @@ export function AlertsPage() {
 
           return {
             location,
-            status: getStocktakeStatus(location.lastStocktakeAt, intervalDays, now),
+            status: getLocationStocktakeStatus(location.lastStocktakeAt, intervalDays, now),
             daysUntilDue: getDaysUntilDue(location.lastStocktakeAt, intervalDays, now),
             dueDate: getNextStocktakeDate(location.lastStocktakeAt, intervalDays),
             intervalDays,
@@ -172,7 +172,7 @@ export function AlertsPage() {
                 <strong>{overdueCount}</strong> Overdue
               </span>
               <span>
-                <strong>{dueSoonCount}</strong> Due within {DUE_SOON_WINDOW_DAYS} days
+                <strong>{dueSoonCount}</strong> Due within {DUE_SOON_DAYS} days
               </span>
               <span>
                 <strong>{storageLocations.length}</strong> Storage locations tracked
