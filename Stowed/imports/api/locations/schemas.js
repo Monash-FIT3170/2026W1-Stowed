@@ -224,11 +224,6 @@ export const StorageLocationSchema = new SimpleSchema({
     max: 100,
   },
 
-  // Seeded with the creation date, then stamped each time the location is stocktaken.
-  lastStocktakeAt: {
-    type: Date,
-  },
-
   code: {
     type: String,
     optional: true,
@@ -244,6 +239,11 @@ export const StorageLocationSchema = new SimpleSchema({
   fill: {
     type: String,
     optional: true,
+  },
+
+  // Seeded with the creation date, then stamped each time the location is stocktaken.
+  lastStocktakeAt: {
+    type: Date,
   },
 
   createdAt: {
