@@ -1,10 +1,5 @@
 // imports/api/locations/methods.js
 
-// TODO:
-//  - add attributes to storageLocaitons
-//  - remove attributes from productRecord
-//  - update main server file to refelct changes
-
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
