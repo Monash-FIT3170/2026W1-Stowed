@@ -218,7 +218,6 @@ export const StorageLocationSchema = new SimpleSchema({
     allowedValues: ["OK", "LOW", "CRITICAL"],
   },
 
-
   // Seeded with the creation date, then stamped each time the location is stocktaken.
   lastStocktakeAt: {
     type: Date,

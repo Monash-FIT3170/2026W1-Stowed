@@ -181,13 +181,13 @@ async function seedProductRecords() {
 
   const now = new Date();
   const rec = (productId, locationId, quantity) =>
-  ProductRecords.insertAsync({
-    productId,
-    locationId,
-    quantity,
-    createdAt: now,
-    updatedAt: now,
-  });
+    ProductRecords.insertAsync({
+      productId,
+      locationId,
+      quantity,
+      createdAt: now,
+      updatedAt: now,
+    });
 
   // Lab Safety Goggles: split across science storage (total 60)
   await rec(goggles._id, sc1._id, 35);

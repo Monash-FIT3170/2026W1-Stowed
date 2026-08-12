@@ -217,7 +217,7 @@ Meteor.methods({
         updatedAt: now,
       },
     });
-    
+
     // preserve previous product record
     const oldRecords = await ProductRecords.find({ productId }).fetchAsync();
 
@@ -225,9 +225,7 @@ Meteor.methods({
     for (const { locationId, quantity } of mergedAssignments) {
       await assertLocationOrgAccess(locationId, this.userId);
 
-      const oldRecord = oldRecords.find(
-        (record) => record.locationId === locationId
-      );
+      const oldRecord = oldRecords.find((record) => record.locationId === locationId);
 
       await ProductRecords.insertAsync({
         productId,
@@ -301,9 +299,7 @@ Meteor.methods({
     const oldRecords = await ProductRecords.find({ productId }).fetchAsync();
     await ProductRecords.removeAsync({ productId });
     for (const { locationId, quantity } of mergedAssignments) {
-      const oldRecord = oldRecords.find(
-        (record) => record.locationId === locationId
-      );
+      const oldRecord = oldRecords.find((record) => record.locationId === locationId);
       await ProductRecords.insertAsync({
         productId,
         locationId,
@@ -493,5 +489,4 @@ Meteor.methods({
       },
     );
   },
-
 });
