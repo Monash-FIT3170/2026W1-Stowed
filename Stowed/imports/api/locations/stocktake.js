@@ -8,7 +8,9 @@
 export const DEFAULT_STOCKTAKE_INTERVAL_DAYS = 180;
 
 /** A location is flagged "due soon" this many days before its deadline. */
-export const DUE_SOON_WINDOW_DAYS = 14;
+export const DUE_SOON_DAYS = 14;
+
+export const MAX_STOCKTAKE_INTERVAL_DAYS = 3650;
 
 export const STOCKTAKE_STATUS = {
   OVERDUE: "overdue",
@@ -16,9 +18,6 @@ export const STOCKTAKE_STATUS = {
   OK: "ok",
 };
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-// Falls back to the default for missing, non-numeric, or non-positive intervals.
 function normaliseInterval(intervalDays) {
   const interval = Number(intervalDays);
   return Number.isFinite(interval) && interval > 0 ? interval : DEFAULT_STOCKTAKE_INTERVAL_DAYS;
@@ -62,15 +61,19 @@ export function isStocktakeDue(lastStocktakeAt, intervalDays, now = new Date()) 
   return now.getTime() >= next.getTime();
 }
 
-/**
- * Three-way status used to group and colour alerts.
- *
- * @returns {"overdue"|"due-soon"|"ok"}
- */
-export function getStocktakeStatus(lastStocktakeAt, intervalDays, now = new Date()) {
-  const daysUntilDue = getDaysUntilDue(lastStocktakeAt, intervalDays, now);
-  if (daysUntilDue === null) return STOCKTAKE_STATUS.OK;
+export function isValidStocktakeInterval(intervalDays) {
+  return (
+    Number.isInteger(intervalDays) &&
+    intervalDays >= 1 &&
+    intervalDays <= MAX_STOCKTAKE_INTERVAL_DAYS
+  );
+}
+
+export function getLocationStocktakeStatus(lastStocktakeAt, intervalDays, now = new Date()) {
+  const dueAt = getNextStocktakeDate(lastStocktakeAt, intervalDays);
+  if (!dueAt) return STOCKTAKE_STATUS.OK;
+  const daysUntilDue = Math.ceil((dueAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
   if (daysUntilDue <= 0) return STOCKTAKE_STATUS.OVERDUE;
-  if (daysUntilDue <= DUE_SOON_WINDOW_DAYS) return STOCKTAKE_STATUS.DUE_SOON;
+  if (daysUntilDue <= DUE_SOON_DAYS) return STOCKTAKE_STATUS.DUE_SOON;
   return STOCKTAKE_STATUS.OK;
 }

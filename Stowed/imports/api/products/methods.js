@@ -315,6 +315,107 @@ Meteor.methods({
   },
 
   /**
+   * Applies a completed stocktake to one storage location.
+   *
+   * `lines` is the full intended contents of the location, not a list of edits:
+   * any existing record whose product is absent from `lines` is deleted. Each
+   * affected product's totalQuantity is then recomputed from its remaining
+   * records, so the invariant that a product's total equals the sum of its
+   * records holds even if it was already broken beforehand.
+   */
+  async "stocktake.save"({ locationId, lines }) {
+    check(locationId, String);
+    check(lines, [{ productId: String, quantity: Match.Integer }]);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    await assertLocationOrgAccess(locationId, this.userId);
+    await requirePermission(this.userId, "stocktake.save");
+
+    if (lines.some(({ quantity }) => quantity < 0)) {
+      throw new Meteor.Error("invalid-quantity", "Counted quantities cannot be negative.");
+    }
+
+    // Two lines for the same product would otherwise overwrite each other.
+    const counted = new Map();
+    for (const { productId, quantity } of lines) {
+      counted.set(productId, (counted.get(productId) ?? 0) + quantity);
+    }
+
+    for (const productId of counted.keys()) {
+      await assertOrgAccess(Products, productId, this.userId);
+    }
+
+    const existingRecords = await ProductRecords.find({ locationId }).fetchAsync();
+
+    // A product should hold at most one record per location. Group rather than
+    // assume, because totals are recomputed by summing records below — a stray
+    // duplicate would otherwise inflate the product's total.
+    const recordsByProduct = new Map();
+    for (const record of existingRecords) {
+      recordsByProduct.set(record.productId, [
+        ...(recordsByProduct.get(record.productId) ?? []),
+        record,
+      ]);
+    }
+
+    const now = new Date();
+    // Only products whose stock actually moved need their total recomputed.
+    const changedProductIds = new Set();
+
+    // Counted products: insert the new ones, update the ones that changed.
+    for (const [productId, quantity] of counted) {
+      const [record, ...duplicates] = recordsByProduct.get(productId) ?? [];
+
+      if (!record) {
+        await ProductRecords.insertAsync({
+          productId,
+          locationId,
+          quantity,
+          createdAt: now,
+          updatedAt: now,
+        });
+        changedProductIds.add(productId);
+      } else if (record.quantity !== quantity) {
+        await ProductRecords.updateAsync(record._id, {
+          $set: { quantity, updatedAt: now },
+        });
+        changedProductIds.add(productId);
+      }
+
+      for (const duplicate of duplicates) {
+        await ProductRecords.removeAsync(duplicate._id);
+        changedProductIds.add(productId);
+      }
+    }
+
+    // Anything no longer counted here has left the location.
+    for (const record of existingRecords) {
+      if (!counted.has(record.productId)) {
+        await ProductRecords.removeAsync(record._id);
+        changedProductIds.add(record.productId);
+      }
+    }
+
+    for (const productId of changedProductIds) {
+      const records = await ProductRecords.find({ productId }).fetchAsync();
+      const totalQuantity = records.reduce((sum, record) => sum + record.quantity, 0);
+      await Products.updateAsync(productId, {
+        $set: { totalQuantity, updatedAt: now },
+      });
+    }
+
+    // The count happened even if nothing needed changing.
+    await StorageLocations.updateAsync(locationId, {
+      $set: { lastStocktakeAt: now, updatedAt: now },
+    });
+
+    return { productsChanged: changedProductIds.size };
+  },
+
+  /**
    * Creates a new ProductRecord.
    */
   async "productRecords.create"({ productId, locationId, quantity }) {
