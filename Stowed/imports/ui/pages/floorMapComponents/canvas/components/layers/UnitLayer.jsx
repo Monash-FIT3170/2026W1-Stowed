@@ -6,7 +6,7 @@ import { StorageUnit } from "../units/StorageUnit";
  *
  * @param {Object[]}                                     units
  * @param {Set<string>}                                  selectedIds
- * @param {string}                                       activeTool
+ * @param {boolean}                                      isCanvasEditMode
  * @param {(id: string) => React.RefObject<Konva.Group>} getGroupRef
  * @param {(unit, e) => void}                            onUnitClick
  * @param {(e, id: string) => void}                      onDragMove
@@ -18,7 +18,7 @@ import { StorageUnit } from "../units/StorageUnit";
 export function UnitLayer({
   units,
   selectedIds,
-  activeTool,
+  isCanvasEditMode,
   getGroupRef,
   onUnitClick,
   onDragMove,
@@ -34,7 +34,7 @@ export function UnitLayer({
             key={unit.id}
             unit={unit}
             isSelected={selectedIds.has(unit.id)}
-            activeTool={activeTool}
+            isCanvasEditMode={isCanvasEditMode}
             onSelect={(e) => onUnitClick(unit, e)}
             onDragMove={(e) => onDragMove(e, unit.id)}
             onDragEnd={(e) => onDragEnd(e, unit.id)}

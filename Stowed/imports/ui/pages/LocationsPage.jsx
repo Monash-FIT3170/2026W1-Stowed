@@ -13,6 +13,7 @@ import {
 import "../Global.css";
 import "./LocationsPage.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
+import { buildRectShape, getTransformedBounds } from "/imports/api/locations/shapeUtils";
 
 const STORAGE_UNIT_TYPES = ["shelf", "cabinet", "rack", "drawer", "fridge", "other"];
 
@@ -323,11 +324,19 @@ export function LocationsPage() {
         floorMapId: selectedFloorMapId,
         name: unitForm.name.trim(),
         type: unitForm.type,
-        position: {
-          x: Number(unitForm.x),
-          y: Number(unitForm.y),
+        shape: buildRectShape({
           width: Number(unitForm.width),
           height: Number(unitForm.height),
+          name: unitForm.name.trim(),
+        }),
+        offset: {
+          x: Number(unitForm.x),
+          y: Number(unitForm.y),
+        },
+        rotation: Number(0),
+        scale: {
+          x: Number(1),
+          y: Number(1),
         },
       });
       setUnitForm(DEFAULT_UNIT_FORM);
@@ -440,7 +449,10 @@ export function LocationsPage() {
         floorMapId: unit.floorMapId,
         name,
         type: editStorageUnitForm.type,
-        position: unit.position,
+        shape: unit.shape,
+        offset: unit.offset,
+        rotation: unit.rotation,
+        scale: unit.scale,
       });
       setEditingStorageUnitId(null);
     });
@@ -503,20 +515,20 @@ export function LocationsPage() {
     const PREVIEW_W = 280;
     const PREVIEW_H = 300;
 
-    // Convert all to pixels first
+    // Convert each unit's transformations from metres to preview pixels.
     const converted = units.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
-      const isMeters = x <= 20 && y <= 20 && w <= 20 && h <= 20;
+      const bounds = getTransformedBounds(unit.shape, {
+        offset: unit.offset,
+        rotation: unit.rotation,
+        scale: unit.scale,
+      });
       return {
         ...unit,
         px: {
-          left: isMeters ? x * PX : x,
-          top: isMeters ? y * PX : y,
-          width: isMeters ? w * PX : w,
-          height: isMeters ? h * PX : h,
+          left: bounds.minX * PX,
+          top: bounds.minY * PX,
+          width: bounds.width * PX,
+          height: bounds.height * PX,
         },
       };
     });
@@ -544,7 +556,7 @@ export function LocationsPage() {
             Locations <em>Overview</em>
           </h1>
           <div className="locations-page-status-indicator">
-            {isLoading ? "Loading location data…" : `${sites.length} sites loaded`}
+            {isLoading ? "Loading location data..." : `${sites.length} sites loaded`}
           </div>
         </div>
       </div>
@@ -1030,7 +1042,16 @@ export function LocationsPage() {
                               {unit.type}
                             </span>
                           </div>
-                          <div className="unit-list-item-meta">{`x:${unit.position.x} y:${unit.position.y} w:${unit.position.width} h:${unit.position.height}`}</div>
+                          <div className="unit-list-item-meta">
+                            {(() => {
+                              const bounds = getTransformedBounds(unit.shape, {
+                                offset: unit.offset,
+                                rotation: unit.rotation,
+                                scale: unit.scale,
+                              });
+                              return `x:${bounds.minX.toFixed(1)} y:${bounds.minY.toFixed(1)} w:${bounds.width.toFixed(1)} h:${bounds.height.toFixed(1)}`;
+                            })()}
+                          </div>
                         </button>
                         {canManage && (
                           <button
@@ -1331,7 +1352,7 @@ export function LocationsPage() {
                 Cancel
               </button>
               <button className="btn-danger" onClick={handleDeleteConfirmed} disabled={submitting}>
-                {submitting ? "Deleting…" : "Delete"}
+                {submitting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

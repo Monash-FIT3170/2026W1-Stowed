@@ -95,6 +95,40 @@ export const FloorMapSchema = new SimpleSchema({
 });
 
 /**
+ * Schema for Unit shapes
+ */
+export const UnitShapeSchema = new SimpleSchema({
+  orgId: String,
+  shapeId: Number,
+  name: {
+    type: String,
+    max: 100,
+  },
+
+  points: {
+    // *local, stored counter clock wise
+    type: Array,
+    minCount: 3,
+  },
+  "points.$": Object,
+  "points.$.x": {
+    type: Number,
+  },
+  "points.$.y": {
+    type: Number,
+  },
+  gridReference: Object, // anchor point for the shape (usually 0, 0)
+  "gridReference.x": {
+    type: Number,
+    defaultValue: 0,
+  },
+  "gridReference.y": {
+    type: Number,
+    defaultValue: 0,
+  },
+});
+
+/**
  * Schema for a StorageUnit.
  */
 export const StorageUnitSchema = new SimpleSchema({
@@ -117,28 +151,28 @@ export const StorageUnitSchema = new SimpleSchema({
     allowedValues: ["shelf", "cabinet", "rack", "drawer", "fridge", "other", "custom"],
   },
 
-  position: {
-    type: Object,
+  shape: {
+    type: UnitShapeSchema,
+    required: true,
   },
 
-  "position.x": {
+  offset: Object,
+  "offset.x": Number,
+  "offset.y": Number,
+
+  rotation: {
     type: Number,
-    min: 0,
+    defaultValue: 0, // radians
   },
 
-  "position.y": {
+  scale: Object,
+  "scale.x": {
     type: Number,
-    min: 0,
+    defaultValue: 1,
   },
-
-  "position.width": {
+  "scale.y": {
     type: Number,
-    min: 1,
-  },
-
-  "position.height": {
-    type: Number,
-    min: 1,
+    defaultValue: 1,
   },
 
   fill: {
