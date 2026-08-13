@@ -16,9 +16,9 @@ export function CreateShapeModal({ onClose }) {
       currentPoints.map((point, pointIndex) =>
         pointIndex === index
           ? {
-              ...point,
-              [coordinate]: value,
-            }
+            ...point,
+            [coordinate]: value,
+          }
           : point,
       ),
     );
@@ -99,18 +99,41 @@ export function CreateShapeModal({ onClose }) {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        <h2 style={styles.title}>Create New Shape</h2>
+        <div style={styles.modalHeader}>
+          <h2 style={styles.title}>Shape Editor</h2>
 
-        <label style={styles.label}>
-          Shape name
-          <input
-            type="text"
-            value={shapeName}
-            onChange={(event) => setShapeName(event.target.value)}
-            placeholder="Enter shape name"
-            style={styles.fullInput}
-          />
-        </label>
+          <div style={styles.actions}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                ...buttonStyles.base,
+                ...buttonStyles.secondary,
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              style={{
+                ...buttonStyles.base,
+                ...buttonStyles.primary,
+              }}
+            >
+              Save Shape
+            </button>
+          </div>
+        </div>
+
+        <input
+          type="text"
+          value={shapeName}
+          onChange={(event) => setShapeName(event.target.value)}
+          placeholder="Enter shape name"
+          style={styles.nameInput}
+        />
 
         <div style={styles.pointsContainer}>
           {points.map((point, index) => (
@@ -130,8 +153,8 @@ export function CreateShapeModal({ onClose }) {
               </div>
 
               <div style={styles.pointRow}>
-                <label style={styles.coordinateLabel}>
-                  X coordinate
+                <label style={styles.coordinateGroup}>
+                  <span style={styles.coordinateLabel}>X</span>
                   <input
                     type="number"
                     value={point.x}
@@ -140,8 +163,8 @@ export function CreateShapeModal({ onClose }) {
                   />
                 </label>
 
-                <label style={styles.coordinateLabel}>
-                  Y coordinate
+                <label style={styles.coordinateGroup}>
+                  <span style={styles.coordinateLabel}>Y</span>
                   <input
                     type="number"
                     value={point.y}
@@ -166,30 +189,6 @@ export function CreateShapeModal({ onClose }) {
         >
           Add Another Point
         </button>
-
-        <div style={styles.actions}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              ...buttonStyles.base,
-              ...buttonStyles.secondary,
-            }}
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSave}
-            style={{
-              ...buttonStyles.base,
-              ...buttonStyles.primary,
-            }}
-          >
-            Save Shape
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -207,7 +206,7 @@ const styles = {
   },
 
   modal: {
-    width: 420,
+    width: "60vw",
     maxHeight: "80vh",
     overflowY: "auto",
     padding: 24,
@@ -216,9 +215,15 @@ const styles = {
     boxShadow: "0 12px 30px rgba(0, 0, 0, 0.2)",
   },
 
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    paddingBottom: "18px",
+  },
+
   title: {
-    marginTop: 0,
-    marginBottom: 20,
+    fontSize: 28,
+    fontWeight: "bold",
   },
 
   label: {
@@ -229,11 +234,14 @@ const styles = {
     fontWeight: 600,
   },
 
-  fullInput: {
+  nameInput: {
     padding: "9px 10px",
     border: "1px solid #cccccc",
     borderRadius: 8,
     fontSize: 14,
+    fieldSizing: "content",
+    maxWidth: "50%",
+    minWidth: "10%",
   },
 
   pointsContainer: {
@@ -266,18 +274,23 @@ const styles = {
     gap: 12,
   },
 
-  coordinateLabel: {
+  coordinateGroup: {
     display: "flex",
     flex: 1,
-    flexDirection: "column",
     gap: 5,
     fontSize: 12,
+    padding: "4px 9px",
+  },
+
+  coordinateLabel: {
+    padding: "4px 0px",
+    paddingRight: "2px",
   },
 
   coordinateInput: {
     width: "100%",
     boxSizing: "border-box",
-    padding: "8px 9px",
+    padding: "4px 9px",
     border: "1px solid #cccccc",
     borderRadius: 7,
   },
@@ -295,6 +308,5 @@ const styles = {
     display: "flex",
     justifyContent: "flex-end",
     gap: 10,
-    marginTop: 20,
   },
 };
