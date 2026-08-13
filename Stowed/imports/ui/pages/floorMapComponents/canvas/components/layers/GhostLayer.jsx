@@ -26,24 +26,16 @@ export function GhostLayer({
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
   const isCustomShape = (unit) =>
-    unit?.type === "custom" &&
-    Array.isArray(unit.shape?.points) &&
-    unit.shape.points.length >= 3;
+    unit?.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
 
   const getPolygonPoints = (unit) =>
-    unit.shape.points.flatMap((point) => [
-      point.x * px,
-      point.y * px,
-    ]);
+    unit.shape.points.flatMap((point) => [point.x * px, point.y * px]);
 
   return (
     <Layer>
       {/* SINGLE DROP GHOST */}
       {ghostUnit && (
-        <Group
-          x={ghostUnit.x}
-          y={ghostUnit.y}
-        >
+        <Group x={ghostUnit.x} y={ghostUnit.y}>
           {isCustomShape(ghostUnit) ? (
             <Line
               points={getPolygonPoints(ghostUnit)}
@@ -97,11 +89,7 @@ export function GhostLayer({
           }
 
           return (
-            <Group
-              key={`ghost-${id}`}
-              x={ghostX}
-              y={ghostY}
-            >
+            <Group key={`ghost-${id}`} x={ghostX} y={ghostY}>
               {isCustomShape(unit) ? (
                 <Line
                   points={getPolygonPoints(unit)}

@@ -8,7 +8,7 @@ import {
   StorageUnitSchema,
   UnitShapeSchema,
   StorageLocationSchema,
-} from './schemas';
+} from "./schemas";
 
 /**
  * Stores high-level physical storage areas.
@@ -23,12 +23,12 @@ export const FloorMaps = new Mongo.Collection("floorMaps");
 /**
  * Stores physical storage units that belong to a FloorMap.
  */
-export const StorageUnits = new Mongo.Collection('storageUnits');
+export const StorageUnits = new Mongo.Collection("storageUnits");
 
 /**
  * Stores default and customer shape objects available in the Floor Map Editor
  */
-export const MapShapes = new Mongo.Collection('mapShapes');
+export const MapShapes = new Mongo.Collection("mapShapes");
 
 /**
  * Stores fixed storage locations within a StorageUnit.

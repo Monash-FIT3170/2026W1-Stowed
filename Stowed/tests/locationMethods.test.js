@@ -1,6 +1,12 @@
 import assert from "assert";
 import { Meteor } from "meteor/meteor";
-import { Sites, FloorMaps, StorageUnits, MapShapes, StorageLocations } from "../imports/api/locations/collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  MapShapes,
+  StorageLocations,
+} from "../imports/api/locations/collections";
 import { Organisations } from "../imports/api/organisations";
 import "../imports/api/locations/methods";
 
@@ -162,10 +168,7 @@ describe("mapShapes.create", function () {
   });
 
   it("defaults to (0, 0) grid reference point", async function () {
-    createdShapeId = await callMethod(
-      "mapShapes.create",
-      makeCreateParams(),
-    );
+    createdShapeId = await callMethod("mapShapes.create", makeCreateParams());
 
     const shape = await MapShapes.findOneAsync(createdShapeId);
     assert.strictEqual(shape.gridReference.x, 0);
@@ -174,20 +177,14 @@ describe("mapShapes.create", function () {
   });
 
   it("retrieves correct organisation ID", async function () {
-    createdShapeId = await callMethod(
-      "mapShapes.create",
-      makeCreateParams(),
-    );
+    createdShapeId = await callMethod("mapShapes.create", makeCreateParams());
 
     const shape = await MapShapes.findOneAsync(createdShapeId);
     assert.strictEqual(shape.orgId, TEST_ORG_ID);
   });
 
   it("throws duplicate-name when the same name already exists (case-sensitive)", async function () {
-    createdShapeId = await callMethod(
-      "mapShapes.create",
-      makeCreateParams({ name: "Diamond" }),
-    );
+    createdShapeId = await callMethod("mapShapes.create", makeCreateParams({ name: "Diamond" }));
 
     await assert.rejects(
       () => callMethod("mapShapes.create", makeCreateParams({ name: "Diamond" })),
@@ -202,10 +199,7 @@ describe("mapShapes.create", function () {
 // delete
 describe("mapShapes.delete", function () {
   it("removes the shape from the database", async function () {
-    const insertedId = await callMethod(
-      "mapShapes.create",
-      makeCreateParams(),
-    );
+    const insertedId = await callMethod("mapShapes.create", makeCreateParams());
     const created = await MapShapes.findOneAsync(insertedId);
 
     await callMethod("mapShapes.delete", { shapeId: created.shapeId });

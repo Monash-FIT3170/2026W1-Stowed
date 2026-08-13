@@ -233,7 +233,8 @@ describe("Product methods", function () {
       );
 
       await assert.rejects(
-        () => callMethod("products.createWithAssignments", makeCreateParams({ name: "hi-vis vest" })),
+        () =>
+          callMethod("products.createWithAssignments", makeCreateParams({ name: "hi-vis vest" })),
         (err) => {
           assert.strictEqual(err.error, "duplicate-name");
           return true;

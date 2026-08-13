@@ -30,15 +30,10 @@ export function StorageUnit({
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
   const isCustomShape =
-    unit.type === "custom" &&
-    Array.isArray(unit.shape?.points) &&
-    unit.shape.points.length >= 3;
+    unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
 
   const polygonPoints = isCustomShape
-    ? unit.shape.points.flatMap((point) => [
-      point.x * px,
-      point.y * px,
-    ])
+    ? unit.shape.points.flatMap((point) => [point.x * px, point.y * px])
     : [];
 
   return (

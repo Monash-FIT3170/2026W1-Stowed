@@ -342,9 +342,7 @@ export function useCanvasHandlers({
     const newHeight = finalHPx / px;
 
     const isCustomShape =
-      unit.type === "custom" &&
-      Array.isArray(unit.shape?.points) &&
-      unit.shape.points.length >= 3;
+      unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
 
     const widthScale = unit.width > 0 ? newWidth / unit.width : 1;
     const heightScale = unit.height > 0 ? newHeight / unit.height : 1;
@@ -428,9 +426,7 @@ export function useCanvasHandlers({
       y: (mouse.y - stage.y()) / oldScale,
     };
 
-    const newScale = clampScale(
-      e.evt.deltaY > 0 ? oldScale / scaleFactor : oldScale * scaleFactor,
-    );
+    const newScale = clampScale(e.evt.deltaY > 0 ? oldScale / scaleFactor : oldScale * scaleFactor);
 
     dispatch({ type: CANVAS_ACTIONS.SET_SCALE, payload: { scale: newScale } });
 

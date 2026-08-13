@@ -11,7 +11,7 @@ import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel"
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites, MapShapes, } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, MapShapes } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -79,7 +79,7 @@ function FloorMapPageInner() {
     };
   }, []);
 
-  const items = selectedUnit?.mockItems ?? (lowStockByUnitId?.[selectedUnit?._id] ?? []);
+  const items = selectedUnit?.mockItems ?? lowStockByUnitId?.[selectedUnit?._id] ?? [];
   const lowItems = items.filter((i) => i.isLow);
   const okItems = items.filter((i) => !i.isLow);
   const isEmpty = items.length === 0;
@@ -95,9 +95,7 @@ function FloorMapPageInner() {
   const updateSelectedUnit = (patch) => {
     if (!selectedUnit) return;
     const uid = selectedUnit.id ?? selectedUnit._id;
-    commitUnits((prev) =>
-      prev.map((u) => ((u.id ?? u._id) === uid ? { ...u, ...patch } : u)),
-    );
+    commitUnits((prev) => prev.map((u) => ((u.id ?? u._id) === uid ? { ...u, ...patch } : u)));
     setSelectedUnit((prev) => (prev ? { ...prev, ...patch } : prev));
   };
 
@@ -131,51 +129,9 @@ function FloorMapPageInner() {
         }}
       >
         <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
-        {sites.length > 0 ? (
-          <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
-            {/* WAREHOUSE (SITE) SELECT */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span
-                style={{
-                  fontSize: "9px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  color: COLOURS.TEXT_MUTED,
-                }}
-              >
-                Site
-              </span>
-              <select
-                value={currentSite?._id ?? ""}
-                onChange={(e) => {
-                  const targetSiteId = e.target.value;
-                  const targetMap = floorMaps.find((f) => f.siteId === targetSiteId);
-                  if (targetMap) navigate(`/floor-map/${targetMap._id}`);
-                }}
-                aria-label="Select site"
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: COLOURS.TEXT_PRIMARY,
-                  background: COLOURS.CARD_BG,
-                  border: `1px solid ${COLOURS.CARD_BORDER}`,
-                  borderRadius: "8px",
-                  padding: "6px 10px",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                {sites.map((site) => (
-                  <option key={site._id} value={site._id}>
-                    {site.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* FLOOR MAP SELECT - only shown when the selected site has more than one floor map */}
-            {currentSite && siteFloorMaps.length > 1 && (
+          {sites.length > 0 ? (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+              {/* WAREHOUSE (SITE) SELECT */}
               <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                 <span
                   style={{
@@ -186,16 +142,20 @@ function FloorMapPageInner() {
                     color: COLOURS.TEXT_MUTED,
                   }}
                 >
-                  Floor Map
+                  Site
                 </span>
                 <select
-                  value={currentFloorMap?._id ?? ""}
-                  onChange={(e) => navigate(`/floor-map/${e.target.value}`)}
-                  aria-label="Select floor map"
+                  value={currentSite?._id ?? ""}
+                  onChange={(e) => {
+                    const targetSiteId = e.target.value;
+                    const targetMap = floorMaps.find((f) => f.siteId === targetSiteId);
+                    if (targetMap) navigate(`/floor-map/${targetMap._id}`);
+                  }}
+                  aria-label="Select site"
                   style={{
                     fontSize: "13px",
-                    fontWeight: 600,
-                    color: COLOURS.TEXT_MUTED,
+                    fontWeight: 700,
+                    color: COLOURS.TEXT_PRIMARY,
                     background: COLOURS.CARD_BG,
                     border: `1px solid ${COLOURS.CARD_BORDER}`,
                     borderRadius: "8px",
@@ -204,31 +164,74 @@ function FloorMapPageInner() {
                     fontFamily: "inherit",
                   }}
                 >
-                  {siteFloorMaps.map((fm) => (
-                    <option key={fm._id} value={fm._id}>
-                      {fm.name}
+                  {sites.map((site) => (
+                    <option key={site._id} value={site._id}>
+                      {site.name}
                     </option>
                   ))}
                 </select>
               </div>
-            )}
-          </div>
-        ) : (
-          <span style={{ fontSize: "13px", fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
-            {currentFloorMap?.name ?? "Floor Map"}
-          </span>
-        )}
 
-        {/* SAVE LAYOUT */}
-        {isCanvasEditMode && canManage && (
-          <button
-            type="button"
-            onClick={handleSaveLayout}
-            style={{ ...statusBarButtonStyle, background: COLOURS.ACCENT, borderColor: COLOURS.ACCENT, color: "white" }}
-          >
-            Save Layout
-          </button>
-        )}
+              {/* FLOOR MAP SELECT - only shown when the selected site has more than one floor map */}
+              {currentSite && siteFloorMaps.length > 1 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span
+                    style={{
+                      fontSize: "9px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      color: COLOURS.TEXT_MUTED,
+                    }}
+                  >
+                    Floor Map
+                  </span>
+                  <select
+                    value={currentFloorMap?._id ?? ""}
+                    onChange={(e) => navigate(`/floor-map/${e.target.value}`)}
+                    aria-label="Select floor map"
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: COLOURS.TEXT_MUTED,
+                      background: COLOURS.CARD_BG,
+                      border: `1px solid ${COLOURS.CARD_BORDER}`,
+                      borderRadius: "8px",
+                      padding: "6px 10px",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {siteFloorMaps.map((fm) => (
+                      <option key={fm._id} value={fm._id}>
+                        {fm.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          ) : (
+            <span style={{ fontSize: "13px", fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
+              {currentFloorMap?.name ?? "Floor Map"}
+            </span>
+          )}
+
+          {/* SAVE LAYOUT */}
+          {isCanvasEditMode && canManage && (
+            <button
+              type="button"
+              onClick={handleSaveLayout}
+              style={{
+                ...statusBarButtonStyle,
+                background: COLOURS.ACCENT,
+                borderColor: COLOURS.ACCENT,
+                color: "white",
+              }}
+            >
+              Save Layout
+            </button>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -310,22 +313,43 @@ function FloorMapPageInner() {
         </div>
 
         {/* RIGHT COLUMN - stock panel + edit sidebar stacked */}
-        <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, height: "100%", borderLeft: `1px solid ${COLOURS.CARD_BORDER}` }}>
-
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            flexShrink: 0,
+            height: "100%",
+            borderLeft: `1px solid ${COLOURS.CARD_BORDER}`,
+          }}
+        >
           {/* STOCK SLIDE-OUT PANEL - view mode only */}
           {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
             <div className="low-stock-panel" style={{ borderLeft: "none", flex: "0 0 auto" }}>
-              <div className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}>
+              <div
+                className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}
+              >
                 <div>
                   <div className="panel-header-label">{selectedUnit.name}</div>
                   <div className="panel-header-title">
                     {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
                   </div>
-                  <div className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}>
-                    {isEmpty ? "Empty" : hasLow ? `${lowItems.length} need attention` : `${okItems.length} products OK`}
+                  <div
+                    className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}
+                  >
+                    {isEmpty
+                      ? "Empty"
+                      : hasLow
+                        ? `${lowItems.length} need attention`
+                        : `${okItems.length} products OK`}
                   </div>
                 </div>
-                <button className="panel-close-btn" onClick={() => setIsStockPanelOpen(false)} aria-label="Close panel">✕</button>
+                <button
+                  className="panel-close-btn"
+                  onClick={() => setIsStockPanelOpen(false)}
+                  aria-label="Close panel"
+                >
+                  ✕
+                </button>
               </div>
               <div className="panel-content">
                 {isEmpty ? (
@@ -338,7 +362,9 @@ function FloorMapPageInner() {
                         {lowItems.map((item, i) => (
                           <div key={i} className="panel-item low">
                             <div>
-                              <div className="panel-item-name">{item.product?.name ?? item.name}</div>
+                              <div className="panel-item-name">
+                                {item.product?.name ?? item.name}
+                              </div>
                               <div className="panel-item-location">{item.locationName}</div>
                             </div>
                             <div>
@@ -357,7 +383,9 @@ function FloorMapPageInner() {
                         {okItems.map((item, i) => (
                           <div key={i} className="panel-item ok">
                             <div>
-                              <div className="panel-item-name">{item.product?.name ?? item.name}</div>
+                              <div className="panel-item-name">
+                                {item.product?.name ?? item.name}
+                              </div>
                               <div className="panel-item-location">{item.locationName}</div>
                             </div>
                             <div>
@@ -380,30 +408,71 @@ function FloorMapPageInner() {
           {isCanvasEditMode && canManage && (
             <>
               {isSidebarOpen ? (
-                <div style={{
-                  width: "260px", minWidth: "260px", maxWidth: "260px",
-                  flexShrink: 0, background: COLOURS.CARD_BG,
-                  display: "flex", flexDirection: "column",
-                  overflow: "hidden", flex: 1,
-                }}>
+                <div
+                  style={{
+                    width: "260px",
+                    minWidth: "260px",
+                    maxWidth: "260px",
+                    flexShrink: 0,
+                    background: COLOURS.CARD_BG,
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                    flex: 1,
+                  }}
+                >
                   {selectedUnit ? (
-                    <div className="section-title" style={{ padding: "14px", flexShrink: 0, display: "flex", alignItems: "center" }}>
+                    <div
+                      className="section-title"
+                      style={{
+                        padding: "14px",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
                       <button
                         onClick={() => handleUnitSelect(null)}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: COLOURS.TEXT_MUTED, fontSize: "13px", padding: 0, marginRight: "8px" }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: COLOURS.TEXT_MUTED,
+                          fontSize: "13px",
+                          padding: 0,
+                          marginRight: "8px",
+                        }}
                         aria-label="Back to list"
-                      >←</button>
+                      >
+                        ←
+                      </button>
                       <span style={{ fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
                         Edit &quot;{selectedUnit.name}&quot;
                       </span>
                       <button
                         onClick={() => setSidebarOpen(false)}
-                        style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
+                        style={{
+                          ...pageStyles.sidebarToggle,
+                          fontSize: "11px",
+                          padding: "4px 8px",
+                          marginLeft: "auto",
+                        }}
                         aria-label="Collapse sidebar"
-                      >→</button>
+                      >
+                        →
+                      </button>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "0 8px 0 14px", flexShrink: 0, borderBottom: `1px solid ${COLOURS.CARD_BORDER}` }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "0 8px 0 14px",
+                        flexShrink: 0,
+                        borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+                      }}
+                    >
                       {[
                         { key: "units", label: "Storage Units" },
                         { key: "templates", label: "Templates" },
@@ -416,7 +485,9 @@ function FloorMapPageInner() {
                             style={{
                               padding: "8px 10px",
                               border: "none",
-                              borderBottom: isActive ? `2px solid ${COLOURS.ACCENT}` : "2px solid transparent",
+                              borderBottom: isActive
+                                ? `2px solid ${COLOURS.ACCENT}`
+                                : "2px solid transparent",
                               background: "transparent",
                               cursor: "pointer",
                               fontSize: "12px",
@@ -431,17 +502,35 @@ function FloorMapPageInner() {
                       })}
                       <button
                         onClick={() => setSidebarOpen(false)}
-                        style={{ ...pageStyles.sidebarToggle, fontSize: "11px", padding: "4px 8px", marginLeft: "auto" }}
+                        style={{
+                          ...pageStyles.sidebarToggle,
+                          fontSize: "11px",
+                          padding: "4px 8px",
+                          marginLeft: "auto",
+                        }}
                         aria-label="Collapse sidebar"
-                      >→</button>
+                      >
+                        →
+                      </button>
                     </div>
                   )}
 
-                  <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0, width: "100%", boxSizing: "border-box" }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      minHeight: 0,
+                      width: "100%",
+                      boxSizing: "border-box",
+                    }}
+                  >
                     {selectedUnit ? (
                       <>
                         {/* SETTINGS for the selected storage unit */}
-                        <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                        <div
+                          style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}
+                        >
                           <UnitDetailsPanel
                             unit={selectedUnit}
                             onRename={(name) => updateSelectedUnit({ name })}
@@ -449,7 +538,9 @@ function FloorMapPageInner() {
                           />
                         </div>
                         <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
-                        <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                        <div
+                          style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}
+                        >
                           <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
                         </div>
                         <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
@@ -467,10 +558,26 @@ function FloorMapPageInner() {
                     ) : rightPanelTab === "units" ? (
                       <>
                         {/* STORAGE UNITS TAB */}
-                        <div style={{ padding: "12px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div
+                          style={{
+                            padding: "12px",
+                            boxSizing: "border-box",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                          }}
+                        >
                           {units.length === 0 ? (
-                            <div style={{ fontSize: "11px", color: COLOURS.TEXT_MUTED, textAlign: "center", padding: "8px 0" }}>
-                              No storage units on this floor map yet. Drag a shape from the Templates tab onto the canvas to create one.
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: COLOURS.TEXT_MUTED,
+                                textAlign: "center",
+                                padding: "8px 0",
+                              }}
+                            >
+                              No storage units on this floor map yet. Drag a shape from the
+                              Templates tab onto the canvas to create one.
                             </div>
                           ) : (
                             units.map((unit) => (
@@ -486,7 +593,9 @@ function FloorMapPageInner() {
                     ) : (
                       <>
                         {/* TEMPLATES TAB - reusable shape templates, draggable onto the canvas */}
-                        <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                        <div
+                          style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}
+                        >
                           <CustomShapesPanel
                             mapShapes={mapShapes}
                             activeTool={activeTool}
@@ -513,22 +622,39 @@ function FloorMapPageInner() {
                   </div>
                 </div>
               ) : (
-                <div style={{
-                  width: "32px", flexShrink: 0, background: COLOURS.CARD_BG,
-                  display: "flex", flexDirection: "column",
-                  alignItems: "center", paddingTop: "14px", gap: "8px", flex: 1,
-                }}>
+                <div
+                  style={{
+                    width: "32px",
+                    flexShrink: 0,
+                    background: COLOURS.CARD_BG,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: "14px",
+                    gap: "8px",
+                    flex: 1,
+                  }}
+                >
                   <button
                     onClick={() => setSidebarOpen(true)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: COLOURS.TEXT_MUTED, fontSize: "14px", padding: "4px" }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: COLOURS.TEXT_MUTED,
+                      fontSize: "14px",
+                      padding: "4px",
+                    }}
                     aria-label="Expand sidebar"
-                  >←</button>
+                  >
+                    ←
+                  </button>
                 </div>
               )}
             </>
           )}
-
-        </div>{/* end right column */}
+        </div>
+        {/* end right column */}
       </div>
 
       {/* HOVER TOOLTIP */}
@@ -643,12 +769,7 @@ function FloorMapPageInner() {
       )}
 
       {/* CREATE SHAPE MODAL */}
-      {isCreateShapeOpen && (
-        <CreateShapeModal
-          onClose={() => setIsCreateShapeOpen(false)}
-        />
-      )}
-
+      {isCreateShapeOpen && <CreateShapeModal onClose={() => setIsCreateShapeOpen(false)} />}
     </div>
   );
 }

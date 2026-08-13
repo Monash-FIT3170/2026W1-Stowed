@@ -102,10 +102,11 @@ export const UnitShapeSchema = new SimpleSchema({
   shapeId: Number,
   name: {
     type: String,
-    max: 100
+    max: 100,
   },
-  
-  points: {  // *local, stored counter clock wise
+
+  points: {
+    // *local, stored counter clock wise
     type: Array,
     minCount: 3,
   },
@@ -119,7 +120,7 @@ export const UnitShapeSchema = new SimpleSchema({
   gridReference: Object, // anchor point for the shape (usually 0, 0)
   "gridReference.x": {
     type: Number,
-    defaultValue: 0
+    defaultValue: 0,
   },
   "gridReference.y": {
     type: Number,
@@ -150,27 +151,27 @@ export const StorageUnitSchema = new SimpleSchema({
     allowedValues: ["shelf", "cabinet", "rack", "drawer", "fridge", "other", "custom"],
   },
 
-  shape: { 
+  shape: {
     type: UnitShapeSchema,
-    required: true
+    required: true,
   },
 
   offset: Object,
   "offset.x": Number,
   "offset.y": Number,
-  
-  rotation: { 
-    type: Number, 
+
+  rotation: {
+    type: Number,
     defaultValue: 0, // radians
   },
-  
+
   scale: Object,
   "scale.x": {
     type: Number,
     defaultValue: 1,
   },
   "scale.y": {
-    type: Number, 
+    type: Number,
     defaultValue: 1,
   },
 

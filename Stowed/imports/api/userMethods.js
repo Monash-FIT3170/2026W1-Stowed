@@ -15,11 +15,11 @@ const PERMISSIONS = {
   "delete-users": ROLES.OWNER,
 
   // Product operations
-  "products.create":    ROLES.ADMIN,    // create new products + assign locations
-  "products.update":    ROLES.ADMIN,    // edit product details / reassign locations
-  "products.delete":    ROLES.ADMIN,    // Allow Admin
-  "products.restock":   ROLES.STANDARD, // add stock - all staff can do this
-  "products.uploadImage": ROLES.ADMIN,  // attach images to products
+  "products.create": ROLES.ADMIN, // create new products + assign locations
+  "products.update": ROLES.ADMIN, // edit product details / reassign locations
+  "products.delete": ROLES.ADMIN, // Allow Admin
+  "products.restock": ROLES.STANDARD, // add stock - all staff can do this
+  "products.uploadImage": ROLES.ADMIN, // attach images to products
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
@@ -159,15 +159,15 @@ Meteor.methods({
     return userId;
   },
 
-// Self-registration: always requires an org code.
-// If the code is new, a new organisation is created and the registrant becomes its Owner.
-// If the code already exists, registration is blocked - new members must be invited by the org owner.
-"users.register": async function ({ username, email, password, orgCode, orgName }) {
-  check(username, String);
-  check(email, String);
-  check(password, String);
-  check(orgCode, String);
-  check(orgName, String);
+  // Self-registration: always requires an org code.
+  // If the code is new, a new organisation is created and the registrant becomes its Owner.
+  // If the code already exists, registration is blocked - new members must be invited by the org owner.
+  "users.register": async function ({ username, email, password, orgCode, orgName }) {
+    check(username, String);
+    check(email, String);
+    check(password, String);
+    check(orgCode, String);
+    check(orgName, String);
 
     if (password.length < 6) {
       throw new Meteor.Error("invalid-password", "Password must be at least 6 characters.");
@@ -214,16 +214,16 @@ Meteor.methods({
         },
       });
 
-    return userId;
-  } catch (err) {
-    // Roll back the org we just created - no user means no org
-    await Organisations.removeAsync(organisationId);
-    if (err.error === 403 || err.reason?.toLowerCase().includes('email')) {
-      throw new Meteor.Error('email-taken', 'An account with that email already exists.');
+      return userId;
+    } catch (err) {
+      // Roll back the org we just created - no user means no org
+      await Organisations.removeAsync(organisationId);
+      if (err.error === 403 || err.reason?.toLowerCase().includes("email")) {
+        throw new Meteor.Error("email-taken", "An account with that email already exists.");
+      }
+      throw err;
     }
-    throw err;
-  }
-},
+  },
 
   // delete accounts method for owner
   "users.delete": async function ({ userId }) {

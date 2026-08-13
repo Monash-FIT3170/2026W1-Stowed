@@ -4,16 +4,20 @@ import { useTracker } from "meteor/react-meteor-data";
 
 import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
-import { buildRectShape, getBoundingBox, getTransformedBounds } from "/imports/api/locations/shapeUtils";
+import {
+  buildRectShape,
+  getBoundingBox,
+  getTransformedBounds,
+} from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 
 /**
  * Maps a StorageUnit to a the rectangle model the canvas currently renders.
  * The units real geometry is in its shape.points which is then transformed
- * use offset.rotation.scale. 
- * 
+ * use offset.rotation.scale.
+ *
  * The x/y/width.height here are just the bounding box of the transformed points
- * as a stand in until the canvas can render different polygons 
+ * as a stand in until the canvas can render different polygons
  */
 function mapStorageUnitToCanvasUnit(unit) {
   const transform = { offset: unit.offset, rotation: unit.rotation, scale: unit.scale };
@@ -254,7 +258,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
           savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
         } else {
           const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
-          const shape = hasCustomShape ? unit.shape: buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
+          const shape = hasCustomShape
+            ? unit.shape
+            : buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
           const offset = { x: Number(unit.x), y: Number(unit.y) };
           const scale = { x: 1, y: 1 };
 
@@ -362,36 +368,30 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   async function handleDeleteSelectedUnit() {
-  if (!selectedUnit) return;
+    if (!selectedUnit) return;
 
+    if (!selectedUnit._id) {
+      commitUnits((prev) => prev.filter((u) => u.id !== selectedUnit.id));
 
-  if (!selectedUnit._id) {
-    commitUnits((prev) =>
-      prev.filter((u) => u.id !== selectedUnit.id),
-    );
+      setSelectedUnit(null);
+      return;
+    }
 
-    setSelectedUnit(null);
-    return;
+    try {
+      await callMethod("storageUnits.delete", {
+        storageUnitId: selectedUnit._id,
+      });
+
+      commitUnits((prev) => prev.filter((u) => u._id !== selectedUnit._id));
+
+      setSelectedUnit(null);
+    } catch (error) {
+      alert(
+        error.reason ||
+          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+      );
+    }
   }
-
-
-  try {
-    await callMethod("storageUnits.delete", {
-      storageUnitId: selectedUnit._id,
-    });
-
-    commitUnits((prev) =>
-      prev.filter((u) => u._id !== selectedUnit._id),
-    );
-
-    setSelectedUnit(null);
-  } catch (error) {
-    alert(
-      error.reason ||
-        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
-    );
-  }
-}
 
   const value = {
     // Tool

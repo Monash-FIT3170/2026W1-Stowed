@@ -35,9 +35,7 @@ export function CreateShapeModal({ onClose }) {
   };
 
   const handleRemovePoint = (index) => {
-    setPoints((currentPoints) =>
-      currentPoints.filter((_, pointIndex) => pointIndex !== index),
-    );
+    setPoints((currentPoints) => currentPoints.filter((_, pointIndex) => pointIndex !== index));
   };
 
   const handleSave = async () => {
@@ -53,9 +51,7 @@ export function CreateShapeModal({ onClose }) {
       return;
     }
 
-    const hasEmptyCoordinate = points.some(
-      (point) => point.x === "" || point.y === "",
-    );
+    const hasEmptyCoordinate = points.some((point) => point.x === "" || point.y === "");
 
     if (hasEmptyCoordinate) {
       alert("Please enter both X and Y values for every point.");
@@ -68,8 +64,7 @@ export function CreateShapeModal({ onClose }) {
     }));
 
     const hasInvalidCoordinate = formattedPoints.some(
-      (point) =>
-        !Number.isFinite(point.x) || !Number.isFinite(point.y),
+      (point) => !Number.isFinite(point.x) || !Number.isFinite(point.y),
     );
 
     if (hasInvalidCoordinate) {
@@ -108,7 +103,6 @@ export function CreateShapeModal({ onClose }) {
 
         <label style={styles.label}>
           Shape name
-
           <input
             type="text"
             value={shapeName}
@@ -122,9 +116,7 @@ export function CreateShapeModal({ onClose }) {
           {points.map((point, index) => (
             <div key={index} style={styles.pointSection}>
               <div style={styles.pointHeader}>
-                <span style={styles.pointTitle}>
-                  Point {index + 1}
-                </span>
+                <span style={styles.pointTitle}>Point {index + 1}</span>
 
                 {points.length > 3 && (
                   <button
@@ -140,26 +132,20 @@ export function CreateShapeModal({ onClose }) {
               <div style={styles.pointRow}>
                 <label style={styles.coordinateLabel}>
                   X coordinate
-
                   <input
                     type="number"
                     value={point.x}
-                    onChange={(event) =>
-                      handlePointChange(index, "x", event.target.value)
-                    }
+                    onChange={(event) => handlePointChange(index, "x", event.target.value)}
                     style={styles.coordinateInput}
                   />
                 </label>
 
                 <label style={styles.coordinateLabel}>
                   Y coordinate
-
                   <input
                     type="number"
                     value={point.y}
-                    onChange={(event) =>
-                      handlePointChange(index, "y", event.target.value)
-                    }
+                    onChange={(event) => handlePointChange(index, "y", event.target.value)}
                     style={styles.coordinateInput}
                   />
                 </label>

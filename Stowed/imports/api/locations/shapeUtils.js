@@ -5,7 +5,7 @@
 export const CUSTOM_RECT_SHAPE_ID = -1;
 
 /**
- * Builds a axis-aligned, CCW-wound rectangle with an anchor at (0,0). 
+ * Builds a axis-aligned, CCW-wound rectangle with an anchor at (0,0).
  *
  * @param {{ width: number, height: number, name?: string, shapeId?: number, gridReference?: {x: number, y: number} }} params
  * @returns {Object} a shape matching UnitShapeSchema
@@ -31,7 +31,7 @@ export function buildRectShape({
 }
 
 /**
- * Applies a StorageUnit's transformation to a shape's local points, 
+ * Applies a StorageUnit's transformation to a shape's local points,
  * returning them in floor-map co space.
  *
  * @param {{ points: {x: number, y: number}[] }} shape

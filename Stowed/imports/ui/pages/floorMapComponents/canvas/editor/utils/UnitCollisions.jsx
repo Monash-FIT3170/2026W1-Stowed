@@ -14,7 +14,8 @@ export {
   broadPhaseTest,
   decomposePolygon,
   polygonsIntersect,
-  hasPolygonCollision };
+  hasPolygonCollision,
+};
 
 /**
  * A boolean check if two intervals overlap
@@ -26,7 +27,6 @@ export {
  */
 const isRangeIntersecting = (intervalA, intervalB) =>
   !(intervalA.upper <= intervalB.lower || intervalB.upper <= intervalA.lower);
-
 
 /**
  * A boolean check to see if two rectangles (in the same plane/orientation) overlap
@@ -77,18 +77,16 @@ const isCircleCircleIntersecting = (circ1) => (circ2) => {
  * @returns
  */
 const getAxes = (points) =>
-    points.map((point, i) => {
-        const endPoint = points[(i+1) % points.length];
+  points.map((point, i) => {
+    const endPoint = points[(i + 1) % points.length];
 
-        const edgeVector = getEdgeVector(point, endPoint);
+    const edgeVector = getEdgeVector(point, endPoint);
 
-        return normaliseVector({
-            x: -edgeVector.y,
-            y: edgeVector.x
-        });
-    })
-;
-
+    return normaliseVector({
+      x: -edgeVector.y,
+      y: edgeVector.x,
+    });
+  });
 
 /**
  * Projects shape's points onto given axis, finds the parts
@@ -99,29 +97,26 @@ const getAxes = (points) =>
  * @returns
  */
 const projectOntoAxis = (points, axis) => {
+  let lower = dotProd(points[0], axis);
+  let upper = lower;
 
-    let lower = dotProd(points[0], axis);
-    let upper = lower;
+  for (let i = 1; i < points.length; i++) {
+    const projection = dotProd(points[i], axis);
 
-    for (let i = 1; i < points.length; i++) {
-
-        const projection = dotProd(points[i], axis);
-
-        if (projection < lower) {
-            lower = projection;
-        }
-
-        if (projection > upper) {
-            upper = projection;
-        }
+    if (projection < lower) {
+      lower = projection;
     }
 
-    return {
-        lower: lower,
-        upper: upper
-    };
-}
+    if (projection > upper) {
+      upper = projection;
+    }
+  }
 
+  return {
+    lower: lower,
+    upper: upper,
+  };
+};
 
 /**
  * Conducts a broad phase test using object bounding boxes to check which candidates
@@ -132,20 +127,17 @@ const projectOntoAxis = (points, axis) => {
  * @returns the candidates whose bounding box intersects with the new one
  */
 const broadPhaseTest = (newPoints, candidates) => {
-
   const newBoundBox = getBoundingBox(newPoints);
 
   return candidates.filter(({ points }) => {
-      const otherBoundBox = getBoundingBox(points);
+    const otherBoundBox = getBoundingBox(points);
 
-      const xOverlap = newBoundBox.minX < otherBoundBox.maxX && newBoundBox.maxX > otherBoundBox.minX;
-      const yOverlap = newBoundBox.minY < otherBoundBox.maxY && newBoundBox.maxY > otherBoundBox.minY;
+    const xOverlap = newBoundBox.minX < otherBoundBox.maxX && newBoundBox.maxX > otherBoundBox.minX;
+    const yOverlap = newBoundBox.minY < otherBoundBox.maxY && newBoundBox.maxY > otherBoundBox.minY;
 
-      return xOverlap && yOverlap;
-
+    return xOverlap && yOverlap;
   });
-
-}
+};
 
 /**
  * Splits a (potentially non-convex) simple polygon into a set of convex polygons,
@@ -212,8 +204,7 @@ const polygonsIntersect = (pointsA, pointsB) => {
  * @returns {boolean}
  */
 const narrowPhaseTest = (newPoints, candidates) =>
-    candidates.some(({ points }) => polygonsIntersect(newPoints, points));
-
+  candidates.some(({ points }) => polygonsIntersect(newPoints, points));
 
 /**
  * Full collision check between a shape and a set of other shapes: cheaply
@@ -225,8 +216,7 @@ const narrowPhaseTest = (newPoints, candidates) =>
  * @returns {boolean}
  */
 const hasPolygonCollision = (newPoints, candidates) =>
-    narrowPhaseTest(newPoints, broadPhaseTest(newPoints, candidates));
-
+  narrowPhaseTest(newPoints, broadPhaseTest(newPoints, candidates));
 
 /**
  * Calculates the vector for the edge between two points
@@ -236,9 +226,9 @@ const hasPolygonCollision = (newPoints, candidates) =>
  * @returns
  */
 const getEdgeVector = (p1, p2) => ({
-    x: p2.x - p1.x,
-    y: p2.y - p1.y
-})
+  x: p2.x - p1.x,
+  y: p2.y - p1.y,
+});
 
 /**
  * Calculates the dot product between two vectors
@@ -247,9 +237,7 @@ const getEdgeVector = (p1, p2) => ({
  * @param {*} v2 vector 2 (the point to project from)
  * @returns
  */
-const dotProd = (v1, v2) =>
-    v1.x * v2.x + v1.y * v2.y;
-
+const dotProd = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
 
 /**
  * Calculates the normal to a vector
@@ -258,12 +246,10 @@ const dotProd = (v1, v2) =>
  * @returns
  */
 const normaliseVector = (vector) => {
+  const vectorMagnitude = Math.sqrt(vector.x ** 2 + vector.y ** 2);
 
-    const vectorMagnitude = Math.sqrt(vector.x ** 2 + vector.y ** 2);
-
-    return {
-        x: vector.x / vectorMagnitude,
-        y: vector.y / vectorMagnitude
-    };
-
+  return {
+    x: vector.x / vectorMagnitude,
+    y: vector.y / vectorMagnitude,
+  };
 };
