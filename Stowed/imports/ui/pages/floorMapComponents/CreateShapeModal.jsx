@@ -246,7 +246,7 @@ const styles = {
 
   pointsContainer: {
     display: "flex",
-    flexDirection: "column",
+    flexWrap: "wrap",
     gap: 12,
     marginTop: 18,
   },
@@ -255,6 +255,7 @@ const styles = {
     padding: 12,
     border: "1px solid #dddddd",
     borderRadius: 8,
+    flex: "0 1 calc(25% - 12px)",
   },
 
   pointHeader: {
@@ -279,7 +280,7 @@ const styles = {
     flex: 1,
     gap: 5,
     fontSize: 12,
-    padding: "4px 9px",
+    padding: "4px 0px",
   },
 
   coordinateLabel: {
