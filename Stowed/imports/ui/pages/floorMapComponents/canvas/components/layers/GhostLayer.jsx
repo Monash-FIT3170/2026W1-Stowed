@@ -66,6 +66,18 @@ export function GhostLayer({
               opacity={0.45}
             />
           )}
+
+          <Text
+            width={ghostUnit.width}
+            height={ghostUnit.height}
+            align="center"
+            verticalAlign="middle"
+            text={ghostUnit.name}
+            fontSize={12}
+            fill="white"
+            opacity={0.7}
+            listening={false}
+          />
         </Group>
       )}
 

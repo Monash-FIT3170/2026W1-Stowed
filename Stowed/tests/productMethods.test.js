@@ -489,7 +489,9 @@ describe("Product methods", function () {
           }),
           productId,
         });
-      } catch (_) {}
+      } catch {
+        // expected quantity-mismatch rejection
+      }
 
       const after = await Products.findOneAsync(productId);
       assert.strictEqual(after.name, before.name);
@@ -645,7 +647,9 @@ describe("Product methods", function () {
           additionalQuantity: 25,
           assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
         });
-      } catch (_) {}
+      } catch {
+        // expected quantity-mismatch rejection
+      }
 
       const product = await Products.findOneAsync(productId);
       assert.strictEqual(product.totalQuantity, 50, "totalQuantity must be unchanged");
@@ -658,7 +662,9 @@ describe("Product methods", function () {
           additionalQuantity: 25,
           assignments: [{ locationId: TEST_LOCATION_ID, quantity: 1 }],
         });
-      } catch (_) {}
+      } catch {
+        // expected quantity-mismatch rejection
+      }
 
       const records = await ProductRecords.find({ productId }).fetchAsync();
       assert.strictEqual(records.length, 1);
