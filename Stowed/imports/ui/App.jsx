@@ -11,6 +11,8 @@ import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
+import { ScanPage } from "./pages/ScanPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -122,6 +124,35 @@ export function App() {
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/locations") ? (
                     <LocationsPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/scan"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/scan") ? (
+                    <ScanPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            {/* Target of the printed storage-unit QR codes */}
+            <Route
+              path="/locations/unit/:unitId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/locations") ? (
+                    <StorageUnitDetailPage />
                   ) : (
                     <Navigate to="/" replace />
                   )

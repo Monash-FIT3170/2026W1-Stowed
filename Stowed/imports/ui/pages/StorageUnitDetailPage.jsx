@@ -10,6 +10,7 @@ import {
 } from "/imports/api/locations/collections";
 import { getMockStorageLocationsByUnitId, getMockStorageUnitById } from "../../api/mockLocations";
 import { getTransformedBounds } from "/imports/api/locations/shapeUtils";
+import { LocationQRCode } from "../components/LocationQRCode";
 import "./StorageUnitDetailPage.css";
 
 const STORAGE_UNIT_PHOTOS_KEY = "stowed.storageUnitPhotos";
@@ -227,11 +228,13 @@ export function StorageUnitDetailPage() {
           </div>
           <div className="storage-section-body storage-label-body">
             <div className="storage-qr">
-              <div className="storage-qr-grid" aria-hidden="true" />
-              <p>SKU: {unitCode}</p>
-              <p>Ground Floor</p>
+              <LocationQRCode unitId={unit._id} size={160} alt={`QR code for ${unit.name}`} />
+              <p>Unit: {unitCode}</p>
+              <p>{[site?.name, floorMap?.name].filter(Boolean).join(" · ") || "Unassigned"}</p>
             </div>
-            <button className="storage-print-btn">Print label</button>
+            <button className="storage-print-btn" onClick={() => window.print()}>
+              Print label
+            </button>
           </div>
         </section>
 

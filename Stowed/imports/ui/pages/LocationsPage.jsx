@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
@@ -1053,6 +1054,17 @@ export function LocationsPage() {
                             })()}
                           </div>
                         </button>
+                        <Link
+                          to={`/locations/unit/${unit._id}`}
+                          className="btn-secondary"
+                          style={{
+                            padding: "3px 8px",
+                            fontSize: "11px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          QR
+                        </Link>
                         {canManage && (
                           <button
                             type="button"

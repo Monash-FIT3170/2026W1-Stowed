@@ -342,6 +342,13 @@
   text-align: center;
 }
 
+.storage-qr img {
+  display: block;
+  margin: 0 auto 8px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
 .storage-qr p {
   margin: 5px 0 0;
   color: var(--text-muted);
@@ -349,16 +356,27 @@
   font-weight: 700;
 }
 
-.storage-qr-grid {
-  width: 118px;
-  height: 118px;
-  margin: 0 auto 8px;
-  border-radius: 8px;
-  background-color: var(--text-dark);
-  background-image:
-    linear-gradient(rgba(245, 239, 230, 0.22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 239, 230, 0.22) 1px, transparent 1px);
-  background-size: 8px 8px;
+/* Print: isolate the QR label, hide everything else (mirrors ProductDetailPage) */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .storage-qr,
+  .storage-qr * {
+    visibility: visible;
+  }
+  .storage-qr {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 40px;
+    background: none;
+  }
+  .storage-qr img {
+    width: 220px;
+    height: 220px;
+  }
 }
 
 .storage-print-btn {
