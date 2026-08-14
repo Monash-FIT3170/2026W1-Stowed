@@ -381,3 +381,37 @@ Meteor.methods({
     );
   },
 });
+
+Meteor.methods({
+  /**
+   * Resolve a scanned barcode value value in caller's org.
+   * SKUs are not unique (barcodes for SKU-less products encode the _id).
+   * falls back to a direct _id lookup 
+   */
+  async "products.findByCode"({ code }) {
+    check(code, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+    await requirePermission(this.userId, "products.findByCode");
+    const orgId = await getCallerOrgId(this.userId);
+
+    const trimmed = code.trim();
+    if (!trimmed) return { matches: [] };
+
+    const bySku = await Products.find(
+      { orgId, sku: trimmed },
+      { fields: { name: 1, sku: 1 }, limit: 10 },
+    ).fetchAsync();
+    if (bySku.length > 0) {
+      return { matches: bySku.map(({ _id, name, sku }) => ({ _id, name, sku })) };
+    }
+
+    const byId = await Products.findOneAsync(
+      { _id: trimmed, orgId },
+      { fields: { name: 1, sku: 1 } },
+    );
+    return { matches: byId ? [{ _id: byId._id, name: byId.name, sku: byId.sku }] : [] };
+  },
+});
