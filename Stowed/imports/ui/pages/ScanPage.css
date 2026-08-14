@@ -1,0 +1,17 @@
+/* ScanPage.css — lofi */
+
+.scan-page {
+  padding: 16px;
+  max-width: 560px;
+}
+
+/* Camera viewport */
+.scan-page #scan-region {
+  width: 100%;
+  min-height: 260px;
+  border: 2px dashed grey;
+}
+
+.scan-page form {
+  margin-top: 16px;
+}
