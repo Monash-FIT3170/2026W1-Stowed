@@ -16,3 +16,4 @@ import "./searchAndFilter.test.js";
 import "./fileUpload.test.js";
 import "./productMethods.test.js";
 import "./locationMethods.test.js";
+import "./barcodeHelpers.test.js";
