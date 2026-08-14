@@ -761,6 +761,7 @@ function FloorMapPageInner() {
       {isEditorSettingsOpen && (
         <EditorSettingsModal
           gridInterval={canvasSettings.gridInterval}
+          snapInterval={canvasSettings.snapInterval}
           showGrid={canvasSettings.showGrid}
           snapToGrid={canvasSettings.snapToGrid}
           onSave={handleEditorSettingsSave}

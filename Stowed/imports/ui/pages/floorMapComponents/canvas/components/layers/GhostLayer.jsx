@@ -11,7 +11,7 @@ import { COLOURS } from "../../../FloorMapStyles";
  * @param {Set<string>}                                             selectedIds
  * @param {Object[]}                                                units
  * @param {boolean}                                                 snapEnabled
- * @param {number}                                                  gridSizePx
+ * @param {number}                                                  snapSizePx
  *
  * @returns {JSX.Element} A Konva <Layer> containing zero or more ghost groups.
  */
@@ -21,7 +21,7 @@ export function GhostLayer({
   selectedIds,
   units,
   snapEnabled,
-  gridSizePx,
+  snapSizePx,
 }) {
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
@@ -84,8 +84,8 @@ export function GhostLayer({
           let ghostY = (unit.y + dragOffsets.deltaY) * px;
 
           if (snapEnabled) {
-            ghostX = snapToGrid(ghostX, gridSizePx);
-            ghostY = snapToGrid(ghostY, gridSizePx);
+            ghostX = snapToGrid(ghostX, snapSizePx);
+            ghostY = snapToGrid(ghostY, snapSizePx);
           }
 
           return (
