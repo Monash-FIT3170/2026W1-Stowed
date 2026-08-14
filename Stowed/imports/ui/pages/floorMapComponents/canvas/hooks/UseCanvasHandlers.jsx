@@ -220,10 +220,10 @@ export function useCanvasHandlers({
   }
 
   function handleDragMove(e, unitId) {
-    if (selectedIds.size <= 1 || !selectedIds.has(unitId)) return;
-
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
     const draggedUnit = units.find((u) => u.id === unitId);
+    if (!draggedUnit) return;
+
     const deltaX = e.target.x() / px - draggedUnit.x;
     const deltaY = e.target.y() / px - draggedUnit.y;
 
@@ -231,6 +231,8 @@ export function useCanvasHandlers({
       type: CANVAS_ACTIONS.SET_DRAG_OFFSETS,
       payload: { deltaX, deltaY, unitId },
     });
+
+    if (selectedIds.size <= 1 || !selectedIds.has(unitId)) return;
 
     // Do not use dispatch for ref.current for performance
     [...selectedIds].forEach((id) => {
