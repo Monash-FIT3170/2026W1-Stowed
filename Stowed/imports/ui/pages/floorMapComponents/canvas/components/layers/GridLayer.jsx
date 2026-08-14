@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Layer, Rect, Line, Text } from "react-konva";
 import { COLOURS } from "../../../FloorMapStyles";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
@@ -13,10 +14,37 @@ import { CANVAS_CONFIG } from "../../CanvasConfig";
  * @returns {JSX.Element} A Konva <Layer> containing a grid or no grid
  */
 export function GridLayer({ width, height, gridSizePx, showGrid }) {
+  const { vLines, hLines } = useMemo(
+    () => buildGridLines(width, height, gridSizePx, showGrid),
+    [width, height, gridSizePx, showGrid],
+  );
+
+  return (
+    <Layer imageSmoothingEnabled={false}>
+      {/* BACKGROUND */}
+      <Rect
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        fill={COLOURS.CANVAS_FILL}
+        shadowColor="black"
+        shadowBlur={16}
+        shadowOpacity={0.18}
+        shadowOffset={{ x: 0, y: 0 }}
+      />
+
+      {/* GRID LINES */}
+      {vLines}
+      {hLines}
+    </Layer>
+  );
+}
+
+function buildGridLines(width, height, gridSizePx, showGrid) {
   const vLines = [];
   const hLines = [];
 
-  // build grid
   if (showGrid) {
     for (let x = 0; x <= width; x += gridSizePx) {
       if (x === 0) continue;
@@ -68,24 +96,5 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
     }
   }
 
-  return (
-    <Layer imageSmoothingEnabled={false}>
-      {/* BACKGROUND */}
-      <Rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill={COLOURS.CANVAS_FILL}
-        shadowColor="black"
-        shadowBlur={16}
-        shadowOpacity={0.18}
-        shadowOffset={{ x: 0, y: 0 }}
-      />
-
-      {/* GRID LINES */}
-      {vLines}
-      {hLines}
-    </Layer>
-  );
+  return { vLines, hLines };
 }
