@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Layer, Rect, Line, Text } from "react-konva";
 import { COLOURS } from "../../../FloorMapStyles";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
@@ -14,15 +14,22 @@ import { CANVAS_CONFIG } from "../../CanvasConfig";
  * @returns {JSX.Element} A Konva <Layer> containing a grid or no grid
  */
 export function GridLayer({ width, height, gridSizePx, showGrid }) {
+  const backgroundRef = useRef(null);
+
   const { vLines, hLines } = useMemo(
     () => buildGridLines(width, height, gridSizePx, showGrid),
     [width, height, gridSizePx, showGrid],
   );
 
+  useEffect(() => {
+    backgroundRef.current?.cache();
+  }, [width, height]);
+
   return (
     <Layer imageSmoothingEnabled={false}>
       {/* BACKGROUND */}
       <Rect
+        ref={backgroundRef}
         x={0}
         y={0}
         width={width}
