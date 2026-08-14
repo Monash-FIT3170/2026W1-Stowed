@@ -7,6 +7,8 @@ import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
+import { getBarcodeValue } from "/imports/api/products/codes";
+import { ProductBarcode } from "../components/ProductBarcode";
 import "./ProductDetailPage.css";
 import "../Global.css";
 
@@ -135,16 +137,15 @@ export function ProductDetailView({
   const reorderAt = item.reorderAt ?? null;
   const galleryImages = imageUrls.length > 0 ? imageUrls : item.images || [];
 
-  // For each gallery image, determine whether it originates from the
-  // uploaded images (so it can be removed). We treat `imageUrls` (current
-  // edited/uploaded images) and `item.images` (persisted uploads) as
-  // removable sources. Fallback `photoUrl` or `catalogImages` are not removable.
+  // For each image, determine whether it originates from the uploaded images
+  // `imageUrls` (current edited/uploaded images)
+  // `item.images` (persisted uploads) as removable sources. 
+  // Fallback `photoUrl` or `catalogImages` are not removable.
   const removableFlags = galleryImages.map((img) => {
     if (imageUrls.length > 0) return imageUrls.includes(img);
     if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
     return false;
   });
-  const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const storageAssignments = records.length
     ? records.map((record) => ({
@@ -496,15 +497,19 @@ export function ProductDetailView({
             <div className="detail-section">
               <h2 className="section-title">
                 <span className="section-badge qr">QR</span>
-                QR & label
+                Barcode & label
               </h2>
               <div className="section-content qr-section">
                 <div className="qr-container">
-                  <img src={qrCode} alt="QR Code" className="qr-code" />
-                  <p className="qr-label">SKU: {item.sku}</p>
+                  <ProductBarcode value={getBarcodeValue(item)} className="qr-code" />
+                  <p className="qr-label">
+                    {item.sku ? `SKU: ${item.sku}` : `ID: ${item._id}`}
+                  </p>
                   <p className="qr-label">{item.location}</p>
                 </div>
-                <button className="btn-print">Print label</button>
+                <button className="btn-print" onClick={() => window.print()}>
+                  Print label
+                </button>
               </div>
             </div>
           </div>
