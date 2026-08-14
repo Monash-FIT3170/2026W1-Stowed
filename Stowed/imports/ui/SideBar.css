@@ -139,8 +139,13 @@
   color: var(--text-dark);
   margin-bottom: 6px;
   padding: 8px 8px;
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: default;
 }
-
 /* -- Nav links -- */
 
 .sidebar-link {
@@ -153,6 +158,12 @@
   color: var(--text-muted);
   text-decoration: none;
   transition: background 120ms ease;
+}
+
+.sidebar-section-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; 
 }
 
 .sidebar-link:hover {
@@ -172,6 +183,32 @@
   width: 18px;
   text-align: center;
   flex-shrink: 0;
+}
+
+/* -- Scan button -- */
+.sidebar-scan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 120ms ease;
+}
+
+.sidebar-scan-btn:hover {
+  opacity: 0.9;
+}
+
+.sidebar-scan-icon {
+  font-size: 16px;
+  line-height: 1;
 }
 
 /* -- Logout button -- */
@@ -200,4 +237,165 @@
 .sidebar-logout:hover {
   background: var(--dark);
   color: var(--card-bg);
+}
+
+/* -- App shell -- */
+.app-shell {
+  display: flex;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+.app-main.with-sidebar {
+  margin-left: 200px; 
+}
+
+/* -- smaller device, side bar moves to bottom bar -- */
+@media (max-width: 1024px) {
+  .app-main.with-sidebar {
+    margin-left: 0;
+    padding-bottom: 96px;
+  }
+
+  .sidebar {
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    width: auto;
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 1200;
+    box-shadow: 0 10px 30px rgba(26, 26, 26, 0.18);
+    overflow: visible;
+  }
+
+  /* Hide the desktop-only chrome in the bar */
+  .sidebar-logo,
+  .sidebar-org,
+  .sidebar-user {
+    display: none;
+  }
+
+  .sidebar-top {
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .sidebar-section {
+    flex: 1;
+    gap: 0;
+    position: relative;
+  }
+
+  .sidebar-section-label {
+    margin: 0;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+  }
+
+  .sidebar-section-label.open {
+    background: var(--dark);
+    color: var(--card-bg);
+  }
+
+  /* Drop-up menu for each section button*/
+  .sidebar-section-links {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 190px;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 -6px 24px rgba(26, 26, 26, 0.14);
+    z-index: 1250;
+  }
+
+  .sidebar-section:first-child .sidebar-section-links {
+    left: 0;
+    transform: none;
+  }
+
+  .sidebar-section:last-child .sidebar-section-links {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .sidebar-section-links.open {
+    display: flex;
+  }
+
+  .sidebar-link {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .sidebar-logout {
+    width: auto;
+    margin-top: 0;
+    margin-left: 4px;
+    padding: 9px 14px;
+    font-size: 11px;
+    flex-shrink: 0;
+    border-radius: 999px;
+  }
+
+  .sidebar-scan-btn {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    margin: -18px 6px 0; /* pops above the dock */
+    padding: 0;
+    border-radius: 50%;
+    flex-direction: column;
+    gap: 0;
+    box-shadow: 0 6px 16px rgba(181, 83, 42, 0.4);
+    border: 3px solid var(--card-bg, #ffffff);
+  }
+
+  .sidebar-scan-icon {
+    font-size: 20px;
+  }
+
+  .sidebar-scan-text {
+    display: none;
+  }
 }
