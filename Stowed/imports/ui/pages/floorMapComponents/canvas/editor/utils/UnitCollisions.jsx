@@ -1,0 +1,255 @@
+import { makeCCW, quickDecomp } from "poly-decomp-es";
+import { getBoundingBox } from "../../../../../../api/locations/shapeUtils";
+
+// File to check for collisions between different objects on the floor map designer page
+export {
+  isRectRectIntersecting,
+  calcDistance,
+  isRangeIntersecting,
+  isCircleCircleIntersecting,
+  narrowPhaseTest,
+  getEdgeVector,
+  dotProd,
+  normaliseVector,
+  broadPhaseTest,
+  decomposePolygon,
+  polygonsIntersect,
+  hasPolygonCollision,
+};
+
+/**
+ * A boolean check if two intervals overlap
+ * note: sharing a boundary value is considered NOT to be an intersection
+ *
+ * @param {typeof {lower: number, upper: number}} intervalA
+ * @param {typeof {lower: number, upper: number}} intervalB
+ * @returns {boolean}
+ */
+const isRangeIntersecting = (intervalA, intervalB) =>
+  !(intervalA.upper <= intervalB.lower || intervalB.upper <= intervalA.lower);
+
+/**
+ * A boolean check to see if two rectangles (in the same plane/orientation) overlap
+ * note: sharing a boundary value is considered NOT to be an intersection
+ *
+ * @param {typeof { dom: { lower: number, upper: number }, ran: { lower: number, upper: number } }} rect1
+ * @returns {function(typeof { dom: { lower: number, upper: number }, ran: { lower: number, upper: number } }): boolean}
+ */
+const isRectRectIntersecting = (rect1) => (rect2) => {
+  // check intersecting domain
+  const domIntersect = isRangeIntersecting(rect1.dom, rect2.dom);
+
+  // check intersecting range
+  const ranIntersect = isRangeIntersecting(rect1.ran, rect2.ran);
+
+  return domIntersect && ranIntersect;
+};
+
+/**
+ * The 2D distance formula
+ *
+ * @param {number} x1
+ * @param {number} y1
+ * @returns {function(number, number): number}
+ */
+const calcDistance = (x1, y1) => (x2, y2) => {
+  // distance formula
+  return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** (1 / 2);
+};
+
+/**
+ * A boolean check to see if two circles (orientation independent) overlap
+ * note: sharing a boundary value is considered NOT to be an intersection
+ *
+ * @param {typeof {centerX: number, centerY: number, radius: number}} circ1
+ * @returns {function(typeof {centerX: number, centerY: number, radius: number}): boolean}
+ */
+const isCircleCircleIntersecting = (circ1) => (circ2) => {
+  const distFrom = calcDistance(circ1.centerX, circ1.centerY);
+  const centerDistance = distFrom(circ2.centerX, circ2.centerY);
+  return centerDistance < circ1.radius + circ2.radius;
+};
+
+/**
+ * Gets all the axes that are used to check for collisions
+ *
+ * @param {*} points the points on the shape
+ * @returns
+ */
+const getAxes = (points) =>
+  points.map((point, i) => {
+    const endPoint = points[(i + 1) % points.length];
+
+    const edgeVector = getEdgeVector(point, endPoint);
+
+    return normaliseVector({
+      x: -edgeVector.y,
+      y: edgeVector.x,
+    });
+  });
+
+/**
+ * Projects shape's points onto given axis, finds the parts
+ * of the axis it overlaps with
+ *
+ * @param {*} points the points on the shape
+ * @param {*} axis the axis to project onto
+ * @returns
+ */
+const projectOntoAxis = (points, axis) => {
+  let lower = dotProd(points[0], axis);
+  let upper = lower;
+
+  for (let i = 1; i < points.length; i++) {
+    const projection = dotProd(points[i], axis);
+
+    if (projection < lower) {
+      lower = projection;
+    }
+
+    if (projection > upper) {
+      upper = projection;
+    }
+  }
+
+  return {
+    lower: lower,
+    upper: upper,
+  };
+};
+
+/**
+ * Conducts a broad phase test using object bounding boxes to check which candidates
+ * are in close proximity to the new one
+ *
+ * @param {{x: number, y: number}[]} newPoints the world-space points of the new shape to be placed
+ * @param {{points: {x: number, y: number}[]}[]} candidates other shapes already on the floormap
+ * @returns the candidates whose bounding box intersects with the new one
+ */
+const broadPhaseTest = (newPoints, candidates) => {
+  const newBoundBox = getBoundingBox(newPoints);
+
+  return candidates.filter(({ points }) => {
+    const otherBoundBox = getBoundingBox(points);
+
+    const xOverlap = newBoundBox.minX < otherBoundBox.maxX && newBoundBox.maxX > otherBoundBox.minX;
+    const yOverlap = newBoundBox.minY < otherBoundBox.maxY && newBoundBox.maxY > otherBoundBox.minY;
+
+    return xOverlap && yOverlap;
+  });
+};
+
+/**
+ * Splits a (potentially non-convex) simple polygon into a set of convex polygons,
+ * since SAT only holds for convex shapes.
+ *
+ * @param {{x: number, y: number}[]} points the world-space points of the polygon
+ * @returns {{x: number, y: number}[][]} a list of convex polygons that make up the shape
+ */
+const decomposePolygon = (points) => {
+  if (points.length <= 3) return [points];
+
+  try {
+    const polygon = points.map((p) => [p.x, p.y]);
+    makeCCW(polygon);
+
+    const parts = quickDecomp(polygon);
+    return parts.map((part) => part.map(([x, y]) => ({ x, y })));
+  } catch {
+    return [points];
+  }
+};
+
+/**
+ * SAT test between two CONVEX polygons: checks whether the projections of both
+ * shapes overlap on every axis generated by their edge normals. If they do, then
+ * a collision has occurred.
+ *
+ * @param {{x: number, y: number}[]} pointsA
+ * @param {{x: number, y: number}[]} pointsB
+ * @returns {boolean}
+ */
+const convexPolygonsIntersect = (pointsA, pointsB) => {
+  const axes = [...getAxes(pointsA), ...getAxes(pointsB)];
+
+  return axes.every((axis) => {
+    const projectionA = projectOntoAxis(pointsA, axis);
+    const projectionB = projectOntoAxis(pointsB, axis);
+
+    return isRangeIntersecting(projectionA, projectionB);
+  });
+};
+
+/**
+ * Checks whether two (potentially non-convex) simple polygons overlap, by
+ * decomposing each into convex pieces and SAT-testing every pair of pieces.
+ *
+ * @param {{x: number, y: number}[]} pointsA
+ * @param {{x: number, y: number}[]} pointsB
+ * @returns {boolean}
+ */
+const polygonsIntersect = (pointsA, pointsB) => {
+  const partsA = decomposePolygon(pointsA);
+  const partsB = decomposePolygon(pointsB);
+
+  return partsA.some((partA) => partsB.some((partB) => convexPolygonsIntersect(partA, partB)));
+};
+
+/**
+ * Checks if a collision exists between a newly created/moved shape and other
+ * shapes on the map. Handles non-convex polygons via decomposition.
+ *
+ * @param {{x: number, y: number}[]} newPoints new shape's world-space points
+ * @param {{points: {x: number, y: number}[]}[]} candidates other shapes on the map
+ * @returns {boolean}
+ */
+const narrowPhaseTest = (newPoints, candidates) =>
+  candidates.some(({ points }) => polygonsIntersect(newPoints, points));
+
+/**
+ * Full collision check between a shape and a set of other shapes: cheaply
+ * narrows down candidates by bounding box before running the precise
+ * (but more expensive) polygon-vs-polygon test.
+ *
+ * @param {{x: number, y: number}[]} newPoints new shape's world-space points
+ * @param {{points: {x: number, y: number}[]}[]} candidates other shapes on the map
+ * @returns {boolean}
+ */
+const hasPolygonCollision = (newPoints, candidates) =>
+  narrowPhaseTest(newPoints, broadPhaseTest(newPoints, candidates));
+
+/**
+ * Calculates the vector for the edge between two points
+ *
+ * @param {*} p1 first point
+ * @param {*} p2 second point
+ * @returns
+ */
+const getEdgeVector = (p1, p2) => ({
+  x: p2.x - p1.x,
+  y: p2.y - p1.y,
+});
+
+/**
+ * Calculates the dot product between two vectors
+ *
+ * @param {*} v1 vector 1 (the axis to map to)
+ * @param {*} v2 vector 2 (the point to project from)
+ * @returns
+ */
+const dotProd = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+
+/**
+ * Calculates the normal to a vector
+ *
+ * @param {*} vector the vector to get the normal of
+ * @returns
+ */
+const normaliseVector = (vector) => {
+  const vectorMagnitude = Math.sqrt(vector.x ** 2 + vector.y ** 2);
+
+  return {
+    x: vector.x / vectorMagnitude,
+    y: vector.y / vectorMagnitude,
+  };
+};

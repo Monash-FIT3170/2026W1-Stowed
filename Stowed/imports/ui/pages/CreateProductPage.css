@@ -1,0 +1,31 @@
+/* CreateProductPage.css */
+
+/* -- Two-column grid -- */
+.product-detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  padding: 18px 28px 48px 28px;
+}
+
+.left-column,
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .product-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+}
+
+select.form-input {
+  color: var(--text-muted);
+}
+
+select.form-input.selected {
+  color: var(--text-dark);
+}
