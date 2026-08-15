@@ -10,6 +10,8 @@ import { Schedules } from "/imports/api/schedules/collections";
 import { BUDGET_STRATEGIES, BUDGET_STRATEGY_LABELS } from "/imports/api/shoppingLists/constants";
 import { toCents } from "./shoppingListHelpers";
 
+import "./SchedulesModal.css";
+
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
     Meteor.call(methodName, params, (error, result) => {
@@ -151,7 +153,7 @@ export function SchedulesModal({ onClose, sites, products }) {
   return (
     <div className="modal-overlay" role="presentation">
       <div
-        className="modal"
+        className="modal schedules-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="schedules-modal-title"
@@ -162,52 +164,76 @@ export function SchedulesModal({ onClose, sites, products }) {
 
         {view === "list" && (
           <div>
-            <button type="button" className="btn-primary" onClick={openCreateForm}>
-              + New schedule
-            </button>
-
-            {schedules.length === 0 ? (
-              <p className="section-empty">No schedules yet.</p>
-            ) : (
-              <div>
-                {schedules.map((schedule) => (
-                  <div
-                    key={schedule._id}
-                    style={{
-                      display: "flex",
-                      gap: "10px",
-                      alignItems: "center",
-                      marginTop: "10px",
-                    }}
-                  >
-                    <span style={{ flex: 1 }}>{schedule.name}</span>
-                    <span>{SCHEDULE_FREQUENCY_LABELS[schedule.frequency]}</span>
-                    <span>{schedule.isActive ? "Active" : "Paused"}</span>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => openEditForm(schedule)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => togglePause(schedule)}
-                    >
-                      {schedule.isActive ? "Pause" : "Resume"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-danger"
-                      onClick={() => handleDelete(schedule._id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
+            <div className="detail-section schedules-card">
+              <div className="section-title">
+                <span>All schedules</span>
+                <span className="section-badge id">{schedules.length}</span>
               </div>
-            )}
+
+              <div className="section-content">
+                <button
+                  type="button"
+                  className="btn-primary schedules-new-btn"
+                  onClick={openCreateForm}
+                >
+                  + New schedule
+                </button>
+
+                {schedules.length === 0 ? (
+                  <p className="section-empty">
+                    No schedules yet. Create one to automate restocking.
+                  </p>
+                ) : (
+                  <>
+                    <div className="schedules-overview-header">
+                      <span>Name</span>
+                      <span>Frequency</span>
+                      <span>Status</span>
+                      <span>Actions</span>
+                    </div>
+
+                    {schedules.map((schedule) => (
+                      <div key={schedule._id} className="schedules-overview-row">
+                        <span className="schedules-name">{schedule.name}</span>
+                        <span>
+                          <span className="schedules-frequency-tag">
+                            {SCHEDULE_FREQUENCY_LABELS[schedule.frequency]}
+                          </span>
+                        </span>
+                        <span
+                          className={schedule.isActive ? "section-badge id" : "section-badge op"}
+                        >
+                          {schedule.isActive ? "Active" : "Paused"}
+                        </span>
+                        <div className="schedules-actions">
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => openEditForm(schedule)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => togglePause(schedule)}
+                          >
+                            {schedule.isActive ? "Pause" : "Resume"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-danger"
+                            onClick={() => handleDelete(schedule._id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
 
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={onClose}>
@@ -263,7 +289,7 @@ export function SchedulesModal({ onClose, sites, products }) {
               </select>
             </div>
 
-            <div className="form-group">
+            <div className="schedules-radio-group">
               <label>
                 <input
                   type="radio"
@@ -349,25 +375,26 @@ export function SchedulesModal({ onClose, sites, products }) {
                   </button>
                 </div>
 
-                {form.items.map((item) => {
-                  const product = products.find((p) => p._id === item.productId);
-                  return (
-                    <div
-                      key={item.productId}
-                      style={{ display: "flex", gap: "10px", marginTop: "8px" }}
-                    >
-                      <span style={{ flex: 1 }}>{product ? product.name : item.productId}</span>
-                      <span>{item.quantityWanted}</span>
-                      <button
-                        type="button"
-                        className="lists-remove-btn"
-                        onClick={() => removeItem(item.productId)}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  );
-                })}
+                <div className="schedules-items-section">
+                  {form.items.map((item) => {
+                    const product = products.find((p) => p._id === item.productId);
+                    return (
+                      <div key={item.productId} className="schedules-item-row">
+                        <span className="schedules-item-name">
+                          {product ? product.name : item.productId}
+                        </span>
+                        <span className="schedules-item-qty">{item.quantityWanted}</span>
+                        <button
+                          type="button"
+                          className="lists-remove-btn"
+                          onClick={() => removeItem(item.productId)}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
