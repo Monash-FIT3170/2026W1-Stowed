@@ -15,6 +15,7 @@ import { allocateWithinBudget, isLowStock } from "/imports/api/shoppingLists/gen
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
 import { toCents, fromCents, currency } from "./shoppingListHelpers";
+import { SchedulesModal } from "./SchedulesModal";
 
 import "./ListsPage.css";
 
@@ -46,6 +47,7 @@ export function ListsPage() {
   const [showEmptyNotice, setShowEmptyNotice] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [strategy, setStrategy] = useState(BUDGET_STRATEGIES.MAX_PRODUCTS);
+  const [showSchedules, setShowSchedules] = useState(false);
 
   const { lists, sites, products } = useTracker(() => {
     Meteor.subscribe("shoppingLists");
@@ -131,10 +133,28 @@ export function ListsPage() {
             Shopping <em>Lists</em>
           </h1>
 
-          <button type="button" className="btn-primary" onClick={generate} disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "+ Generate shopping list"}
-          </button>
+          <div className="lists-header-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowSchedules(true)}>
+              Schedules
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={generate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating..." : "+ Generate shopping list"}
+            </button>
+          </div>
         </div>
+
+        {showSchedules && (
+          <SchedulesModal
+            onClose={() => setShowSchedules(false)}
+            sites={sites}
+            products={products}
+          />
+        )}
 
         <p className="lists-subtitle">
           Pulls every product at or below its reorder threshold. Leave the budget blank to include
