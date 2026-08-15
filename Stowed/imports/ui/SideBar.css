@@ -185,9 +185,11 @@
   flex-shrink: 0;
 }
 
-/* -- Scan button -- */
+/* -- Scan button --
+   Hidden on desktop (scan lives inside the QR Codes page there);
+   shows as the raised circle in the mobile/tablet dock. */
 .sidebar-scan-btn {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -293,19 +295,14 @@
     display: none;
   }
 
+  /* Flatten the wrappers so sections, scan circle and logout are all direct
+     flex items of the dock — 2 items either side of the circle = true centre */
   .sidebar-top {
-    flex: 1;
-    flex-direction: row;
-    align-items: center;
-    min-height: 0;
-    overflow: visible;
+    display: contents;
   }
 
   .sidebar-nav {
-    flex: 1;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
+    display: contents;
   }
 
   .sidebar-section {
@@ -371,14 +368,16 @@
   .sidebar-logout {
     width: auto;
     margin-top: 0;
-    margin-left: 4px;
-    padding: 9px 14px;
+    margin-left: 0;
+    padding: 9px 4px;
     font-size: 11px;
-    flex-shrink: 0;
+    flex: 1 1 0; /* same width as the sections so the scan circle is dead centre */
+    min-width: 0;
     border-radius: 999px;
   }
 
   .sidebar-scan-btn {
+    display: flex;
     flex-shrink: 0;
     width: 52px;
     height: 52px;
