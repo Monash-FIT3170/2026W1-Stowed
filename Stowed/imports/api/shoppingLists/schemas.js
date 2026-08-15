@@ -1,11 +1,6 @@
 import SimpleSchema from "simpl-schema";
 
-import {
-  SHOPPING_LIST_MODES,
-  ADD_PRODUCT_MODES,
-  LIST_FREQUENCIES,
-  LIST_STATUSES,
-} from "./constants";
+import { LIST_ORIGINS, ADD_PRODUCT_MODES, LIST_STATUSES } from "./constants";
 
 /**
  * A single product on a shopping list.
@@ -109,30 +104,22 @@ export const ShoppingListSchema = new SimpleSchema({
     type: String,
   },
 
-  mode: {
+  origin: {
     type: String,
-    allowedValues: Object.values(SHOPPING_LIST_MODES),
+    allowedValues: Object.values(LIST_ORIGINS),
   },
 
-  // Only set on automated lists. The check below keeps mode and frequency
-  // consistent so a manual list can never carry a stale frequency.
-  frequency: {
+  // Soft, one-way audit trail for lists created by a Schedule tick.
+  // Snapshotted at generation time and never synced afterwards — deleting
+  // or editing the schedule has no effect on lists it already produced.
+  scheduleId: {
     type: String,
     optional: true,
-    allowedValues: Object.values(LIST_FREQUENCIES),
-    custom() {
-      const mode = this.field("mode").value;
+  },
 
-      if (mode === SHOPPING_LIST_MODES.AUTOMATED && !this.value) {
-        return SimpleSchema.ErrorTypes.REQUIRED;
-      }
-
-      if (mode === SHOPPING_LIST_MODES.MANUAL && this.value) {
-        return "frequencyNotAllowedForManualList";
-      }
-
-      return undefined;
-    },
+  scheduleName: {
+    type: String,
+    optional: true,
   },
 
   status: {

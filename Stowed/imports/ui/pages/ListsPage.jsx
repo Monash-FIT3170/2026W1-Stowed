@@ -3,23 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import {
-  SHOPPING_LIST_MODES,
+  LIST_ORIGINS,
   LIST_FREQUENCIES,
   LIST_STATUSES,
   BUDGET_STRATEGIES,
   BUDGET_STRATEGY_LABELS,
 } from "/imports/api/shoppingLists/constants";
 import { ShoppingLists } from "/imports/api/shoppingLists/collections";
+import { allocateWithinBudget, isLowStock } from "/imports/api/shoppingLists/generation";
 
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
-import {
-  allocateWithinBudget,
-  isLowStock,
-  toCents,
-  fromCents,
-  currency,
-} from "./shoppingListHelpers";
+import { toCents, fromCents, currency } from "./shoppingListHelpers";
 
 import "./ListsPage.css";
 
@@ -102,8 +97,7 @@ export function ListsPage() {
     try {
       const listId = await callMethod("shoppingLists.create", {
         name: `Shopping list ${lists.length + 1}`,
-        mode: SHOPPING_LIST_MODES.AUTOMATED,
-        frequency: LIST_FREQUENCIES.WEEKLY,
+        origin: LIST_ORIGINS.MANUAL,
         items,
       });
       navigate(`/lists/${listId}`);

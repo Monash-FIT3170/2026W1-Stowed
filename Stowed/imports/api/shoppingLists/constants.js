@@ -1,13 +1,13 @@
 /** constants used in the shopping lists module */
 
 /**
- * How a shopping list is built.
- * AUTOMATED - generated from current stock on a recurring frequency.
- * MANUAL    - assembled by the user, with no schedule.
+ * Who/what created a shopping list.
+ * MANUAL    - created by a person (whether or not the items themselves were auto-generated).
+ * SCHEDULED - created automatically by a Schedule tick.
  */
-export const SHOPPING_LIST_MODES = {
-  AUTOMATED: "automated",
+export const LIST_ORIGINS = {
   MANUAL: "manual",
+  SCHEDULED: "scheduled",
 };
 
 /**

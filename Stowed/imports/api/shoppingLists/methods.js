@@ -2,7 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
 import { ShoppingLists } from "./collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
-import { SHOPPING_LIST_MODES, LIST_STATUSES } from "./constants";
+import { LIST_STATUSES } from "./constants";
 
 const itemPattern = {
   productId: String,
@@ -23,10 +23,11 @@ const itemPattern = {
 };
 
 Meteor.methods({
-  async "shoppingLists.create"({ name, mode, frequency, items = [] }) {
+  async "shoppingLists.create"({ name, origin, scheduleId, scheduleName, items = [] }) {
     check(name, String);
-    check(mode, String);
-    check(frequency, Match.Maybe(String));
+    check(origin, String);
+    check(scheduleId, Match.Maybe(String));
+    check(scheduleName, Match.Maybe(String));
     check(items, [itemPattern]);
 
     const trimmedName = name.trim();
@@ -42,8 +43,9 @@ Meteor.methods({
       orgId,
       createdBy: this.userId,
       name: trimmedName,
-      mode,
-      ...(mode === SHOPPING_LIST_MODES.AUTOMATED ? { frequency } : {}),
+      origin,
+      ...(scheduleId !== undefined ? { scheduleId } : {}),
+      ...(scheduleName !== undefined ? { scheduleName } : {}),
       items,
       createdAt: now,
       updatedAt: now,
@@ -70,7 +72,6 @@ Meteor.methods({
     items,
     siteId,
     status,
-    frequency,
     archivedAt,
     archivedWithPendingItems,
   }) {
@@ -78,7 +79,6 @@ Meteor.methods({
     check(items, Match.Maybe([itemPattern]));
     check(siteId, Match.Maybe(String));
     check(status, Match.Maybe(String));
-    check(frequency, Match.Maybe(String));
     check(archivedAt, Match.Maybe(Date));
     check(archivedWithPendingItems, Match.Maybe(Boolean));
 
@@ -93,7 +93,6 @@ Meteor.methods({
     if (items !== undefined) set.items = items;
     if (siteId !== undefined) set.siteId = siteId;
     if (status !== undefined) set.status = status;
-    if (frequency !== undefined) set.frequency = frequency;
     if (archivedAt !== undefined) set.archivedAt = archivedAt;
     if (archivedWithPendingItems !== undefined)
       set.archivedWithPendingItems = archivedWithPendingItems;

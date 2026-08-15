@@ -4,11 +4,11 @@ import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import {
   LIST_FREQUENCIES,
-  LIST_FREQUENCY_LABELS,
   LIST_STATUSES,
   ADD_PRODUCT_MODES,
 } from "/imports/api/shoppingLists/constants";
 import { ShoppingLists } from "/imports/api/shoppingLists/collections";
+import { toItem, isLowStock } from "/imports/api/shoppingLists/generation";
 
 import { Products } from "/imports/api/products/collections";
 import {
@@ -17,7 +17,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
-import { toItem, isLowStock, nextOrderDay, currency, sortByCategory } from "./shoppingListHelpers";
+import { currency, sortByCategory } from "./shoppingListHelpers";
 
 import "./ListsPage.css";
 
@@ -114,9 +114,7 @@ export function ShoppingListDetailPage() {
     if (isReadOnly) return;
     const nextItems = products
       .filter(isLowStock)
-      .map((product) =>
-        toItem(product, list.frequency ?? LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.GENERATED),
-      );
+      .map((product) => toItem(product, LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.GENERATED));
     await updateItems(nextItems);
     setFilter(FILTERS.ALL);
   }
@@ -155,7 +153,7 @@ export function ShoppingListDetailPage() {
       : [
           ...items,
           {
-            ...toItem(product, list.frequency ?? LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.MANUAL),
+            ...toItem(product, LIST_FREQUENCIES.WEEKLY, ADD_PRODUCT_MODES.MANUAL),
             quantityWanted,
           },
         ];
@@ -829,42 +827,6 @@ export function ShoppingListDetailPage() {
                 {hasReceivedItems && (
                   <p className="lists-schedule-note">Undo received items to change location.</p>
                 )}
-              </div>
-            </div>
-
-            <div className="detail-section">
-              <div className="section-title">Schedule</div>
-              <div className="section-content">
-                <div className="form-group">
-                  <label htmlFor="schedule-frequency">Generate every</label>
-                  <select
-                    id="schedule-frequency"
-                    className="form-input selected"
-                    value={list.frequency ?? LIST_FREQUENCIES.WEEKLY}
-                    disabled={isReadOnly}
-                    onChange={(event) =>
-                      callMethod("shoppingLists.update", {
-                        listId,
-                        frequency: event.target.value,
-                      }).catch((error) => console.error("Failed to update frequency:", error))
-                    }
-                  >
-                    {Object.values(LIST_FREQUENCIES).map((value) => (
-                      <option key={value} value={value}>
-                        {LIST_FREQUENCY_LABELS[value]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="next-order-day">Next order day</label>
-                  <div className="form-tag" id="next-order-day">
-                    {nextOrderDay(list.frequency ?? LIST_FREQUENCIES.WEEKLY)}
-                  </div>
-                </div>
-
-                <p className="lists-schedule-note">Skeleton only, no logic wired.</p>
               </div>
             </div>
           </div>
