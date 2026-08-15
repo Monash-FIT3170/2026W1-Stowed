@@ -49,7 +49,7 @@ export function Sidebar() {
   const organisation = useTracker(() => {
     if (!currentUser) return null;
     // Subscribing inside the tracker lets Meteor reactively re-run this when the
-    // subscription becomes ready and clean it up on unmount — no polling needed.
+    // subscription becomes ready and clean it up on unmount, no polling needed.
     const sub = Meteor.subscribe("currentOrganisation");
     if (!sub.ready()) return null;
     return Organisations.findOne(currentUser.profile.organisationId);

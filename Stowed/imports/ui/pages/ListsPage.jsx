@@ -135,7 +135,7 @@ export function ListsPage() {
 
           <div className="lists-header-actions">
             <button type="button" className="btn-secondary" onClick={() => setShowSchedules(true)}>
-              Schedules
+              🗓️ Schedules
             </button>
             <button
               type="button"
@@ -293,9 +293,9 @@ export function ListsPage() {
                       {receivedCount}/{list.items.length}
                     </span>
                     <span className="lists-allocation-cell">
-                      {receivedCount > 0 ? `${allocatedCount}/${receivedCount}` : "—"}
+                      {receivedCount > 0 ? `${allocatedCount}/${receivedCount}` : "N/A"}
                       {pendingAllocation > 0 && (
-                        <span className="section-badge op">{pendingAllocation} waiting</span>
+                        <span className="section-badge op">⚠️ {pendingAllocation} waiting</span>
                       )}
                     </span>
                   </Link>
