@@ -68,8 +68,8 @@ export function CreateProductPage() {
   const [editingName, setEditingName] = useState("");
   const [categoryError, setCategoryError] = useState("");
 
-  const { products, categories, sites, floorMaps, storageUnits, storageLocations } = useTracker(
-    () => {
+  const { products, categories, sites, floorMaps, storageUnits, storageLocations } =
+    useTracker(() => {
       Meteor.subscribe("products");
       Meteor.subscribe("productCategories"); // NEW
       Meteor.subscribe("locations.all");
@@ -81,9 +81,7 @@ export function CreateProductPage() {
         storageUnits: StorageUnits.find().fetch(),
         storageLocations: StorageLocations.find().fetch(),
       };
-    },
-    [],
-  );
+    }, []);
 
   const parsedTotal = parseInt(totalQuantity, 10);
 
@@ -136,14 +134,14 @@ export function CreateProductPage() {
   }
 
   async function handleDeleteCategory(id) {
-  try {
-    await callMethod("productCategories.delete", { categoryId: id });
-    if (categoryId === id) setCategoryId("");
-    setCategoryError("");
-  } catch (err) {
-    setCategoryError(err.reason || err.message || "Failed to delete category.");
+    try {
+      await callMethod("productCategories.delete", { categoryId: id });
+      if (categoryId === id) setCategoryId("");
+      setCategoryError("");
+    } catch (err) {
+      setCategoryError(err.reason || err.message || "Failed to delete category.");
+    }
   }
-}
 
   function startRename(id, currentName) {
     setEditingId(id);
@@ -213,7 +211,7 @@ export function CreateProductPage() {
   }
 
   const locationsExist = storageLocations.length > 0;
-  const canManageCategories = hasClientPermission(role, "productCategories.manage"); 
+  const canManageCategories = hasClientPermission(role, "productCategories.manage");
 
   return (
     <>
@@ -544,7 +542,13 @@ export function CreateProductPage() {
             <h3 className="modal-title" style={{ marginBottom: "4px" }}>
               Manage categories
             </h3>
-            <p style={{ fontSize: "13px", color: "var(--text-muted, #998874)", marginBottom: "20px" }}>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--text-muted, #998874)",
+                marginBottom: "20px",
+              }}
+            >
               Add categories staff can pick from when creating a product.
             </p>
 
@@ -596,7 +600,10 @@ export function CreateProductPage() {
                     </>
                   ) : (
                     <>
-                      <button className="btn-secondary" onClick={() => startRename(cat._id, cat.name)}>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => startRename(cat._id, cat.name)}
+                      >
                         Rename
                       </button>
                       <button className="btn-danger" onClick={() => handleDeleteCategory(cat._id)}>
@@ -619,7 +626,12 @@ export function CreateProductPage() {
               <button
                 className="btn-primary"
                 onClick={handleCreateCategory}
-                style={{ borderRadius: "8px", width: "auto", padding: "0 20px", whiteSpace: "nowrap" }}
+                style={{
+                  borderRadius: "8px",
+                  width: "auto",
+                  padding: "0 20px",
+                  whiteSpace: "nowrap",
+                }}
               >
                 + Add
               </button>

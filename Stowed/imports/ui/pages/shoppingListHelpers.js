@@ -48,11 +48,9 @@ export function sortByCategory(items) {
   });
 }
 
-
 export function isLowStock(product) {
   return typeof product.reorderAt === "number" && (product.totalQuantity ?? 0) <= product.reorderAt;
 }
-
 
 /** Dollars to whole cents. Math.round absorbs the float error in 18.9 * 100. */
 export const toCents = (value) => Math.round((Number(value) || 0) * 100);

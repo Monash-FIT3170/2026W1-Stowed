@@ -250,12 +250,19 @@ export function ListsPage() {
                 <span>Site</span>
                 <span>Purchased</span>
                 <span>Received</span>
+                <span>Allocated</span>
               </div>
 
               {lists.map((list) => {
                 const site = sites.find((s) => s._id === list.siteId);
                 const purchasedCount = list.items.filter((i) => i.purchased).length;
                 const receivedCount = list.items.filter((i) => i.received).length;
+                const allocatedCount = list.items.filter(
+                  (i) => i.received && i.allocatedLocationId,
+                ).length;
+                const pendingAllocation = list.items.filter(
+                  (i) => i.received && !i.allocatedLocationId,
+                ).length;
 
                 return (
                   <Link key={list._id} to={`/lists/${list._id}`} className="lists-overview-row">
@@ -270,6 +277,12 @@ export function ListsPage() {
                     </span>
                     <span>
                       {receivedCount}/{list.items.length}
+                    </span>
+                    <span className="lists-allocation-cell">
+                      {receivedCount > 0 ? `${allocatedCount}/${receivedCount}` : "—"}
+                      {pendingAllocation > 0 && (
+                        <span className="section-badge op">{pendingAllocation} waiting</span>
+                      )}
                     </span>
                   </Link>
                 );

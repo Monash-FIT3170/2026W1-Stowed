@@ -32,7 +32,7 @@ Meteor.methods({
     });
   },
 
-    async "productCategories.delete"({ categoryId }) {
+  async "productCategories.delete"({ categoryId }) {
     check(categoryId, String);
     await assertOrgAccess(ProductCategories, categoryId, this.userId);
     await requirePermission(this.userId, "productCategories.manage");
