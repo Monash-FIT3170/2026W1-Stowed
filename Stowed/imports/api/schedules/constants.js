@@ -15,6 +15,18 @@ export const SCHEDULE_FREQUENCY_LABELS = {
 };
 
 /**
+ * Real elapsed time between runs, in milliseconds. Weekly/fortnightly/monthly
+ * mirror the same week-counting used for quantity scaling (a "month" is 4
+ * weeks here, not a calendar month) so the two stay conceptually consistent.
+ */
+export const SCHEDULE_FREQUENCY_MS = {
+  [SCHEDULE_FREQUENCIES.TEST_30S]: 30 * 1000,
+  [SCHEDULE_FREQUENCIES.WEEKLY]: 7 * 24 * 60 * 60 * 1000,
+  [SCHEDULE_FREQUENCIES.FORTNIGHTLY]: 14 * 24 * 60 * 60 * 1000,
+  [SCHEDULE_FREQUENCIES.MONTHLY]: 28 * 24 * 60 * 60 * 1000,
+};
+
+/**
  * How a schedule decides what goes on the list it generates.
  * EXPLICIT - a fixed product/quantity template, defined on the schedule.
  * AUTO     - reuses the dashboard's low-stock/budget generator.
