@@ -1,17 +1,116 @@
-/* ScanPage.css — lofi */
+/* ScanPage.css — Bloom-themed scanner.
+   All rules scoped under .scan-page (see docs guidelines). */
 
-.scan-page {
-  padding: 16px;
+.scan-page .scan-page-body {
+  padding: 0 28px 48px;
   max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* Camera viewport */
+/* -- Camera card -- */
+
+.scan-page .scan-camera-card {
+  padding: 16px;
+  text-align: center;
+}
+
+/* html5-qrcode injects a <video> in here */
 .scan-page #scan-region {
   width: 100%;
   min-height: 260px;
-  border: 2px dashed grey;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--dark);
+  border: 1px solid var(--border-light);
 }
 
-.scan-page form {
-  margin-top: 16px;
+.scan-page #scan-region video {
+  border-radius: 12px;
+}
+
+.scan-page .scan-status {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* -- Multi-match picker -- */
+
+.scan-page .scan-match-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  background: none;
+  border: 0;
+  border-bottom: 0.5px solid var(--border-light);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-dark);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.scan-page .scan-match-row:last-child {
+  border-bottom: none;
+}
+
+.scan-page .scan-match-row:hover {
+  background: var(--input-bg);
+}
+
+.scan-page .scan-match-name {
+  font-weight: 600;
+}
+
+.scan-page .scan-match-sku {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* -- Manual lookup -- */
+
+.scan-page .scan-manual {
+  padding: 16px 20px;
+}
+
+.scan-page .scan-manual-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.scan-page .scan-manual-row {
+  display: flex;
+  gap: 8px;
+}
+
+.scan-page .scan-manual-row .form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.scan-page .scan-manual-row .btn-primary {
+  flex-shrink: 0;
+}
+
+/* -- Phone -- */
+
+@media (max-width: 640px) {
+  .scan-page .scan-page-body {
+    padding: 0 16px 40px;
+    max-width: none;
+  }
+
+  .scan-page #scan-region {
+    min-height: 220px;
+  }
 }

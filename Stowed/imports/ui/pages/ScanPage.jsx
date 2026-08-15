@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { parseScannedUrl } from "/imports/api/products/codes";
+import "../Global.css";
 import "./ScanPage.css";
 
 /**
  * Camera scanner for product barcodes (Code-128) and storage unit QR codes.
  *  - QR with our own URL  -> navigate straight to that page
  *  - anything else        -> products.findByCode (sku, then _id) and navigate
- * 
+ *
  * Camera requires a secure context: localhost works in dev, deployments
  * need HTTPS or the camera will not open.
  */
@@ -22,7 +23,7 @@ export function ScanPage() {
   const [manualCode, setManualCode] = useState("");
 
   async function handleCode(text) {
-    // goes to storage unit QR, same url 
+    // goes to storage unit QR, same url
     const path = parseScannedUrl(text, window.location.origin);
     if (path) {
       navigate(path);
@@ -69,7 +70,7 @@ export function ScanPage() {
           } catch (err) {
             setStatus(err.reason || err.message || "Lookup failed.");
           }
-          // stops awhile 
+          // stops awhile
           setTimeout(() => {
             handlingRef.current = false;
           }, 1500);
@@ -99,6 +100,7 @@ export function ScanPage() {
           }
         });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleManualSubmit(event) {
@@ -113,35 +115,60 @@ export function ScanPage() {
   }
 
   return (
-    <div className="scan-page">
-      {/* MOCKUP UI — styling is the last step */}
-      <h1>Scan</h1>
-      <p>{status}</p>
+    <div className="product-detail-container scan-page">
+      <div className="product-detail-header">
+        <div className="breadcrumb">
+          <span className="breadcrumb-link">Tools</span>
+          <span className="breadcrumb-separator">/</span>
+          <span className="breadcrumb-current">Scan</span>
+        </div>
+        <div className="header-top">
+          <h1 className="header-title">
+            Scan <em>Codes</em>
+          </h1>
+        </div>
+      </div>
 
-      <div id="scan-region" />
+      <div className="scan-page-body">
+        <div className="detail-section scan-camera-card">
+          <div id="scan-region" />
+          <p className="scan-status">{status}</p>
+        </div>
 
-      {matches.length > 1 && (
-        <ul>
-          {matches.map((match) => (
-            <li key={match._id}>
-              <button type="button" onClick={() => navigate(`/inventory/${match._id}`)}>
-                {match.name} {match.sku ? `(${match.sku})` : ""}
+        {matches.length > 1 && (
+          <div className="detail-section scan-matches">
+            {matches.map((match) => (
+              <button
+                key={match._id}
+                type="button"
+                className="scan-match-row"
+                onClick={() => navigate(`/inventory/${match._id}`)}
+              >
+                <span className="scan-match-name">{match.name}</span>
+                {match.sku && <span className="scan-match-sku">SKU {match.sku}</span>}
               </button>
-            </li>
-          ))}
-        </ul>
-      )}
+            ))}
+          </div>
+        )}
 
-      <form onSubmit={handleManualSubmit}>
-        <label htmlFor="manual-code">No camera? Type the code: </label>
-        <input
-          id="manual-code"
-          value={manualCode}
-          onChange={(event) => setManualCode(event.target.value)}
-          placeholder="SKU or product ID"
-        />
-        <button type="submit">Look up</button>
-      </form>
+        <form className="detail-section scan-manual" onSubmit={handleManualSubmit}>
+          <label className="scan-manual-label" htmlFor="manual-code">
+            No camera? Type the code
+          </label>
+          <div className="scan-manual-row">
+            <input
+              id="manual-code"
+              className="form-input"
+              value={manualCode}
+              onChange={(event) => setManualCode(event.target.value)}
+              placeholder="SKU or product ID"
+            />
+            <button type="submit" className="btn-primary">
+              Look up
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

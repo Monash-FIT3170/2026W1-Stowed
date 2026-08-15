@@ -12,7 +12,7 @@ import "../Global.css";
 /**
  * Codes hub: every product's Code-128 barcode and every storage unit's QR.
  * Product rows filter by category; each row links to its detail page where
- * the printable label lives.
+ * the printable label lives. Styled with the existing Bloom classes.
  */
 export function QRCodesPage() {
   const [tab, setTab] = useState("products");
@@ -39,6 +39,18 @@ export function QRCodesPage() {
     category === "all" ? products : products.filter((p) => p.category === category);
   const floorMapName = (unit) => floorMaps.find((f) => f._id === unit.floorMapId)?.name || "";
 
+  const rowStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "16px",
+    flexWrap: "wrap",
+    padding: "14px 20px",
+    borderBottom: "0.5px solid var(--border-light)",
+  };
+
+  const emptyStyle = { padding: "32px", textAlign: "center", color: "var(--text-muted)" };
+
   return (
     <div className="product-detail-container">
       <div className="product-detail-header">
@@ -51,111 +63,95 @@ export function QRCodesPage() {
           <h1 className="header-title">
             QR <em>Codes</em>
           </h1>
+          {/* Desktop scan entry point (mobile has the dock's centre button) */}
+          <Link to="/scan" className="btn-primary" style={{ textDecoration: "none" }}>
+            [ ] Scan
+          </Link>
         </div>
-      </div>
-      
-      <div style={{ padding: "0 28px 48px" }}>
-        <p>
-          Product barcodes open the product page when scanned, storage unit QR codes open
-          the unit's page.
+        <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: "4px 0 0" }}>
+          Product barcodes open the product&apos;s page when scanned; storage unit QR codes open
+          the unit&apos;s page. Print labels from each detail page, or scan with the button above.
         </p>
+      </div>
 
-        {loading && <p>Loading…</p>}
-
-        {!loading && (
-          <>
-            <div>
-              <button
-                type="button"
-                disabled={tab === "products"}
-                onClick={() => setTab("products")}
-              >
-                Product barcodes
-              </button>{" "}
-              <button type="button" disabled={tab === "units"} onClick={() => setTab("units")}>
-                Storage unit QR codes
-              </button>
-            </div>
-
-            {tab === "products" && (
-              <>
-                <p>
-                  <label htmlFor="category-filter">Category: </label>
-                  <select
-                    id="category-filter"
-                    value={category}
-                    onChange={(event) => setCategory(event.target.value)}
-                  >
-                    <option value="all">All ({products.length})</option>
-                    {categories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </p>
-
-                {visibleProducts.length === 0 ? (
-                  <p>No products in this category.</p>
-                ) : (
-                  <table border="1" cellPadding="8">
-                    <thead>
-                      <tr>
-                        <th>Product</th>
-                        <th>Category</th>
-                        <th>Code</th>
-                        <th>Barcode</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleProducts.map((product) => (
-                        <tr key={product._id}>
-                          <td>
-                            <Link to={`/inventory/${product._id}`}>{product.name}</Link>
-                          </td>
-                          <td>{product.category || "—"}</td>
-                          <td>{product.sku ? `SKU ${product.sku}` : `ID ${product._id}`}</td>
-                          <td>
-                            <ProductBarcode value={getBarcodeValue(product)} height={40} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </>
-            )}
-
-            {tab === "units" &&
-              (units.length === 0 ? (
-                <p>No storage units yet.</p>
-              ) : (
-                <table border="1" cellPadding="8">
-                  <thead>
-                    <tr>
-                      <th>Storage unit</th>
-                      <th>Type</th>
-                      <th>Floor map</th>
-                      <th>QR code</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {units.map((unit) => (
-                      <tr key={unit._id}>
-                        <td>
-                          <Link to={`/locations/unit/${unit._id}`}>{unit.name}</Link>
-                        </td>
-                        <td>{unit.type}</td>
-                        <td>{floorMapName(unit) || "—"}</td>
-                        <td>
-                          <LocationQRCode unitId={unit._id} size={72} alt={unit.name} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      <div style={{ padding: "16px 28px 48px" }}>
+        <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+          <button
+            className={tab === "products" ? "btn-primary" : "btn-secondary"}
+            onClick={() => setTab("products")}
+          >
+            Product barcodes
+          </button>
+          <button
+            className={tab === "units" ? "btn-primary" : "btn-secondary"}
+            onClick={() => setTab("units")}
+          >
+            Storage unit QR codes
+          </button>
+          {tab === "products" && (
+            <select
+              className="form-input"
+              style={{ width: "auto", marginLeft: "auto" }}
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              aria-label="Filter by category"
+            >
+              <option value="all">All categories ({products.length})</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
-          </>
+            </select>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="detail-section">
+            <div style={emptyStyle}>Loading…</div>
+          </div>
+        ) : tab === "products" ? (
+          <div className="detail-section">
+            {visibleProducts.length === 0 ? (
+              <div style={emptyStyle}>No products in this category.</div>
+            ) : (
+              visibleProducts.map((product) => (
+                <div key={product._id} style={rowStyle}>
+                  <div style={{ minWidth: 0 }}>
+                    <Link to={`/inventory/${product._id}`} className="item-name-link">
+                      <strong>{product.name}</strong>
+                    </Link>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      {product.category ? `${product.category} · ` : ""}
+                      {product.sku ? `SKU: ${product.sku}` : `ID: ${product._id}`}
+                    </div>
+                  </div>
+                  <ProductBarcode value={getBarcodeValue(product)} height={40} />
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <div className="detail-section">
+            {units.length === 0 ? (
+              <div style={emptyStyle}>No storage units yet.</div>
+            ) : (
+              units.map((unit) => (
+                <div key={unit._id} style={rowStyle}>
+                  <div style={{ minWidth: 0 }}>
+                    <Link to={`/locations/unit/${unit._id}`} className="item-name-link">
+                      <strong>{unit.name}</strong>
+                    </Link>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      {unit.type}
+                      {floorMapName(unit) ? ` · ${floorMapName(unit)}` : ""}
+                    </div>
+                  </div>
+                  <LocationQRCode unitId={unit._id} size={72} alt={unit.name} />
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
     </div>
