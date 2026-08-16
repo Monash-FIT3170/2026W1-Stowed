@@ -1,6 +1,76 @@
 import { buttonStyles, customShapesPanelStyles } from "./FloorMapStyles";
 import { dragState } from "./canvas/editor/DragState";
-import { getShapeBounds, normaliseShapePoints } from "./canvas/editor/utils/ShapeGeometry";
+import {
+  getShapeBounds,
+  normaliseShapePoints,
+} from "./canvas/editor/utils/ShapeGeometry";
+
+const presetShapes = [
+  {
+    shapeId: "preset-square",
+    name: "Square",
+    points: [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+      { x: 0, y: 1 },
+    ],
+    gridReference: {
+      x: 0,
+      y: 0,
+    },
+    isPreset: true,
+  },
+
+  {
+    shapeId: "preset-rectangle",
+    name: "Rectangle",
+    points: [
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 2, y: 1 },
+      { x: 0, y: 1 },
+    ],
+    gridReference: {
+      x: 0,
+      y: 0,
+    },
+    isPreset: true,
+  },
+
+  {
+    shapeId: "preset-triangle",
+    name: "Triangle",
+    points: [
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 0, y: 2 },
+    ],
+    gridReference: {
+      x: 0,
+      y: 0,
+    },
+    isPreset: true,
+  },
+
+  {
+    shapeId: "preset-l-shape",
+    name: "L Shape",
+    points: [
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 2, y: 1 },
+      { x: 1, y: 1 },
+      { x: 1, y: 2 },
+      { x: 0, y: 2 },
+    ],
+    gridReference: {
+      x: 0,
+      y: 0,
+    },
+    isPreset: true,
+  },
+];
 
 export function CustomShapesPanel({
   mapShapes = [],
@@ -52,7 +122,10 @@ export function CustomShapesPanel({
   function handleDragStart(event, shape) {
     const template = buildShapeTemplate(shape);
 
-    event.dataTransfer.setData("unit", JSON.stringify(template));
+    event.dataTransfer.setData(
+      "unit",
+      JSON.stringify(template),
+    );
 
     dragState.template = template;
 
@@ -65,10 +138,52 @@ export function CustomShapesPanel({
 
   return (
     <div style={customShapesPanelStyles.container}>
-      <p style={customShapesPanelStyles.title}>Custom Shapes</p>
+      {/* PRESET SHAPES */}
+      <p style={customShapesPanelStyles.title}>
+        Preset Shapes
+      </p>
+
+      <div style={customShapesPanelStyles.list}>
+        {presetShapes.map((shape) => {
+          const toolName = getToolName(shape);
+
+          return (
+            <button
+              key={shape.shapeId}
+              type="button"
+              draggable
+              onDragStart={(event) =>
+                handleDragStart(event, shape)
+              }
+              onDragEnd={handleDragEnd}
+              onClick={() => setActiveTool(toolName)}
+              style={{
+                ...getShapeButtonStyle(toolName),
+                cursor: "grab",
+              }}
+              aria-pressed={activeTool === toolName}
+            >
+              <span
+                style={customShapesPanelStyles.shapeName}
+              >
+                {shape.name}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* CUSTOM SHAPES */}
+      <div style={{ marginTop: 12 }}>
+        <p style={customShapesPanelStyles.title}>
+          Custom Shapes
+        </p>
+      </div>
 
       {mapShapes.length === 0 ? (
-        <div style={customShapesPanelStyles.emptyState}>No custom shapes created</div>
+        <div style={customShapesPanelStyles.emptyState}>
+          No custom shapes created
+        </div>
       ) : (
         <div style={customShapesPanelStyles.list}>
           {mapShapes.map((shape) => {
@@ -82,17 +197,27 @@ export function CustomShapesPanel({
                 <button
                   type="button"
                   draggable
-                  onDragStart={(event) => handleDragStart(event, shape)}
+                  onDragStart={(event) =>
+                    handleDragStart(event, shape)
+                  }
                   onDragEnd={handleDragEnd}
-                  onClick={() => setActiveTool(toolName)}
+                  onClick={() =>
+                    setActiveTool(toolName)
+                  }
                   style={{
                     ...getShapeButtonStyle(toolName),
                     cursor: "grab",
                     flex: 1,
                   }}
-                  aria-pressed={activeTool === toolName}
+                  aria-pressed={
+                    activeTool === toolName
+                  }
                 >
-                  <span style={customShapesPanelStyles.shapeName}>
+                  <span
+                    style={
+                      customShapesPanelStyles.shapeName
+                    }
+                  >
                     {shape.name}
                   </span>
                 </button>
@@ -100,7 +225,9 @@ export function CustomShapesPanel({
                 <button
                   type="button"
                   onClick={() => onEditShape(shape)}
-                  style={customShapesPanelStyles.editButton}
+                  style={
+                    customShapesPanelStyles.editButton
+                  }
                 >
                   Edit
                 </button>
