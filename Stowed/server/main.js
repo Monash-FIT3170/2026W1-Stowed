@@ -12,6 +12,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { buildRectShape } from "/imports/api/locations/shapeUtils";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import { Organisations } from "/imports/api/organisations";
 
@@ -290,7 +291,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: scienceFloorId,
     name: "Cabinet A",
     type: "cabinet",
-    position: { x: 24, y: 24, width: 100, height: 60 },
+    shape: { ...buildRectShape({ width: 2, height: 1.5, name: "Cabinet A" }), orgId: seedOrgId },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -299,7 +303,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: scienceFloorId,
     name: "Cabinet B",
     type: "cabinet",
-    position: { x: 150, y: 24, width: 100, height: 60 },
+    shape: { ...buildRectShape({ width: 2, height: 1.5, name: "Cabinet B" }), orgId: seedOrgId },
+    offset: { x: 4, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -310,7 +317,13 @@ async function seedLocations(seedOrgId) {
     floorMapId: itFloorId,
     name: "Equipment Rack 1",
     type: "rack",
-    position: { x: 24, y: 24, width: 80, height: 120 },
+    shape: {
+      ...buildRectShape({ width: 1.5, height: 2.5, name: "Equipment Rack 1" }),
+      orgId: seedOrgId,
+    },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -319,7 +332,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: itFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 130, y: 24, width: 120, height: 60 },
+    shape: { ...buildRectShape({ width: 2.5, height: 1, name: "Shelf A" }), orgId: seedOrgId },
+    offset: { x: 3.5, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -330,7 +346,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: generalFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 24, y: 24, width: 160, height: 60 },
+    shape: { ...buildRectShape({ width: 3, height: 1, name: "Shelf A" }), orgId: seedOrgId },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });

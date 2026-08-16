@@ -58,18 +58,36 @@ function stubCollectionFind(collection, results) {
 
 describe("page rendering", function () {
   it("renders static tools and workspace pages", function () {
-    const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
-    const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
-    const lists = renderToStaticMarkup(React.createElement(ListsPage));
-    const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
+    // AlertsPage is data-driven (useTracker + Meteor.subscribe), so stub the
+    // subscription and the collections it reads. Empty data is fine here — the
+    // assertions only check the static page chrome.
+    const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+    const restores = [
+      stubCollectionFind(StorageLocations, []),
+      stubCollectionFind(StorageUnits, []),
+      stubCollectionFind(FloorMaps, []),
+      stubCollectionFind(Sites, []),
+      stubCollectionFind(Products, []),
+      stubCollectionFind(ProductRecords, []),
+    ];
 
-    assert.ok(alerts.includes("Stock"));
-    assert.ok(alerts.includes("Alerts"));
-    assert.ok(forecast.includes("Demand"));
-    assert.ok(forecast.includes("Forecast"));
-    assert.ok(lists.includes("Shopping"));
-    assert.ok(lists.includes("Lists"));
-    assert.ok(qrCodes.includes("QR"));
+    try {
+      const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
+      const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
+      const lists = renderToStaticMarkup(React.createElement(ListsPage));
+      const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
+
+      assert.ok(alerts.includes("Stock"));
+      assert.ok(alerts.includes("Alerts"));
+      assert.ok(forecast.includes("Demand"));
+      assert.ok(forecast.includes("Forecast"));
+      assert.ok(lists.includes("Shopping"));
+      assert.ok(lists.includes("Lists"));
+      assert.ok(qrCodes.includes("QR"));
+    } finally {
+      restores.reverse().forEach((restore) => restore());
+      restoreMeteor();
+    }
   });
 
   if (Meteor.isClient) {
