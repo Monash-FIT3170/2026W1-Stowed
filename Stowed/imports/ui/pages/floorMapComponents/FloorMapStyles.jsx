@@ -5,7 +5,7 @@ export const COLOURS = {
   TEXT_MUTED: "#998874",
 
   // Layout Colours
-  PAGE_BG: "#f5efe6",
+  PAGE_BG: "#eeece5",
   CARD_BG: "#ffffff",
   CARD_BORDER: "#efe7da",
   INPUT_BG: "#fdf7f2",
@@ -22,7 +22,7 @@ export const COLOURS = {
   UNIT_CARD_HOVER: "#f8efe6",
   CANVAS_FILL: "#fdf7f2",
   CANVAS_LABEL: "#998874",
-  CANVAS_GRID: "#e5d8cc",
+  CANVAS_GRID: "#d9cfc0",
 };
 
 const baseButton = {
@@ -186,15 +186,32 @@ export const pageStyles = {
 export const toolbarStyles = {
   bar: {
     display: "flex",
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: "8px",
-    padding: "10px",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: "10px",
+    padding: "10px 20px",
     background: COLOURS.TOOL_BAR_COLOUR,
-    border: `1px solid ${COLOURS.CARD_BORDER}`,
-    borderRadius: 13,
-    boxShadow: "0 8px 20px rgba(26, 26, 26, 0.06)",
+    borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+    boxShadow: "0 2px 8px rgba(26, 26, 26, 0.04)",
     width: "100%",
+    boxSizing: "border-box",
+    flexShrink: 0,
+  },
+  section: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 0,
+  },
+  sectionDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    minHeight: 22,
+    background: COLOURS.CARD_BORDER,
+    flexShrink: 0,
+  },
+  spacer: {
+    flex: 1,
   },
   row: {
     display: "grid",
@@ -213,16 +230,24 @@ export const toolbarStyles = {
     padding: "6px 10px",
     fontSize: 11,
   },
+  buttonInline: {
+    borderRadius: 8,
+    textAlign: "center",
+    justifyContent: "center",
+    padding: "6px 12px",
+    fontSize: 11,
+    whiteSpace: "nowrap",
+  },
   status: {
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    justifyContent: "space-between",
     color: COLOURS.TEXT_MUTED,
     fontSize: 9,
     fontWeight: 600,
     textTransform: "uppercase",
     letterSpacing: 0.6,
+    flexShrink: 0,
   },
   statusBadge: {
     padding: "4px 8px",
@@ -234,10 +259,72 @@ export const toolbarStyles = {
     fontSize: 9,
     textTransform: "none",
     letterSpacing: 0,
+    whiteSpace: "nowrap",
   },
   divider: {
     height: 1,
     background: COLOURS.CARD_BORDER,
+  },
+};
+export const customShapesPanelStyles = {
+  container: {
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    boxSizing: "border-box",
+  },
+
+  title: {
+    margin: 0,
+    color: COLOURS.TEXT_MUTED,
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+
+  list: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+
+  shapeButton: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    minHeight: 34,
+    padding: "6px 10px",
+    borderRadius: 8,
+    fontSize: 11,
+    textAlign: "left",
+  },
+
+  shapeName: {
+    flex: 1,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontWeight: 600,
+  },
+
+  shapeSize: {
+    flexShrink: 0,
+    marginLeft: 12,
+    color: COLOURS.TEXT_MUTED,
+    fontSize: 9,
+    fontWeight: 500,
+  },
+
+  emptyState: {
+    padding: "10px",
+    border: `1px dashed ${COLOURS.BUTTON_BORDER}`,
+    borderRadius: 8,
+    color: COLOURS.TEXT_MUTED,
+    fontSize: 11,
+    textAlign: "center",
   },
 };
 
@@ -381,6 +468,16 @@ export const locationPanelStyles = {
     gap: "6px",
     marginTop: "10px",
   },
+  label: {
+    margin: 0,
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    color: COLOURS.TEXT_MUTED,
+    fontFamily:
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
   input: {
     padding: "8px 10px",
     borderRadius: "8px",
@@ -389,6 +486,8 @@ export const locationPanelStyles = {
     background: COLOURS.INPUT_BG,
     color: COLOURS.TEXT_PRIMARY,
     fontSize: 11,
+    fontFamily:
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   addButton: {
     padding: "8px 10px",
@@ -399,6 +498,8 @@ export const locationPanelStyles = {
     cursor: "pointer",
     color: COLOURS.TEXT_PRIMARY,
     fontSize: 11,
+    fontFamily:
+      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   list: {
     marginTop: "10px",

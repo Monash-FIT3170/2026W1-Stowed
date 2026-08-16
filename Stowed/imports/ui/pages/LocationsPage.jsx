@@ -814,7 +814,7 @@ export function LocationsPage() {
               disabled={submitting}
               onClick={confirmDelete}
             >
-              {submitting ? "Deleting…" : "Delete"}
+              {submitting ? "Deleting..." : "Delete"}
             </button>
           </div>
         </Modal>

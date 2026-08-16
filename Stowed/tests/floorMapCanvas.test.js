@@ -104,7 +104,7 @@ describe("Floor map canvas", function () {
       const element = StorageUnit({
         unit,
         isSelected: true,
-        activeTool: "move",
+        isCanvasEditMode: true,
         onSelect: () => {},
         onDragMove: () => {},
         onDragEnd: () => {},
@@ -129,11 +129,11 @@ describe("Floor map canvas", function () {
       assert.strictEqual(text.props.height, unit.height * px);
     });
 
-    it("only makes storage units draggable while the move tool is active", function () {
-      const selectModeUnit = StorageUnit({
+    it("only makes storage units draggable while in edit mode", function () {
+      const viewModeUnit = StorageUnit({
         unit,
         isSelected: false,
-        activeTool: "select",
+        isCanvasEditMode: false,
         onSelect: () => {},
         onDragMove: () => {},
         onDragEnd: () => {},
@@ -141,10 +141,10 @@ describe("Floor map canvas", function () {
         groupRef: () => {},
       });
 
-      const moveModeUnit = StorageUnit({
+      const editModeUnit = StorageUnit({
         unit,
         isSelected: false,
-        activeTool: "move",
+        isCanvasEditMode: true,
         onSelect: () => {},
         onDragMove: () => {},
         onDragEnd: () => {},
@@ -152,15 +152,15 @@ describe("Floor map canvas", function () {
         groupRef: () => {},
       });
 
-      assert.strictEqual(selectModeUnit.props.draggable, false);
-      assert.strictEqual(moveModeUnit.props.draggable, true);
+      assert.strictEqual(viewModeUnit.props.draggable, false);
+      assert.strictEqual(editModeUnit.props.draggable, true);
     });
 
     it("uses a transparent stroke for unselected storage units", function () {
       const element = StorageUnit({
         unit,
         isSelected: false,
-        activeTool: "move",
+        isCanvasEditMode: true,
         onSelect: () => {},
         onDragMove: () => {},
         onDragEnd: () => {},
@@ -184,7 +184,7 @@ describe("Floor map canvas", function () {
       const layer = UnitLayer({
         units,
         selectedIds: new Set(["unit-b"]),
-        activeTool: "move",
+        isCanvasEditMode: true,
         getGroupRef: (id) => {
           if (!refs[id]) refs[id] = { current: null };
           return refs[id];
@@ -215,7 +215,7 @@ describe("Floor map canvas", function () {
       const layer = UnitLayer({
         units: [],
         selectedIds: new Set(),
-        activeTool: "move",
+        isCanvasEditMode: true,
         getGroupRef: () => ({ current: null }),
         onUnitClick: () => {},
         onDragMove: () => {},
