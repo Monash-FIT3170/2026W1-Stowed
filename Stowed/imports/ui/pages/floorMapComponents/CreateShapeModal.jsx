@@ -1,15 +1,16 @@
 import { useState } from "react";
+import { Stage, Layer, Circle } from "react-konva";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { Meteor } from "meteor/meteor";
 import { buttonStyles } from "./FloorMapStyles";
 
 export function CreateShapeModal({ onClose }) {
   const [shapeName, setShapeName] = useState("");
 
-  const [points, setPoints] = useState([
-    { x: "", y: "" },
-    { x: "", y: "" },
-    { x: "", y: "" },
-  ]);
+  const canvasWidth = 800;
+  const canvasHeight = 300;
+
+  const [points, setPoints] = useState([]);
 
   const handlePointChange = (index, coordinate, value) => {
     setPoints((currentPoints) =>
@@ -36,6 +37,24 @@ export function CreateShapeModal({ onClose }) {
 
   const handleRemovePoint = (index) => {
     setPoints((currentPoints) => currentPoints.filter((_, pointIndex) => pointIndex !== index));
+  };
+
+  const handleCanvasClick = (event) => {
+    const stage = event.target.getStage();
+    const pointer = stage.getPointerPosition();
+
+    if (!pointer) return;
+
+    const x = pointer.x / CANVAS_CONFIG.PIXELS_PER_METER;
+    const y = pointer.y / CANVAS_CONFIG.PIXELS_PER_METER;
+
+    setPoints((currentPoints) => [
+      ...currentPoints,
+      {
+        x: Number(x.toFixed(2)),
+        y: Number(y.toFixed(2)),
+      },
+    ]);
   };
 
   const handleSave = async () => {
@@ -83,11 +102,9 @@ export function CreateShapeModal({ onClose }) {
       });
 
       setShapeName("");
-      setPoints([
-        { x: "", y: "" },
-        { x: "", y: "" },
-        { x: "", y: "" },
-      ]);
+      setPoints([]);
+
+      onClose();
 
       onClose();
     } catch (error) {
@@ -135,60 +152,143 @@ export function CreateShapeModal({ onClose }) {
           style={styles.nameInput}
         />
 
-        <div style={styles.pointsContainer}>
-          {points.map((point, index) => (
-            <div key={index} style={styles.pointSection}>
-              <div style={styles.pointHeader}>
-                <span style={styles.pointTitle}>Point {index + 1}</span>
-
-                {points.length > 3 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePoint(index)}
-                    style={styles.removeButton}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              <div style={styles.pointRow}>
-                <label style={styles.coordinateGroup}>
-                  <span style={styles.coordinateLabel}>X</span>
-                  <input
-                    type="number"
-                    value={point.x}
-                    onChange={(event) => handlePointChange(index, "x", event.target.value)}
-                    style={styles.coordinateInput}
-                  />
-                </label>
-
-                <label style={styles.coordinateGroup}>
-                  <span style={styles.coordinateLabel}>Y</span>
-                  <input
-                    type="number"
-                    value={point.y}
-                    onChange={(event) => handlePointChange(index, "y", event.target.value)}
-                    style={styles.coordinateInput}
-                  />
-                </label>
+        <div style={styles.canvasSection}>
+          <div style={styles.canvasHeader}>
+            <div>
+              <div style={styles.canvasTitle}>Place Points on Canvas</div>
+              <div style={styles.canvasDescription}>
+                Click anywhere on the canvas to create a point automatically.
               </div>
             </div>
-          ))}
+
+            {points.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setPoints([])}
+                style={styles.clearButton}
+              >
+                Clear Points
+              </button>
+            )}
+          </div>
+
+          <div style={styles.canvasWrapper}>
+            <Stage
+              width={canvasWidth}
+              height={canvasHeight}
+              onClick={handleCanvasClick}
+              style={{
+                backgroundColor: "#fbfaf8",
+                cursor: "crosshair",
+              }}
+            >
+              <Layer>
+                {points.map((point, index) => {
+                  if (point.x === "" || point.y === "") {
+                    return null;
+                  }
+
+                  const x = Number(point.x);
+                  const y = Number(point.y);
+
+                  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+                    return null;
+                  }
+
+                  return (
+                    <Circle
+                      key={index}
+                      x={x * CANVAS_CONFIG.PIXELS_PER_METER}
+                      y={y * CANVAS_CONFIG.PIXELS_PER_METER}
+                      radius={6}
+                      fill="#c45127"
+                    />
+                  );
+                })}
+              </Layer>
+            </Stage>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAddPoint}
-          style={{
-            ...buttonStyles.base,
-            ...buttonStyles.secondary,
-            marginTop: 14,
-            width: "100%",
-          }}
-        >
-          Add Another Point
-        </button>
+        <div style={styles.pointsSection}>
+          <div style={styles.pointsHeader}>
+            <div>
+              <div style={styles.pointsTitle}>Point Coordinates</div>
+              <div style={styles.canvasDescription}>
+                Add a point manually or edit coordinates created from the canvas.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddPoint}
+              style={{
+                ...buttonStyles.base,
+                ...buttonStyles.secondary,
+              }}
+            >
+              + Add Point Manually
+            </button>
+          </div>
+
+          {points.length > 0 && (
+            <div style={styles.pointsContainer}>
+              {points.map((point, index) => (
+                <div key={index} style={styles.pointSection}>
+                  <div style={styles.pointHeader}>
+                    <span style={styles.pointTitle}>
+                      Point {index + 1}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePoint(index)}
+                      style={styles.removeButton}
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div style={styles.pointRow}>
+                    <label style={styles.coordinateGroup}>
+                      <span style={styles.coordinateLabel}>X</span>
+
+                      <input
+                        type="number"
+                        value={point.x}
+                        onChange={(event) =>
+                          handlePointChange(
+                            index,
+                            "x",
+                            event.target.value,
+                          )
+                        }
+                        style={styles.coordinateInput}
+                      />
+                    </label>
+
+                    <label style={styles.coordinateGroup}>
+                      <span style={styles.coordinateLabel}>Y</span>
+
+                      <input
+                        type="number"
+                        value={point.y}
+                        onChange={(event) =>
+                          handlePointChange(
+                            index,
+                            "y",
+                            event.target.value,
+                          )
+                        }
+                        style={styles.coordinateInput}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -206,56 +306,124 @@ const styles = {
   },
 
   modal: {
-    width: "60vw",
-    maxHeight: "80vh",
+    width: "62vw",
+    maxWidth: 960,
+    maxHeight: "86vh",
     overflowY: "auto",
-    padding: 24,
-    borderRadius: 12,
+    padding: "28px 30px",
+    borderRadius: 14,
     backgroundColor: "#ffffff",
-    boxShadow: "0 12px 30px rgba(0, 0, 0, 0.2)",
+    boxShadow: "0 14px 36px rgba(0, 0, 0, 0.18)",
   },
 
   modalHeader: {
     display: "flex",
+    alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: "18px",
+    marginBottom: 22,
   },
 
   title: {
+    margin: 0,
     fontSize: 28,
-    fontWeight: "bold",
+    fontWeight: 700,
+    color: "#1f1f1f",
   },
 
-  label: {
+  actions: {
     display: "flex",
-    flexDirection: "column",
-    gap: 6,
-    fontSize: 13,
-    fontWeight: 600,
+    justifyContent: "flex-end",
+    gap: 10,
   },
 
   nameInput: {
-    padding: "9px 10px",
-    border: "1px solid #cccccc",
+    width: 220,
+    padding: "10px 12px",
+    border: "1px solid #d8d1c8",
     borderRadius: 8,
     fontSize: 14,
-    fieldSizing: "content",
-    maxWidth: "50%",
-    minWidth: "10%",
+    boxSizing: "border-box",
+    backgroundColor: "#ffffff",
+  },
+
+  canvasSection: {
+    marginTop: 22,
+    padding: 16,
+    border: "1px solid #e3ddd5",
+    borderRadius: 10,
+    backgroundColor: "#fbfaf8",
+  },
+
+  canvasHeader: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  canvasTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: "#2a2a2a",
+  },
+
+  canvasDescription: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#77716b",
+  },
+
+  clearButton: {
+    padding: 0,
+    border: "none",
+    background: "transparent",
+    color: "#b94f2a",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 500,
+  },
+
+  canvasWrapper: {
+    width: "100%",
+    border: "1px solid #ddd6ce",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#ffffff",
+  },
+
+  pointsSection: {
+    marginTop: 20,
+    padding: 16,
+    border: "1px solid #e3ddd5",
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+  },
+
+  pointsHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  pointsTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: "#2a2a2a",
   },
 
   pointsContainer: {
-    display: "flex",
-    flexWrap: "wrap",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     gap: 12,
-    marginTop: 18,
   },
 
   pointSection: {
     padding: 12,
-    border: "1px solid #dddddd",
+    border: "1px solid #e2ddd7",
     borderRadius: 8,
-    flex: "0 1 calc(25% - 12px)",
+    backgroundColor: "#fbfaf8",
+    minWidth: 0,
   },
 
   pointHeader: {
@@ -268,32 +436,37 @@ const styles = {
   pointTitle: {
     fontSize: 13,
     fontWeight: 600,
+    color: "#333333",
   },
 
   pointRow: {
     display: "flex",
-    gap: 12,
+    gap: 10,
   },
 
   coordinateGroup: {
     display: "flex",
+    alignItems: "center",
     flex: 1,
-    gap: 5,
+    gap: 6,
+    minWidth: 0,
     fontSize: 12,
-    padding: "4px 0px",
   },
 
   coordinateLabel: {
-    padding: "4px 0px",
-    paddingRight: "2px",
+    color: "#66615c",
+    fontWeight: 500,
   },
 
   coordinateInput: {
     width: "100%",
+    minWidth: 0,
     boxSizing: "border-box",
-    padding: "4px 9px",
-    border: "1px solid #cccccc",
+    padding: "7px 8px",
+    border: "1px solid #d8d1c8",
     borderRadius: 7,
+    fontSize: 13,
+    backgroundColor: "#ffffff",
   },
 
   removeButton: {
@@ -305,9 +478,9 @@ const styles = {
     fontSize: 12,
   },
 
-  actions: {
+  manualButtonWrapper: {
+    marginTop: 14,
     display: "flex",
     justifyContent: "flex-end",
-    gap: 10,
   },
 };
