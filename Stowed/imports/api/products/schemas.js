@@ -48,8 +48,8 @@ export const ProductSchema = new SimpleSchema({
     min: 0,
   },
 
-  purchaseCost: { 
-    type: Number, 
+  purchaseCost: {
+    type: Number,
     optional: true,
     min: 0,
   },

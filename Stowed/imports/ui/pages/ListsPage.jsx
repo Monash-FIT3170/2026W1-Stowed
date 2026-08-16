@@ -3,23 +3,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import {
-  SHOPPING_LIST_MODES,
+  LIST_ORIGINS,
   LIST_FREQUENCIES,
   LIST_STATUSES,
   BUDGET_STRATEGIES,
   BUDGET_STRATEGY_LABELS,
 } from "/imports/api/shoppingLists/constants";
 import { ShoppingLists } from "/imports/api/shoppingLists/collections";
+import { allocateWithinBudget, isLowStock } from "/imports/api/shoppingLists/generation";
 
 import { Products } from "/imports/api/products/collections";
 import { Sites } from "/imports/api/locations/collections";
-import {
-  allocateWithinBudget,
-  isLowStock,
-  toCents,
-  fromCents,
-  currency,
-} from "./shoppingListHelpers";
+import { toCents, fromCents, currency } from "./shoppingListHelpers";
+import { SchedulesModal } from "./SchedulesModal";
 
 import "./ListsPage.css";
 
@@ -51,6 +47,7 @@ export function ListsPage() {
   const [showEmptyNotice, setShowEmptyNotice] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [strategy, setStrategy] = useState(BUDGET_STRATEGIES.MAX_PRODUCTS);
+  const [showSchedules, setShowSchedules] = useState(false);
 
   const { lists, sites, products } = useTracker(() => {
     Meteor.subscribe("shoppingLists");
@@ -102,8 +99,7 @@ export function ListsPage() {
     try {
       const listId = await callMethod("shoppingLists.create", {
         name: `Shopping list ${lists.length + 1}`,
-        mode: SHOPPING_LIST_MODES.AUTOMATED,
-        frequency: LIST_FREQUENCIES.WEEKLY,
+        origin: LIST_ORIGINS.MANUAL,
         items,
       });
       navigate(`/lists/${listId}`);
@@ -137,10 +133,28 @@ export function ListsPage() {
             Shopping <em>Lists</em>
           </h1>
 
-          <button type="button" className="btn-primary" onClick={generate} disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "+ Generate shopping list"}
-          </button>
+          <div className="lists-header-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowSchedules(true)}>
+              Schedules
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={generate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating..." : "+ Generate shopping list"}
+            </button>
+          </div>
         </div>
+
+        {showSchedules && (
+          <SchedulesModal
+            onClose={() => setShowSchedules(false)}
+            sites={sites}
+            products={products}
+          />
+        )}
 
         <p className="lists-subtitle">
           Pulls every product at or below its reorder threshold. Leave the budget blank to include
@@ -250,12 +264,19 @@ export function ListsPage() {
                 <span>Site</span>
                 <span>Purchased</span>
                 <span>Received</span>
+                <span>Allocated</span>
               </div>
 
               {lists.map((list) => {
                 const site = sites.find((s) => s._id === list.siteId);
                 const purchasedCount = list.items.filter((i) => i.purchased).length;
                 const receivedCount = list.items.filter((i) => i.received).length;
+                const allocatedCount = list.items.filter(
+                  (i) => i.received && i.allocatedLocationId,
+                ).length;
+                const pendingAllocation = list.items.filter(
+                  (i) => i.received && !i.allocatedLocationId,
+                ).length;
 
                 return (
                   <Link key={list._id} to={`/lists/${list._id}`} className="lists-overview-row">
@@ -270,6 +291,12 @@ export function ListsPage() {
                     </span>
                     <span>
                       {receivedCount}/{list.items.length}
+                    </span>
+                    <span className="lists-allocation-cell">
+                      {receivedCount > 0 ? `${allocatedCount}/${receivedCount}` : "—"}
+                      {pendingAllocation > 0 && (
+                        <span className="section-badge op">{pendingAllocation} waiting</span>
+                      )}
                     </span>
                   </Link>
                 );

@@ -44,6 +44,12 @@ const PERMISSIONS = {
   "shoppingLists.update": ROLES.STANDARD,
   "shoppingLists.rename": ROLES.STANDARD,
   "shoppingLists.delete": ROLES.STANDARD,
+
+  // Schedules
+  "schedules.create": ROLES.STANDARD,
+  "schedules.update": ROLES.STANDARD,
+  "schedules.setActive": ROLES.STANDARD,
+  "schedules.delete": ROLES.STANDARD,
 };
 
 // returns the role of the user

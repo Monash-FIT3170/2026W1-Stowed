@@ -3,6 +3,8 @@ import { Accounts } from "meteor/accounts-base";
 import "/imports/api/products/methods";
 import "/imports/api/categories/methods";
 import "/imports/api/shoppingLists/methods";
+import "/imports/api/schedules/methods";
+import { startScheduler } from "/imports/api/schedules/scheduler";
 import "/imports/api/locations/methods";
 import "/imports/api/publications";
 import "/imports/api/userMethods";
@@ -439,6 +441,8 @@ Meteor.startup(async () => {
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
+
+  startScheduler();
 });
 
 Meteor.publish("allUsers", async function () {

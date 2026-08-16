@@ -5,7 +5,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "/imports/api/products/collections";
-import { ProductCategories } from "/imports/api/categories/collections"
+import { ProductCategories } from "/imports/api/categories/collections";
 import {
   Sites,
   FloorMaps,
@@ -63,25 +63,36 @@ export function EditProductPage() {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const { loading, product, originalRecords, categories, sites, floorMaps, storageUnits, storageLocations } =
-    useTracker(() => {
-      const subProducts = Meteor.subscribe("products");
-      const subRecords = Meteor.subscribe("productRecords");
-      const subCategories = Meteor.subscribe("productCategories");
-      const subLocations = Meteor.subscribe("locations.all");
-      const loading =
-        !subProducts.ready() || !subRecords.ready() || !subCategories.ready() || !subLocations.ready();
-      return {
-        loading,
-        product: Products.findOne(productId),
-        originalRecords: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
-        categories: ProductCategories.find().fetch(),
-        sites: Sites.find().fetch(),
-        floorMaps: FloorMaps.find().fetch(),
-        storageUnits: StorageUnits.find().fetch(),
-        storageLocations: StorageLocations.find().fetch(),
-      };
-    }, [productId]);
+  const {
+    loading,
+    product,
+    originalRecords,
+    categories,
+    sites,
+    floorMaps,
+    storageUnits,
+    storageLocations,
+  } = useTracker(() => {
+    const subProducts = Meteor.subscribe("products");
+    const subRecords = Meteor.subscribe("productRecords");
+    const subCategories = Meteor.subscribe("productCategories");
+    const subLocations = Meteor.subscribe("locations.all");
+    const loading =
+      !subProducts.ready() ||
+      !subRecords.ready() ||
+      !subCategories.ready() ||
+      !subLocations.ready();
+    return {
+      loading,
+      product: Products.findOne(productId),
+      originalRecords: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
+      categories: ProductCategories.find().fetch(),
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+    };
+  }, [productId]);
 
   useEffect(() => {
     if (!loading && product && !initialised) {
