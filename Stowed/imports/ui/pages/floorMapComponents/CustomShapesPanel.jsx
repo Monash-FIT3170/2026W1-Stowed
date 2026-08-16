@@ -2,7 +2,12 @@ import { buttonStyles, customShapesPanelStyles } from "./FloorMapStyles";
 import { dragState } from "./canvas/editor/DragState";
 import { getShapeBounds, normaliseShapePoints } from "./canvas/editor/utils/ShapeGeometry";
 
-export function CustomShapesPanel({ mapShapes = [], activeTool, setActiveTool }) {
+export function CustomShapesPanel({
+  mapShapes = [],
+  activeTool,
+  setActiveTool,
+  onEditShape,
+}) {
   const getToolName = (shape) => `shape-${shape.shapeId}`;
 
   const getShapeButtonStyle = (toolName) => ({
@@ -70,21 +75,36 @@ export function CustomShapesPanel({ mapShapes = [], activeTool, setActiveTool })
             const toolName = getToolName(shape);
 
             return (
-              <button
+              <div
                 key={shape._id}
-                type="button"
-                draggable
-                onDragStart={(event) => handleDragStart(event, shape)}
-                onDragEnd={handleDragEnd}
-                onClick={() => setActiveTool(toolName)}
-                style={{
-                  ...getShapeButtonStyle(toolName),
-                  cursor: "grab",
-                }}
-                aria-pressed={activeTool === toolName}
+                style={customShapesPanelStyles.shapeRow}
               >
-                <span style={customShapesPanelStyles.shapeName}>{shape.name}</span>
-              </button>
+                <button
+                  type="button"
+                  draggable
+                  onDragStart={(event) => handleDragStart(event, shape)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => setActiveTool(toolName)}
+                  style={{
+                    ...getShapeButtonStyle(toolName),
+                    cursor: "grab",
+                    flex: 1,
+                  }}
+                  aria-pressed={activeTool === toolName}
+                >
+                  <span style={customShapesPanelStyles.shapeName}>
+                    {shape.name}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onEditShape(shape)}
+                  style={customShapesPanelStyles.editButton}
+                >
+                  Edit
+                </button>
+              </div>
             );
           })}
         </div>

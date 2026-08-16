@@ -4,13 +4,20 @@ import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { Meteor } from "meteor/meteor";
 import { buttonStyles } from "./FloorMapStyles";
 
-export function CreateShapeModal({ onClose }) {
-  const [shapeName, setShapeName] = useState("");
+export function CreateShapeModal({ onClose, shape = null }) {
+  const [shapeName, setShapeName] = useState(
+    shape?.name ?? "",
+  );
 
   const canvasWidth = 800;
   const canvasHeight = 300;
 
-  const [points, setPoints] = useState([]);
+  const [points, setPoints] = useState(
+    shape?.points?.map((point) => ({
+      x: point.x,
+      y: point.y,
+    })) ?? [],
+  );
 
   const handlePointChange = (index, coordinate, value) => {
     setPoints((currentPoints) =>
@@ -92,21 +99,33 @@ export function CreateShapeModal({ onClose }) {
     }
 
     try {
-      await Meteor.callAsync("mapShapes.create", {
-        name: trimmedName,
-        points: formattedPoints,
-        gridReference: {
-          x: 0,
-          y: 0,
-        },
-      });
+      if (shape) {
+        await Meteor.callAsync("mapShapes.update", {
+          orgId: shape.orgId,
+          shapeId: shape.shapeId,
+          name: trimmedName,
+          points: formattedPoints,
+          gridReference: shape.gridReference ?? {
+            x: 0,
+            y: 0,
+          },
+        });
+      } else {
+        await Meteor.callAsync("mapShapes.create", {
+          name: trimmedName,
+          points: formattedPoints,
+          gridReference: {
+            x: 0,
+            y: 0,
+          },
+        });
+      }
 
       setShapeName("");
       setPoints([]);
 
       onClose();
 
-      onClose();
     } catch (error) {
       console.error("Failed to save shape:", error);
       alert(error.reason || "Failed to save shape.");
@@ -117,7 +136,9 @@ export function CreateShapeModal({ onClose }) {
     <div style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.modalHeader}>
-          <h2 style={styles.title}>Shape Editor</h2>
+          <h2 style={styles.title}>
+            {shape ? "Edit Shape" : "Shape Editor"}
+          </h2>
 
           <div style={styles.actions}>
             <button
@@ -139,7 +160,7 @@ export function CreateShapeModal({ onClose }) {
                 ...buttonStyles.primary,
               }}
             >
-              Save Shape
+              {shape ? "Save Changes" : "Save Shape"}
             </button>
           </div>
         </div>

@@ -290,6 +290,23 @@ export const customShapesPanelStyles = {
     gap: 6,
   },
 
+  shapeRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+  },
+
+  editButton: {
+    padding: "8px 10px",
+    border: "1px solid #d8d1c8",
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    cursor: "pointer",
+    fontSize: 12,
+    color: "#7a5230",
+  },
+
   shapeButton: {
     display: "flex",
     alignItems: "center",

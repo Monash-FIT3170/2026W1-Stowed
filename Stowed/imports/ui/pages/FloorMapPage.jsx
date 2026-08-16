@@ -66,6 +66,7 @@ function FloorMapPageInner() {
   const [tooltip, setTooltip] = useState(null);
   const [isStockPanelOpen, setIsStockPanelOpen] = useState(false);
   const [isCreateShapeOpen, setIsCreateShapeOpen] = useState(false);
+  const [editingShape, setEditingShape] = useState(null);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
   // Fetch all sites and floor maps
@@ -90,6 +91,10 @@ function FloorMapPageInner() {
     const unit = units.find((u) => u._id === unitId || u.id === unitId) ?? null;
     setSelectedUnit(unit);
     setIsStockPanelOpen(!!unitId);
+  };
+  const handleEditShape = (shape) => {
+    setEditingShape(shape);
+    setIsCreateShapeOpen(true);
   };
 
   const updateSelectedUnit = (patch) => {
@@ -600,12 +605,16 @@ function FloorMapPageInner() {
                             mapShapes={mapShapes}
                             activeTool={activeTool}
                             setActiveTool={setActiveTool}
+                            onEditShape={handleEditShape}
                           />
                         </div>
                         <div style={{ padding: "0 12px 12px", boxSizing: "border-box" }}>
                           <button
                             type="button"
-                            onClick={() => setIsCreateShapeOpen(true)}
+                            onClick={() => {
+                              setEditingShape(null);
+                              setIsCreateShapeOpen(true);
+                            }}
                             style={{
                               ...buttonStyles.base,
                               ...buttonStyles.secondary,
@@ -768,8 +777,16 @@ function FloorMapPageInner() {
         />
       )}
 
-      {/* CREATE SHAPE MODAL */}
-      {isCreateShapeOpen && <CreateShapeModal onClose={() => setIsCreateShapeOpen(false)} />}
+      {/* CREATE / EDIT SHAPE MODAL */}
+      {isCreateShapeOpen && (
+        <CreateShapeModal
+          shape={editingShape}
+          onClose={() => {
+            setIsCreateShapeOpen(false);
+            setEditingShape(null);
+          }}
+        />
+      )}
     </div>
   );
 }
