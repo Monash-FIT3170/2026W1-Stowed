@@ -267,7 +267,6 @@ export function DataToolsPage() {
           <div className="tools-card bulk-card">
             <div className="bulk-import-hero">
               <h2>Bulk Data Import</h2>
-              <p className="small-muted">Use the combined data template to import your inventory and storage layout in a single file. The data template headers correspond to database field names — keep the column names as-is when filling the file. Download the data template, fill it out, then upload it to import everything at once.</p>
             </div>
 
             <div className="templates-row">
