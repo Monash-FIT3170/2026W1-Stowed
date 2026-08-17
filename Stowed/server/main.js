@@ -12,6 +12,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { buildRectShape } from "/imports/api/locations/shapeUtils";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import { Organisations } from "/imports/api/organisations";
 
@@ -237,6 +238,14 @@ async function seedLocations(seedOrgId) {
 
   const now = new Date();
 
+  // Spreads seeded stocktake dates across the last 12 months so the demo data
+  // shows a realistic mix of recently and overdue counted locations.
+  const monthsAgo = (months) => {
+    const date = new Date(now);
+    date.setMonth(date.getMonth() - months);
+    return date;
+  };
+
   // Single site for the demo
   const siteId = await Sites.insertAsync({
     orgId: seedOrgId,
@@ -282,7 +291,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: scienceFloorId,
     name: "Cabinet A",
     type: "cabinet",
-    position: { x: 24, y: 24, width: 100, height: 60 },
+    shape: { ...buildRectShape({ width: 2, height: 1.5, name: "Cabinet A" }), orgId: seedOrgId },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -291,7 +303,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: scienceFloorId,
     name: "Cabinet B",
     type: "cabinet",
-    position: { x: 150, y: 24, width: 100, height: 60 },
+    shape: { ...buildRectShape({ width: 2, height: 1.5, name: "Cabinet B" }), orgId: seedOrgId },
+    offset: { x: 4, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -302,7 +317,13 @@ async function seedLocations(seedOrgId) {
     floorMapId: itFloorId,
     name: "Equipment Rack 1",
     type: "rack",
-    position: { x: 24, y: 24, width: 80, height: 120 },
+    shape: {
+      ...buildRectShape({ width: 1.5, height: 2.5, name: "Equipment Rack 1" }),
+      orgId: seedOrgId,
+    },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -311,7 +332,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: itFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 130, y: 24, width: 120, height: 60 },
+    shape: { ...buildRectShape({ width: 2.5, height: 1, name: "Shelf A" }), orgId: seedOrgId },
+    offset: { x: 3.5, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -322,7 +346,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: generalFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 24, y: 24, width: 160, height: 60 },
+    shape: { ...buildRectShape({ width: 3, height: 1, name: "Shelf A" }), orgId: seedOrgId },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -333,6 +360,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 1",
     code: "SC-A1",
+    lastStocktakeAt: monthsAgo(0),
     createdAt: now,
     updatedAt: now,
   });
@@ -341,6 +369,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 2",
     code: "SC-A2",
+    lastStocktakeAt: monthsAgo(1),
     createdAt: now,
     updatedAt: now,
   });
@@ -351,6 +380,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 1",
     code: "SC-B1",
+    lastStocktakeAt: monthsAgo(2),
     createdAt: now,
     updatedAt: now,
   });
@@ -359,6 +389,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 2",
     code: "SC-B2",
+    lastStocktakeAt: monthsAgo(4),
     createdAt: now,
     updatedAt: now,
   });
@@ -369,6 +400,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 1",
     code: "IT-R1",
+    lastStocktakeAt: monthsAgo(5),
     createdAt: now,
     updatedAt: now,
   });
@@ -377,6 +409,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 2",
     code: "IT-R2",
+    lastStocktakeAt: monthsAgo(7),
     createdAt: now,
     updatedAt: now,
   });
@@ -387,6 +420,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itShelfId,
     name: "Bay 1",
     code: "IT-S1",
+    lastStocktakeAt: monthsAgo(9),
     createdAt: now,
     updatedAt: now,
   });
@@ -397,6 +431,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 1",
     code: "SR-A1",
+    lastStocktakeAt: monthsAgo(11),
     createdAt: now,
     updatedAt: now,
   });
@@ -405,6 +440,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 2",
     code: "SR-A2",
+    lastStocktakeAt: monthsAgo(12),
     createdAt: now,
     updatedAt: now,
   });

@@ -1,0 +1,258 @@
+/* Stocktake page — counting screen for a single storage location. */
+
+.stocktake-page {
+  padding: 28px;
+  max-width: 900px;
+}
+
+.stocktake-message {
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* -- Header -- */
+
+.stocktake-header {
+  margin-bottom: 22px;
+}
+
+.stocktake-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.stocktake-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.stocktake-title {
+  font-size: 26px;
+  color: var(--text-dark);
+  margin: 0 0 10px;
+}
+
+.stocktake-title em {
+  color: var(--accent-primary);
+  font-style: italic;
+}
+
+.stocktake-meta {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+  align-items: center;
+}
+
+.stocktake-error,
+.stocktake-saved {
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stocktake-error {
+  color: var(--danger);
+}
+
+.stocktake-saved {
+  color: var(--text-muted);
+}
+
+.stocktake-dirty {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--tag-bg);
+  border: 1px solid var(--accent-secondary);
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+/* -- Product panel -- */
+
+.stocktake-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.stocktake-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+}
+
+.stocktake-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.stocktake-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stocktake-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  /* Horizontal padding on every row so the removed shading below does not
+     shift the layout when it appears. */
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.stocktake-row:last-child {
+  border-bottom: none;
+}
+
+/* -- Removed (pending delete on save) -- */
+
+.stocktake-row-removed {
+  background: rgba(204, 0, 0, 0.06);
+  border-radius: 8px;
+}
+
+.stocktake-row-removed .stocktake-row-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.stocktake-row-removed .stocktake-row-sku {
+  color: var(--danger);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stocktake-row-removed .stocktake-qty-input {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.stocktake-row-product {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.stocktake-row-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.stocktake-row-sku {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* -- Quantity controls -- */
+
+.stocktake-row-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stocktake-step-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--card-bg);
+  color: var(--text-dark);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stocktake-step-btn:hover:not(:disabled) {
+  border-color: var(--accent-secondary);
+}
+
+.stocktake-step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stocktake-qty-input {
+  width: 72px;
+  text-align: center;
+}
+
+.stocktake-qty-input:disabled {
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.stocktake-delete-btn {
+  margin-left: 4px;
+  padding: 6px 14px;
+}
+
+/* -- Empty state and footer -- */
+
+.stocktake-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.stocktake-footer {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+.stocktake-add-btn {
+  font-weight: 700;
+}
+
+.stocktake-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stocktake-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.stocktake-add-select {
+  flex: 1 1 260px;
+  max-width: 360px;
+}

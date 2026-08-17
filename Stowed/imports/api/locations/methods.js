@@ -6,16 +6,69 @@ import { check } from "meteor/check";
 import { Sites, FloorMaps, StorageUnits, MapShapes, StorageLocations } from "./collections";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isValidStocktakeInterval } from "./stocktake";
 
 import { isSimple, makeCCW, removeCollinearPoints } from "poly-decomp-es";
 
 Meteor.methods({
   /**
+   * Updates the stocktake schedule for one Site and immediately refreshes the
+   * cached due flags for every location below it.
+   */
+  async "sites.updateStocktakeInterval"({ siteId, intervalDays }) {
+    check(siteId, String);
+    check(intervalDays, Number);
+
+    if (!Number.isInteger(intervalDays) || intervalDays < 1 || intervalDays > 3650) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
+
+    await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "settings.manage");
+
+    const now = new Date();
+    await Sites.updateAsync(siteId, {
+      $set: { stocktakeIntervalDays: intervalDays, updatedAt: now },
+    });
+
+    const floorMapIds = (await FloorMaps.find({ siteId }, { fields: { _id: 1 } }).fetchAsync()).map(
+      (floorMap) => floorMap._id,
+    );
+    const storageUnitIds = (
+      await StorageUnits.find(
+        { floorMapId: { $in: floorMapIds } },
+        { fields: { _id: 1 } },
+      ).fetchAsync()
+    ).map((storageUnit) => storageUnit._id);
+    const locations = await StorageLocations.find(
+      { storageUnitId: { $in: storageUnitIds } },
+      { fields: { _id: 1 } },
+    ).fetchAsync();
+
+    return { siteId, intervalDays, locationsChecked: locations.length };
+  },
+
+  /**
    * Creates a new Site.
    */
-  async "sites.create"({ name, description = "" }) {
+  async "sites.create"({
+    name,
+    description = "",
+    stocktakeIntervalDays = DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+  }) {
     check(name, String);
     check(description, String);
+    check(stocktakeIntervalDays, Number);
+
+    if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -30,6 +83,7 @@ Meteor.methods({
       orgId,
       name,
       description,
+      stocktakeIntervalDays,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -38,16 +92,24 @@ Meteor.methods({
   /**
    * Updates an existing Site.
    */
-  async "sites.update"({ siteId, name, description = "" }) {
+  async "sites.update"({ siteId, name, description = "", stocktakeIntervalDays }) {
     check(siteId, String);
     check(name, String);
     check(description, String);
+    check(stocktakeIntervalDays, Number);
+
+    if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
 
     await assertOrgAccess(Sites, siteId, this.userId);
     await requirePermission(this.userId, "locations.manage");
 
     await Sites.updateAsync(siteId, {
-      $set: { name, description, updatedAt: new Date() },
+      $set: { name, description, stocktakeIntervalDays, updatedAt: new Date() },
     });
   },
 
@@ -519,6 +581,8 @@ Meteor.methods({
 
     const orgId = await getCallerOrgId(this.userId);
 
+    const now = new Date();
+
     return StorageLocations.insertAsync({
       orgId,
       storageUnitId,
@@ -526,8 +590,9 @@ Meteor.methods({
       code,
       imageUrl,
       storedItems: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      lastStocktakeAt: now,
+      createdAt: now,
+      updatedAt: now,
     });
   },
 
@@ -639,5 +704,22 @@ Meteor.methods({
     check(storageUnitId, String);
 
     return StorageLocations.find({ storageUnitId }, { sort: { code: 1 } }).fetchAsync();
+  },
+
+  /**
+   *
+   * Updates StorageLocation attributes when a stocktake has been completed for an item in a specific location
+   *
+   * This method sets the completion timestamp.
+   *
+   */
+  async "storageLocations.stocktakeComplete"({ locationId }) {
+    check(locationId, String);
+
+    await StorageLocations.updateAsync(locationId, {
+      $set: {
+        lastStocktakeAt: new Date(),
+      },
+    });
   },
 });

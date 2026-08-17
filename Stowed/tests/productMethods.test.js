@@ -52,6 +52,7 @@ const STORAGE_LOCATION = {
   name: "Test Location",
   code: "LOC-1",
   storedItems: [],
+  lastStocktakeAt: new Date(),
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -184,6 +185,7 @@ describe("Product methods", function () {
         name: "Test Location B",
         code: "LOC-B",
         storedItems: [],
+        lastStocktakeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -361,6 +363,7 @@ describe("Product methods", function () {
         shape: UNIT_SHAPE,
         code: "LOC-B2",
         storedItems: [],
+        lastStocktakeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -373,6 +376,7 @@ describe("Product methods", function () {
         shape: UNIT_SHAPE,
         code: "LOC-A",
         storedItems: [],
+        lastStocktakeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -543,6 +547,7 @@ describe("Product methods", function () {
         shape: UNIT_SHAPE,
         code: "LOC-R2",
         storedItems: [],
+        lastStocktakeAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
