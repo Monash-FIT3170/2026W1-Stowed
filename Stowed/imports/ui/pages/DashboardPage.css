@@ -29,54 +29,93 @@
   gap: 20px;
 }
 
-.dashboard-grid-full {
-  grid-column: 1 / -1;
-}
-
-.dashboard-metrics {
+.dashboard-snapshot-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.stat-card {
+.dashboard-snapshot-metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
-  border-radius: 16px;
-  padding: 16px 20px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: var(--text-dark);
+  text-decoration: none;
 }
 
-.stat-card-green {
+.dashboard-snapshot-metric-green {
   background: #d6efe8;
 }
 
-.stat-card-orange {
+.dashboard-snapshot-metric-orange {
   background: #fae0d6;
 }
 
-.stat-card-yellow {
+.dashboard-snapshot-metric-yellow {
   background: #fdf3d6;
 }
 
-.stat-value {
-  font-size: 28px;
+.dashboard-snapshot-metric-neutral {
+  background: var(--input-bg);
+}
+
+.dashboard-snapshot-metric:hover {
+  box-shadow: inset 0 0 0 1px var(--border-light);
+}
+
+.dashboard-snapshot-metric:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.dashboard-snapshot-metric strong {
+  overflow: hidden;
+  font-size: 26px;
   font-weight: 600;
+  text-overflow: ellipsis;
 }
 
-.stat-label {
+.dashboard-snapshot-metric span {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
-.stat-label-green {
+.dashboard-snapshot-metric-green span {
   color: #4a8c78;
 }
 
-.stat-label-orange {
+.dashboard-snapshot-metric-orange span {
   color: var(--accent-primary);
 }
 
-.stat-label-yellow {
+.dashboard-snapshot-metric-yellow span {
   color: #997a2a;
+}
+
+.dashboard-snapshot-metric-neutral span {
+  color: var(--text-muted);
+}
+
+.dashboard-snapshot-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 0;
+}
+
+.dashboard-snapshot-empty strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.dashboard-snapshot-empty span {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .dashboard-action-link {
@@ -174,12 +213,9 @@
 }
 
 .dashboard-loading {
+  padding: 24px 0;
   color: var(--text-muted);
   font-size: 13px;
-}
-
-.dashboard-loading {
-  padding: 24px 0;
 }
 
 .dashboard-stocktake-list {
@@ -346,16 +382,6 @@
 
 @media (max-width: 900px) {
   .dashboard-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .dashboard-grid-full {
-    grid-column: auto;
-  }
-}
-
-@media (max-width: 700px) {
-  .dashboard-metrics {
     grid-template-columns: minmax(0, 1fr);
   }
 }

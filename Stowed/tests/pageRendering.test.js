@@ -166,11 +166,16 @@ describe("page rendering", function () {
 
         assert.ok(html.includes("Dashboard"));
         assert.ok(html.includes("Hello, Alex"));
-        assert.ok(html.includes("Products tracked"));
-        assert.ok(html.includes("2"));
+        assert.ok(html.includes("Inventory snapshot"));
+        assert.ok(html.includes("Units on hand"));
+        assert.ok(html.includes("12"));
+        assert.ok(html.includes("Products"));
+        assert.ok(html.includes("Storage locations"));
+        assert.ok(html.includes("Storage units"));
+        assert.ok(html.includes("/floor-map"));
+        assert.ok(!html.includes("Total value"));
         assert.ok(html.includes("Low stock"));
         assert.ok(html.includes("1"));
-        assert.ok(html.includes("$40"));
         assert.ok(html.includes("Hammer"));
         assert.ok(html.includes("Gloves"));
         assert.ok(html.includes("Stocktake attention"));

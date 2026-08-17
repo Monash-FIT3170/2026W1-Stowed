@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { getInventorySnapshot } from "../../api/inventorySnapshot";
 import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../../api/locations/collections";
 import {
   describeStocktakeTiming,
@@ -55,14 +56,14 @@ export function DashboardPage() {
     };
   }, []);
 
-  const totalItems = items.length;
+  const inventorySnapshot = useMemo(
+    () => getInventorySnapshot({ products: items, storageLocations, storageUnits }),
+    [items, storageLocations, storageUnits],
+  );
+  const totalItems = inventorySnapshot.productCount;
   const lowStockItems = useMemo(() => getLowStockProductsByUrgency(items), [items]);
   const lowStockCount = lowStockItems.length;
   const lowStockPreview = lowStockItems.slice(0, 4);
-  const totalValue = items.reduce(
-    (sum, item) => sum + (item.unitCost * item.totalQuantity || 0),
-    0,
-  );
   const recentItems = useMemo(() => getRecentlyUpdatedProducts(items, 5), [items]);
   const overdueStocktakes = useMemo(
     () =>
@@ -77,6 +78,37 @@ export function DashboardPage() {
   );
   const stocktakePreview = overdueStocktakes.slice(0, 4);
   const canViewAlerts = hasClientPermission(role, "route:/alerts");
+  const snapshotLoading = productsLoading || locationsLoading;
+  const snapshotEmpty =
+    inventorySnapshot.productCount === 0 &&
+    inventorySnapshot.storageLocationCount === 0 &&
+    inventorySnapshot.storageUnitCount === 0;
+  const snapshotMetrics = [
+    {
+      label: "Units on hand",
+      value: inventorySnapshot.unitsOnHand,
+      to: "/inventory/list",
+      tone: "green",
+    },
+    {
+      label: "Products",
+      value: inventorySnapshot.productCount,
+      to: "/inventory/list",
+      tone: "orange",
+    },
+    {
+      label: "Storage locations",
+      value: inventorySnapshot.storageLocationCount,
+      to: "/locations",
+      tone: "yellow",
+    },
+    {
+      label: "Storage units",
+      value: inventorySnapshot.storageUnitCount,
+      to: "/floor-map",
+      tone: "neutral",
+    },
+  ];
 
   return (
     <div className="dashboard-page-container">
@@ -87,28 +119,33 @@ export function DashboardPage() {
       <p className="dashboard-page-subheading">Here&apos;s what&apos;s stocked.</p>
 
       <div className="dashboard-grid">
-        {productsLoading ? (
-          <div className="dashboard-loading dashboard-grid-full" role="status">
-            Loading inventory summary…
+        <DashboardWidget
+          title="Inventory snapshot"
+          subtitle={snapshotLoading ? undefined : "Current inventory footprint"}
+          isLoading={snapshotLoading}
+          loadingLabel="Loading inventory snapshot…"
+          isEmpty={snapshotEmpty}
+          emptyState={
+            <div className="dashboard-snapshot-empty">
+              <strong>No inventory setup yet</strong>
+              <span>Products and storage locations will appear here once added.</span>
+            </div>
+          }
+        >
+          <div className="dashboard-snapshot-grid">
+            {snapshotMetrics.map((metric) => (
+              <Link
+                key={metric.label}
+                to={metric.to}
+                className={`dashboard-snapshot-metric dashboard-snapshot-metric-${metric.tone}`}
+                aria-label={`${metric.label}: ${metric.value.toLocaleString()}`}
+              >
+                <strong>{metric.value.toLocaleString()}</strong>
+                <span>{metric.label}</span>
+              </Link>
+            ))}
           </div>
-        ) : (
-          <section className="dashboard-metrics dashboard-grid-full" aria-label="Inventory metrics">
-            <div className="stat-card stat-card-green">
-              <div className="stat-value">{totalItems}</div>
-              <div className="stat-label stat-label-green">Products tracked</div>
-            </div>
-
-            <div className="stat-card stat-card-orange">
-              <div className="stat-value">{lowStockCount}</div>
-              <div className="stat-label stat-label-orange">Low stock</div>
-            </div>
-
-            <div className="stat-card stat-card-yellow">
-              <div className="stat-value">${totalValue.toLocaleString()}</div>
-              <div className="stat-label stat-label-yellow">Total value</div>
-            </div>
-          </section>
-        )}
+        </DashboardWidget>
 
         <DashboardWidget
           title="Stocktake attention"
