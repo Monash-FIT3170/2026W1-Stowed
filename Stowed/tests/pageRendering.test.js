@@ -60,18 +60,36 @@ function stubCollectionFind(collection, results) {
 
 describe("page rendering", function () {
   it("renders static tools and workspace pages", function () {
-    const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
-    const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
-    const lists = renderToStaticMarkup(React.createElement(ListsPage));
-    const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
+    const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+    const restoreProducts = stubCollectionFind(Products, []);
+    const restoreRecords = stubCollectionFind(ProductRecords, []);
+    const restoreLocations = stubCollectionFind(StorageLocations, []);
+    const restoreUnits = stubCollectionFind(StorageUnits, []);
+    const restoreFloorMaps = stubCollectionFind(FloorMaps, []);
+    const restoreSites = stubCollectionFind(Sites, []);
 
-    assert.ok(alerts.includes("Stock"));
-    assert.ok(alerts.includes("Alerts"));
-    assert.ok(forecast.includes("Demand"));
-    assert.ok(forecast.includes("Forecast"));
-    assert.ok(lists.includes("Shopping"));
-    assert.ok(lists.includes("Lists"));
-    assert.ok(qrCodes.includes("QR"));
+    try {
+      const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
+      const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
+      const lists = renderToStaticMarkup(React.createElement(ListsPage));
+      const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
+
+      assert.ok(alerts.includes("Stock"));
+      assert.ok(alerts.includes("Alerts"));
+      assert.ok(forecast.includes("Demand"));
+      assert.ok(forecast.includes("Forecast"));
+      assert.ok(lists.includes("Shopping"));
+      assert.ok(lists.includes("Lists"));
+      assert.ok(qrCodes.includes("QR"));
+    } finally {
+      restoreSites();
+      restoreFloorMaps();
+      restoreUnits();
+      restoreLocations();
+      restoreRecords();
+      restoreProducts();
+      restoreMeteor();
+    }
   });
 
   if (Meteor.isClient) {
