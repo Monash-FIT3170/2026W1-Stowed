@@ -48,6 +48,7 @@ export const TOOLS = {
 // --- DEFAULT CANVAS SETTINGS ---
 export const DEFAULT_CANVAS_SETTINGS = {
   gridInterval: CANVAS_CONFIG.METERS_PER_CELL,
+  snapInterval: CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL,
   showGrid: true,
   snapToGrid: true,
 };
@@ -362,8 +363,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   // --- EDITOR SETTINGS ---
-  function handleEditorSettingsSave({ gridInterval, showGrid, snapToGrid }) {
-    setCanvasSettings({ gridInterval, showGrid, snapToGrid });
+  function handleEditorSettingsSave({ gridInterval, snapInterval, showGrid, snapToGrid }) {
+    setCanvasSettings({ gridInterval, snapInterval, showGrid, snapToGrid });
     return true;
   }
 

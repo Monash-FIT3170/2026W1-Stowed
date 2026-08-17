@@ -75,6 +75,11 @@ export const FloorMapSchema = new SimpleSchema({
     optional: true,
   },
 
+  "settings.snapInterval": {
+    type: Number,
+    optional: true,
+  },
+
   "settings.showGrid": {
     type: Boolean,
     optional: true,
