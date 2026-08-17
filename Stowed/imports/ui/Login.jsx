@@ -50,7 +50,7 @@ export const Login = () => {
           else resolve();
         });
       });
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       const reason = err.reason || err.message || "";
       if (reason.toLowerCase().includes("incorrect password")) {

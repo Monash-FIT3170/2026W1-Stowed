@@ -7,7 +7,7 @@ import { AlertsPage } from "../imports/ui/pages/AlertsPage";
 import { ForecastPage } from "../imports/ui/pages/ForecastPage";
 import { ListsPage } from "../imports/ui/pages/ListsPage";
 import { QRCodesPage } from "../imports/ui/pages/QRCodesPage";
-import { InventoryPage } from "../imports/ui/pages/InventoryPage";
+import { DashboardPage } from "../imports/ui/pages/DashboardPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
 import { LocationsPage } from "../imports/ui/pages/LocationsPage";
 import { Products, ProductRecords } from "../imports/api/products/collections";
@@ -117,7 +117,7 @@ describe("page rendering", function () {
       }
     });
 
-    it("renders inventory dashboard data", function () {
+    it("renders dashboard inventory data", function () {
       const items = [
         {
           _id: "hammer",
@@ -141,8 +141,9 @@ describe("page rendering", function () {
       const restoreProducts = stubCollectionFind(Products, items);
 
       try {
-        const html = renderWithRouter(React.createElement(InventoryPage));
+        const html = renderWithRouter(React.createElement(DashboardPage));
 
+        assert.ok(html.includes("Dashboard"));
         assert.ok(html.includes("Hello, Alex"));
         assert.ok(html.includes("Products tracked"));
         assert.ok(html.includes("2"));

@@ -167,8 +167,8 @@ export function InventoryListPage() {
     <div className="inventory-list-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <Link to="/" className="breadcrumb-link">
-            Inventory
+          <Link to="/dashboard" className="breadcrumb-link">
+            Dashboard
           </Link>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">All products</span>
