@@ -10,7 +10,7 @@ import { QRCodesPage } from "../imports/ui/pages/QRCodesPage";
 import { DashboardPage } from "../imports/ui/pages/DashboardPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
 import { LocationsPage } from "../imports/ui/pages/LocationsPage";
-import { Products, ProductRecords } from "../imports/api/products/collections";
+import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
 import {
   FloorMaps,
   Sites,
@@ -160,9 +160,44 @@ describe("page rendering", function () {
           updatedByUsername: "Alex",
         },
       ];
+      const activities = [
+        {
+          _id: "activity-stocktake",
+          orgId: "org-1",
+          productId: "gloves",
+          productName: "Gloves",
+          action: "stocktake",
+          actorUsername: "Alex",
+          quantityBefore: 5,
+          quantityAfter: 2,
+          locationName: "Warehouse shelf",
+          createdAt: new Date("2026-08-12T00:00:00.000Z"),
+        },
+        {
+          _id: "activity-restock",
+          orgId: "org-1",
+          productId: "hammer",
+          productName: "Hammer",
+          action: "restocked",
+          actorUsername: "Jordan",
+          quantityBefore: 4,
+          quantityAfter: 10,
+          createdAt: new Date("2026-08-10T00:00:00.000Z"),
+        },
+        ...Array.from({ length: 10 }, (_, index) => ({
+          _id: `activity-update-${index + 1}`,
+          orgId: "org-1",
+          productId: "hammer",
+          productName: `Activity product ${index + 1}`,
+          action: "updated",
+          actorUsername: "Alex",
+          createdAt: new Date(Date.UTC(2026, 7, 9 - index)),
+        })),
+      ];
 
       const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
       const restoreProducts = stubCollectionFind(Products, items);
+      const restoreActivities = stubCollectionFind(ProductActivities, activities);
       const restoreSites = stubCollectionFind(Sites, [
         { _id: "site-1", name: "Clayton", stocktakeIntervalDays: 30 },
       ]);
@@ -208,9 +243,17 @@ describe("page rendering", function () {
         assert.ok(html.includes("2 remaining"));
         assert.ok(html.includes("Min. 3"));
         assert.ok(html.includes("/inventory/list?filter=low-stock"));
-        assert.ok(html.includes("Recently updated"));
-        assert.ok(html.includes("10 in stock"));
-        assert.ok(html.includes("2 in stock"));
+        assert.ok(html.includes("Recent activity"));
+        assert.ok(html.includes("Showing 10 of 12 latest actions"));
+        assert.ok(html.includes('aria-label="Recent inventory activity"'));
+        assert.ok(html.includes("Show 2 more"));
+        assert.ok(html.includes("2 remaining"));
+        assert.ok(html.includes("Activity product 8"));
+        assert.ok(!html.includes("Activity product 9"));
+        assert.ok(html.includes("Stocktake adjustment −3 units"));
+        assert.ok(html.includes("Restocked +6 units"));
+        assert.ok(html.includes("Warehouse shelf"));
+        assert.ok(html.includes("5 → 2"));
         assert.ok(html.includes("2026-08-12T00:00:00.000Z"));
         assert.ok(html.includes("by Alex"));
         assert.ok(html.includes("View inventory"));
@@ -219,6 +262,7 @@ describe("page rendering", function () {
         restoreUnits();
         restoreFloorMaps();
         restoreSites();
+        restoreActivities();
         restoreProducts();
         restoreMeteor();
       }

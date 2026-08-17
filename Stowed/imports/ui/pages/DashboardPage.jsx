@@ -9,11 +9,8 @@ import {
   getStocktakeAlerts,
   STOCKTAKE_STATUS,
 } from "../../api/locations/stocktake";
-import { Products } from "../../api/products/collections";
-import {
-  getLowStockProductsByUrgency,
-  getRecentlyUpdatedProducts,
-} from "../../api/products/filters";
+import { ProductActivities, Products } from "../../api/products/collections";
+import { getLowStockProductsByUrgency } from "../../api/products/filters";
 import { hasClientPermission } from "../../api/userMethods";
 import { DashboardWidget } from "../components/DashboardWidget";
 import {
@@ -26,6 +23,8 @@ import "./DashboardPage.css";
 import "../Global.css";
 
 const DASHBOARD_PREFERENCES_KEY_PREFIX = "stowed.dashboard.v1";
+const RECENT_ACTIVITY_BATCH_SIZE = 10;
+const RECENT_ACTIVITY_HISTORY_LIMIT = 100;
 
 function getDashboardPreferencesKey(userId) {
   return `${DASHBOARD_PREFERENCES_KEY_PREFIX}.${userId || "anonymous"}`;
@@ -55,14 +54,50 @@ function saveDashboardPreferences(userId, preferences) {
   }
 }
 
-function formatUpdatedAt(value) {
+function formatActivityTimestamp(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleString(undefined, {
     day: "numeric",
     month: "short",
     year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
+}
+
+function formatUnitDelta(activity) {
+  if (!Number.isInteger(activity.quantityBefore) || !Number.isInteger(activity.quantityAfter)) {
+    return "";
+  }
+
+  const delta = activity.quantityAfter - activity.quantityBefore;
+  if (delta === 0) return "";
+  const magnitude = Math.abs(delta).toLocaleString();
+  return `${delta > 0 ? "+" : "−"}${magnitude} unit${Math.abs(delta) === 1 ? "" : "s"}`;
+}
+
+function describeProductActivity(activity) {
+  const quantityDelta = formatUnitDelta(activity);
+
+  switch (activity.action) {
+    case "created":
+      return Number.isInteger(activity.quantityAfter)
+        ? `Created product with ${activity.quantityAfter.toLocaleString()} unit${activity.quantityAfter === 1 ? "" : "s"}`
+        : "Created product";
+    case "updated":
+      return quantityDelta ? `Updated stock ${quantityDelta}` : "Updated product details";
+    case "restocked":
+      return quantityDelta ? `Restocked ${quantityDelta}` : "Restocked product";
+    case "stocktake":
+      return quantityDelta ? `Stocktake adjustment ${quantityDelta}` : "Completed stocktake";
+    case "images-updated":
+      return "Updated product images";
+    case "deleted":
+      return "Deleted product";
+    default:
+      return "Updated product";
+  }
 }
 
 function InventorySnapshotWidget({ snapshotMetrics, snapshotLoading, snapshotEmpty }) {
@@ -195,52 +230,107 @@ function LowStockWidget({ lowStockCount, lowStockPreview, productsLoading }) {
   );
 }
 
-function RecentlyUpdatedWidget({ productsLoading, recentItems, totalItems }) {
+function RecentActivityWidget({ activities, activitiesLoading, existingProductIds }) {
+  const [visibleCount, setVisibleCount] = useState(RECENT_ACTIVITY_BATCH_SIZE);
+  const visibleActivities = activities.slice(0, visibleCount);
+  const remainingCount = Math.max(activities.length - visibleActivities.length, 0);
+  const nextBatchCount = Math.min(RECENT_ACTIVITY_BATCH_SIZE, remainingCount);
+
   return (
     <DashboardWidget
-      title="Recently updated"
+      title="Recent activity"
       subtitle={
-        productsLoading ? undefined : `${recentItems.length} of ${totalItems} products shown`
+        activitiesLoading
+          ? undefined
+          : remainingCount > 0
+            ? `Showing ${visibleActivities.length} of ${activities.length} latest actions`
+            : `${activities.length} latest action${activities.length === 1 ? "" : "s"}`
       }
-      action={
-        <Link to="/inventory/list" className="dashboard-action-link">
-          View inventory →
-        </Link>
-      }
-      isLoading={productsLoading}
-      loadingLabel="Loading recent inventory…"
-      isEmpty={recentItems.length === 0}
+      isLoading={activitiesLoading}
+      loadingLabel="Loading recent activity…"
+      isEmpty={activities.length === 0}
       emptyState={
         <div className="dashboard-recent-empty">
           <strong>No inventory activity yet</strong>
-          <span>Products will appear here after they are added.</span>
+          <span>Actions will appear here when products are changed.</span>
         </div>
       }
     >
-      <div className="dashboard-recent-list">
-        {recentItems.map((item) => {
-          const updatedAtLabel = formatUpdatedAt(item.updatedAt);
-          const updatedAtDateTime = updatedAtLabel ? new Date(item.updatedAt).toISOString() : null;
-          const updatedByLabel = item.updatedByUsername || "User not recorded";
+      <div
+        className="dashboard-recent-scroll"
+        role="region"
+        aria-label="Recent inventory activity"
+        tabIndex={0}
+      >
+        <div className="dashboard-recent-list">
+          {visibleActivities.map((activity) => {
+            const timestampLabel = formatActivityTimestamp(activity.createdAt);
+            const timestampDateTime = timestampLabel
+              ? new Date(activity.createdAt).toISOString()
+              : null;
+            const canOpenProduct =
+              activity.action !== "deleted" && existingProductIds.has(activity.productId);
+            const activityContext = [activity.productName, activity.locationName];
+            if (
+              Number.isInteger(activity.quantityBefore) &&
+              Number.isInteger(activity.quantityAfter) &&
+              activity.quantityBefore !== activity.quantityAfter
+            ) {
+              activityContext.push(
+                `${activity.quantityBefore.toLocaleString()} → ${activity.quantityAfter.toLocaleString()}`,
+              );
+            }
+            const rowContent = (
+              <>
+                <span className="dashboard-recent-product">
+                  <strong>{describeProductActivity(activity)}</strong>
+                  <span>{activityContext.filter(Boolean).join(" · ")}</span>
+                </span>
+                <span className="dashboard-recent-update">
+                  {timestampLabel && (
+                    <time className="dashboard-recent-time" dateTime={timestampDateTime}>
+                      {timestampLabel}
+                    </time>
+                  )}
+                  <span className="dashboard-recent-user">
+                    by {activity.actorUsername || "User not recorded"}
+                  </span>
+                </span>
+              </>
+            );
 
-          return (
-            <Link key={item._id} to={`/inventory/${item._id}`} className="dashboard-recent-row">
-              <span className="dashboard-recent-product">
-                <strong>{item.name}</strong>
-                <span>{item.totalQuantity} in stock</span>
-              </span>
-              <span className="dashboard-recent-update">
-                {updatedAtLabel && (
-                  <time className="dashboard-recent-time" dateTime={updatedAtDateTime}>
-                    {updatedAtLabel}
-                  </time>
-                )}
-                <span className="dashboard-recent-user">by {updatedByLabel}</span>
-              </span>
-            </Link>
-          );
-        })}
+            return canOpenProduct ? (
+              <Link
+                key={activity._id}
+                to={`/inventory/${activity.productId}`}
+                className="dashboard-recent-row"
+              >
+                {rowContent}
+              </Link>
+            ) : (
+              <div key={activity._id} className="dashboard-recent-row">
+                {rowContent}
+              </div>
+            );
+          })}
+        </div>
       </div>
+      {remainingCount > 0 && (
+        <div className="dashboard-recent-footer">
+          <button
+            type="button"
+            className="dashboard-show-more-button"
+            onClick={() =>
+              setVisibleCount((current) =>
+                Math.min(current + RECENT_ACTIVITY_BATCH_SIZE, activities.length),
+              )
+            }
+          >
+            Show {nextBatchCount} more
+          </button>
+          <span>{remainingCount.toLocaleString()} remaining</span>
+        </div>
+      )}
     </DashboardWidget>
   );
 }
@@ -260,11 +350,14 @@ export function DashboardPage() {
     storageUnits,
     floorMaps,
     sites,
+    activities,
+    activitiesLoading,
     username,
     role,
   } = useTracker(() => {
     const productsHandle = Meteor.subscribe("products");
     const locationsHandle = Meteor.subscribe("locations.all");
+    const activitiesHandle = Meteor.subscribe("productActivities");
     return {
       items: Products.find().fetch(),
       productsLoading: !productsHandle.ready(),
@@ -273,6 +366,11 @@ export function DashboardPage() {
       storageUnits: StorageUnits.find().fetch(),
       floorMaps: FloorMaps.find().fetch(),
       sites: Sites.find().fetch(),
+      activities: ProductActivities.find(
+        {},
+        { sort: { createdAt: -1 }, limit: RECENT_ACTIVITY_HISTORY_LIMIT },
+      ).fetch(),
+      activitiesLoading: !activitiesHandle.ready(),
       username: Meteor.user()?.profile?.username,
       role: Meteor.user()?.profile?.role,
     };
@@ -286,11 +384,10 @@ export function DashboardPage() {
     () => getInventorySnapshot({ products: items, storageLocations, storageUnits }),
     [items, storageLocations, storageUnits],
   );
-  const totalItems = inventorySnapshot.productCount;
   const lowStockItems = useMemo(() => getLowStockProductsByUrgency(items), [items]);
   const lowStockCount = lowStockItems.length;
   const lowStockPreview = lowStockItems.slice(0, 4);
-  const recentItems = useMemo(() => getRecentlyUpdatedProducts(items, 5), [items]);
+  const existingProductIds = useMemo(() => new Set(items.map((item) => item._id)), [items]);
   const overdueStocktakes = useMemo(
     () =>
       getStocktakeAlerts({
@@ -366,10 +463,10 @@ export function DashboardPage() {
       />
     ),
     recent: (
-      <RecentlyUpdatedWidget
-        productsLoading={productsLoading}
-        recentItems={recentItems}
-        totalItems={totalItems}
+      <RecentActivityWidget
+        activities={activities}
+        activitiesLoading={activitiesLoading}
+        existingProductIds={existingProductIds}
       />
     ),
   };

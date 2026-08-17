@@ -69,6 +69,7 @@
 .dashboard-customize-button:focus-visible,
 .dashboard-customizer button:focus-visible,
 .dashboard-widget-edit-bar button:focus-visible,
+.dashboard-show-more-button:focus-visible,
 .dashboard-cleared-state button:focus-visible {
   outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
@@ -429,6 +430,19 @@
   flex-direction: column;
 }
 
+.dashboard-recent-scroll {
+  max-height: 360px;
+  padding-right: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.dashboard-recent-scroll:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
 .dashboard-stocktake-row,
 .dashboard-low-stock-row,
 .dashboard-recent-row {
@@ -541,6 +555,37 @@
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dashboard-recent-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 0;
+  border-top: 1px solid var(--border-light);
+}
+
+.dashboard-recent-footer span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.dashboard-show-more-button {
+  padding: 7px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-dark);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dashboard-show-more-button:hover {
+  border-color: var(--accent-secondary);
+  background: var(--input-bg);
 }
 
 .dashboard-snapshot-empty,

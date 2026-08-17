@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Meteor } from "meteor/meteor";
-import { Products, ProductRecords } from "../imports/api/products/collections";
+import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
 import { Organisations } from "../imports/api/organisations";
 import {
   Sites,
@@ -33,6 +33,7 @@ before(async function () {
   await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
   await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
   await StorageLocations.removeAsync(TEST_LOCATION_ID);
+  await ProductActivities.removeAsync({ orgId: TEST_ORG_ID });
 
   // Insert org
   await Organisations.insertAsync({
@@ -105,6 +106,7 @@ after(async function () {
   await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
   await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
   await StorageLocations.removeAsync(TEST_LOCATION_ID);
+  await ProductActivities.removeAsync({ orgId: TEST_ORG_ID });
 });
 
 function callMethod(name, params) {
@@ -148,6 +150,7 @@ describe("products.createWithAssignments", function () {
   afterEach(async function () {
     if (createdProductId) {
       await ProductRecords.removeAsync({ productId: createdProductId });
+      await ProductActivities.removeAsync({ productId: createdProductId });
       await Products.removeAsync(createdProductId);
       createdProductId = null;
     }
@@ -170,6 +173,13 @@ describe("products.createWithAssignments", function () {
     assert.strictEqual(product.totalQuantity, 10);
     assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
     assert.strictEqual(product.updatedByUsername, "testuser");
+    const activity = await ProductActivities.findOneAsync({
+      productId: createdProductId,
+      action: "created",
+    });
+    assert.strictEqual(activity.actorUsername, "testuser");
+    assert.strictEqual(activity.quantityBefore, 0);
+    assert.strictEqual(activity.quantityAfter, 10);
   });
 
   it("creates a ProductRecord for each assignment", async function () {
@@ -266,11 +276,15 @@ describe("products.createWithAssignments", function () {
 describe("products.delete", function () {
   it("removes the product from the database", async function () {
     const productId = await callMethod("products.createWithAssignments", makeCreateParams());
+    const productBeforeDelete = await Products.findOneAsync(productId);
 
     await callMethod("products.delete", { productId });
 
     const product = await Products.findOneAsync(productId);
+    const activity = await ProductActivities.findOneAsync({ productId, action: "deleted" });
     assert.strictEqual(product, undefined);
+    assert.strictEqual(activity.productName, productBeforeDelete.name);
+    assert.strictEqual(activity.quantityBefore, productBeforeDelete.totalQuantity);
   });
 
   it("removes all associated ProductRecords", async function () {
@@ -336,6 +350,7 @@ describe("products.update", function () {
   afterEach(async function () {
     if (productId) {
       await ProductRecords.removeAsync({ productId });
+      await ProductActivities.removeAsync({ productId });
       await Products.removeAsync(productId);
       productId = null;
     }
@@ -365,6 +380,10 @@ describe("products.update", function () {
     assert.strictEqual(product.unitCost, 49.99);
     assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
     assert.strictEqual(product.updatedByUsername, "testuser");
+    const activity = await ProductActivities.findOneAsync({ productId, action: "updated" });
+    assert.strictEqual(activity.productName, "Updated Name");
+    assert.strictEqual(activity.quantityBefore, 50);
+    assert.strictEqual(activity.quantityAfter, 50);
   });
 
   it("replaces all ProductRecords with the new assignments", async function () {
@@ -533,6 +552,7 @@ describe("products.restock", function () {
   afterEach(async function () {
     if (productId) {
       await ProductRecords.removeAsync({ productId });
+      await ProductActivities.removeAsync({ productId });
       await Products.removeAsync(productId);
       productId = null;
     }
@@ -553,6 +573,10 @@ describe("products.restock", function () {
     assert.strictEqual(product.totalQuantity, 75);
     assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
     assert.strictEqual(product.updatedByUsername, "testuser");
+    const activity = await ProductActivities.findOneAsync({ productId, action: "restocked" });
+    assert.strictEqual(activity.quantityBefore, 50);
+    assert.strictEqual(activity.quantityAfter, 75);
+    assert.strictEqual(await ProductActivities.find({ productId }).countAsync(), 2);
   });
 
   it("replaces ProductRecords with the new assignment distribution", async function () {
@@ -710,6 +734,7 @@ describe("stocktake.save product audit metadata", function () {
 
   afterEach(async function () {
     await ProductRecords.removeAsync({ productId });
+    await ProductActivities.removeAsync({ productId });
     await Products.removeAsync(productId);
   });
 
@@ -728,5 +753,9 @@ describe("stocktake.save product audit metadata", function () {
     assert.strictEqual(product.totalQuantity, 7);
     assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
     assert.strictEqual(product.updatedByUsername, "testuser");
+    const activity = await ProductActivities.findOneAsync({ productId, action: "stocktake" });
+    assert.strictEqual(activity.quantityBefore, 10);
+    assert.strictEqual(activity.quantityAfter, 7);
+    assert.strictEqual(activity.locationName, "Test Location");
   });
 });

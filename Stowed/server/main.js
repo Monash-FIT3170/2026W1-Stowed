@@ -12,7 +12,8 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
-import { Products, ProductRecords } from "/imports/api/products/collections";
+import { backfillProductActivities } from "/imports/api/products/activityBackfill";
+import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
 import { Organisations } from "/imports/api/organisations";
 
 async function seedOrg() {
@@ -449,12 +450,14 @@ async function seedOwner(seedOrgId) {
 Meteor.startup(async () => {
   await Sites.rawCollection().createIndex({ orgId: 1 });
   await Products.rawCollection().createIndex({ orgId: 1 });
+  await ProductActivities.rawCollection().createIndex({ orgId: 1, createdAt: -1 });
 
   const seedOrgId = await seedOrg();
   await seedOwner(seedOrgId);
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
+  await backfillProductActivities(seedOrgId);
 });
 
 Meteor.publish("allUsers", async function () {

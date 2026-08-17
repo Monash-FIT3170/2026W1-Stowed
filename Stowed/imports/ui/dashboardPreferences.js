@@ -2,7 +2,7 @@ export const DASHBOARD_WIDGET_CATALOG = [
   { id: "snapshot", label: "Inventory snapshot" },
   { id: "stocktake", label: "Stocktake attention" },
   { id: "low-stock", label: "Low stock" },
-  { id: "recent", label: "Recently updated" },
+  { id: "recent", label: "Recent activity" },
 ];
 
 export const DEFAULT_DASHBOARD_WIDGET_ORDER = DASHBOARD_WIDGET_CATALOG.map((widget) => widget.id);

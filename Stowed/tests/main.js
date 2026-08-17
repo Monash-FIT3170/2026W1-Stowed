@@ -19,3 +19,4 @@ import "./productMethods.test.js";
 import "./locationsPage.test.js";
 import "./locationDetail.test.js";
 import "./dashboardPreferences.test.js";
+import "./productActivityBackfill.test.js";
