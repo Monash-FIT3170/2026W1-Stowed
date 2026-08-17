@@ -63,7 +63,7 @@ export function InventoryPage() {
               {recentItems.length} of {totalItems} products shown
             </div>
           </div>
-          <Link to="/inventory/list" className="view-all-link">
+          <Link to="/inventory" className="view-all-link">
             View all →
           </Link>
         </div>

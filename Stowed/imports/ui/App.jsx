@@ -77,6 +77,7 @@ export function App() {
                 )
               }
             />
+            <Route path="/inventory" element={<InventoryListPage />} />
             <Route
               path="/inventory/new"
               element={canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace />}
@@ -89,7 +90,6 @@ export function App() {
               path="/inventory/:productId"
               element={canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace />}
             />
-            <Route path="/inventory/list" element={<InventoryListPage />} />
             <Route
               path="/floor-map"
               element={

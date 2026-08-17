@@ -267,7 +267,7 @@ export function ProductDetailView({
         <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              <Link to="/inventory/list" className="breadcrumb-link">
+              <Link to="/inventory" className="breadcrumb-link">
                 Inventory
               </Link>
               <span className="breadcrumb-separator">/</span>
@@ -288,7 +288,7 @@ export function ProductDetailView({
                   onClick={handleUpdateClick}
                   disabled={uploadingImage}
                 >
-                  Update
+                  Edit
                 </button>
               )}
               {canDelete && (
