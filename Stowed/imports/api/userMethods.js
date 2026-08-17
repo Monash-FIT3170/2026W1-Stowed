@@ -30,6 +30,7 @@ const PERMISSIONS = {
   "route:/floor-map": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,
   "route:/qr-codes": ROLES.ADMIN,
+  "route:/data-tools": ROLES.ADMIN,
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
   "route:/create-product": ROLES.ADMIN,
