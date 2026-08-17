@@ -9,13 +9,24 @@ import {
   STOCKTAKE_STATUS,
 } from "../../api/locations/stocktake";
 import { Products } from "../../api/products/collections";
-import { getLowStockProductsByUrgency } from "../../api/products/filters";
+import {
+  getLowStockProductsByUrgency,
+  getRecentlyUpdatedProducts,
+} from "../../api/products/filters";
 import { hasClientPermission } from "../../api/userMethods";
 import { DashboardWidget } from "../components/DashboardWidget";
-import { ProductThumbnail } from "../components/ProductThumbnail";
-import { StatusBadge } from "../components/StatusBadge";
 import "./DashboardPage.css";
 import "../Global.css";
+
+function formatUpdatedAt(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export function DashboardPage() {
   const {
@@ -52,7 +63,7 @@ export function DashboardPage() {
     (sum, item) => sum + (item.unitCost * item.totalQuantity || 0),
     0,
   );
-  const recentItems = items.slice(0, 5);
+  const recentItems = useMemo(() => getRecentlyUpdatedProducts(items, 5), [items]);
   const overdueStocktakes = useMemo(
     () =>
       getStocktakeAlerts({
@@ -195,34 +206,41 @@ export function DashboardPage() {
           }
           action={
             <Link to="/inventory/list" className="dashboard-action-link">
-              View all →
+              View inventory →
             </Link>
           }
           isLoading={productsLoading}
           loadingLabel="Loading recent inventory…"
           isEmpty={recentItems.length === 0}
-          emptyState={<p className="dashboard-empty-state">No products have been added yet.</p>}
-          className="dashboard-grid-full"
-        >
-          {recentItems.map((item) => (
-            <div key={item._id} className="dashboard-recent-row">
-              <ProductThumbnail
-                images={item.images || item.catalogImages}
-                photoUrl={item.photoUrl}
-                name={item.name}
-              />
-              <span>
-                <Link to={`/inventory/${item._id}`} className="item-name-link">
-                  {item.name}
-                </Link>
-              </span>
-              <span>{item.totalQuantity}</span>
-              <StatusBadge
-                quantity={item.totalQuantity}
-                threshold={item.reorderAt != null ? item.reorderAt : null}
-              />
+          emptyState={
+            <div className="dashboard-recent-empty">
+              <strong>No inventory activity yet</strong>
+              <span>Products will appear here after they are added.</span>
             </div>
-          ))}
+          }
+        >
+          <div className="dashboard-recent-list">
+            {recentItems.map((item) => {
+              const updatedAtLabel = formatUpdatedAt(item.updatedAt);
+              const updatedAtDateTime = updatedAtLabel
+                ? new Date(item.updatedAt).toISOString()
+                : null;
+
+              return (
+                <Link key={item._id} to={`/inventory/${item._id}`} className="dashboard-recent-row">
+                  <span className="dashboard-recent-product">
+                    <strong>{item.name}</strong>
+                    <span>{item.totalQuantity} in stock</span>
+                  </span>
+                  {updatedAtLabel && (
+                    <time className="dashboard-recent-time" dateTime={updatedAtDateTime}>
+                      {updatedAtLabel}
+                    </time>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </DashboardWidget>
       </div>
     </div>

@@ -1,3 +1,5 @@
+export { getRecentlyUpdatedProducts } from "./products/filters";
+
 export const mockProducts = [
   {
     _id: "1",
@@ -184,10 +186,4 @@ export function getTotalValue(products) {
   return products.reduce((total, product) => {
     return total + (product.unitCost * product.quantity || 0);
   }, 0);
-}
-
-export function getRecentlyUpdatedProducts(products, limit = 5) {
-  return [...products]
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-    .slice(0, limit);
 }

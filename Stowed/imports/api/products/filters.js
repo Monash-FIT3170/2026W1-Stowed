@@ -32,6 +32,18 @@ export function getLowStockProductsByUrgency(products) {
   });
 }
 
+export function getRecentlyUpdatedProducts(products, limit = 5) {
+  return [...products]
+    .sort((a, b) => {
+      const aUpdatedAt = new Date(a.updatedAt).getTime();
+      const bUpdatedAt = new Date(b.updatedAt).getTime();
+      const aTimestamp = Number.isNaN(aUpdatedAt) ? Number.NEGATIVE_INFINITY : aUpdatedAt;
+      const bTimestamp = Number.isNaN(bUpdatedAt) ? Number.NEGATIVE_INFINITY : bUpdatedAt;
+      return bTimestamp - aTimestamp;
+    })
+    .slice(0, Math.max(0, limit));
+}
+
 export function filterByStorageUnit(products, productRecords, storageLocations, unitId) {
   if (!unitId) return products;
   const unitLocationIds = new Set(

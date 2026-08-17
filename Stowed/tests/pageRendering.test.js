@@ -128,6 +128,7 @@ describe("page rendering", function () {
           reorderAt: 4,
           unitCost: 3,
           photoUrl: "https://example.com/hammer.png",
+          updatedAt: new Date("2026-08-10T00:00:00.000Z"),
         },
         {
           _id: "gloves",
@@ -136,6 +137,7 @@ describe("page rendering", function () {
           reorderAt: 3,
           unitCost: 5,
           photoUrl: "https://example.com/gloves.png",
+          updatedAt: new Date("2026-08-12T00:00:00.000Z"),
         },
       ];
 
@@ -178,6 +180,11 @@ describe("page rendering", function () {
         assert.ok(html.includes("2 remaining"));
         assert.ok(html.includes("Min. 3"));
         assert.ok(html.includes("/inventory/list?filter=low-stock"));
+        assert.ok(html.includes("Recently updated"));
+        assert.ok(html.includes("10 in stock"));
+        assert.ok(html.includes("2 in stock"));
+        assert.ok(html.includes("2026-08-12T00:00:00.000Z"));
+        assert.ok(html.includes("View inventory"));
       } finally {
         restoreLocations();
         restoreUnits();
