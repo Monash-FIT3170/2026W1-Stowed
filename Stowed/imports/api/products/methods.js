@@ -4,6 +4,19 @@ import { Products, ProductRecords } from "./collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 
+async function getProductUpdateMetadata(userId) {
+  if (!userId) return { updatedByUsername: "System" };
+
+  const user = await Meteor.users.findOneAsync(userId, {
+    fields: { username: 1, "profile.username": 1 },
+  });
+
+  return {
+    updatedByUserId: userId,
+    updatedByUsername: user?.profile?.username || user?.username || "Unknown user",
+  };
+}
+
 // Traverses StorageLocation → StorageUnit → FloorMap → Site and asserts org access.
 async function assertLocationOrgAccess(locationId, userId) {
   const storageLocation = await StorageLocations.findOneAsync(locationId);
@@ -98,6 +111,7 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
     const galleryImages = images.length ? images : catalogImages;
     const primaryPhotoUrl = photoUrl || galleryImages[0] || "";
     const productId = await Products.insertAsync({
@@ -118,6 +132,7 @@ Meteor.methods({
       ...(reorderAt != null && { reorderAt }),
       createdAt: now,
       updatedAt: now,
+      ...updateMetadata,
     });
 
     for (const { locationId, quantity } of mergedAssignments) {
@@ -196,6 +211,7 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
     const galleryImages = images.length ? images : catalogImages;
     const primaryPhotoUrl = photoUrl || product?.photoUrl || galleryImages[0] || "";
 
@@ -215,6 +231,7 @@ Meteor.methods({
         totalQuantity,
         ...(reorderAt != null && { reorderAt }),
         updatedAt: now,
+        ...updateMetadata,
       },
     });
 
@@ -291,9 +308,10 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
 
     await Products.updateAsync(productId, {
-      $set: { totalQuantity: newTotal, updatedAt: now },
+      $set: { totalQuantity: newTotal, updatedAt: now, ...updateMetadata },
     });
 
     const oldRecords = await ProductRecords.find({ productId }).fetchAsync();
@@ -358,6 +376,7 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
     // Only products whose stock actually moved need their total recomputed.
     const changedProductIds = new Set();
 
@@ -399,7 +418,7 @@ Meteor.methods({
       const records = await ProductRecords.find({ productId }).fetchAsync();
       const totalQuantity = records.reduce((sum, record) => sum + record.quantity, 0);
       await Products.updateAsync(productId, {
-        $set: { totalQuantity, updatedAt: now },
+        $set: { totalQuantity, updatedAt: now, ...updateMetadata },
       });
     }
 
@@ -448,11 +467,13 @@ Meteor.methods({
     await assertOrgAccess(Products, productId, this.userId);
     await requirePermission(this.userId, "products.uploadImage");
 
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
+
     await Products.updateAsync(
       { _id: productId },
       {
         $push: { images: imagePath },
-        $set: { updatedAt: new Date() },
+        $set: { updatedAt: new Date(), ...updateMetadata },
       },
     );
   },
@@ -477,6 +498,7 @@ Meteor.methods({
       images.length > 0 && !images.includes(product.photoUrl)
         ? images[0]
         : product.photoUrl || images[0] || "";
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
 
     await Products.updateAsync(
       { _id: productId },
@@ -485,6 +507,7 @@ Meteor.methods({
           images,
           photoUrl: primaryPhotoUrl,
           updatedAt: new Date(),
+          ...updateMetadata,
         },
       },
     );

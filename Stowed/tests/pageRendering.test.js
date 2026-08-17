@@ -147,6 +147,7 @@ describe("page rendering", function () {
           unitCost: 3,
           photoUrl: "https://example.com/hammer.png",
           updatedAt: new Date("2026-08-10T00:00:00.000Z"),
+          updatedByUsername: "Jordan",
         },
         {
           _id: "gloves",
@@ -156,6 +157,7 @@ describe("page rendering", function () {
           unitCost: 5,
           photoUrl: "https://example.com/gloves.png",
           updatedAt: new Date("2026-08-12T00:00:00.000Z"),
+          updatedByUsername: "Alex",
         },
       ];
 
@@ -184,6 +186,9 @@ describe("page rendering", function () {
 
         assert.ok(html.includes("Dashboard"));
         assert.ok(html.includes("Hello, Alex"));
+        assert.ok(html.includes("Customise"));
+        assert.ok(!html.includes("Browse inventory"));
+        assert.ok(!html.includes("Find a location"));
         assert.ok(html.includes("Inventory snapshot"));
         assert.ok(html.includes("Units on hand"));
         assert.ok(html.includes("12"));
@@ -207,6 +212,7 @@ describe("page rendering", function () {
         assert.ok(html.includes("10 in stock"));
         assert.ok(html.includes("2 in stock"));
         assert.ok(html.includes("2026-08-12T00:00:00.000Z"));
+        assert.ok(html.includes("by Alex"));
         assert.ok(html.includes("View inventory"));
       } finally {
         restoreLocations();

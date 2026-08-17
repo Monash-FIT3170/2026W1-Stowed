@@ -54,6 +54,7 @@ async function seedProducts(seedOrgId) {
       images: [],
       createdAt: now,
       updatedAt: now,
+      updatedByUsername: "System",
     });
 
   await add({

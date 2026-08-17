@@ -221,6 +221,7 @@ function RecentlyUpdatedWidget({ productsLoading, recentItems, totalItems }) {
         {recentItems.map((item) => {
           const updatedAtLabel = formatUpdatedAt(item.updatedAt);
           const updatedAtDateTime = updatedAtLabel ? new Date(item.updatedAt).toISOString() : null;
+          const updatedByLabel = item.updatedByUsername || "User not recorded";
 
           return (
             <Link key={item._id} to={`/inventory/${item._id}`} className="dashboard-recent-row">
@@ -228,11 +229,14 @@ function RecentlyUpdatedWidget({ productsLoading, recentItems, totalItems }) {
                 <strong>{item.name}</strong>
                 <span>{item.totalQuantity} in stock</span>
               </span>
-              {updatedAtLabel && (
-                <time className="dashboard-recent-time" dateTime={updatedAtDateTime}>
-                  {updatedAtLabel}
-                </time>
-              )}
+              <span className="dashboard-recent-update">
+                {updatedAtLabel && (
+                  <time className="dashboard-recent-time" dateTime={updatedAtDateTime}>
+                    {updatedAtLabel}
+                  </time>
+                )}
+                <span className="dashboard-recent-user">by {updatedByLabel}</span>
+              </span>
             </Link>
           );
         })}
@@ -300,7 +304,6 @@ export function DashboardPage() {
   );
   const stocktakePreview = overdueStocktakes.slice(0, 4);
   const canViewAlerts = hasClientPermission(role, "route:/alerts");
-  const canCreateProducts = hasClientPermission(role, "products.create");
   const snapshotLoading = productsLoading || locationsLoading;
   const snapshotEmpty =
     inventorySnapshot.productCount === 0 &&
@@ -435,20 +438,6 @@ export function DashboardPage() {
           <p className="dashboard-page-subheading">Here&apos;s what&apos;s stocked.</p>
         </div>
         <div className="dashboard-page-actions" role="group" aria-label="Dashboard actions">
-          {canCreateProducts && (
-            <Link
-              to="/inventory/new"
-              className="dashboard-quick-action dashboard-quick-action-primary"
-            >
-              + Add product
-            </Link>
-          )}
-          <Link to="/inventory/list" className="dashboard-quick-action">
-            Browse inventory
-          </Link>
-          <Link to="/locations" className="dashboard-quick-action">
-            Find a location
-          </Link>
           <button
             type="button"
             className={`dashboard-customize-button${isCustomizing ? " is-active" : ""}`}
@@ -459,7 +448,7 @@ export function DashboardPage() {
               finishDrag();
             }}
           >
-            {isCustomizing ? "Done" : "Customize"}
+            {isCustomizing ? "Done" : "Customise"}
             {preferences.hidden.length > 0 && (
               <span
                 className="dashboard-hidden-count"
@@ -588,7 +577,7 @@ export function DashboardPage() {
           <span>Turn on a widget whenever you want a little more context here.</span>
           {!isCustomizing && (
             <button type="button" onClick={() => setIsCustomizing(true)}>
-              Customize dashboard
+              Customise dashboard
             </button>
           )}
         </div>

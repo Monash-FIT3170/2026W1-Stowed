@@ -77,6 +77,16 @@ export const ProductSchema = new SimpleSchema({
     type: Date,
   },
 
+  updatedByUserId: {
+    type: String,
+    optional: true,
+  },
+
+  updatedByUsername: {
+    type: String,
+    optional: true,
+  },
+
   images: {
     type: Array,
     optional: true,

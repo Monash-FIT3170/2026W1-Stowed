@@ -168,6 +168,8 @@ describe("products.createWithAssignments", function () {
     const product = await Products.findOneAsync(createdProductId);
     assert.strictEqual(product.name, "Safety Helmet");
     assert.strictEqual(product.totalQuantity, 10);
+    assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+    assert.strictEqual(product.updatedByUsername, "testuser");
   });
 
   it("creates a ProductRecord for each assignment", async function () {
@@ -340,6 +342,10 @@ describe("products.update", function () {
   });
 
   it("updates product fields in the database", async function () {
+    await Products.updateAsync(productId, {
+      $set: { updatedByUserId: "previous-user", updatedByUsername: "Previous user" },
+    });
+
     await callMethod("products.update", {
       ...makeCreateParams({
         name: "Updated Name",
@@ -357,6 +363,8 @@ describe("products.update", function () {
     assert.strictEqual(product.category, "Power Tools");
     assert.strictEqual(product.brand, "DeWalt");
     assert.strictEqual(product.unitCost, 49.99);
+    assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+    assert.strictEqual(product.updatedByUsername, "testuser");
   });
 
   it("replaces all ProductRecords with the new assignments", async function () {
@@ -531,6 +539,10 @@ describe("products.restock", function () {
   });
 
   it("increases totalQuantity by additionalQuantity", async function () {
+    await Products.updateAsync(productId, {
+      $set: { updatedByUserId: "previous-user", updatedByUsername: "Previous user" },
+    });
+
     await callMethod("products.restock", {
       productId,
       additionalQuantity: 25,
@@ -539,6 +551,8 @@ describe("products.restock", function () {
 
     const product = await Products.findOneAsync(productId);
     assert.strictEqual(product.totalQuantity, 75);
+    assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+    assert.strictEqual(product.updatedByUsername, "testuser");
   });
 
   it("replaces ProductRecords with the new assignment distribution", async function () {
@@ -677,5 +691,42 @@ describe("products.restock", function () {
     const records = await ProductRecords.find({ productId }).fetchAsync();
     assert.strictEqual(records.length, 1);
     assert.strictEqual(records[0].quantity, 50, "Original records must be unchanged");
+  });
+});
+
+describe("stocktake.save product audit metadata", function () {
+  let productId;
+
+  beforeEach(async function () {
+    productId = await callMethod(
+      "products.createWithAssignments",
+      makeCreateParams({
+        name: `Stocktake Audit ${Date.now()}`,
+        totalQuantity: 10,
+        assignments: [{ locationId: TEST_LOCATION_ID, quantity: 10 }],
+      }),
+    );
+  });
+
+  afterEach(async function () {
+    await ProductRecords.removeAsync({ productId });
+    await Products.removeAsync(productId);
+  });
+
+  it("records the user when a stocktake changes a product quantity", async function () {
+    await Products.updateAsync(productId, {
+      $set: { updatedByUserId: "previous-user", updatedByUsername: "Previous user" },
+    });
+
+    const result = await callMethod("stocktake.save", {
+      locationId: TEST_LOCATION_ID,
+      lines: [{ productId, quantity: 7 }],
+    });
+
+    const product = await Products.findOneAsync(productId);
+    assert.strictEqual(result.productsChanged, 1);
+    assert.strictEqual(product.totalQuantity, 7);
+    assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+    assert.strictEqual(product.updatedByUsername, "testuser");
   });
 });
