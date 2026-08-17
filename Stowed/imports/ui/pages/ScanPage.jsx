@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { parseScannedUrl } from "/imports/api/products/codes";
@@ -21,6 +21,7 @@ export function ScanPage() {
   const [status, setStatus] = useState("Starting camera…");
   const [matches, setMatches] = useState([]);
   const [manualCode, setManualCode] = useState("");
+  const [cameraFailed, setCameraFailed] = useState(false);
 
   async function handleCode(text) {
     // goes to storage unit QR, same url
@@ -83,6 +84,7 @@ export function ScanPage() {
         if (!stopped) setStatus("Point the camera at a barcode or QR code.");
       })
       .catch((err) => {
+        setCameraFailed(true);
         setStatus(
           `Camera unavailable: ${err?.message || err}. ` +
             "Allow camera access, or type the code below.",
@@ -136,6 +138,13 @@ export function ScanPage() {
         <div className="detail-section scan-camera-card">
           <div id="scan-region" />
           <p className="scan-status">{status}</p>
+          <p className="scan-camera-help">
+            {cameraFailed ? (
+              <Link to="/scan/settings">Camera blocked? Fix it here →</Link>
+            ) : (
+              <Link to="/scan/settings">Camera settings</Link>
+            )}
+          </p>
         </div>
 
         {matches.length > 1 && (

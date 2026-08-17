@@ -13,6 +13,7 @@ import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
 import { ScanPage } from "./pages/ScanPage";
+import { ScanSettingsPage } from "./pages/ScanSettingsPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -147,6 +148,20 @@ export function App() {
               }
             />
             {/* Target of the printed storage-unit QR codes */}
+            <Route
+              path="/scan/settings"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/scan") ? (
+                    <ScanSettingsPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
             <Route
               path="/locations/unit/:unitId"
               element={
