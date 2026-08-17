@@ -94,16 +94,21 @@ export function ScanPage() {
     return () => {
       stopped = true;
       // StrictMode mounts twice in dev — stop() may reject if never started.
-      scanner
-        .stop()
-        .catch(() => {})
-        .finally(() => {
-          try {
-            scanner.clear();
-          } catch {
-            /* already cleared */
+      const teardown = async () => {
+        try {
+          if (scanner.isScanning) {
+            await scanner.stop();
           }
-        });
+        } catch {
+          /* not running — nothing to stop */
+        }
+        try {
+          scanner.clear();
+        } catch {
+          /* already cleared */
+        }
+      };
+      teardown();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
