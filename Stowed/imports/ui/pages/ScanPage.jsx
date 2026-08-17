@@ -41,7 +41,10 @@ export function ScanPage() {
       setStatus(`Multiple products share "${text}" — pick one:`);
       return false;
     }
-    setStatus(`No product found for "${text}". Keep scanning.`);
+    setStatus(
+      `No product matches "${text}". Check the product has a SKU set (Edit product → SKU), ` +
+        "then reprint its label.",
+    );
     return false;
   }
 

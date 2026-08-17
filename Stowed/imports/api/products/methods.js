@@ -400,13 +400,11 @@ Meteor.methods({
     const trimmed = code.trim();
     if (!trimmed) return { matches: [] };
 
+    const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const bySku = await Products.find(
-      { orgId, sku: trimmed },
+      { orgId, sku: { $regex: `^${escaped}$`, $options: "i" } },
       { fields: { name: 1, sku: 1 }, limit: 10 },
     ).fetchAsync();
-    if (bySku.length > 0) {
-      return { matches: bySku.map(({ _id, name, sku }) => ({ _id, name, sku })) };
-    }
 
     const byId = await Products.findOneAsync(
       { _id: trimmed, orgId },
@@ -419,8 +417,6 @@ Meteor.methods({
 /**
  * Recomputes a product's totalQuantity from the sum of its ProductRecords.
  * Used by the scan-driven stock methods so the "sum of records === total"
- * invariant is always restored, even if another method (e.g. products.update)
- * rewrote the records in between.
  */
 async function syncProductTotal(productId, now) {
   const records = await ProductRecords.find({ productId }, { fields: { quantity: 1 } }).fetchAsync();

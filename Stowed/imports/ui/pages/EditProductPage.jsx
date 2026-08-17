@@ -47,6 +47,7 @@ export function EditProductPage() {
   const [totalQuantity, setTotalQuantity] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
+  const [sku, setSku] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [reorderAt, setReorderAt] = useState("");
   const [assignments, setAssignments] = useState([]);
@@ -83,6 +84,7 @@ export function EditProductPage() {
       setName(product.name ?? "");
       setCategory(product.category ?? "");
       setBrand(product.brand ?? "");
+      setSku(product.sku ?? "");
       setTotalQuantity(String(product.totalQuantity ?? ""));
       setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
       setReorderAt(product.reorderAt != null ? String(product.reorderAt) : "");
@@ -228,6 +230,7 @@ export function EditProductPage() {
         name: name.trim(),
         category,
         brand,
+        sku: sku.trim(),
         totalQuantity: parsedTotal,
         unitCost: unitCost !== "" ? parseFloat(unitCost) : 0,
         reorderAt: reorderAt !== "" ? parseInt(reorderAt, 10) : undefined,
@@ -303,6 +306,16 @@ export function EditProductPage() {
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>SKU / barcode value</label>
+                  <input
+                    type="text"
+                    value={sku}
+                    onChange={(e) => setSku(e.target.value)}
+                    className="form-input"
+                    placeholder="e.g. LAB-GOG-01"
                   />
                 </div>
               </div>
