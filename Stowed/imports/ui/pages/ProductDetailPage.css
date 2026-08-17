@@ -503,3 +503,74 @@
     align-items: flex-start;
   }
 }
+
+/* -- Scan-driven stock adjuster (product page) -- */
+
+.product-detail-container .stock-adjuster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.product-detail-container .stock-adjuster-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--tag-bg);
+  border: 1px solid var(--border-subtle);
+}
+
+.product-detail-container .stock-adjuster-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--card-bg);
+  color: var(--accent-primary);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.product-detail-container .stock-adjuster-btn:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.product-detail-container .stock-adjuster-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.product-detail-container .stock-adjuster-qty {
+  min-width: 36px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.product-detail-container .stock-adjuster-set {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.product-detail-container .stock-adjuster-set .form-input {
+  width: 90px;
+}
+
+@media (max-width: 640px) {
+  .product-detail-container .storage-location-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .product-detail-container .stock-adjuster {
+    justify-content: space-between;
+  }
+}
