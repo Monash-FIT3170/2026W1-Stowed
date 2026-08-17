@@ -1,5 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
+import { WebApp } from "meteor/webapp";
+import crypto from "crypto";
 import "/imports/api/products/methods";
 import "/imports/api/locations/methods";
 import "/imports/api/publications";
@@ -468,11 +470,74 @@ Meteor.startup(async () => {
   await Sites.rawCollection().createIndex({ orgId: 1 });
   await Products.rawCollection().createIndex({ orgId: 1 });
 
+  await seedDatabase();
+});
+
+// Runs the full seed sequence. Each step is individually guarded (it no-ops if
+// its data already exists), so this is safe to call repeatedly.
+async function seedDatabase() {
   const seedOrgId = await seedOrg();
   await seedOwner(seedOrgId);
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
+}
+
+// Wipes every seeded collection (and all user accounts) so the database can be
+// re-seeded from scratch. Destructive - only reachable via the protected
+// /admin/reset-seed endpoint below.
+async function resetDatabase() {
+  await ProductRecords.removeAsync({});
+  await Products.removeAsync({});
+  await StorageLocations.removeAsync({});
+  await StorageUnits.removeAsync({});
+  await FloorMaps.removeAsync({});
+  await Sites.removeAsync({});
+  await Organisations.removeAsync({});
+  await Meteor.users.removeAsync({});
+}
+
+// Constant-time string comparison so token checks don't leak via timing.
+function safeEqual(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
+
+// Protected admin endpoint: POST /admin/reset-seed wipes the DB and reseeds it.
+// The route is DISABLED unless a RESET_SEED_TOKEN is configured (Galaxy env var
+// or Meteor settings), and requires that token in the `x-reset-token` header.
+WebApp.connectHandlers.use("/admin/reset-seed", async (req, res) => {
+  const token = process.env.RESET_SEED_TOKEN || Meteor.settings?.RESET_SEED_TOKEN;
+
+  // No token configured -> behave as if the route doesn't exist.
+  if (!token) {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
+  if (req.method !== "POST") {
+    res.writeHead(405);
+    res.end("Method Not Allowed");
+    return;
+  }
+  if (!safeEqual(req.headers["x-reset-token"] || "", token)) {
+    res.writeHead(401);
+    res.end("Unauthorized");
+    return;
+  }
+
+  try {
+    await resetDatabase();
+    await seedDatabase();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, message: "Database reset and reseeded." }));
+  } catch (err) {
+    console.error("reset-seed failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: false, error: String(err) }));
+  }
 });
 
 Meteor.publish("allUsers", async function () {
