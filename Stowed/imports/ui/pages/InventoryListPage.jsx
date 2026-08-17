@@ -185,7 +185,7 @@ export function InventoryListPage() {
         </div>
       </div>
 
-      <div style={{ padding: "0 28px 48px" }}>
+      <div className="inventory-list-body">
         <div className="search-bar-container">
           <input
             type="text"

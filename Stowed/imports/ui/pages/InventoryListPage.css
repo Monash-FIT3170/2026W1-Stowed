@@ -2,8 +2,19 @@
 /* Tokens, breadcrumb, item-tag, sr-only, page-title live in Global.css */
 
 .inventory-list-container {
+  /* Shared column template for the header row, the bulk-action row and the
+     data rows, so they stay aligned as the page grows to the viewport width.
+     The flexible middle columns soak up the extra space; the thumbnail and
+     checkbox columns stay fixed. */
+  --inventory-grid: 44px minmax(150px, 2.2fr) minmax(80px, 1.1fr) minmax(110px, 1.6fr)
+    minmax(60px, 0.8fr) minmax(84px, 1.1fr) 82px;
+
   padding: 0;
-  max-width: 900px;
+  width: 100%;
+}
+
+.inventory-list-body {
+  padding: 0 28px 48px;
 }
 
 .search-bar-container {
@@ -30,14 +41,12 @@
 
 .selected-actions {
   display: grid;
-  grid-template-columns:
-    44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(84px, 1fr)
-    64px 88px 82px;
+  grid-template-columns: var(--inventory-grid);
   align-items: center;
-  gap: 0 8px;
+  gap: 0 12px;
   min-height: 30px;
   margin-bottom: 0;
-  padding: 8px 20px;
+  padding: 8px 24px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
@@ -91,28 +100,24 @@
 
 .table-header {
   display: grid;
-  grid-template-columns:
-    44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(84px, 1fr)
-    64px 88px 82px;
-  padding: 8px 20px;
+  grid-template-columns: var(--inventory-grid);
+  padding: 8px 24px;
   border-bottom: 1px solid var(--border-subtle);
   font-size: 11px;
   color: var(--text-muted);
   font-weight: 500;
   align-items: center;
-  gap: 0 8px;
+  gap: 0 12px;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns:
-    44px minmax(140px, 2fr) minmax(72px, 1fr) minmax(84px, 1fr)
-    64px 88px 82px;
-  padding: 10px 20px;
+  grid-template-columns: var(--inventory-grid);
+  padding: 10px 24px;
   border-bottom: 0.5px solid var(--border-light);
   font-size: 13px;
   align-items: center;
-  gap: 0 8px;
+  gap: 0 12px;
 }
 
 .table-row:last-child {
@@ -203,6 +208,10 @@
 @media (max-width: 760px) {
   .inventory-list-container {
     padding: 0;
+  }
+
+  .inventory-list-body {
+    padding: 0 16px 32px;
   }
 
   .table-header {
