@@ -37,6 +37,12 @@
   min-width: 0;
 }
 
+.dashboard-widget-state {
+  padding: 20px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 @media (max-width: 480px) {
   .dashboard-widget {
     padding: 16px;

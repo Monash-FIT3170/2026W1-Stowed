@@ -139,6 +139,23 @@ describe("page rendering", function () {
 
       const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
       const restoreProducts = stubCollectionFind(Products, items);
+      const restoreSites = stubCollectionFind(Sites, [
+        { _id: "site-1", name: "Clayton", stocktakeIntervalDays: 30 },
+      ]);
+      const restoreFloorMaps = stubCollectionFind(FloorMaps, [
+        { _id: "map-1", siteId: "site-1", name: "Ground Floor" },
+      ]);
+      const restoreUnits = stubCollectionFind(StorageUnits, [
+        { _id: "unit-1", floorMapId: "map-1", name: "Cabinet A" },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, [
+        {
+          _id: "location-1",
+          storageUnitId: "unit-1",
+          name: "Warehouse shelf",
+          lastStocktakeAt: new Date("2020-01-01T00:00:00.000Z"),
+        },
+      ]);
 
       try {
         const html = renderWithRouter(React.createElement(DashboardPage));
@@ -152,7 +169,14 @@ describe("page rendering", function () {
         assert.ok(html.includes("$40"));
         assert.ok(html.includes("Hammer"));
         assert.ok(html.includes("Gloves"));
+        assert.ok(html.includes("Stocktake attention"));
+        assert.ok(html.includes("Warehouse shelf"));
+        assert.ok(html.includes("overdue"));
       } finally {
+        restoreLocations();
+        restoreUnits();
+        restoreFloorMaps();
+        restoreSites();
         restoreProducts();
         restoreMeteor();
       }

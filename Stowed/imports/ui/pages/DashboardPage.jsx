@@ -1,7 +1,15 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../../api/locations/collections";
+import {
+  describeStocktakeTiming,
+  getStocktakeAlerts,
+  STOCKTAKE_STATUS,
+} from "../../api/locations/stocktake";
 import { Products } from "../../api/products/collections";
+import { hasClientPermission } from "../../api/userMethods";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { ProductThumbnail } from "../components/ProductThumbnail";
 import { StatusBadge } from "../components/StatusBadge";
@@ -9,12 +17,29 @@ import "./DashboardPage.css";
 import "../Global.css";
 
 export function DashboardPage() {
-  const { items, loading, username } = useTracker(() => {
-    const sub = Meteor.subscribe("products");
+  const {
+    items,
+    productsLoading,
+    locationsLoading,
+    storageLocations,
+    storageUnits,
+    floorMaps,
+    sites,
+    username,
+    role,
+  } = useTracker(() => {
+    const productsHandle = Meteor.subscribe("products");
+    const locationsHandle = Meteor.subscribe("locations.all");
     return {
       items: Products.find().fetch(),
-      loading: !sub.ready(),
+      productsLoading: !productsHandle.ready(),
+      locationsLoading: !locationsHandle.ready(),
+      storageLocations: StorageLocations.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      sites: Sites.find().fetch(),
       username: Meteor.user()?.profile?.username,
+      role: Meteor.user()?.profile?.role,
     };
   }, []);
 
@@ -27,6 +52,19 @@ export function DashboardPage() {
     0,
   );
   const recentItems = items.slice(0, 5);
+  const overdueStocktakes = useMemo(
+    () =>
+      getStocktakeAlerts({
+        storageLocations,
+        storageUnits,
+        floorMaps,
+        sites,
+        statuses: [STOCKTAKE_STATUS.OVERDUE],
+      }),
+    [storageLocations, storageUnits, floorMaps, sites],
+  );
+  const stocktakePreview = overdueStocktakes.slice(0, 4);
+  const canViewAlerts = hasClientPermission(role, "route:/alerts");
 
   return (
     <div className="dashboard-page-container">
@@ -36,12 +74,12 @@ export function DashboardPage() {
       <h1 className="dashboard-page-heading">Hello, {username || "User"}</h1>
       <p className="dashboard-page-subheading">Here&apos;s what&apos;s stocked.</p>
 
-      {loading ? (
-        <div className="dashboard-loading" role="status">
-          Loading dashboard…
-        </div>
-      ) : (
-        <div className="dashboard-grid">
+      <div className="dashboard-grid">
+        {productsLoading ? (
+          <div className="dashboard-loading dashboard-grid-full" role="status">
+            Loading inventory summary…
+          </div>
+        ) : (
           <section className="dashboard-metrics dashboard-grid-full" aria-label="Inventory metrics">
             <div className="stat-card stat-card-green">
               <div className="stat-value">{totalItems}</div>
@@ -58,43 +96,89 @@ export function DashboardPage() {
               <div className="stat-label stat-label-yellow">Total value</div>
             </div>
           </section>
+        )}
 
-          <DashboardWidget
-            title="Recently updated"
-            subtitle={`${recentItems.length} of ${totalItems} products shown`}
-            action={
-              <Link to="/inventory/list" className="dashboard-action-link">
+        <DashboardWidget
+          title="Stocktake attention"
+          subtitle={
+            locationsLoading
+              ? undefined
+              : overdueStocktakes.length > 0
+                ? `${overdueStocktakes.length} location${overdueStocktakes.length === 1 ? "" : "s"} overdue`
+                : "Stocktake status across your locations"
+          }
+          action={
+            canViewAlerts ? (
+              <Link to="/alerts" className="dashboard-action-link">
                 View all →
               </Link>
-            }
-            className="dashboard-grid-full"
-          >
-            {recentItems.length > 0 ? (
-              recentItems.map((item) => (
-                <div key={item._id} className="dashboard-recent-row">
-                  <ProductThumbnail
-                    images={item.images || item.catalogImages}
-                    photoUrl={item.photoUrl}
-                    name={item.name}
-                  />
-                  <span>
-                    <Link to={`/inventory/${item._id}`} className="item-name-link">
-                      {item.name}
-                    </Link>
-                  </span>
-                  <span>{item.totalQuantity}</span>
-                  <StatusBadge
-                    quantity={item.totalQuantity}
-                    threshold={item.reorderAt != null ? item.reorderAt : null}
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="dashboard-empty-state">No products have been added yet.</p>
-            )}
-          </DashboardWidget>
-        </div>
-      )}
+            ) : null
+          }
+          isLoading={locationsLoading}
+          loadingLabel="Loading stocktake status…"
+          isEmpty={overdueStocktakes.length === 0}
+          emptyState={
+            <div className="dashboard-stocktake-empty">
+              <strong>All locations are up to date</strong>
+              <span>No stocktakes currently overdue.</span>
+            </div>
+          }
+        >
+          <div className="dashboard-stocktake-list">
+            {stocktakePreview.map((alert) => (
+              <Link
+                key={alert.location._id}
+                to={`/locations/${alert.location._id}`}
+                className="dashboard-stocktake-row"
+              >
+                <span className="dashboard-stocktake-location">
+                  <strong>{alert.location.name || "Unnamed location"}</strong>
+                  <span>{alert.path || "Unlinked location"}</span>
+                </span>
+                <span className="dashboard-stocktake-timing">
+                  {describeStocktakeTiming(alert.daysUntilDue)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </DashboardWidget>
+
+        <DashboardWidget
+          title="Recently updated"
+          subtitle={
+            productsLoading ? undefined : `${recentItems.length} of ${totalItems} products shown`
+          }
+          action={
+            <Link to="/inventory/list" className="dashboard-action-link">
+              View all →
+            </Link>
+          }
+          isLoading={productsLoading}
+          loadingLabel="Loading recent inventory…"
+          isEmpty={recentItems.length === 0}
+          emptyState={<p className="dashboard-empty-state">No products have been added yet.</p>}
+        >
+          {recentItems.map((item) => (
+            <div key={item._id} className="dashboard-recent-row">
+              <ProductThumbnail
+                images={item.images || item.catalogImages}
+                photoUrl={item.photoUrl}
+                name={item.name}
+              />
+              <span>
+                <Link to={`/inventory/${item._id}`} className="item-name-link">
+                  {item.name}
+                </Link>
+              </span>
+              <span>{item.totalQuantity}</span>
+              <StatusBadge
+                quantity={item.totalQuantity}
+                threshold={item.reorderAt != null ? item.reorderAt : null}
+              />
+            </div>
+          ))}
+        </DashboardWidget>
+      </div>
     </div>
   );
 }

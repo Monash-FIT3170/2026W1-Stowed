@@ -1,7 +1,17 @@
 import { useId } from "react";
 import "./DashboardWidget.css";
 
-export function DashboardWidget({ title, subtitle, action, children, className = "" }) {
+export function DashboardWidget({
+  title,
+  subtitle,
+  action,
+  children,
+  className = "",
+  isLoading = false,
+  loadingLabel = "Loading…",
+  isEmpty = false,
+  emptyState = null,
+}) {
   const titleId = useId();
 
   return (
@@ -18,7 +28,17 @@ export function DashboardWidget({ title, subtitle, action, children, className =
         </div>
         {action && <div className="dashboard-widget-action">{action}</div>}
       </header>
-      <div className="dashboard-widget-content">{children}</div>
+      <div className="dashboard-widget-content">
+        {isLoading ? (
+          <div className="dashboard-widget-state" role="status">
+            {loadingLabel}
+          </div>
+        ) : isEmpty ? (
+          emptyState
+        ) : (
+          children
+        )}
+      </div>
     </section>
   );
 }
