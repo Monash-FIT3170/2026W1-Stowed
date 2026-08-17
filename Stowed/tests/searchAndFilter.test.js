@@ -6,6 +6,7 @@ import {
   searchProducts,
   filterLowStock,
   filterByStorageUnit,
+  getLowStockProductsByUrgency,
 } from "../imports/api/products/filters";
 import { mockProducts } from "../imports/api/mockProducts";
 
@@ -97,6 +98,21 @@ describe("low stock filter", function () {
     const result = filterLowStock(products);
     const ids = result.map((p) => p._id).sort();
     assert.deepStrictEqual(ids, ["a", "c"]);
+  });
+
+  it("orders low-stock products by proportional shortage", function () {
+    const products = [
+      { _id: "threshold", name: "At threshold", totalQuantity: 5, reorderAt: 5 },
+      { _id: "half", name: "Half remaining", totalQuantity: 5, reorderAt: 10 },
+      { _id: "out", name: "Out of stock", totalQuantity: 0, reorderAt: 10 },
+      { _id: "healthy", name: "Healthy", totalQuantity: 12, reorderAt: 10 },
+      { _id: "two-fifths", name: "Two remaining", totalQuantity: 2, reorderAt: 5 },
+    ];
+
+    assert.deepStrictEqual(
+      getLowStockProductsByUrgency(products).map((product) => product._id),
+      ["out", "two-fifths", "half", "threshold"],
+    );
   });
 });
 

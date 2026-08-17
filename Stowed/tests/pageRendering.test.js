@@ -19,8 +19,10 @@ import {
 } from "../imports/api/locations/collections";
 import { ROLES } from "../imports/api/roles";
 
-function renderWithRouter(element) {
-  return renderToStaticMarkup(React.createElement(MemoryRouter, null, element));
+function renderWithRouter(element, initialEntry = "/") {
+  return renderToStaticMarkup(
+    React.createElement(MemoryRouter, { initialEntries: [initialEntry] }, element),
+  );
 }
 
 function stubMeteor({ role, username = "Alex", userId = "user-id" }) {
@@ -172,6 +174,10 @@ describe("page rendering", function () {
         assert.ok(html.includes("Stocktake attention"));
         assert.ok(html.includes("Warehouse shelf"));
         assert.ok(html.includes("overdue"));
+        assert.ok(html.includes("1 item needs attention"));
+        assert.ok(html.includes("2 remaining"));
+        assert.ok(html.includes("Min. 3"));
+        assert.ok(html.includes("/inventory/list?filter=low-stock"));
       } finally {
         restoreLocations();
         restoreUnits();
@@ -237,6 +243,46 @@ describe("page rendering", function () {
         assert.ok(!html.includes("+ Add product"));
         assert.ok(!html.includes("Delete selected"));
         assert.ok(html.includes("Washers"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("applies the low-stock inventory filter from the URL", function () {
+      const items = [
+        {
+          _id: "paper",
+          name: "Printer Paper",
+          totalQuantity: 2,
+          reorderAt: 5,
+        },
+        {
+          _id: "pens",
+          name: "Pens",
+          totalQuantity: 20,
+          reorderAt: 5,
+        },
+      ];
+
+      const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
+      const restoreProducts = stubCollectionFind(Products, items);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(
+          React.createElement(InventoryListPage),
+          "/inventory/list?filter=low-stock",
+        );
+
+        assert.ok(html.includes("Printer Paper"));
+        assert.ok(!html.includes(">Pens<"));
+        assert.ok(html.includes("1 of 2 products shown"));
       } finally {
         restoreUnits();
         restoreLocations();

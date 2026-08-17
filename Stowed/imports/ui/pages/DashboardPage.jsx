@@ -9,6 +9,7 @@ import {
   STOCKTAKE_STATUS,
 } from "../../api/locations/stocktake";
 import { Products } from "../../api/products/collections";
+import { getLowStockProductsByUrgency } from "../../api/products/filters";
 import { hasClientPermission } from "../../api/userMethods";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { ProductThumbnail } from "../components/ProductThumbnail";
@@ -44,9 +45,9 @@ export function DashboardPage() {
   }, []);
 
   const totalItems = items.length;
-  const lowStockCount = items.filter(
-    (item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt,
-  ).length;
+  const lowStockItems = useMemo(() => getLowStockProductsByUrgency(items), [items]);
+  const lowStockCount = lowStockItems.length;
+  const lowStockPreview = lowStockItems.slice(0, 4);
   const totalValue = items.reduce(
     (sum, item) => sum + (item.unitCost * item.totalQuantity || 0),
     0,
@@ -144,6 +145,50 @@ export function DashboardPage() {
         </DashboardWidget>
 
         <DashboardWidget
+          title="Low stock"
+          subtitle={
+            productsLoading
+              ? undefined
+              : lowStockCount > 0
+                ? `${lowStockCount} item${lowStockCount === 1 ? "" : "s"} need${lowStockCount === 1 ? "s" : ""} attention`
+                : "Stock levels across your inventory"
+          }
+          action={
+            <Link to="/inventory/list?filter=low-stock" className="dashboard-action-link">
+              View inventory →
+            </Link>
+          }
+          isLoading={productsLoading}
+          loadingLabel="Loading stock levels…"
+          isEmpty={lowStockCount === 0}
+          emptyState={
+            <div className="dashboard-low-stock-empty">
+              <strong>Stock levels look good</strong>
+              <span>No items are currently below their minimum level.</span>
+            </div>
+          }
+        >
+          <div className="dashboard-low-stock-list">
+            {lowStockPreview.map((item) => (
+              <Link
+                key={item._id}
+                to={`/inventory/${item._id}`}
+                className="dashboard-low-stock-row"
+              >
+                <span className="dashboard-low-stock-product">
+                  <strong>{item.name}</strong>
+                  {item.sku && <span>{item.sku}</span>}
+                </span>
+                <span className="dashboard-low-stock-meta">
+                  <strong>{item.totalQuantity} remaining</strong>
+                  <span>Min. {item.reorderAt}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </DashboardWidget>
+
+        <DashboardWidget
           title="Recently updated"
           subtitle={
             productsLoading ? undefined : `${recentItems.length} of ${totalItems} products shown`
@@ -157,6 +202,7 @@ export function DashboardPage() {
           loadingLabel="Loading recent inventory…"
           isEmpty={recentItems.length === 0}
           emptyState={<p className="dashboard-empty-state">No products have been added yet.</p>}
+          className="dashboard-grid-full"
         >
           {recentItems.map((item) => (
             <div key={item._id} className="dashboard-recent-row">
