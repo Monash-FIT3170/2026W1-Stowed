@@ -207,6 +207,80 @@ describe("page rendering", function () {
       }
     });
 
+    it("leads the location column with the largest holding, not the first record", function () {
+      const items = [
+        {
+          _id: "bolt",
+          name: "Bolts",
+          totalQuantity: 60,
+          reorderAt: 10,
+          tag: "fasteners",
+        },
+      ];
+
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, items);
+      // Deliberately ordered so the biggest holding is neither first nor last.
+      const restoreRecords = stubCollectionFind(ProductRecords, [
+        { _id: "r1", productId: "bolt", locationId: "loc-small", quantity: 5 },
+        { _id: "r2", productId: "bolt", locationId: "loc-big", quantity: 50 },
+        { _id: "r3", productId: "bolt", locationId: "loc-mid", quantity: 5 },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, [
+        { _id: "loc-small", storageUnitId: "unit-1", name: "Shelf 1" },
+        { _id: "loc-big", storageUnitId: "unit-1", name: "Shelf 2" },
+        { _id: "loc-mid", storageUnitId: "unit-1", name: "Shelf 3" },
+      ]);
+      const restoreUnits = stubCollectionFind(StorageUnits, [
+        { _id: "unit-1", name: "Warehouse A" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        assert.ok(html.includes("Warehouse A · Shelf 2"));
+        assert.ok(!html.includes("Warehouse A · Shelf 1"));
+        assert.ok(html.includes("and 2 other locations"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("pluralises a single other location", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2, tag: "fasteners" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, [
+        { _id: "r1", productId: "nut", locationId: "loc-small", quantity: 2 },
+        { _id: "r2", productId: "nut", locationId: "loc-big", quantity: 7 },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, [
+        { _id: "loc-small", storageUnitId: "unit-1", name: "Shelf 1" },
+        { _id: "loc-big", storageUnitId: "unit-1", name: "Shelf 2" },
+      ]);
+      const restoreUnits = stubCollectionFind(StorageUnits, [
+        { _id: "unit-1", name: "Warehouse A" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        assert.ok(html.includes("and 1 other location"));
+        assert.ok(!html.includes("and 1 other locations"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
     it("hides privileged actions for standard inventory list", function () {
       const items = [
         {

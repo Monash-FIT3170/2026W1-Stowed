@@ -167,6 +167,16 @@
   color: var(--text-muted);
 }
 
+/* "and N other locations" reads as an aside to the primary location, so it sits
+   on its own line, lighter and italic rather than competing with the name. */
+.item-location-more {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.65;
+}
+
 .row-select {
   width: 36px;
   height: 32px;

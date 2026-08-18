@@ -86,12 +86,29 @@ export function InventoryListPage() {
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
     if (!records.length) return "-";
-    const first = records[0];
-    const loc = storageLocations.find((l) => l._id === first.locationId);
-    if (!loc) return "-";
+
+    // Lead with the location holding the most stock, not whichever record the
+    // collection happened to return first. Records are merged per location
+    // when they are written, so there is one record per location here.
+    const ranked = [...records].sort((a, b) => b.quantity - a.quantity);
+    const primary = ranked.find((r) => storageLocations.some((l) => l._id === r.locationId));
+    if (!primary) return "-";
+
+    const loc = storageLocations.find((l) => l._id === primary.locationId);
     const unit = storageUnits.find((u) => u._id === loc.storageUnitId);
     const label = unit ? `${unit.name} · ${loc.name}` : loc.name;
-    return records.length > 1 ? `${label} +${records.length - 1}` : label;
+
+    const otherCount = records.length - 1;
+    if (otherCount < 1) return label;
+
+    return (
+      <>
+        {label}
+        <span className="item-location-more">
+          and {otherCount} other location{otherCount === 1 ? "" : "s"}
+        </span>
+      </>
+    );
   }
 
   const filteredItems = useMemo(() => {
