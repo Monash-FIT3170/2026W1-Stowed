@@ -9,8 +9,15 @@ import { ListsPage } from "../imports/ui/pages/ListsPage";
 import { QRCodesPage } from "../imports/ui/pages/QRCodesPage";
 import { InventoryPage } from "../imports/ui/pages/InventoryPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
+import { LocationsPage } from "../imports/ui/pages/LocationsPage";
 import { Products, ProductRecords } from "../imports/api/products/collections";
-import { StorageLocations, StorageUnits } from "../imports/api/locations/collections";
+import {
+  FloorMaps,
+  Sites,
+  StorageLocations,
+  StorageUnits,
+} from "../imports/api/locations/collections";
+import { ShoppingLists } from "../imports/api/shoppingLists/collections";
 import { ROLES } from "../imports/api/roles";
 
 function renderWithRouter(element) {
@@ -52,21 +59,84 @@ function stubCollectionFind(collection, results) {
 
 describe("page rendering", function () {
   it("renders static tools and workspace pages", function () {
-    const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
-    const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
-    const lists = renderToStaticMarkup(React.createElement(ListsPage));
-    const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
+    // AlertsPage is data-driven (useTracker + Meteor.subscribe), so stub the
+    // subscription and the collections it reads. Empty data is fine here — the
+    // assertions only check the static page chrome.
+    const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+    const restores = [
+      stubCollectionFind(StorageLocations, []),
+      stubCollectionFind(StorageUnits, []),
+      stubCollectionFind(FloorMaps, []),
+      stubCollectionFind(Sites, []),
+      stubCollectionFind(Products, []),
+      stubCollectionFind(ProductRecords, []),
+      stubCollectionFind(ShoppingLists, []),
+    ];
 
-    assert.ok(alerts.includes("Stock"));
-    assert.ok(alerts.includes("Alerts"));
-    assert.ok(forecast.includes("Demand"));
-    assert.ok(forecast.includes("Forecast"));
-    assert.ok(lists.includes("Shopping"));
-    assert.ok(lists.includes("Lists"));
-    assert.ok(qrCodes.includes("QR"));
+    try {
+      const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
+      const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
+      const lists = renderWithRouter(React.createElement(ListsPage));
+      const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
+
+      assert.ok(alerts.includes("Stock"));
+      assert.ok(alerts.includes("Alerts"));
+      assert.ok(forecast.includes("Demand"));
+      assert.ok(forecast.includes("Forecast"));
+      assert.ok(lists.includes("Shopping"));
+      assert.ok(lists.includes("Lists"));
+      assert.ok(qrCodes.includes("QR"));
+    } finally {
+      restores.reverse().forEach((restore) => restore());
+      restoreMeteor();
+    }
   });
 
   if (Meteor.isClient) {
+    it("renders the tabbed location directory with physical paths", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreSites = stubCollectionFind(Sites, [
+        { _id: "site-1", name: "Clayton", stocktakeIntervalDays: 30 },
+      ]);
+      const restoreFloorMaps = stubCollectionFind(FloorMaps, [
+        { _id: "map-1", siteId: "site-1", name: "Ground Floor" },
+      ]);
+      const restoreUnits = stubCollectionFind(StorageUnits, [
+        { _id: "unit-1", floorMapId: "map-1", name: "Cabinet A" },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, [
+        {
+          _id: "location-1",
+          storageUnitId: "unit-1",
+          name: "Shelf 1",
+          code: "SC-A1",
+          lastStocktakeAt: new Date(),
+        },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, [
+        { _id: "record-1", locationId: "location-1", productId: "product-1", quantity: 2 },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(LocationsPage));
+
+        assert.ok(html.includes("Storage Locations"));
+        assert.ok(html.includes("Floor Maps"));
+        assert.ok(html.includes("Sites"));
+        assert.ok(html.includes("Shelf 1"));
+        assert.ok(html.includes("SC-A1"));
+        assert.ok(html.includes("Clayton › Ground Floor › Cabinet A"));
+        assert.ok(html.includes("+ Add location"));
+      } finally {
+        restoreRecords();
+        restoreLocations();
+        restoreUnits();
+        restoreFloorMaps();
+        restoreSites();
+        restoreMeteor();
+      }
+    });
+
     it("renders inventory dashboard data", function () {
       const items = [
         {

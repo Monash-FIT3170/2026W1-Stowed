@@ -1,5 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
+import { WebApp } from "meteor/webapp";
+import crypto from "crypto";
 import "/imports/api/products/methods";
 import "/imports/api/categories/methods";
 import "/imports/api/shoppingLists/methods";
@@ -16,7 +18,9 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { buildRectShape } from "/imports/api/locations/shapeUtils";
 import { Products, ProductRecords } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { Organisations } from "/imports/api/organisations";
 
 async function seedOrg() {
@@ -41,17 +45,32 @@ async function seedOrg() {
   return org._id;
 }
 
+async function seedCategory(seedOrgId, name, cache) {
+  if (cache.has(name)) return cache.get(name);
+
+  let category = await ProductCategories.findOneAsync({ orgId: seedOrgId, name });
+  if (!category) {
+    const categoryId = await ProductCategories.insertAsync({ orgId: seedOrgId, name });
+    category = { _id: categoryId };
+  }
+
+  cache.set(name, category._id);
+  return category._id;
+}
+
 async function seedProducts(seedOrgId) {
   const count = await Products.find().countAsync();
   if (count > 0) return;
 
   const now = new Date();
-  const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
+  const categoryCache = new Map();
+  const add = async ({ name, description, category, brand, unitCost, totalQuantity }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
       category,
+      categoryId: await seedCategory(seedOrgId, category, categoryCache),
       brand,
       unitCost,
       totalQuantity,
@@ -241,6 +260,14 @@ async function seedLocations(seedOrgId) {
 
   const now = new Date();
 
+  // Spreads seeded stocktake dates across the last 12 months so the demo data
+  // shows a realistic mix of recently and overdue counted locations.
+  const monthsAgo = (months) => {
+    const date = new Date(now);
+    date.setMonth(date.getMonth() - months);
+    return date;
+  };
+
   // Single site for the demo
   const siteId = await Sites.insertAsync({
     orgId: seedOrgId,
@@ -286,7 +313,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: scienceFloorId,
     name: "Cabinet A",
     type: "cabinet",
-    position: { x: 24, y: 24, width: 100, height: 60 },
+    shape: { ...buildRectShape({ width: 2, height: 1.5, name: "Cabinet A" }), orgId: seedOrgId },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -295,7 +325,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: scienceFloorId,
     name: "Cabinet B",
     type: "cabinet",
-    position: { x: 150, y: 24, width: 100, height: 60 },
+    shape: { ...buildRectShape({ width: 2, height: 1.5, name: "Cabinet B" }), orgId: seedOrgId },
+    offset: { x: 4, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -306,7 +339,13 @@ async function seedLocations(seedOrgId) {
     floorMapId: itFloorId,
     name: "Equipment Rack 1",
     type: "rack",
-    position: { x: 24, y: 24, width: 80, height: 120 },
+    shape: {
+      ...buildRectShape({ width: 1.5, height: 2.5, name: "Equipment Rack 1" }),
+      orgId: seedOrgId,
+    },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -315,7 +354,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: itFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 130, y: 24, width: 120, height: 60 },
+    shape: { ...buildRectShape({ width: 2.5, height: 1, name: "Shelf A" }), orgId: seedOrgId },
+    offset: { x: 3.5, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -326,7 +368,10 @@ async function seedLocations(seedOrgId) {
     floorMapId: generalFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 24, y: 24, width: 160, height: 60 },
+    shape: { ...buildRectShape({ width: 3, height: 1, name: "Shelf A" }), orgId: seedOrgId },
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     createdAt: now,
     updatedAt: now,
   });
@@ -337,6 +382,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 1",
     code: "SC-A1",
+    lastStocktakeAt: monthsAgo(0),
     createdAt: now,
     updatedAt: now,
   });
@@ -345,6 +391,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabAId,
     name: "Shelf 2",
     code: "SC-A2",
+    lastStocktakeAt: monthsAgo(1),
     createdAt: now,
     updatedAt: now,
   });
@@ -355,6 +402,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 1",
     code: "SC-B1",
+    lastStocktakeAt: monthsAgo(2),
     createdAt: now,
     updatedAt: now,
   });
@@ -363,6 +411,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: sciCabBId,
     name: "Shelf 2",
     code: "SC-B2",
+    lastStocktakeAt: monthsAgo(4),
     createdAt: now,
     updatedAt: now,
   });
@@ -373,6 +422,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 1",
     code: "IT-R1",
+    lastStocktakeAt: monthsAgo(5),
     createdAt: now,
     updatedAt: now,
   });
@@ -381,6 +431,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itRackId,
     name: "Bay 2",
     code: "IT-R2",
+    lastStocktakeAt: monthsAgo(7),
     createdAt: now,
     updatedAt: now,
   });
@@ -391,6 +442,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: itShelfId,
     name: "Bay 1",
     code: "IT-S1",
+    lastStocktakeAt: monthsAgo(9),
     createdAt: now,
     updatedAt: now,
   });
@@ -401,6 +453,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 1",
     code: "SR-A1",
+    lastStocktakeAt: monthsAgo(11),
     createdAt: now,
     updatedAt: now,
   });
@@ -409,6 +462,7 @@ async function seedLocations(seedOrgId) {
     storageUnitId: genShelfAId,
     name: "Bay 2",
     code: "SR-A2",
+    lastStocktakeAt: monthsAgo(12),
     createdAt: now,
     updatedAt: now,
   });
@@ -436,6 +490,12 @@ Meteor.startup(async () => {
   await Sites.rawCollection().createIndex({ orgId: 1 });
   await Products.rawCollection().createIndex({ orgId: 1 });
 
+  await seedDatabase();
+});
+
+// Runs the full seed sequence. Each step is individually guarded (it no-ops if
+// its data already exists), so this is safe to call repeatedly.
+async function seedDatabase() {
   const seedOrgId = await seedOrg();
   await seedOwner(seedOrgId);
   await seedProducts(seedOrgId);
@@ -443,6 +503,64 @@ Meteor.startup(async () => {
   await seedProductRecords();
 
   startScheduler();
+}
+
+// Wipes every seeded collection (and all user accounts) so the database can be
+// re-seeded from scratch. Destructive - only reachable via the protected
+// /admin/reset-seed endpoint below.
+async function resetDatabase() {
+  await ProductRecords.removeAsync({});
+  await Products.removeAsync({});
+  await ProductCategories.removeAsync({});
+  await StorageLocations.removeAsync({});
+  await StorageUnits.removeAsync({});
+  await FloorMaps.removeAsync({});
+  await Sites.removeAsync({});
+  await Organisations.removeAsync({});
+  await Meteor.users.removeAsync({});
+}
+
+// Constant-time string comparison so token checks don't leak via timing.
+function safeEqual(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
+
+// Protected admin endpoint: POST /admin/reset-seed wipes the DB and reseeds it.
+// The route is DISABLED unless a RESET_SEED_TOKEN is configured (Galaxy env var
+// or Meteor settings), and requires that token in the `x-reset-token` header.
+WebApp.connectHandlers.use("/admin/reset-seed", async (req, res) => {
+  const token = process.env.RESET_SEED_TOKEN || Meteor.settings?.RESET_SEED_TOKEN;
+
+  // No token configured -> behave as if the route doesn't exist.
+  if (!token) {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
+  if (req.method !== "POST") {
+    res.writeHead(405);
+    res.end("Method Not Allowed");
+    return;
+  }
+  if (!safeEqual(req.headers["x-reset-token"] || "", token)) {
+    res.writeHead(401);
+    res.end("Unauthorized");
+    return;
+  }
+
+  try {
+    await resetDatabase();
+    await seedDatabase();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, message: "Database reset and reseeded." }));
+  } catch (err) {
+    console.error("reset-seed failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: false, error: String(err) }));
+  }
 });
 
 Meteor.publish("allUsers", async function () {

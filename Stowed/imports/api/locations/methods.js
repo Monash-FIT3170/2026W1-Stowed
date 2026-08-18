@@ -3,17 +3,72 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import { Sites, FloorMaps, StorageUnits, StorageLocations } from "./collections";
+import { Sites, FloorMaps, StorageUnits, MapShapes, StorageLocations } from "./collections";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isValidStocktakeInterval } from "./stocktake";
+
+import { isSimple, makeCCW, removeCollinearPoints } from "poly-decomp-es";
 
 Meteor.methods({
   /**
+   * Updates the stocktake schedule for one Site and immediately refreshes the
+   * cached due flags for every location below it.
+   */
+  async "sites.updateStocktakeInterval"({ siteId, intervalDays }) {
+    check(siteId, String);
+    check(intervalDays, Number);
+
+    if (!Number.isInteger(intervalDays) || intervalDays < 1 || intervalDays > 3650) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
+
+    await assertOrgAccess(Sites, siteId, this.userId);
+    await requirePermission(this.userId, "settings.manage");
+
+    const now = new Date();
+    await Sites.updateAsync(siteId, {
+      $set: { stocktakeIntervalDays: intervalDays, updatedAt: now },
+    });
+
+    const floorMapIds = (await FloorMaps.find({ siteId }, { fields: { _id: 1 } }).fetchAsync()).map(
+      (floorMap) => floorMap._id,
+    );
+    const storageUnitIds = (
+      await StorageUnits.find(
+        { floorMapId: { $in: floorMapIds } },
+        { fields: { _id: 1 } },
+      ).fetchAsync()
+    ).map((storageUnit) => storageUnit._id);
+    const locations = await StorageLocations.find(
+      { storageUnitId: { $in: storageUnitIds } },
+      { fields: { _id: 1 } },
+    ).fetchAsync();
+
+    return { siteId, intervalDays, locationsChecked: locations.length };
+  },
+
+  /**
    * Creates a new Site.
    */
-  async "sites.create"({ name, description = "" }) {
+  async "sites.create"({
+    name,
+    description = "",
+    stocktakeIntervalDays = DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+  }) {
     check(name, String);
     check(description, String);
+    check(stocktakeIntervalDays, Number);
+
+    if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -28,6 +83,7 @@ Meteor.methods({
       orgId,
       name,
       description,
+      stocktakeIntervalDays,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -36,16 +92,24 @@ Meteor.methods({
   /**
    * Updates an existing Site.
    */
-  async "sites.update"({ siteId, name, description = "" }) {
+  async "sites.update"({ siteId, name, description = "", stocktakeIntervalDays }) {
     check(siteId, String);
     check(name, String);
     check(description, String);
+    check(stocktakeIntervalDays, Number);
+
+    if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+      throw new Meteor.Error(
+        "invalid-stocktake-interval",
+        "The stocktake interval must be a whole number between 1 and 3650 days.",
+      );
+    }
 
     await assertOrgAccess(Sites, siteId, this.userId);
     await requirePermission(this.userId, "locations.manage");
 
     await Sites.updateAsync(siteId, {
-      $set: { name, description, updatedAt: new Date() },
+      $set: { name, description, stocktakeIntervalDays, updatedAt: new Date() },
     });
   },
 
@@ -172,11 +236,12 @@ Meteor.methods({
   /**
    * Creates a new StorageUnit under an existing FloorMap.
    */
-  async "storageUnits.create"({ floorMapId, name, type, position, fill }) {
+  async "storageUnits.create"({ floorMapId, name, type, shape, offset, rotation, scale, fill }) {
     check(floorMapId, String);
     check(name, String);
     check(type, String);
-    check(position, Object);
+    check(shape, Object);
+    check(offset, Object);
     if (fill !== undefined) check(fill, String);
 
     // Prevent orphaned storage units by ensuring the parent FloorMap exists first.
@@ -195,7 +260,10 @@ Meteor.methods({
       floorMapId,
       name,
       type,
-      position,
+      shape: { ...shape, orgId },
+      offset,
+      rotation,
+      scale,
       ...(fill !== undefined ? { fill } : {}),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -205,12 +273,23 @@ Meteor.methods({
   /**
    * Updates an existing StorageUnit.
    */
-  async "storageUnits.update"({ storageUnitId, floorMapId, name, type, position, fill }) {
+  async "storageUnits.update"({
+    storageUnitId,
+    floorMapId,
+    name,
+    type,
+    shape,
+    offset,
+    rotation,
+    scale,
+    fill,
+  }) {
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
     check(type, String);
-    check(position, Object);
+    check(shape, Object);
+    check(offset, Object);
     if (fill !== undefined) check(fill, String);
 
     if (!this.userId && !Meteor.isDevelopment) {
@@ -237,12 +316,18 @@ Meteor.methods({
     }
     await assertOrgAccess(Sites, newFloorMap.siteId, this.userId);
 
+    // Fetch orgID from server to attach to shape
+    const orgId = await getCallerOrgId(this.userId);
+
     await StorageUnits.updateAsync(storageUnitId, {
       $set: {
         floorMapId,
         name,
         type,
-        position,
+        shape: { ...shape, orgId },
+        offset,
+        rotation,
+        scale,
         ...(fill !== undefined ? { fill } : {}),
         updatedAt: new Date(),
       },
@@ -286,6 +371,192 @@ Meteor.methods({
   },
 
   /**
+   * Creates a new shape object
+   */
+  async "mapShapes.create"({ name, points, gridReference = { x: 0, y: 0 } }) {
+    // validate inputs
+    check(name, String);
+    check(points, Array);
+    points.forEach((p) => check(p, { x: Number, y: Number }));
+    check(gridReference, { x: Number, y: Number });
+
+    // check user permissions
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    // build calculated values
+    // Organisation ID
+    const orgId = await getCallerOrgId(this.userId);
+    if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+    // width and height
+    const minX = Math.min(...points.map((p) => p.x));
+    const maxX = Math.max(...points.map((p) => p.x));
+    const minY = Math.min(...points.map((p) => p.y));
+    const maxY = Math.max(...points.map((p) => p.y));
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    if (width <= 0)
+      throw new Meteor.Error(
+        "invalid-shape-width",
+        `The width of the shape must be >0 but got "${width}"`,
+      );
+    if (height <= 0)
+      throw new Meteor.Error(
+        "invalid-shape-height",
+        `The height of the shape must be >0 but got "${height}"`,
+      );
+
+    // shapeId
+    const lastId = await MapShapes.rawCollection()
+      .aggregate([
+        {
+          $group: {
+            _id: null,
+            maxVal: { $max: "$shapeId" },
+          },
+        },
+      ])
+      .toArray();
+    const shapeId = lastId.length > 0 ? lastId[0].maxVal + 1 : 0;
+
+    // Check unique name (within organisation) - case-sensitive
+    const existing = await MapShapes.findOneAsync({
+      orgId,
+      name,
+    });
+    if (existing) {
+      throw new Meteor.Error("duplicate-name", `A shape named "${name}" already exists.`);
+    }
+
+    // Check if shape has any intersecting lines
+    const polygon = points.map((p) => [p.x, p.y]);
+    if (!isSimple(polygon)) {
+      throw new Meteor.Error("intersecting-lines", `The shape has intersecting lines.`);
+    }
+
+    // Remove redundant vertices that are close to eachother or in the line of antoher
+    removeCollinearPoints(polygon, 0.01);
+    // Ensure polygon follows CCW conventions
+    makeCCW(polygon);
+
+    // Convert polygon tuples back to {x,y} objects for db
+    const cleaned = polygon.map(([x, y]) => ({ x, y }));
+
+    return MapShapes.insertAsync({
+      orgId,
+      shapeId,
+      name,
+      points: cleaned,
+      gridReference: gridReference,
+    });
+  },
+
+  /**
+   * Updates an existing shape object
+   */
+  async "mapShapes.update"({ orgId, shapeId, name, points, gridReference = { x: 0, y: 0 } }) {
+    // validate inputs
+    check(orgId, String);
+    check(shapeId, Number);
+    check(name, String);
+    check(points, Array);
+    points.forEach((p) => check(p, { x: Number, y: Number }));
+    check(gridReference, { x: Number, y: Number });
+
+    // check user permissions
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    // build calculated values
+
+    // width and height
+    const minX = Math.min(...points.map((p) => p.x));
+    const maxX = Math.max(...points.map((p) => p.x));
+    const minY = Math.min(...points.map((p) => p.y));
+    const maxY = Math.max(...points.map((p) => p.y));
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    if (width <= 0)
+      throw new Meteor.Error(
+        "invalid-shape-width",
+        `The width of the shape must be >0 but got "${width}"`,
+      );
+    if (height <= 0)
+      throw new Meteor.Error(
+        "invalid-shape-height",
+        `The height of the shape must be >0 but got "${height}"`,
+      );
+
+    // Check unique name (within organisation) - case-sensitive, excluding this shape itself
+    const existing = await MapShapes.findOneAsync({
+      orgId,
+      name,
+      shapeId: { $ne: shapeId },
+    });
+    if (existing) {
+      throw new Meteor.Error("duplicate-name", `A shape named "${name}" already exists.`);
+    }
+
+    // Check if shape has any intersecting lines
+    const polygon = points.map((p) => [p.x, p.y]);
+    if (!isSimple(polygon)) {
+      throw new Meteor.Error("intersecting-lines", `The shape has intersecting lines.`);
+    }
+
+    // Remove redundant vertices that are close to eachother or in the line of antoher
+    removeCollinearPoints(polygon, 0.01);
+    // Ensure polygon follows CCW conventions
+    makeCCW(polygon);
+
+    // Convert polygon tuples back to {x,y} objects for db
+    const cleaned = polygon.map(([x, y]) => ({ x, y }));
+
+    return MapShapes.updateAsync(
+      { shapeId },
+      {
+        $set: {
+          orgId: orgId,
+          name: name,
+          points: cleaned,
+          gridReference: gridReference,
+        },
+      },
+    );
+  },
+
+  /**
+   * Deletes a shape from the database
+   */
+  async "mapShapes.delete"({ shapeId }) {
+    check(shapeId, Number);
+
+    // check user permissions
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    const shape = await MapShapes.findOneAsync({ shapeId: shapeId });
+    if (!shape) {
+      throw new Meteor.Error("shape-not-found", "No shape found with that name.");
+    }
+
+    await MapShapes.removeAsync({ shapeId: shapeId });
+  },
+
+  /**
    * Creates a new StorageLocation under an existing StorageUnit.
    */
   async "storageLocations.create"({ storageUnitId, name, code, imageUrl = "" }) {
@@ -310,6 +581,8 @@ Meteor.methods({
 
     const orgId = await getCallerOrgId(this.userId);
 
+    const now = new Date();
+
     return StorageLocations.insertAsync({
       orgId,
       storageUnitId,
@@ -317,8 +590,9 @@ Meteor.methods({
       code,
       imageUrl,
       storedItems: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      lastStocktakeAt: now,
+      createdAt: now,
+      updatedAt: now,
     });
   },
 
@@ -423,9 +697,29 @@ Meteor.methods({
     await StorageLocations.removeAsync(storageLocationId);
   },
 
+  /**
+   * Retrieves a storage unit as identified by its ID
+   */
   async "storageLocations.getByStorageUnit"({ storageUnitId }) {
     check(storageUnitId, String);
 
     return StorageLocations.find({ storageUnitId }, { sort: { code: 1 } }).fetchAsync();
+  },
+
+  /**
+   *
+   * Updates StorageLocation attributes when a stocktake has been completed for an item in a specific location
+   *
+   * This method sets the completion timestamp.
+   *
+   */
+  async "storageLocations.stocktakeComplete"({ locationId }) {
+    check(locationId, String);
+
+    await StorageLocations.updateAsync(locationId, {
+      $set: {
+        lastStocktakeAt: new Date(),
+      },
+    });
   },
 });

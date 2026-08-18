@@ -1,4 +1,4 @@
-import { Group, Rect, Text } from "react-konva";
+import { Group, Rect, Text, Line } from "react-konva";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
 import { COLOURS } from "../../../FloorMapStyles";
 
@@ -7,7 +7,7 @@ import { COLOURS } from "../../../FloorMapStyles";
  *
  * @param {Object}                  unit
  * @param {boolean}                 isSelected
- * @param {string}                  activeTool
+ * @param {boolean}                 isCanvasEditMode
  * @param {(e) => void}             onSelect
  * @param {(e) => void}             onDragMove
  * @param {(e) => void}             onDragEnd
@@ -19,15 +19,22 @@ import { COLOURS } from "../../../FloorMapStyles";
 export function StorageUnit({
   unit,
   isSelected,
-  activeTool,
+  isCanvasEditMode,
   onSelect,
   onDragMove,
   onDragEnd,
   onTransformEnd,
   groupRef,
 }) {
-  const canMove = activeTool === "move";
+  const canMove = isCanvasEditMode;
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
+
+  const isCustomShape =
+    unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+
+  const polygonPoints = isCustomShape
+    ? unit.shape.points.flatMap((point) => [point.x * px, point.y * px])
+    : [];
 
   return (
     <Group
@@ -42,24 +49,48 @@ export function StorageUnit({
       onTransformEnd={onTransformEnd}
     >
       {/* MAIN BODY */}
-      <Rect
-        width={unit.width * px}
-        height={unit.height * px}
-        fill={unit.fill}
-        stroke={isSelected ? COLOURS.ACCENT : "transparent"}
-        strokeWidth={2}
-        cornerRadius={4}
-        opacity={0.85}
-      />
+      {isCustomShape ? (
+        <Line
+          points={polygonPoints}
+          closed
+          fill={unit.fill}
+          stroke={isSelected ? COLOURS.ACCENT : "transparent"}
+          strokeWidth={2}
+          opacity={0.85}
+        />
+      ) : (
+        <Rect
+          width={unit.width * px}
+          height={unit.height * px}
+          fill={unit.fill}
+          stroke={isSelected ? COLOURS.ACCENT : "transparent"}
+          strokeWidth={2}
+          cornerRadius={4}
+          opacity={0.85}
+        />
+      )}
+
       {/* UNIT NAME */}
       <Text
+        x={0}
+        y={0}
         width={unit.width * px}
         height={unit.height * px}
+        padding={6}
         align="center"
         verticalAlign="middle"
         text={unit.name}
         fontSize={12}
-        fill="white"
+        fontFamily="Inter, sans-serif"
+        fontStyle="bold"
+        fill="#fdf7f2"
+        wrap="none"
+        ellipsis
+        shadowColor="black"
+        shadowOpacity={0.35}
+        shadowBlur={3}
+        shadowOffset={{ x: 0, y: 1 }}
+        listening={false}
       />
     </Group>
   );

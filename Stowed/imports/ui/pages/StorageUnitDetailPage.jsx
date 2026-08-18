@@ -9,6 +9,7 @@ import {
   StorageUnits,
 } from "/imports/api/locations/collections";
 import { getMockStorageLocationsByUnitId, getMockStorageUnitById } from "../../api/mockLocations";
+import { getTransformedBounds } from "/imports/api/locations/shapeUtils";
 import "./StorageUnitDetailPage.css";
 
 const STORAGE_UNIT_PHOTOS_KEY = "stowed.storageUnitPhotos";
@@ -77,8 +78,13 @@ export function StorageUnitDetailPage() {
     (total, location) => total + (location.storedItems?.length || 0),
     0,
   );
-  const widthMeters = unit.position.width / 50;
-  const heightMeters = unit.position.height / 50;
+  const unitBounds = getTransformedBounds(unit.shape, {
+    offset: unit.offset,
+    rotation: unit.rotation,
+    scale: unit.scale,
+  });
+  const widthMeters = unitBounds.width;
+  const heightMeters = unitBounds.height;
 
   function handlePhotoUpload(event) {
     const file = event.target.files?.[0];

@@ -1,10 +1,22 @@
 // imports/api/mockLocations.js
+import { buildRectShape } from "./locations/shapeUtils";
+
+/**
+ * Returns a date `months` before now, used to spread mock stocktake dates
+ * across the last 12 months.
+ */
+function monthsAgo(months) {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date;
+}
 
 export const mockSites = [
   {
     _id: "site-1",
     name: "Mornington Hardware",
     description: "Main hardware shop floor.",
+    stocktakeIntervalDays: 180,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -27,7 +39,10 @@ export const mockStorageUnits = [
     floorMapId: "floormap-1",
     name: "CAB-01",
     type: "cabinet",
-    position: { x: 50, y: 150, width: 100, height: 100 },
+    shape: buildRectShape({ width: 2, height: 2, name: "CAB-01" }),
+    offset: { x: 1, y: 3 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     photoUrl: "/cab-01-tools.svg",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -37,7 +52,10 @@ export const mockStorageUnits = [
     floorMapId: "floormap-1",
     name: "CAB-02",
     type: "cabinet",
-    position: { x: 200, y: 150, width: 100, height: 100 },
+    shape: buildRectShape({ width: 2, height: 2, name: "CAB-02" }),
+    offset: { x: 4, y: 3 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     photoUrl: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -47,7 +65,10 @@ export const mockStorageUnits = [
     floorMapId: "floormap-1",
     name: "SH-A1",
     type: "shelf",
-    position: { x: 50, y: 50, width: 50, height: 50 },
+    shape: buildRectShape({ width: 1, height: 1, name: "SH-A1" }),
+    offset: { x: 1, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     photoUrl: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -57,7 +78,10 @@ export const mockStorageUnits = [
     floorMapId: "floormap-1",
     name: "SH-A2",
     type: "shelf",
-    position: { x: 150, y: 50, width: 50, height: 50 },
+    shape: buildRectShape({ width: 1, height: 1, name: "SH-A2" }),
+    offset: { x: 3, y: 1 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     photoUrl: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -67,7 +91,10 @@ export const mockStorageUnits = [
     floorMapId: "floormap-1",
     name: "DR-1",
     type: "drawer",
-    position: { x: 50, y: 300, width: 50, height: 50 },
+    shape: buildRectShape({ width: 1, height: 1, name: "DR-1" }),
+    offset: { x: 1, y: 6 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     photoUrl: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -77,7 +104,10 @@ export const mockStorageUnits = [
     floorMapId: "floormap-1",
     name: "BIN-01",
     type: "other",
-    position: { x: 50, y: 400, width: 50, height: 50 },
+    shape: buildRectShape({ width: 1, height: 1, name: "BIN-01" }),
+    offset: { x: 1, y: 8 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
     photoUrl: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -113,6 +143,7 @@ export const mockStorageLocations = [
         status: "CRITICAL",
       },
     ],
+    lastStocktakeAt: monthsAgo(1),
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -137,6 +168,7 @@ export const mockStorageLocations = [
         status: "OK",
       },
     ],
+    lastStocktakeAt: monthsAgo(6),
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -146,6 +178,7 @@ export const mockStorageLocations = [
     name: "Drawer",
     code: "3",
     storedItems: [],
+    lastStocktakeAt: monthsAgo(12),
     createdAt: new Date(),
     updatedAt: new Date(),
   },

@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import "./Register.css";
-import { ROLES } from "imports/api/roles";
+import { ROLES } from "../api/roles";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { hasClientPermission } from "../api/userMethods";
