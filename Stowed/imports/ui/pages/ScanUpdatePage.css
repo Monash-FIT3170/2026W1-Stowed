@@ -1,0 +1,181 @@
+/* ScanUpdatePage.css — scoped under .scan-update-page */
+
+.scan-update-page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 96px;
+}
+
+.scan-update-page .scan-update-card {
+  width: 100%;
+  max-width: 420px;
+  align-self: flex-start;
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.scan-update-page .scan-update-product {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ProductThumbnail renders a 36px inline-styled img/div — scale it up here */
+.scan-update-page .scan-update-product > img,
+.scan-update-page .scan-update-product > div:first-child {
+  width: 64px !important;
+  height: 64px !important;
+  font-size: 16px !important;
+  border-radius: 12px !important;
+  flex-shrink: 0;
+}
+
+.scan-update-page .scan-update-name {
+  min-width: 0;
+}
+
+.scan-update-page .scan-update-title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  overflow-wrap: break-word;
+}
+
+.scan-update-page .scan-update-sku {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.scan-update-page .scan-update-field span {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.scan-update-page .scan-update-location {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Big tap-friendly stepper */
+.scan-update-page .scan-update-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+}
+
+.scan-update-page .scan-update-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 120ms ease;
+}
+
+.scan-update-page .scan-update-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.scan-update-page .scan-update-qty {
+  text-align: center;
+  min-width: 0;
+}
+
+.scan-update-page .scan-update-qty-value {
+  display: block;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-dark);
+}
+
+.scan-update-page .scan-update-qty-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.scan-update-page .scan-update-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger, #c00);
+}
+
+.scan-update-page .scan-update-message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.scan-update-page .scan-update-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scan-update-page .scan-update-actions > * {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+}
+
+.scan-update-page .scan-update-save {
+  padding: 12px 18px;
+  font-size: 15px;
+}
+
+.scan-update-page .scan-update-link {
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* Success */
+.scan-update-page .scan-update-success {
+  align-items: center;
+  text-align: center;
+}
+
+.scan-update-page .scan-update-check {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #d6ede8;
+  color: #4a8c78;
+  font-size: 32px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-update-page .scan-update-success .scan-update-actions {
+  width: 100%;
+}

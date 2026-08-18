@@ -34,7 +34,7 @@ export function ScanPage() {
     // treat it as a product code (sku or _id).
     const result = await Meteor.callAsync("products.findByCode", { code: text });
     if (result.matches.length === 1) {
-      navigate(`/inventory/${result.matches[0]._id}`);
+      navigate(`/scan/product/${result.matches[0]._id}`);
       return true;
     }
     if (result.matches.length > 1) {
@@ -159,7 +159,7 @@ export function ScanPage() {
                 key={match._id}
                 type="button"
                 className="scan-match-row"
-                onClick={() => navigate(`/inventory/${match._id}`)}
+                onClick={() => navigate(`/scan/product/${match._id}`)}
               >
                 <span className="scan-match-name">{match.name}</span>
                 {match.sku && <span className="scan-match-sku">SKU {match.sku}</span>}

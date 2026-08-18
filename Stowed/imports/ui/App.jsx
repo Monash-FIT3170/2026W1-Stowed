@@ -14,6 +14,7 @@ import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
 import { ScanPage } from "./pages/ScanPage";
 import { ScanSettingsPage } from "./pages/ScanSettingsPage";
+import { ScanUpdatePage } from "./pages/ScanUpdatePage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -154,6 +155,21 @@ export function App() {
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/scan") ? (
                     <ScanSettingsPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            {/* Quick stock update after scanning a product barcode */}
+            <Route
+              path="/scan/product/:productId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/scan") ? (
+                    <ScanUpdatePage />
                   ) : (
                     <Navigate to="/" replace />
                   )
