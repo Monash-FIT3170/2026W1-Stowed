@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Stage, Layer, Circle } from "react-konva";
+import { Stage, Layer, Circle, Line } from "react-konva";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { Meteor } from "meteor/meteor";
-import { buttonStyles } from "./FloorMapStyles";
+import { COLOURS, buttonStyles } from "./FloorMapStyles";
 
 export function CreateShapeModal({ onClose, shape = null }) {
   const [shapeName, setShapeName] = useState(
@@ -203,6 +203,20 @@ export function CreateShapeModal({ onClose, shape = null }) {
                 cursor: "crosshair",
               }}
             >
+              <Layer>
+                <Line
+                  points={points.reduce(
+                    (acc, point) => [
+                      ...acc,
+                      point.x * CANVAS_CONFIG.PIXELS_PER_METER,
+                      point.y * CANVAS_CONFIG.PIXELS_PER_METER
+                    ], [])}
+                  fill={COLOURS.ACCENT_SOFT}
+                  stroke={COLOURS.CANVAS_LABEL}
+                  strokeWidth={3}
+                  closed
+                />
+              </Layer>
               <Layer>
                 {points.map((point, index) => {
                   if (point.x === "" || point.y === "") {

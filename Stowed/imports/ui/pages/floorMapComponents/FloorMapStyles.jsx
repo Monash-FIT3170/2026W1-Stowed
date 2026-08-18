@@ -266,6 +266,7 @@ export const toolbarStyles = {
     background: COLOURS.CARD_BORDER,
   },
 };
+
 export const customShapesPanelStyles = {
   container: {
     width: "100%",
