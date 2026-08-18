@@ -17,6 +17,7 @@ import {
   StorageLocations,
   StorageUnits,
 } from "../imports/api/locations/collections";
+import { ShoppingLists } from "../imports/api/shoppingLists/collections";
 import { ROLES } from "../imports/api/roles";
 
 function renderWithRouter(element) {
@@ -69,6 +70,7 @@ describe("page rendering", function () {
       stubCollectionFind(Sites, []),
       stubCollectionFind(Products, []),
       stubCollectionFind(ProductRecords, []),
+      stubCollectionFind(ShoppingLists, []),
     ];
 
     try {
