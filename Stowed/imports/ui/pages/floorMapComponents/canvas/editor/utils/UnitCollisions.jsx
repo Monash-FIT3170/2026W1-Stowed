@@ -147,7 +147,7 @@ const broadPhaseTest = (newPoints, candidates) => {
  * @returns {{x: number, y: number}[][]} a list of convex polygons that make up the shape
  */
 const decomposePolygon = (points) => {
-  if (points.length <= 3) return [points];
+  if (points.length <= 3 || isConvex(points)) return [points];
 
   try {
     const polygon = points.map((p) => [p.x, p.y]);
@@ -253,3 +253,49 @@ const normaliseVector = (vector) => {
     y: vector.y / vectorMagnitude,
   };
 };
+
+/**
+ *  Computes the cross product between two connected edges given three points that form the two edghes
+ * 
+ * @param {*} p1 point 1
+ * @param {*} p2 point 2 (shared between the two edges)
+ * @param {*} p3 point 3 
+ * @returns 
+ */
+const crossProd = (p1, p2, p3) => (p2.x - p1.x) * (p3.y = p2.y) - (p2.y - p1.y) * (p3.x - p2.x);
+
+
+/**
+ * Checks if a shape is convex based on points
+ * 
+ * @param {*} points 
+ * @returns boolean
+ */
+const isConvex = (points) => {
+  
+  const n = points.length;
+
+  const state = { sign: 0};
+
+  return points.every((p0, i) => {
+    const p1 = points[(i+1) % n];
+    const p2 = points[(i+2) % n];
+
+    const crossProdRes = crossProd(p0, p1, p2);
+
+    // close to collinear, skip 
+    if (Math.abs(crossProdRes) < 1e-9) return true;
+
+    // gets turn direction of two edges
+    const turnDir = Math.sign(crossProdRes);
+
+    // handles first turn, dictates turns expected in later iterations
+    if (state.sign == 0) {
+      state.sign = turnDir;
+      return true;
+    }
+
+    // checks if turn direction consistent, if not, stops early and shape is concave
+    return turnDir === state.sign;
+  })
+}
