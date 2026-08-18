@@ -1,0 +1,40 @@
+name: Reset & seed database
+
+# Manual-only. Run from the Actions tab → "Run workflow".
+# Wipes the DEPLOYED database and reseeds it with demo data.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type RESET to confirm wiping the DEPLOYED database'
+        required: true
+        default: ''
+
+jobs:
+  reset:
+    name: Reset & seed deployed database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        env:
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "RESET" ]; then
+            echo "::error::You must type RESET to confirm. Got: '$CONFIRM'"
+            exit 1
+          fi
+
+      - name: Call reset-seed endpoint
+        env:
+          RESET_TOKEN: ${{ secrets.RESET_SEED_TOKEN }}
+          APP_URL: ${{ vars.GALAXY_APP_URL }}
+        run: |
+          status=$(curl -sS -o response.txt -w "%{http_code}" -X POST \
+            -H "x-reset-token: $RESET_TOKEN" \
+            "https://$APP_URL/admin/reset-seed")
+          echo "HTTP status: $status"
+          echo "Response: $(cat response.txt)"
+          if [ "$status" != "200" ]; then
+            echo "::error::Reset failed (HTTP $status)"
+            exit 1
+          fi

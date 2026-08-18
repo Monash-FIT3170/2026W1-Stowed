@@ -1,4 +1,4 @@
-import { Layer, Group, Rect, Text } from "react-konva";
+import { Layer, Group, Rect, Text, Line } from "react-konva";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
 import { snapToGrid } from "../../editor/utils/Snapping";
 import { COLOURS } from "../../../FloorMapStyles";
@@ -25,21 +25,40 @@ export function GhostLayer({
 }) {
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
+  const isCustomShape = (unit) =>
+    unit?.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+
+  const getPolygonPoints = (unit) =>
+    unit.shape.points.flatMap((point) => [point.x * px, point.y * px]);
+
   return (
     <Layer>
       {/* SINGLE DROP GHOST */}
       {ghostUnit && (
         <Group x={ghostUnit.x} y={ghostUnit.y}>
-          <Rect
-            width={ghostUnit.width}
-            height={ghostUnit.height}
-            fill={ghostUnit.fill}
-            stroke={COLOURS.ACCENT}
-            strokeWidth={2}
-            dash={[6, 4]}
-            cornerRadius={4}
-            opacity={0.45}
-          />
+          {isCustomShape(ghostUnit) ? (
+            <Line
+              points={getPolygonPoints(ghostUnit)}
+              closed
+              fill={ghostUnit.fill}
+              stroke={COLOURS.ACCENT}
+              strokeWidth={2}
+              dash={[6, 4]}
+              opacity={0.45}
+            />
+          ) : (
+            <Rect
+              width={ghostUnit.width}
+              height={ghostUnit.height}
+              fill={ghostUnit.fill}
+              stroke={COLOURS.ACCENT}
+              strokeWidth={2}
+              dash={[6, 4]}
+              cornerRadius={4}
+              opacity={0.45}
+            />
+          )}
+
           <Text
             width={ghostUnit.width}
             height={ghostUnit.height}
@@ -49,6 +68,7 @@ export function GhostLayer({
             fontSize={12}
             fill="white"
             opacity={0.7}
+            listening={false}
           />
         </Group>
       )}
@@ -57,6 +77,7 @@ export function GhostLayer({
       {dragOffsets.unitId &&
         [...selectedIds].map((id) => {
           const unit = units.find((u) => u.id === id);
+
           if (!unit) return null;
 
           let ghostX = (unit.x + dragOffsets.deltaX) * px;
@@ -69,16 +90,29 @@ export function GhostLayer({
 
           return (
             <Group key={`ghost-${id}`} x={ghostX} y={ghostY}>
-              <Rect
-                width={unit.width * px}
-                height={unit.height * px}
-                fill={unit.fill}
-                stroke={COLOURS.ACCENT}
-                strokeWidth={2}
-                dash={[6, 4]}
-                cornerRadius={4}
-                opacity={0.45}
-              />
+              {isCustomShape(unit) ? (
+                <Line
+                  points={getPolygonPoints(unit)}
+                  closed
+                  fill={unit.fill}
+                  stroke={COLOURS.ACCENT}
+                  strokeWidth={2}
+                  dash={[6, 4]}
+                  opacity={0.45}
+                />
+              ) : (
+                <Rect
+                  width={unit.width * px}
+                  height={unit.height * px}
+                  fill={unit.fill}
+                  stroke={COLOURS.ACCENT}
+                  strokeWidth={2}
+                  dash={[6, 4]}
+                  cornerRadius={4}
+                  opacity={0.45}
+                />
+              )}
+
               <Text
                 width={unit.width * px}
                 height={unit.height * px}
@@ -88,6 +122,7 @@ export function GhostLayer({
                 fontSize={12}
                 fill="white"
                 opacity={0.7}
+                listening={false}
               />
             </Group>
           );

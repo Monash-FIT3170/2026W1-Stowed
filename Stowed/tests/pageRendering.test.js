@@ -60,13 +60,18 @@ function stubCollectionFind(collection, results) {
 
 describe("page rendering", function () {
   it("renders static tools and workspace pages", function () {
+    // AlertsPage is data-driven (useTracker + Meteor.subscribe), so stub the
+    // subscription and the collections it reads. Empty data is fine here - the
+    // assertions only check the static page chrome.
     const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
-    const restoreProducts = stubCollectionFind(Products, []);
-    const restoreRecords = stubCollectionFind(ProductRecords, []);
-    const restoreLocations = stubCollectionFind(StorageLocations, []);
-    const restoreUnits = stubCollectionFind(StorageUnits, []);
-    const restoreFloorMaps = stubCollectionFind(FloorMaps, []);
-    const restoreSites = stubCollectionFind(Sites, []);
+    const restores = [
+      stubCollectionFind(StorageLocations, []),
+      stubCollectionFind(StorageUnits, []),
+      stubCollectionFind(FloorMaps, []),
+      stubCollectionFind(Sites, []),
+      stubCollectionFind(Products, []),
+      stubCollectionFind(ProductRecords, []),
+    ];
 
     try {
       const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
@@ -82,12 +87,7 @@ describe("page rendering", function () {
       assert.ok(lists.includes("Lists"));
       assert.ok(qrCodes.includes("QR"));
     } finally {
-      restoreSites();
-      restoreFloorMaps();
-      restoreUnits();
-      restoreLocations();
-      restoreRecords();
-      restoreProducts();
+      restores.reverse().forEach((restore) => restore());
       restoreMeteor();
     }
   });

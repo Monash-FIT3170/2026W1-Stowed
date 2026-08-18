@@ -46,7 +46,7 @@ async function recordProductActivity({
   return ProductActivities.insertAsync(activity);
 }
 
-// Traverses StorageLocation → StorageUnit → FloorMap → Site and asserts org access.
+// Traverses StorageLocation -> StorageUnit -> FloorMap -> Site and asserts org access.
 async function assertLocationOrgAccess(locationId, userId) {
   const storageLocation = await StorageLocations.findOneAsync(locationId);
   if (!storageLocation) throw new Meteor.Error("not-found", "Storage location not found.");

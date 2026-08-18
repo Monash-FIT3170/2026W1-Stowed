@@ -27,6 +27,8 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
           points={[x, 0, x, height]}
           stroke={COLOURS.CANVAS_GRID}
           strokeWidth={1}
+          dash={[4, 4]}
+          strokeScaleEnabled={false}
         />,
       );
       vLines.push(
@@ -49,6 +51,8 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
           points={[0, y, width, y]}
           stroke={COLOURS.CANVAS_GRID}
           strokeWidth={1}
+          dash={[4, 4]}
+          strokeScaleEnabled={false}
         />,
       );
       hLines.push(
@@ -65,9 +69,19 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
   }
 
   return (
-    <Layer>
+    <Layer imageSmoothingEnabled={false}>
       {/* BACKGROUND */}
-      <Rect x={0} y={0} width={width} height={height} fill={COLOURS.CANVAS_FILL} />
+      <Rect
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        fill={COLOURS.CANVAS_FILL}
+        shadowColor="black"
+        shadowBlur={16}
+        shadowOpacity={0.18}
+        shadowOffset={{ x: 0, y: 0 }}
+      />
 
       {/* GRID LINES */}
       {vLines}

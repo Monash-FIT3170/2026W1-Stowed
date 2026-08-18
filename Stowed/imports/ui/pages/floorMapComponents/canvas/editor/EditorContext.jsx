@@ -4,12 +4,44 @@ import { useTracker } from "meteor/react-meteor-data";
 
 import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
+import {
+  buildRectShape,
+  getBoundingBox,
+  getTransformedBounds,
+} from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+
+/**
+ * Maps a StorageUnit to a the rectangle model the canvas currently renders.
+ * The units real geometry is in its shape.points which is then transformed
+ * use offset.rotation.scale.
+ *
+ * The x/y/width.height here are just the bounding box of the transformed points
+ * as a stand in until the canvas can render different polygons
+ */
+function mapStorageUnitToCanvasUnit(unit) {
+  const transform = { offset: unit.offset, rotation: unit.rotation, scale: unit.scale };
+  const bounds = getTransformedBounds(unit.shape, transform);
+  return {
+    id: unit._id,
+    _id: unit._id,
+    name: unit.name,
+    type: unit.type,
+    x: bounds.minX,
+    y: bounds.minY,
+    width: bounds.width,
+    height: bounds.height,
+    shape: unit.shape,
+    offset: unit.offset,
+    rotation: unit.rotation ?? 0,
+    scale: unit.scale,
+    fill: unit.fill || "#7a5230",
+  };
+}
 
 // --- TOOL OPTIONS ---
 export const TOOLS = {
   SELECT: "select",
-  MOVE: "move",
   ADD: "add",
 };
 
@@ -27,14 +59,14 @@ const EditorContext = createContext(null);
  * Owns all shared editor state: active tool, floor dimensions, canvas settings,
  * placed units, undo/redo history, save/load, and low stock alert data.
  *
- * @param {{ children: React.ReactNode, floorMapId: string }} props
+ * @param {{ children: React.ReactNode, floorMapId: string, isCanvasEditMode: boolean, setCanvasEditMode: (v: boolean) => void }} props
  */
-export function EditorProvider({ children, floorMapId }) {
+export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanvasEditMode }) {
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
-  const [isCanvasSettingsOpen, setCanvasSettingsOpen] = useState(false);
-  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
+  const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
+  const [isEditorSettingsOpen, setEditorSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
 
@@ -146,28 +178,7 @@ export function EditorProvider({ children, floorMapId }) {
       });
     }
 
-    // Normalise coordinates - units created via Locations page may be stored
-    // in pixels (large values), while floor map editor stores in meters.
-    // Threshold: if x or y or w or h > 20, assume pixels and convert to meters.
-    const PX_PER_M = 50;
-    const canvasUnits = savedUnits.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
-      const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
-      return {
-        id: unit._id,
-        _id: unit._id,
-        name: unit.name,
-        type: unit.type,
-        x: isPixels ? x / PX_PER_M : x,
-        y: isPixels ? y / PX_PER_M : y,
-        width: isPixels ? w / PX_PER_M : w,
-        height: isPixels ? h / PX_PER_M : h,
-        fill: unit.fill || "lightblue",
-      };
-    });
+    const canvasUnits = savedUnits.map(mapStorageUnitToCanvasUnit);
 
     setUnits(canvasUnits);
     historyRef.current = { stack: [canvasUnits], index: 0 };
@@ -214,37 +225,64 @@ export function EditorProvider({ children, floorMapId }) {
       const savedCanvasUnits = [];
 
       for (const unit of units) {
-        const position = {
-          x: unit.x,
-          y: unit.y,
-          width: unit.width,
-          height: unit.height,
-        };
-
         if (unit._id) {
+          // Recalculate all new transformations and update accordingly
+          const loadedBounds = getTransformedBounds(unit.shape, {
+            offset: unit.offset,
+            rotation: unit.rotation,
+            scale: unit.scale,
+          });
+          const newOffset = {
+            x: unit.offset.x + (unit.x - loadedBounds.minX),
+            y: unit.offset.y + (unit.y - loadedBounds.minY),
+          };
+
+          const rawBounds = getBoundingBox(unit.shape.points);
+          const newScale = {
+            x: rawBounds.width > 0 ? unit.width / rawBounds.width : (unit.scale?.x ?? 1),
+            y: rawBounds.height > 0 ? unit.height / rawBounds.height : (unit.scale?.y ?? 1),
+          };
+
           await callMethod("storageUnits.update", {
             storageUnitId: unit._id,
             floorMapId: activeFloorMapId,
             name: unit.name,
             type: unit.type || "other",
-            position,
-            fill: unit.fill || "lightblue",
+            shape: unit.shape,
+            offset: newOffset,
+            rotation: unit.rotation ?? 0,
+            scale: newScale,
+            fill: unit.fill || "#7a5230",
           });
 
-          savedCanvasUnits.push(unit);
+          savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
         } else {
+          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+          const shape = hasCustomShape
+            ? unit.shape
+            : buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
+          const offset = { x: Number(unit.x), y: Number(unit.y) };
+          const scale = { x: 1, y: 1 };
+
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
             name: unit.name,
             type: unit.type || "other",
-            position,
-            fill: unit.fill || "lightblue",
+            shape,
+            offset,
+            rotation: 0,
+            scale,
+            fill: unit.fill || "#7a5230",
           });
 
           savedCanvasUnits.push({
             ...unit,
             _id: newId,
             id: newId,
+            shape,
+            offset,
+            rotation: 0,
+            scale,
           });
         }
       }
@@ -277,25 +315,7 @@ export function EditorProvider({ children, floorMapId }) {
       });
     }
 
-    const PX_PER_M = 50;
-    const canvasUnits = savedUnits.map((unit) => {
-      const x = unit.position.x;
-      const y = unit.position.y;
-      const w = unit.position.width;
-      const h = unit.position.height;
-      const isPixels = x > 20 || y > 20 || w > 20 || h > 20;
-      return {
-        id: unit._id,
-        _id: unit._id,
-        name: unit.name,
-        type: unit.type,
-        x: isPixels ? x / PX_PER_M : x,
-        y: isPixels ? y / PX_PER_M : y,
-        width: isPixels ? w / PX_PER_M : w,
-        height: isPixels ? h / PX_PER_M : h,
-        fill: unit.fill || "lightblue",
-      };
-    });
+    const canvasUnits = savedUnits.map(mapStorageUnitToCanvasUnit);
 
     commitUnits(canvasUnits);
     alert("Layout loaded from database!");
@@ -312,13 +332,8 @@ export function EditorProvider({ children, floorMapId }) {
     setActiveTool(TOOLS.SELECT);
   }
 
-  // --- CANVAS SETTINGS ---
-  function handleCanvasSettingsSave({
-    floorSize: newFloorSize,
-    gridInterval,
-    showGrid,
-    snapToGrid,
-  }) {
+  // --- FLOOR MAP SETTINGS ---
+  function handleFloorMapSettingsSave({ floorSize: newFloorSize }) {
     const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
     const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
     const unitsInsideFloor = units.filter(
@@ -343,24 +358,32 @@ export function EditorProvider({ children, floorMapId }) {
     }
 
     setFloorSize(newFloorSize);
+    return true;
+  }
+
+  // --- EDITOR SETTINGS ---
+  function handleEditorSettingsSave({ gridInterval, showGrid, snapToGrid }) {
     setCanvasSettings({ gridInterval, showGrid, snapToGrid });
     return true;
   }
 
   async function handleDeleteSelectedUnit() {
     if (!selectedUnit) return;
-    const unitId = selectedUnit._id || selectedUnit.id;
-    if (!unitId) {
-      // Unit not saved to DB yet - just remove from canvas
-      commitUnits((prev) =>
-        prev.filter((u) => u.id !== selectedUnit.id && u._id !== selectedUnit._id),
-      );
+
+    if (!selectedUnit._id) {
+      commitUnits((prev) => prev.filter((u) => u.id !== selectedUnit.id));
+
       setSelectedUnit(null);
       return;
     }
+
     try {
-      await callMethod("storageUnits.delete", { storageUnitId: unitId });
-      commitUnits((prev) => prev.filter((u) => u._id !== unitId && u.id !== unitId));
+      await callMethod("storageUnits.delete", {
+        storageUnitId: selectedUnit._id,
+      });
+
+      commitUnits((prev) => prev.filter((u) => u._id !== selectedUnit._id));
+
       setSelectedUnit(null);
     } catch (error) {
       alert(
@@ -378,12 +401,15 @@ export function EditorProvider({ children, floorMapId }) {
     // Floor
     floorSize,
     setFloorSize,
+    isFloorMapSettingsOpen,
+    setFloorMapSettingsOpen,
+    handleFloorMapSettingsSave,
 
-    // Canvas settings
+    // Editor settings
     canvasSettings,
-    isCanvasSettingsOpen,
-    setCanvasSettingsOpen,
-    handleCanvasSettingsSave,
+    isEditorSettingsOpen,
+    setEditorSettingsOpen,
+    handleEditorSettingsSave,
 
     // Mode toggling
     isCanvasEditMode,
