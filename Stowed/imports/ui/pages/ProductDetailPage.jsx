@@ -11,7 +11,6 @@ import { getBarcodeValue } from "/imports/api/products/codes";
 import { ProductBarcode } from "../components/ProductBarcode";
 import "./ProductDetailPage.css";
 import "../Global.css";
-import { StockAdjuster } from "../components/StockAdjuster";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -55,8 +54,6 @@ export function ProductDetailView({
   const canDelete = hasClientPermission(role, "products.delete");
   const canUploadImage = hasClientPermission(role, "products.uploadImage");
   const canRestock = hasClientPermission(role, "products.restock");
-  const canAdjustStock = hasClientPermission(role, "products.adjustStock");
-  const [stockError, setStockError] = useState("");
 
   // -- Restock modal state --
   const [showRestockModal, setShowRestockModal] = useState(false);
@@ -408,35 +405,21 @@ export function ProductDetailView({
               </div>
             </div>
 
-                        <div className="detail-section">
+            <div className="detail-section">
               <h2 className="section-title">
                 <span className="section-badge lc">LC</span>
                 Storage locations
               </h2>
               <div className="section-content">
-                {stockError && <div className="warning-text">{stockError}</div>}
                 {storageAssignments.length ? (
                   <div className="storage-location-list">
                     {storageAssignments.map((assignment) => (
                       <div key={assignment.key} className="storage-location-item">
                         <div>
                           <div className="storage-location-name">{assignment.label}</div>
-                          <div className="storage-location-meta">
-                            {assignment.locationId && canAdjustStock
-                              ? "Tap − / + or set the counted amount"
-                              : "Assigned stock"}
-                          </div>
+                          <div className="storage-location-meta">Assigned stock</div>
                         </div>
-                        {assignment.locationId && canAdjustStock ? (
-                          <StockAdjuster
-                            productId={productId}
-                            locationId={assignment.locationId}
-                            quantity={assignment.quantity}
-                            onError={setStockError}
-                          />
-                        ) : (
-                          <div className="storage-location-quantity">{assignment.quantity}</div>
-                        )}
+                        <div className="storage-location-quantity">{assignment.quantity}</div>
                       </div>
                     ))}
                   </div>
