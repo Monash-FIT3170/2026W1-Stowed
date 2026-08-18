@@ -15,3 +15,6 @@ import "./gridSnapping.test.js";
 import "./searchAndFilter.test.js";
 import "./fileUpload.test.js";
 import "./productMethods.test.js";
+import "./locationsPage.test.js";
+import "./locationDetail.test.js";
+import "./locationMethods.test.js";

@@ -1,5 +1,6 @@
 import { useRef, useEffect, useReducer } from "react";
 import { Stage } from "react-konva";
+import Konva from "konva";
 
 import { useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
@@ -13,8 +14,12 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 
+if (typeof window !== "undefined") {
+  Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
+}
+
 export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
-  const { units, commitUnits, activeTool, floorSize, canvasSettings } = useEditor();
+  const { units, commitUnits, floorSize, canvasSettings } = useEditor();
 
   const width = floorSize.width;
   const height = floorSize.height;
@@ -44,8 +49,12 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
     handleDragEndGrid,
     handleTransformEnd,
     handleWheel,
+    handleZoomIn,
+    handleZoomOut,
+    handleFitToScreen,
     handleCopy,
     handlePaste,
+    handleDuplicate,
     handleDelete,
   } = useCanvasHandlers({
     dispatch,
@@ -59,7 +68,6 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
     gridInterval,
     width,
     height,
-    activeTool,
     wrapperRef,
     clipboard,
     isCanvasEditMode,
@@ -104,10 +112,14 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
 
       if (e.key === "c" && (e.ctrlKey || e.metaKey)) handleCopy();
       if (e.key === "v" && (e.ctrlKey || e.metaKey)) handlePaste();
+      if (e.key === "d" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault(); // otherwise the browser bookmarks the page
+        handleDuplicate();
+      }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleCopy, handlePaste, handleDelete]);
+  }, [handleCopy, handlePaste, handleDuplicate, handleDelete]);
 
   return (
     <div
@@ -115,7 +127,7 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      style={{ width: "100%", height: "100%" }}
+      style={{ width: "100%", height: "100%", position: "relative" }}
     >
       <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
         {/* Only mount Stage once we have real pixel dimensions */}
@@ -139,7 +151,7 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
             <UnitLayer
               units={units}
               selectedIds={selectedIds}
-              activeTool={activeTool}
+              isCanvasEditMode={isCanvasEditMode}
               getGroupRef={getGroupRef}
               onUnitClick={(unit, e) => {
                 setSelectedStorageUnitId?.(unit._id || unit.id);
@@ -171,6 +183,78 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
           </Stage>
         )}
       </div>
+
+      {/* ZOOM CONTROLS - floating over the bottom-right of the canvas */}
+      <div
+        style={{
+          position: "absolute",
+          right: 16,
+          bottom: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          background: "var(--card-bg)",
+          border: "1px solid var(--border-light)",
+          borderRadius: 10,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          padding: 4,
+          zIndex: 50,
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleZoomOut}
+          aria-label="Zoom out"
+          title="Zoom out"
+          style={zoomButtonStyle}
+        >
+          −
+        </button>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: "var(--text-muted)",
+            minWidth: 38,
+            textAlign: "center",
+            userSelect: "none",
+          }}
+        >
+          {Math.round(scale * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={handleZoomIn}
+          aria-label="Zoom in"
+          title="Zoom in"
+          style={zoomButtonStyle}
+        >
+          +
+        </button>
+        <div style={{ width: 1, height: 20, background: "var(--border-light)", margin: "0 2px" }} />
+        <button
+          type="button"
+          onClick={handleFitToScreen}
+          aria-label="Fit to screen"
+          title="Fit to screen"
+          style={{ ...zoomButtonStyle, width: "auto", padding: "0 10px", fontSize: 11 }}
+        >
+          Fit
+        </button>
+      </div>
     </div>
   );
 }
+
+const zoomButtonStyle = {
+  width: 26,
+  height: 26,
+  border: "none",
+  background: "transparent",
+  borderRadius: 6,
+  cursor: "pointer",
+  fontSize: 16,
+  lineHeight: 1,
+  color: "var(--text-dark)",
+  fontFamily: "inherit",
+};

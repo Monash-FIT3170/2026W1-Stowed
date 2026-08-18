@@ -2,7 +2,13 @@
 import { Mongo } from "meteor/mongo";
 import "meteor/aldeed:collection2/static";
 
-import { SiteSchema, FloorMapSchema, StorageUnitSchema, StorageLocationSchema } from "./schemas";
+import {
+  SiteSchema,
+  FloorMapSchema,
+  StorageUnitSchema,
+  UnitShapeSchema,
+  StorageLocationSchema,
+} from "./schemas";
 
 /**
  * Stores high-level physical storage areas.
@@ -20,6 +26,11 @@ export const FloorMaps = new Mongo.Collection("floorMaps");
 export const StorageUnits = new Mongo.Collection("storageUnits");
 
 /**
+ * Stores default and customer shape objects available in the Floor Map Editor
+ */
+export const MapShapes = new Mongo.Collection("mapShapes");
+
+/**
  * Stores fixed storage locations within a StorageUnit.
  */
 export const StorageLocations = new Mongo.Collection("storageLocations");
@@ -27,4 +38,5 @@ export const StorageLocations = new Mongo.Collection("storageLocations");
 Sites.attachSchema(SiteSchema);
 FloorMaps.attachSchema(FloorMapSchema);
 StorageUnits.attachSchema(StorageUnitSchema);
+MapShapes.attachSchema(UnitShapeSchema);
 StorageLocations.attachSchema(StorageLocationSchema);

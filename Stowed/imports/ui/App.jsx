@@ -12,6 +12,8 @@ import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { StocktakePage } from "./pages/StocktakePage";
+import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -132,6 +134,20 @@ export function App() {
               }
             />
             <Route
+              path="/locations/:locationId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/locations") ? (
+                    <LocationDetailPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
               path="/lists"
               element={
                 isLoggedIn ? (
@@ -145,6 +161,7 @@ export function App() {
                 )
               }
             />
+<<<<<<< HEAD
             <Route
               path="/lists/:listId"
               element={
@@ -159,7 +176,25 @@ export function App() {
                 )
               }
             />
+=======
+            {/* A stocktake is always scoped to one storage location, so the bare
+                path has nothing to show and falls back to the inventory page. */}
+>>>>>>> 8a0c1e84ce06bc5e182fbf240b47d4d26d326100
             <Route path="/stocktake" element={<Navigate to="/" replace />} />
+            <Route
+              path="/stocktake/:locationId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/stocktake") ? (
+                    <StocktakePage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
             <Route
               path="/qr-codes"
               element={
