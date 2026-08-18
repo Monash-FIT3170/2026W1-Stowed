@@ -10,8 +10,17 @@ export function searchProducts(products, query) {
   });
 }
 
+// Low and out of stock are disjoint, matching the three states of StatusBadge:
+// an item with nothing left reads as out of stock, not low.
 export function filterLowStock(products) {
-  return products.filter((item) => item.reorderAt != null && item.totalQuantity <= item.reorderAt);
+  return products.filter(
+    (item) =>
+      item.reorderAt != null && item.totalQuantity > 0 && item.totalQuantity <= item.reorderAt,
+  );
+}
+
+export function filterOutOfStock(products) {
+  return products.filter((item) => item.totalQuantity <= 0);
 }
 
 export function filterByStorageUnit(products, productRecords, storageLocations, unitId) {

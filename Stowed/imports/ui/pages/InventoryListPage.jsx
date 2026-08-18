@@ -10,7 +10,12 @@ import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
 import "../Global.css";
-import { searchProducts, filterLowStock, filterByStorageUnit } from "../../api/products/filters";
+import {
+  searchProducts,
+  filterLowStock,
+  filterOutOfStock,
+  filterByStorageUnit,
+} from "../../api/products/filters";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -117,6 +122,9 @@ export function InventoryListPage() {
     if (activeFilter === "low-stock") {
       result = filterLowStock(result);
     }
+    if (activeFilter === "out-of-stock") {
+      result = filterOutOfStock(result);
+    }
     if (activeFilter === "location") {
       result = filterByStorageUnit(result, productRecords, storageLocations, locationFilterUnitId);
     }
@@ -128,6 +136,7 @@ export function InventoryListPage() {
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const lowStockCount = filterLowStock(items).length;
+  const outOfStockCount = filterOutOfStock(items).length;
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedProductIds.includes(item._id)),
@@ -173,7 +182,8 @@ export function InventoryListPage() {
 
   const filters = [
     { id: "all", label: "All", count: items.length },
-    { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
+    { id: "low-stock", label: "Low stock", count: lowStockCount },
+    { id: "out-of-stock", label: "Out of stock", count: outOfStockCount },
     { id: "tag", label: "Tag ▾" },
     { id: "location", label: "Location ▾" },
   ];
