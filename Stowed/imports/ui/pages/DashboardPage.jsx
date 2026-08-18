@@ -411,19 +411,19 @@ export function DashboardPage() {
       label: "Units on hand",
       value: inventorySnapshot.unitsOnHand,
       to: "/inventory/list",
-      tone: "green",
+      tone: "neutral",
     },
     {
       label: "Products",
       value: inventorySnapshot.productCount,
       to: "/inventory/list",
-      tone: "orange",
+      tone: "neutral",
     },
     {
       label: "Storage locations",
       value: inventorySnapshot.storageLocationCount,
       to: "/locations",
-      tone: "yellow",
+      tone: "neutral",
     },
     {
       label: "Storage units",
