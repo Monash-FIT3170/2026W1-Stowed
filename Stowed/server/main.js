@@ -21,7 +21,6 @@ import {
 import { backfillProductActivities } from "/imports/api/products/activityBackfill";
 import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
 import { buildRectShape } from "/imports/api/locations/shapeUtils";
-import { Products, ProductRecords } from "/imports/api/products/collections";
 import { ProductCategories } from "/imports/api/categories/collections";
 import { Organisations } from "/imports/api/organisations";
 
