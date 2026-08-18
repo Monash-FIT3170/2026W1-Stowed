@@ -158,18 +158,18 @@
 }
 
 .product-status-badge.in-stock {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--status-in-stock-bg);
+  color: var(--status-in-stock-text);
 }
 
 .product-status-badge.low-stock {
-  background: #ffedd5;
-  color: #b45309;
+  background: var(--status-low-stock-bg);
+  color: var(--status-low-stock-text);
 }
 
 .product-status-badge.out-of-stock {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--status-out-of-stock-bg);
+  color: var(--status-out-of-stock-text);
 }
 
 .header-title {

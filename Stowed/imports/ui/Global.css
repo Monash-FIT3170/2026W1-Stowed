@@ -17,6 +17,15 @@
   --tag-bg: #f5efe6;
   --tag-text: #5c4f3f;
   --danger: #cc0000;
+
+  /* Stock status, shared by the StatusBadge component and the product detail
+     header so the same product reads the same on every page. */
+  --status-in-stock-bg: #dcfce7;
+  --status-in-stock-text: #166534;
+  --status-low-stock-bg: #ffedd5;
+  --status-low-stock-text: #b45309;
+  --status-out-of-stock-bg: #fee2e2;
+  --status-out-of-stock-text: #991b1b;
   --dark: #2b1f1a;
   --cream: #fff6ef;
 }
