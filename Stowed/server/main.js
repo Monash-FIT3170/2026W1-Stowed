@@ -1,6 +1,12 @@
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
+import { WebApp } from "meteor/webapp";
+import crypto from "crypto";
 import "/imports/api/products/methods";
+import "/imports/api/categories/methods";
+import "/imports/api/shoppingLists/methods";
+import "/imports/api/schedules/methods";
+import { startScheduler } from "/imports/api/schedules/scheduler";
 import "/imports/api/locations/methods";
 import "/imports/api/publications";
 import "/imports/api/userMethods";
@@ -12,8 +18,10 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { backfillProductActivities } from "/imports/api/products/activityBackfill";
+import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
 import { buildRectShape } from "/imports/api/locations/shapeUtils";
-import { Products, ProductRecords } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { Organisations } from "/imports/api/organisations";
 
 async function seedOrg() {
@@ -38,23 +46,39 @@ async function seedOrg() {
   return org._id;
 }
 
+async function seedCategory(seedOrgId, name, cache) {
+  if (cache.has(name)) return cache.get(name);
+
+  let category = await ProductCategories.findOneAsync({ orgId: seedOrgId, name });
+  if (!category) {
+    const categoryId = await ProductCategories.insertAsync({ orgId: seedOrgId, name });
+    category = { _id: categoryId };
+  }
+
+  cache.set(name, category._id);
+  return category._id;
+}
+
 async function seedProducts(seedOrgId) {
   const count = await Products.find().countAsync();
   if (count > 0) return;
 
   const now = new Date();
-  const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
+  const categoryCache = new Map();
+  const add = async ({ name, description, category, brand, unitCost, totalQuantity }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
       category,
+      categoryId: await seedCategory(seedOrgId, category, categoryCache),
       brand,
       unitCost,
       totalQuantity,
       images: [],
       createdAt: now,
       updatedAt: now,
+      updatedByUsername: "System",
     });
 
   await add({
@@ -467,12 +491,81 @@ async function seedOwner(seedOrgId) {
 Meteor.startup(async () => {
   await Sites.rawCollection().createIndex({ orgId: 1 });
   await Products.rawCollection().createIndex({ orgId: 1 });
+  await ProductActivities.rawCollection().createIndex({ orgId: 1, createdAt: -1 });
 
+  await seedDatabase();
+});
+
+// Runs the full seed sequence. Each step is individually guarded (it no-ops if
+// its data already exists), so this is safe to call repeatedly.
+async function seedDatabase() {
   const seedOrgId = await seedOrg();
   await seedOwner(seedOrgId);
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
+  await backfillProductActivities(seedOrgId);
+
+  startScheduler();
+}
+
+// Wipes every seeded collection (and all user accounts) so the database can be
+// re-seeded from scratch. Destructive - only reachable via the protected
+// /admin/reset-seed endpoint below.
+async function resetDatabase() {
+  await ProductActivities.removeAsync({});
+  await ProductRecords.removeAsync({});
+  await Products.removeAsync({});
+  await ProductCategories.removeAsync({});
+  await StorageLocations.removeAsync({});
+  await StorageUnits.removeAsync({});
+  await FloorMaps.removeAsync({});
+  await Sites.removeAsync({});
+  await Organisations.removeAsync({});
+  await Meteor.users.removeAsync({});
+}
+
+// Constant-time string comparison so token checks don't leak via timing.
+function safeEqual(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
+
+// Protected admin endpoint: POST /admin/reset-seed wipes the DB and reseeds it.
+// The route is DISABLED unless a RESET_SEED_TOKEN is configured (Galaxy env var
+// or Meteor settings), and requires that token in the `x-reset-token` header.
+WebApp.connectHandlers.use("/admin/reset-seed", async (req, res) => {
+  const token = process.env.RESET_SEED_TOKEN || Meteor.settings?.RESET_SEED_TOKEN;
+
+  // No token configured -> behave as if the route doesn't exist.
+  if (!token) {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
+  if (req.method !== "POST") {
+    res.writeHead(405);
+    res.end("Method Not Allowed");
+    return;
+  }
+  if (!safeEqual(req.headers["x-reset-token"] || "", token)) {
+    res.writeHead(401);
+    res.end("Unauthorized");
+    return;
+  }
+
+  try {
+    await resetDatabase();
+    await seedDatabase();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, message: "Database reset and reseeded." }));
+  } catch (err) {
+    console.error("reset-seed failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: false, error: String(err) }));
+  }
 });
 
 Meteor.publish("allUsers", async function () {

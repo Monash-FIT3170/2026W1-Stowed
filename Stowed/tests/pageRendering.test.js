@@ -7,20 +7,23 @@ import { AlertsPage } from "../imports/ui/pages/AlertsPage";
 import { ForecastPage } from "../imports/ui/pages/ForecastPage";
 import { ListsPage } from "../imports/ui/pages/ListsPage";
 import { QRCodesPage } from "../imports/ui/pages/QRCodesPage";
-import { InventoryPage } from "../imports/ui/pages/InventoryPage";
+import { DashboardPage } from "../imports/ui/pages/DashboardPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
 import { LocationsPage } from "../imports/ui/pages/LocationsPage";
-import { Products, ProductRecords } from "../imports/api/products/collections";
+import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
 import {
   FloorMaps,
   Sites,
   StorageLocations,
   StorageUnits,
 } from "../imports/api/locations/collections";
+import { ShoppingLists } from "../imports/api/shoppingLists/collections";
 import { ROLES } from "../imports/api/roles";
 
-function renderWithRouter(element) {
-  return renderToStaticMarkup(React.createElement(MemoryRouter, null, element));
+function renderWithRouter(element, initialEntry = "/") {
+  return renderToStaticMarkup(
+    React.createElement(MemoryRouter, { initialEntries: [initialEntry] }, element),
+  );
 }
 
 function stubMeteor({ role, username = "Alex", userId = "user-id" }) {
@@ -66,7 +69,7 @@ function anchorWithClass(html, className) {
 describe("page rendering", function () {
   it("renders static tools and workspace pages", function () {
     // AlertsPage is data-driven (useTracker + Meteor.subscribe), so stub the
-    // subscription and the collections it reads. Empty data is fine here — the
+    // subscription and the collections it reads. Empty data is fine here - the
     // assertions only check the static page chrome.
     const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
     const restores = [
@@ -76,12 +79,13 @@ describe("page rendering", function () {
       stubCollectionFind(Sites, []),
       stubCollectionFind(Products, []),
       stubCollectionFind(ProductRecords, []),
+      stubCollectionFind(ShoppingLists, []),
     ];
 
     try {
       const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
       const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
-      const lists = renderToStaticMarkup(React.createElement(ListsPage));
+      const lists = renderWithRouter(React.createElement(ListsPage));
       const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
 
       assert.ok(alerts.includes("Stock"));
@@ -142,7 +146,7 @@ describe("page rendering", function () {
       }
     });
 
-    it("renders inventory dashboard data", function () {
+    it("renders dashboard inventory data", function () {
       const items = [
         {
           _id: "hammer",
@@ -151,6 +155,8 @@ describe("page rendering", function () {
           reorderAt: 4,
           unitCost: 3,
           photoUrl: "https://example.com/hammer.png",
+          updatedAt: new Date("2026-08-10T00:00:00.000Z"),
+          updatedByUsername: "Jordan",
         },
         {
           _id: "gloves",
@@ -159,24 +165,113 @@ describe("page rendering", function () {
           reorderAt: 3,
           unitCost: 5,
           photoUrl: "https://example.com/gloves.png",
+          updatedAt: new Date("2026-08-12T00:00:00.000Z"),
+          updatedByUsername: "Alex",
         },
+      ];
+      const activities = [
+        {
+          _id: "activity-stocktake",
+          orgId: "org-1",
+          productId: "gloves",
+          productName: "Gloves",
+          action: "stocktake",
+          actorUsername: "Alex",
+          quantityBefore: 5,
+          quantityAfter: 2,
+          locationName: "Warehouse shelf",
+          createdAt: new Date("2026-08-12T00:00:00.000Z"),
+        },
+        {
+          _id: "activity-restock",
+          orgId: "org-1",
+          productId: "hammer",
+          productName: "Hammer",
+          action: "restocked",
+          actorUsername: "Jordan",
+          quantityBefore: 4,
+          quantityAfter: 10,
+          createdAt: new Date("2026-08-10T00:00:00.000Z"),
+        },
+        ...Array.from({ length: 10 }, (_, index) => ({
+          _id: `activity-update-${index + 1}`,
+          orgId: "org-1",
+          productId: "hammer",
+          productName: `Activity product ${index + 1}`,
+          action: "updated",
+          actorUsername: "Alex",
+          createdAt: new Date(Date.UTC(2026, 7, 9 - index)),
+        })),
       ];
 
       const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
       const restoreProducts = stubCollectionFind(Products, items);
+      const restoreActivities = stubCollectionFind(ProductActivities, activities);
+      const restoreSites = stubCollectionFind(Sites, [
+        { _id: "site-1", name: "Clayton", stocktakeIntervalDays: 30 },
+      ]);
+      const restoreFloorMaps = stubCollectionFind(FloorMaps, [
+        { _id: "map-1", siteId: "site-1", name: "Ground Floor" },
+      ]);
+      const restoreUnits = stubCollectionFind(StorageUnits, [
+        { _id: "unit-1", floorMapId: "map-1", name: "Cabinet A" },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, [
+        {
+          _id: "location-1",
+          storageUnitId: "unit-1",
+          name: "Warehouse shelf",
+          lastStocktakeAt: new Date("2020-01-01T00:00:00.000Z"),
+        },
+      ]);
 
       try {
-        const html = renderWithRouter(React.createElement(InventoryPage));
+        const html = renderWithRouter(React.createElement(DashboardPage));
 
+        assert.ok(html.includes("Dashboard"));
         assert.ok(html.includes("Hello, Alex"));
-        assert.ok(html.includes("Products tracked"));
-        assert.ok(html.includes("2"));
+        assert.ok(html.includes("Customise"));
+        assert.ok(!html.includes("Browse inventory"));
+        assert.ok(!html.includes("Find a location"));
+        assert.ok(html.includes("Inventory snapshot"));
+        assert.ok(html.includes("Units on hand"));
+        assert.ok(html.includes("12"));
+        assert.ok(html.includes("Products"));
+        assert.ok(html.includes("Storage locations"));
+        assert.ok(html.includes("Storage units"));
+        assert.ok(html.includes("/floor-map"));
+        assert.ok(!html.includes("Total value"));
         assert.ok(html.includes("Low stock"));
         assert.ok(html.includes("1"));
-        assert.ok(html.includes("$40"));
         assert.ok(html.includes("Hammer"));
         assert.ok(html.includes("Gloves"));
+        assert.ok(html.includes("Stocktake attention"));
+        assert.ok(html.includes("Warehouse shelf"));
+        assert.ok(html.includes("overdue"));
+        assert.ok(html.includes("1 item needs attention"));
+        assert.ok(html.includes("2 remaining"));
+        assert.ok(html.includes("Min. 3"));
+        assert.ok(html.includes("/inventory/list?filter=low-stock"));
+        assert.ok(html.includes("Recent activity"));
+        assert.ok(html.includes("Showing 10 of 12 latest actions"));
+        assert.ok(html.includes('aria-label="Recent inventory activity"'));
+        assert.ok(html.includes("Show 2 more"));
+        assert.ok(html.includes("2 remaining"));
+        assert.ok(html.includes("Activity product 8"));
+        assert.ok(!html.includes("Activity product 9"));
+        assert.ok(html.includes("Stocktake adjustment −3 units"));
+        assert.ok(html.includes("Restocked +6 units"));
+        assert.ok(html.includes("Warehouse shelf"));
+        assert.ok(html.includes("5 → 2"));
+        assert.ok(html.includes("2026-08-12T00:00:00.000Z"));
+        assert.ok(html.includes("by Alex"));
+        assert.ok(html.includes("View inventory"));
       } finally {
+        restoreLocations();
+        restoreUnits();
+        restoreFloorMaps();
+        restoreSites();
+        restoreActivities();
         restoreProducts();
         restoreMeteor();
       }
@@ -386,6 +481,46 @@ describe("page rendering", function () {
         assert.ok(!html.includes("+ Add product"));
         assert.ok(!html.includes("Delete selected"));
         assert.ok(html.includes("Washers"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("applies the low-stock inventory filter from the URL", function () {
+      const items = [
+        {
+          _id: "paper",
+          name: "Printer Paper",
+          totalQuantity: 2,
+          reorderAt: 5,
+        },
+        {
+          _id: "pens",
+          name: "Pens",
+          totalQuantity: 20,
+          reorderAt: 5,
+        },
+      ];
+
+      const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
+      const restoreProducts = stubCollectionFind(Products, items);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(
+          React.createElement(InventoryListPage),
+          "/inventory/list?filter=low-stock",
+        );
+
+        assert.ok(html.includes("Printer Paper"));
+        assert.ok(!html.includes(">Pens<"));
+        assert.ok(html.includes("1 of 2 products shown"));
       } finally {
         restoreUnits();
         restoreLocations();

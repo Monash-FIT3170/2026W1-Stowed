@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
@@ -18,6 +18,8 @@ import {
 } from "../../api/products/filters";
 
 const NO_LOCATIONS = "No locations";
+
+const INVENTORY_FILTER_IDS = new Set(["all", "low-stock", "tag", "location"]);
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -66,8 +68,10 @@ export function InventoryListPage() {
   const { role } = useAuth();
   const canDelete = hasClientPermission(role, "products.delete");
   const canCreate = hasClientPermission(role, "products.create");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedFilter = searchParams.get("filter");
+  const activeFilter = INVENTORY_FILTER_IDS.has(requestedFilter) ? requestedFilter : "all";
 
-  const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -121,7 +125,6 @@ export function InventoryListPage() {
   }
 
   const filteredItems = useMemo(() => {
-    setCurrentPage(1);
     let result = items;
     if (activeFilter === "low-stock") {
       result = filterLowStock(result);
@@ -192,14 +195,26 @@ export function InventoryListPage() {
     { id: "location", label: "Location ▾" },
   ];
 
+  const handleFilterChange = (filter) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (filter === "all") {
+      nextSearchParams.delete("filter");
+    } else {
+      nextSearchParams.set("filter", filter);
+    }
+    setSearchParams(nextSearchParams);
+    setCurrentPage(1);
+    if (filter !== "location") setLocationFilterUnitId("");
+  };
+
   if (loading) return <div className="inventory-list-container">Loading...</div>;
 
   return (
     <div className="inventory-list-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <Link to="/" className="breadcrumb-link">
-            Inventory
+          <Link to="/dashboard" className="breadcrumb-link">
+            Dashboard
           </Link>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">All products</span>
@@ -221,7 +236,10 @@ export function InventoryListPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search by ID, name, tag, or SKU"
             className="search-input"
             style={{ background: "var(--card-bg)" }}
@@ -231,17 +249,17 @@ export function InventoryListPage() {
         <FilterChips
           filters={filters}
           activeFilter={activeFilter}
-          onFilterChange={(f) => {
-            setActiveFilter(f);
-            if (f !== "location") setLocationFilterUnitId("");
-          }}
+          onFilterChange={handleFilterChange}
         />
 
         {activeFilter === "location" && (
           <div style={{ marginBottom: "12px" }}>
             <select
               value={locationFilterUnitId}
-              onChange={(e) => setLocationFilterUnitId(e.target.value)}
+              onChange={(e) => {
+                setLocationFilterUnitId(e.target.value);
+                setCurrentPage(1);
+              }}
               className="form-input"
               style={{ maxWidth: "360px", background: "var(--card-bg)" }}
             >

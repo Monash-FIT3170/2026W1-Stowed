@@ -1,10 +1,11 @@
 import { lazy } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
-import { InventoryPage } from "./pages/InventoryPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
+import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
@@ -62,13 +63,20 @@ export function App() {
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />
-            <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <Login />} />
+            <Route
+              path="/login"
+              element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
+            />
             <Route
               path="/"
+              element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />}
+            />
+            <Route
+              path="/dashboard"
               element={
                 isLoggedIn ? (
-                  hasClientPermission(role, "route:/inventory") ? (
-                    <InventoryPage />
+                  hasClientPermission(role, "route:/dashboard") ? (
+                    <DashboardPage />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -77,7 +85,18 @@ export function App() {
                 )
               }
             />
-            <Route path="/inventory" element={<InventoryListPage />} />
+            <Route
+              path="/inventory"
+              element={
+                canAccessInventory ? (
+                  <InventoryListPage />
+                ) : isLoggedIn ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
             <Route
               path="/inventory/new"
               element={canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace />}
@@ -152,6 +171,20 @@ export function App() {
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/lists") ? (
                     <ListsPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/lists/:listId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/lists") ? (
+                    <ShoppingListDetailPage />
                   ) : (
                     <Navigate to="/" replace />
                   )
