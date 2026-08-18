@@ -7,7 +7,7 @@
      The flexible middle columns soak up the extra space; the thumbnail and
      checkbox columns stay fixed. */
   --inventory-grid: 44px minmax(150px, 2.2fr) minmax(80px, 1.1fr) minmax(110px, 1.6fr)
-    minmax(60px, 0.8fr) minmax(84px, 1.1fr) 82px;
+    minmax(60px, 0.8fr) minmax(84px, 1.1fr) 96px 82px;
 
   padding: 0;
   width: 100%;
@@ -54,13 +54,13 @@
 }
 
 .selected-actions > span:first-child {
-  grid-column: 5 / 7;
+  grid-column: 5 / 8;
   justify-self: end;
   white-space: nowrap;
 }
 
 .btn-selected-delete {
-  grid-column: 7;
+  grid-column: 8;
   width: 34px;
   height: 28px;
   padding: 0;
@@ -168,13 +168,63 @@
 }
 
 /* "and N other locations" reads as an aside to the primary location, so it sits
-   on its own line, lighter and italic rather than competing with the name. */
+   on its own line, lighter and italic rather than competing with the name. It
+   links to the product, where the full per-location breakdown lives. */
 .item-location-more {
   display: block;
+  width: fit-content;
   margin-top: 2px;
   font-size: 11px;
   font-style: italic;
+  color: inherit;
+  text-decoration: none;
   opacity: 0.65;
+  cursor: pointer;
+}
+
+.item-location-more:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.item-location-more:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* StatusBadge is a bare grid item, so it stretches to the full column unless it
+   is pinned to its own width. */
+.table-row > :nth-child(6) {
+  justify-self: start;
+}
+
+.item-view-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-dark);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.item-view-more:hover {
+  background: var(--input-bg);
+  border-color: var(--accent-secondary);
+}
+
+.item-view-more:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
 }
 
 .row-select {
@@ -215,7 +265,7 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .inventory-list-container {
     padding: 0;
   }
@@ -244,6 +294,11 @@
   .table-row > span:nth-of-type(4),
   .table-row > :nth-child(6) {
     grid-column: 2 / 4;
+  }
+
+  .item-view-more {
+    grid-column: 2 / 4;
+    justify-self: start;
   }
 
   .row-select {

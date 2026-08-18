@@ -56,6 +56,13 @@ function stubCollectionFind(collection, results) {
   };
 }
 
+function anchorWithClass(html, className) {
+  // Attribute order in the rendered markup is an implementation detail of
+  // react-router's Link, so match the tag and inspect it rather than assuming.
+  const match = html.match(new RegExp(`<a[^>]*class="${className}"[^>]*>`));
+  return match ? match[0] : "";
+}
+
 describe("page rendering", function () {
   it("renders static tools and workspace pages", function () {
     // AlertsPage is data-driven (useTracker + Meteor.subscribe), so stub the
@@ -241,6 +248,37 @@ describe("page rendering", function () {
         assert.ok(html.includes("Warehouse A · Shelf 2"));
         assert.ok(!html.includes("Warehouse A · Shelf 1"));
         assert.ok(html.includes("and 2 other locations"));
+
+        // The overflow count links through to the product, where the full
+        // per-location breakdown lives.
+        assert.ok(anchorWithClass(html, "item-location-more").includes('href="/inventory/bolt"'));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("gives every row a view-more link to the product", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 10, tag: "fasteners" },
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2, tag: "fasteners" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        const viewLinks = html.match(/<a[^>]*class="item-view-more"[^>]*>/g) || [];
+        assert.strictEqual(viewLinks.length, 2);
+        assert.ok(viewLinks[0].includes('href="/inventory/bolt"'));
+        assert.ok(viewLinks[1].includes('href="/inventory/nut"'));
+        assert.ok(html.includes("View more"));
       } finally {
         restoreUnits();
         restoreLocations();

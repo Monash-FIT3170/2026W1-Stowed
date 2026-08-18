@@ -104,9 +104,9 @@ export function InventoryListPage() {
     return (
       <>
         {label}
-        <span className="item-location-more">
+        <Link to={`/inventory/${productId}`} className="item-location-more">
           and {otherCount} other location{otherCount === 1 ? "" : "s"}
-        </span>
+        </Link>
       </>
     );
   }
@@ -279,6 +279,7 @@ export function InventoryListPage() {
                 <span>Stock</span>
                 <span>Status</span>
                 <span />
+                <span />
               </div>
               {pagedItems.map((item) => (
                 <div key={item._id} className="table-row">
@@ -298,6 +299,9 @@ export function InventoryListPage() {
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
                   <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />
+                  <Link to={`/inventory/${item._id}`} className="item-view-more">
+                    View more
+                  </Link>
                   <label className="row-select">
                     <input
                       type="checkbox"
