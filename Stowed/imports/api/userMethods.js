@@ -18,8 +18,10 @@ const PERMISSIONS = {
   "products.create": ROLES.ADMIN, // create new products + assign locations
   "products.update": ROLES.ADMIN, // edit product details / reassign locations
   "products.delete": ROLES.ADMIN, // Allow Admin
-  "products.restock": ROLES.STANDARD, // add stock - all staff can do this
+  "products.restock": ROLES.STANDARD, // add stock — all staff can do this
+  "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "productCategories.manage": ROLES.ADMIN, // create new categories for products
   "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
 
   // Location structure management (all CRUD across the hierarchy)
@@ -39,6 +41,18 @@ const PERMISSIONS = {
   "route:/edit-product": ROLES.ADMIN,
   "route:/product-detail": ROLES.STANDARD,
   "route:/accounts": ROLES.OWNER,
+
+  // Shopping Lists
+  "shoppingLists.create": ROLES.STANDARD,
+  "shoppingLists.update": ROLES.STANDARD,
+  "shoppingLists.rename": ROLES.STANDARD,
+  "shoppingLists.delete": ROLES.STANDARD,
+
+  // Schedules
+  "schedules.create": ROLES.STANDARD,
+  "schedules.update": ROLES.STANDARD,
+  "schedules.setActive": ROLES.STANDARD,
+  "schedules.delete": ROLES.STANDARD,
 };
 
 // returns the role of the user
