@@ -261,6 +261,50 @@ describe("page rendering", function () {
       }
     });
 
+    it("says No locations when a product is not stored anywhere", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 0, reorderAt: 10, tag: "fasteners" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+        assert.ok(html.includes("No locations"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("says No locations when every record points at a deleted location", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 4, reorderAt: 10, tag: "fasteners" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, [
+        { _id: "r1", productId: "bolt", locationId: "gone", quantity: 4 },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+        assert.ok(html.includes("No locations"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
     it("gives every row a view-more link to the product", function () {
       const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
       const restoreProducts = stubCollectionFind(Products, [

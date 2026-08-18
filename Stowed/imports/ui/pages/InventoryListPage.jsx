@@ -17,6 +17,8 @@ import {
   filterByStorageUnit,
 } from "../../api/products/filters";
 
+const NO_LOCATIONS = "No locations";
+
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
     Meteor.call(methodName, params, (error, result) => {
@@ -90,14 +92,16 @@ export function InventoryListPage() {
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
-    if (!records.length) return "-";
+    // Nothing stored anywhere, or every record points at a location that no
+    // longer exists: say so rather than leaving the cell looking empty.
+    if (!records.length) return NO_LOCATIONS;
 
     // Lead with the location holding the most stock, not whichever record the
     // collection happened to return first. Records are merged per location
     // when they are written, so there is one record per location here.
     const ranked = [...records].sort((a, b) => b.quantity - a.quantity);
     const primary = ranked.find((r) => storageLocations.some((l) => l._id === r.locationId));
-    if (!primary) return "-";
+    if (!primary) return NO_LOCATIONS;
 
     const loc = storageLocations.find((l) => l._id === primary.locationId);
     const unit = storageUnits.find((u) => u._id === loc.storageUnitId);
