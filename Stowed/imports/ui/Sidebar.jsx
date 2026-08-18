@@ -9,10 +9,10 @@ import "./Global.css";
 import "./SideBar.css";
 
 const WORKSPACE_LINKS = [
+  { to: "/dashboard", label: "Dashboard", icon: "⌂" },
   { to: "/locations", label: "Locations", icon: "📍" },
   { to: "/floor-map", label: "Floor Map", icon: "🗺" },
   { to: "/inventory", label: "Inventory", icon: "📦" },
-  { to: "/", label: "Inventory Page", icon: "✓" },
   { to: "/lists", label: "Lists", icon: "🛒" },
 ];
 
@@ -94,7 +94,7 @@ export function Sidebar() {
             <SectionLabel label="Workspace" />
             {WORKSPACE_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
               (link) => (
-                <SidebarLink key={link.to} {...link} end={link.to === "/"} />
+                <SidebarLink key={link.to} {...link} end={link.to === "/dashboard"} />
               ),
             )}
           </section>

@@ -88,6 +88,16 @@ export const ProductSchema = new SimpleSchema({
     type: Date,
   },
 
+  updatedByUserId: {
+    type: String,
+    optional: true,
+  },
+
+  updatedByUsername: {
+    type: String,
+    optional: true,
+  },
+
   images: {
     type: Array,
     optional: true,
@@ -116,6 +126,60 @@ export const ProductRecordSchema = new SimpleSchema({
   },
 
   updatedAt: {
+    type: Date,
+  },
+});
+
+export const ProductActivitySchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
+  productId: {
+    type: String,
+  },
+
+  productName: {
+    type: String,
+  },
+
+  action: {
+    type: String,
+    allowedValues: ["created", "updated", "restocked", "stocktake", "images-updated", "deleted"],
+  },
+
+  actorUserId: {
+    type: String,
+    optional: true,
+  },
+
+  actorUsername: {
+    type: String,
+  },
+
+  quantityBefore: {
+    type: SimpleSchema.Integer,
+    optional: true,
+    min: 0,
+  },
+
+  quantityAfter: {
+    type: SimpleSchema.Integer,
+    optional: true,
+    min: 0,
+  },
+
+  locationId: {
+    type: String,
+    optional: true,
+  },
+
+  locationName: {
+    type: String,
+    optional: true,
+  },
+
+  createdAt: {
     type: Date,
   },
 });

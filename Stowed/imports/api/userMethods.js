@@ -29,6 +29,7 @@ const PERMISSIONS = {
   "settings.manage": ROLES.ADMIN,
 
   // Routes
+  "route:/dashboard": ROLES.STANDARD,
   "route:/inventory": ROLES.STANDARD,
   "route:/locations": ROLES.STANDARD,
   "route:/floor-map": ROLES.STANDARD,

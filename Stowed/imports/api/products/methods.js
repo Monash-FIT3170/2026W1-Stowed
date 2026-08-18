@@ -1,8 +1,50 @@
 import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
-import { Products, ProductRecords } from "./collections";
+import { ProductActivities, Products, ProductRecords } from "./collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+
+async function getProductUpdateMetadata(userId) {
+  if (!userId) return { updatedByUsername: "System" };
+
+  const user = await Meteor.users.findOneAsync(userId, {
+    fields: { username: 1, "profile.username": 1 },
+  });
+
+  return {
+    updatedByUserId: userId,
+    updatedByUsername: user?.profile?.username || user?.username || "Unknown user",
+  };
+}
+
+async function recordProductActivity({
+  product,
+  action,
+  updateMetadata,
+  createdAt,
+  quantityBefore,
+  quantityAfter,
+  location,
+}) {
+  const activity = {
+    orgId: product.orgId,
+    productId: product._id,
+    productName: product.name,
+    action,
+    actorUsername: updateMetadata.updatedByUsername || "Unknown user",
+    createdAt,
+  };
+
+  if (updateMetadata.updatedByUserId) {
+    activity.actorUserId = updateMetadata.updatedByUserId;
+  }
+  if (Number.isInteger(quantityBefore)) activity.quantityBefore = quantityBefore;
+  if (Number.isInteger(quantityAfter)) activity.quantityAfter = quantityAfter;
+  if (location?._id) activity.locationId = location._id;
+  if (location?.name) activity.locationName = location.name;
+
+  return ProductActivities.insertAsync(activity);
+}
 
 // Traverses StorageLocation -> StorageUnit -> FloorMap -> Site and asserts org access.
 async function assertLocationOrgAccess(locationId, userId) {
@@ -13,6 +55,7 @@ async function assertLocationOrgAccess(locationId, userId) {
   const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
   if (!floorMap) throw new Meteor.Error("not-found", "Floor map not found.");
   await assertOrgAccess(Sites, floorMap.siteId, userId);
+  return storageLocation;
 }
 
 /**
@@ -102,6 +145,7 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
     const galleryImages = images.length ? images : catalogImages;
     const primaryPhotoUrl = photoUrl || galleryImages[0] || "";
     const productId = await Products.insertAsync({
@@ -124,6 +168,7 @@ Meteor.methods({
       ...(reorderAt != null && { reorderAt }),
       createdAt: now,
       updatedAt: now,
+      ...updateMetadata,
     });
 
     for (const { locationId, quantity } of mergedAssignments) {
@@ -136,6 +181,15 @@ Meteor.methods({
         updatedAt: now,
       });
     }
+
+    await recordProductActivity({
+      product: { _id: productId, orgId, name },
+      action: "created",
+      updateMetadata,
+      createdAt: now,
+      quantityBefore: 0,
+      quantityAfter: totalQuantity,
+    });
 
     return productId;
   },
@@ -204,6 +258,7 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
     const galleryImages = images.length ? images : catalogImages;
     const primaryPhotoUrl = photoUrl || product?.photoUrl || galleryImages[0] || "";
 
@@ -224,6 +279,7 @@ Meteor.methods({
         totalQuantity,
         ...(reorderAt != null && { reorderAt }),
         updatedAt: now,
+        ...updateMetadata,
       },
     });
 
@@ -244,6 +300,15 @@ Meteor.methods({
         updatedAt: now,
       });
     }
+
+    await recordProductActivity({
+      product: { ...product, name },
+      action: "updated",
+      updateMetadata,
+      createdAt: now,
+      quantityBefore: product.totalQuantity,
+      quantityAfter: totalQuantity,
+    });
   },
 
   /**
@@ -259,8 +324,20 @@ Meteor.methods({
     await assertOrgAccess(Products, productId, this.userId);
     await requirePermission(this.userId, "products.delete");
 
+    const product = await Products.findOneAsync(productId);
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
+    const now = new Date();
+
     await ProductRecords.removeAsync({ productId });
     await Products.removeAsync(productId);
+
+    await recordProductActivity({
+      product,
+      action: "deleted",
+      updateMetadata,
+      createdAt: now,
+      quantityBefore: product.totalQuantity,
+    });
   },
 
   /**
@@ -300,9 +377,10 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
 
     await Products.updateAsync(productId, {
-      $set: { totalQuantity: newTotal, updatedAt: now },
+      $set: { totalQuantity: newTotal, updatedAt: now, ...updateMetadata },
     });
 
     const oldRecords = await ProductRecords.find({ productId }).fetchAsync();
@@ -317,6 +395,15 @@ Meteor.methods({
         updatedAt: now,
       });
     }
+
+    await recordProductActivity({
+      product,
+      action: "restocked",
+      updateMetadata,
+      createdAt: now,
+      quantityBefore: product.totalQuantity,
+      quantityAfter: newTotal,
+    });
   },
 
   /**
@@ -489,7 +576,7 @@ Meteor.methods({
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
-    await assertLocationOrgAccess(locationId, this.userId);
+    const stocktakeLocation = await assertLocationOrgAccess(locationId, this.userId);
     await requirePermission(this.userId, "stocktake.save");
 
     if (lines.some(({ quantity }) => quantity < 0)) {
@@ -520,6 +607,7 @@ Meteor.methods({
     }
 
     const now = new Date();
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
     // Only products whose stock actually moved need their total recomputed.
     const changedProductIds = new Set();
 
@@ -560,8 +648,18 @@ Meteor.methods({
     for (const productId of changedProductIds) {
       const records = await ProductRecords.find({ productId }).fetchAsync();
       const totalQuantity = records.reduce((sum, record) => sum + record.quantity, 0);
+      const product = await Products.findOneAsync(productId);
       await Products.updateAsync(productId, {
-        $set: { totalQuantity, updatedAt: now },
+        $set: { totalQuantity, updatedAt: now, ...updateMetadata },
+      });
+      await recordProductActivity({
+        product,
+        action: "stocktake",
+        updateMetadata,
+        createdAt: now,
+        quantityBefore: product.totalQuantity,
+        quantityAfter: totalQuantity,
+        location: stocktakeLocation,
       });
     }
 
@@ -610,13 +708,23 @@ Meteor.methods({
     await assertOrgAccess(Products, productId, this.userId);
     await requirePermission(this.userId, "products.uploadImage");
 
+    const product = await Products.findOneAsync(productId);
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
+    const now = new Date();
+
     await Products.updateAsync(
       { _id: productId },
       {
         $push: { images: imagePath },
-        $set: { updatedAt: new Date() },
+        $set: { updatedAt: now, ...updateMetadata },
       },
     );
+    await recordProductActivity({
+      product,
+      action: "images-updated",
+      updateMetadata,
+      createdAt: now,
+    });
   },
 
   async "products.setImages"({ productId, images }) {
@@ -639,6 +747,8 @@ Meteor.methods({
       images.length > 0 && !images.includes(product.photoUrl)
         ? images[0]
         : product.photoUrl || images[0] || "";
+    const updateMetadata = await getProductUpdateMetadata(this.userId);
+    const now = new Date();
 
     await Products.updateAsync(
       { _id: productId },
@@ -646,9 +756,16 @@ Meteor.methods({
         $set: {
           images,
           photoUrl: primaryPhotoUrl,
-          updatedAt: new Date(),
+          updatedAt: now,
+          ...updateMetadata,
         },
       },
     );
+    await recordProductActivity({
+      product,
+      action: "images-updated",
+      updateMetadata,
+      createdAt: now,
+    });
   },
 });

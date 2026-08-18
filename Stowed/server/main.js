@@ -18,8 +18,9 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { backfillProductActivities } from "/imports/api/products/activityBackfill";
+import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
 import { buildRectShape } from "/imports/api/locations/shapeUtils";
-import { Products, ProductRecords } from "/imports/api/products/collections";
 import { ProductCategories } from "/imports/api/categories/collections";
 import { Organisations } from "/imports/api/organisations";
 
@@ -77,6 +78,7 @@ async function seedProducts(seedOrgId) {
       images: [],
       createdAt: now,
       updatedAt: now,
+      updatedByUsername: "System",
     });
 
   await add({
@@ -489,6 +491,7 @@ async function seedOwner(seedOrgId) {
 Meteor.startup(async () => {
   await Sites.rawCollection().createIndex({ orgId: 1 });
   await Products.rawCollection().createIndex({ orgId: 1 });
+  await ProductActivities.rawCollection().createIndex({ orgId: 1, createdAt: -1 });
 
   await seedDatabase();
 });
@@ -501,6 +504,7 @@ async function seedDatabase() {
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
+  await backfillProductActivities(seedOrgId);
 
   startScheduler();
 }
@@ -509,6 +513,7 @@ async function seedDatabase() {
 // re-seeded from scratch. Destructive - only reachable via the protected
 // /admin/reset-seed endpoint below.
 async function resetDatabase() {
+  await ProductActivities.removeAsync({});
   await ProductRecords.removeAsync({});
   await Products.removeAsync({});
   await ProductCategories.removeAsync({});
