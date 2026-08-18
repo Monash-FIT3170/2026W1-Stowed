@@ -11,8 +11,10 @@ import { computeNextRunAt } from "./timing";
 // this app's single Meteor server, but running it unmodified across more
 // than one server instance would double-fire every schedule.
 const TICK_MS = 5000;
+const ENV_LABEL = Meteor.isProduction ? "production/Galaxy" : "local dev";
 
 export function startScheduler() {
+  console.log(`[scheduler] started (${ENV_LABEL}), checking every ${TICK_MS / 1000}s`);
   Meteor.setInterval(tick, TICK_MS);
 }
 
@@ -56,6 +58,8 @@ async function buildAutoItems(schedule) {
 }
 
 async function runSchedule(schedule) {
+  console.log(`[scheduler] running "${schedule.name}" (${schedule._id}) [${ENV_LABEL}]`);
+
   const items =
     schedule.generationMode === GENERATION_MODES.EXPLICIT
       ? await buildExplicitItems(schedule)
