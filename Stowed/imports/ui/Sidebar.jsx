@@ -6,7 +6,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
 import "./Global.css";
-import "./Sidebar.css";
+import "./SideBar.css";
 
 const WORKSPACE_LINKS = [
   { to: "/locations", label: "Locations", icon: "📍" },
