@@ -485,10 +485,8 @@ async function seedDatabase() {
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
-<<<<<<< HEAD
 
   startScheduler();
-=======
 }
 
 // Wipes every seeded collection (and all user accounts) so the database can be
@@ -546,7 +544,6 @@ WebApp.connectHandlers.use("/admin/reset-seed", async (req, res) => {
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: false, error: String(err) }));
   }
->>>>>>> 8a0c1e84ce06bc5e182fbf240b47d4d26d326100
 });
 
 Meteor.publish("allUsers", async function () {

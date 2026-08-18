@@ -320,7 +320,6 @@ Meteor.methods({
   },
 
   /**
-<<<<<<< HEAD
    * Marks shopping-list stock as received: increases a Product's total
    * quantity and adds it to the given site's ProductRecord.
    */
@@ -328,25 +327,11 @@ Meteor.methods({
     check(productId, String);
     check(siteId, String);
     check(quantity, Match.Integer);
-=======
-   * Applies a completed stocktake to one storage location.
-   *
-   * `lines` is the full intended contents of the location, not a list of edits:
-   * any existing record whose product is absent from `lines` is deleted. Each
-   * affected product's totalQuantity is then recomputed from its remaining
-   * records, so the invariant that a product's total equals the sum of its
-   * records holds even if it was already broken beforehand.
-   */
-  async "stocktake.save"({ locationId, lines }) {
-    check(locationId, String);
-    check(lines, [{ productId: String, quantity: Match.Integer }]);
->>>>>>> 8a0c1e84ce06bc5e182fbf240b47d4d26d326100
 
     if (!this.userId && !Meteor.isDevelopment) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
 
-<<<<<<< HEAD
     await assertOrgAccess(Products, productId, this.userId);
     await assertOrgAccess(Sites, siteId, this.userId);
     await requirePermission(this.userId, "products.receiveStock");
@@ -485,7 +470,25 @@ Meteor.methods({
         updatedAt: now,
       });
     }
-=======
+  },
+
+  /**
+   * Applies a completed stocktake to one storage location.
+   *
+   * `lines` is the full intended contents of the location, not a list of edits:
+   * any existing record whose product is absent from `lines` is deleted. Each
+   * affected product's totalQuantity is then recomputed from its remaining
+   * records, so the invariant that a product's total equals the sum of its
+   * records holds even if it was already broken beforehand.
+   */
+  async "stocktake.save"({ locationId, lines }) {
+    check(locationId, String);
+    check(lines, [{ productId: String, quantity: Match.Integer }]);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
     await assertLocationOrgAccess(locationId, this.userId);
     await requirePermission(this.userId, "stocktake.save");
 
@@ -568,7 +571,6 @@ Meteor.methods({
     });
 
     return { productsChanged: changedProductIds.size };
->>>>>>> 8a0c1e84ce06bc5e182fbf240b47d4d26d326100
   },
 
   /**

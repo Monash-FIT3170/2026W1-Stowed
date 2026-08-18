@@ -161,7 +161,6 @@ export function App() {
                 )
               }
             />
-<<<<<<< HEAD
             <Route
               path="/lists/:listId"
               element={
@@ -176,10 +175,8 @@ export function App() {
                 )
               }
             />
-=======
             {/* A stocktake is always scoped to one storage location, so the bare
                 path has nothing to show and falls back to the inventory page. */}
->>>>>>> 8a0c1e84ce06bc5e182fbf240b47d4d26d326100
             <Route path="/stocktake" element={<Navigate to="/" replace />} />
             <Route
               path="/stocktake/:locationId"
