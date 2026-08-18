@@ -5,3 +5,7 @@ _build
 */build-assets
 */build-chunks
 .rsdoctor
+
+graphify-out/
+CLAUDE.md
+.claude/
