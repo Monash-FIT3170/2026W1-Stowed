@@ -74,7 +74,7 @@ describe("page rendering", function () {
     try {
       const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
       const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
-      const lists = renderToStaticMarkup(React.createElement(ListsPage));
+      const lists = renderWithRouter(React.createElement(ListsPage));
       const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
 
       assert.ok(alerts.includes("Stock"));
