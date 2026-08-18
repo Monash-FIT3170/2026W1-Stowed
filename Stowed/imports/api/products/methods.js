@@ -405,6 +405,9 @@ Meteor.methods({
       { orgId, sku: { $regex: `^${escaped}$`, $options: "i" } },
       { fields: { name: 1, sku: 1 }, limit: 10 },
     ).fetchAsync();
+    if (bySku.length > 0) {
+      return { matches: bySku.map(({ _id, name, sku }) => ({ _id, name, sku })) };
+    }
 
     const byId = await Products.findOneAsync(
       { _id: trimmed, orgId },
