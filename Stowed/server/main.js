@@ -20,6 +20,7 @@ import {
 } from "/imports/api/locations/collections";
 import { buildRectShape } from "/imports/api/locations/shapeUtils";
 import { Products, ProductRecords } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { Organisations } from "/imports/api/organisations";
 
 async function seedOrg() {
@@ -44,17 +45,32 @@ async function seedOrg() {
   return org._id;
 }
 
+async function seedCategory(seedOrgId, name, cache) {
+  if (cache.has(name)) return cache.get(name);
+
+  let category = await ProductCategories.findOneAsync({ orgId: seedOrgId, name });
+  if (!category) {
+    const categoryId = await ProductCategories.insertAsync({ orgId: seedOrgId, name });
+    category = { _id: categoryId };
+  }
+
+  cache.set(name, category._id);
+  return category._id;
+}
+
 async function seedProducts(seedOrgId) {
   const count = await Products.find().countAsync();
   if (count > 0) return;
 
   const now = new Date();
-  const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
+  const categoryCache = new Map();
+  const add = async ({ name, description, category, brand, unitCost, totalQuantity }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
       category,
+      categoryId: await seedCategory(seedOrgId, category, categoryCache),
       brand,
       unitCost,
       totalQuantity,
@@ -495,6 +511,7 @@ async function seedDatabase() {
 async function resetDatabase() {
   await ProductRecords.removeAsync({});
   await Products.removeAsync({});
+  await ProductCategories.removeAsync({});
   await StorageLocations.removeAsync({});
   await StorageUnits.removeAsync({});
   await FloorMaps.removeAsync({});

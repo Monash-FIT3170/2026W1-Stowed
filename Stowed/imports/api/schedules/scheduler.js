@@ -31,7 +31,7 @@ async function buildExplicitItems(schedule) {
   const items = [];
   for (const templateItem of schedule.items ?? []) {
     const product = await Products.findOneAsync(templateItem.productId);
-    if (!product) continue; // product deleted since the schedule was made — skip it
+    if (!product) continue; // product deleted since the schedule was made, skip it
     items.push(toExplicitItem(product, templateItem.quantityWanted));
   }
   return items;
@@ -66,7 +66,7 @@ async function runSchedule(schedule) {
   await ShoppingLists.insertAsync({
     orgId: schedule.orgId,
     createdBy: schedule.createdBy,
-    name: `${schedule.name} — ${now.toLocaleDateString("en-AU")}`,
+    name: `${schedule.name} - ${now.toLocaleDateString("en-AU")}`,
     origin: LIST_ORIGINS.SCHEDULED,
     scheduleId: schedule._id,
     scheduleName: schedule.name,
