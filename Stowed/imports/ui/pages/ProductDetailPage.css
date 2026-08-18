@@ -146,7 +146,9 @@
   flex: 1;
 }
 
-.panel-status-badge {
+/* Stock status for the product header: green in stock, orange at or below the
+   reorder threshold, red at zero. */
+.product-status-badge {
   display: inline-block;
   padding: 4px 10px;
   font-size: 12px;
@@ -155,19 +157,19 @@
   margin-bottom: 10px;
 }
 
-.panel-status-badge.low {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.panel-status-badge.ok {
+.product-status-badge.in-stock {
   background: #dcfce7;
   color: #166534;
 }
 
-.panel-status-badge.empty {
-  background: #f5efe6;
-  color: #998874;
+.product-status-badge.low-stock {
+  background: #ffedd5;
+  color: #b45309;
+}
+
+.product-status-badge.out-of-stock {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .header-title {

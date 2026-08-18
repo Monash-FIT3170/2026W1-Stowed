@@ -257,9 +257,21 @@ export function ProductDetailView({
     });
   }
 
-  const isLowStock = item.status && item.status.includes("CRITICAL");
-  const statusLabel = isLowStock ? "Low stock" : "In stock";
-  const statusClass = isLowStock ? "panel-status-badge low" : "panel-status-badge ok";
+  // `status` is an optional free-text field that only ever gets set on mock
+  // data, so this badge read "In stock" for every real product regardless of
+  // its stock. Derive it from the live stock instead.
+  const stockState =
+    currentStock <= 0
+      ? "out-of-stock"
+      : reorderAt != null && currentStock <= reorderAt
+        ? "low-stock"
+        : "in-stock";
+  const statusLabel = {
+    "out-of-stock": "Out of stock",
+    "low-stock": "Low stock",
+    "in-stock": "In stock",
+  }[stockState];
+  const statusClass = `product-status-badge ${stockState}`;
 
   return (
     <>
