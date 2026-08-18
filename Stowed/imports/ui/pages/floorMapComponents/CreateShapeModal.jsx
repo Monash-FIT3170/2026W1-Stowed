@@ -291,6 +291,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
                       <input
                         type="number"
                         value={point.x}
+                        onWheel={(e) => e.target.blur()}
                         onChange={(event) =>
                           handlePointChange(
                             index,
@@ -308,6 +309,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
                       <input
                         type="number"
                         value={point.y}
+                        onWheel={(e) => e.target.blur()}
                         onChange={(event) =>
                           handlePointChange(
                             index,
