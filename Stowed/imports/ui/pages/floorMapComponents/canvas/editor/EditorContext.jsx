@@ -393,6 +393,17 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
   }
 
+  async function handleDeleteShape(shape) {
+    // validate something is selected
+    if (!shape) return;
+
+    try {
+      await callMethod("mapShapes.delete", { shape });
+    } catch (error) {
+      alert(error.reason || "Cannot delete this shape. Make sure it is not used for any storage units first.");
+    }
+  };
+
   const value = {
     // Tool
     activeTool,
@@ -446,6 +457,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected unit
     handleDeleteSelectedUnit,
+
+    // Delete selected shape
+    handleDeleteShape,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

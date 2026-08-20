@@ -11,7 +11,7 @@ import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel"
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites, MapShapes } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, StorageUnits, MapShapes } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -56,6 +56,7 @@ function FloorMapPageInner() {
     setSelectedUnit,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
+    handleDeleteShape,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -69,12 +70,13 @@ function FloorMapPageInner() {
   const [editingShape, setEditingShape] = useState(null);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
-  // Fetch all sites and floor maps
-  const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
+  // Fetch all sites, floor maps, storage units and shapes
+  const { sites, floorMaps, storageUnits, mapShapes, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
       mapShapes: MapShapes.find({}, { sort: { name: 1 } }).fetch(),
       locationsReady: handle.ready(),
     };
@@ -606,6 +608,7 @@ function FloorMapPageInner() {
                             activeTool={activeTool}
                             setActiveTool={setActiveTool}
                             onEditShape={handleEditShape}
+                            onDeleteShape={handleDeleteShape}
                           />
                         </div>
                         <div style={{ padding: "0 12px 12px", boxSizing: "border-box" }}>
