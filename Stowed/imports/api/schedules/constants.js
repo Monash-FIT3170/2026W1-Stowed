@@ -11,7 +11,7 @@ export const SCHEDULE_FREQUENCIES = {
 
 export const SCHEDULE_FREQUENCY_LABELS = {
   ...LIST_FREQUENCY_LABELS,
-  [SCHEDULE_FREQUENCIES.TEST_30S]: "🧪 Every 30 seconds (testing)",
+  [SCHEDULE_FREQUENCIES.TEST_30S]: "Every 30 seconds (testing)",
 };
 
 /**

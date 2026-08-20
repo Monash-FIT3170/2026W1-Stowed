@@ -16,7 +16,7 @@ const TEST_SITE_ID = "test-site-id-products";
 const TEST_FLOOR_MAP_ID = "test-floor-map-id-products";
 const TEST_STORAGE_UNIT_ID = "test-storage-unit-id-products";
 const TEST_LOCATION_ID = "loc-1-products";
-const TEST_ROLE = 3; // ROLES.OWNER, passes all permission checks
+const TEST_ROLE = 3;
 
 const UNIT_SHAPE = {
   orgId: TEST_ORG_ID,

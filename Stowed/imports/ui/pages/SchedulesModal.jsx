@@ -159,14 +159,14 @@ export function SchedulesModal({ onClose, sites, products }) {
         aria-labelledby="schedules-modal-title"
       >
         <h2 id="schedules-modal-title" className="modal-title">
-          🗓️ Schedules
+          Schedules
         </h2>
 
         {view === "list" && (
           <div>
             <div className="detail-section schedules-card">
               <div className="section-title">
-                <span>📋 All schedules</span>
+                <span>All schedules</span>
                 <span className="section-badge id">{schedules.length}</span>
               </div>
 
@@ -176,12 +176,12 @@ export function SchedulesModal({ onClose, sites, products }) {
                   className="btn-primary schedules-new-btn"
                   onClick={openCreateForm}
                 >
-                  ➕ New schedule
+                  + New schedule
                 </button>
 
                 {schedules.length === 0 ? (
                   <p className="section-empty">
-                    📭 No schedules yet. Create one to automate restocking.
+                    No schedules yet. Create one to automate restocking.
                   </p>
                 ) : (
                   <>
@@ -296,7 +296,7 @@ export function SchedulesModal({ onClose, sites, products }) {
                   checked={form.generationMode === GENERATION_MODES.AUTO}
                   onChange={() => setForm({ ...form, generationMode: GENERATION_MODES.AUTO })}
                 />
-                🤖 Auto-generate from low stock
+                Auto-generate from low stock
               </label>
               <label>
                 <input
@@ -304,7 +304,7 @@ export function SchedulesModal({ onClose, sites, products }) {
                   checked={form.generationMode === GENERATION_MODES.EXPLICIT}
                   onChange={() => setForm({ ...form, generationMode: GENERATION_MODES.EXPLICIT })}
                 />
-                🛒 Pick products manually
+                Pick products manually
               </label>
             </div>
 

@@ -110,7 +110,7 @@ export const ShoppingListSchema = new SimpleSchema({
   },
 
   // Soft, one-way audit trail for lists created by a Schedule tick.
-  // Snapshotted at generation time and never synced afterwards; deleting
+  // Snapshotted at generation time and never synced afterwards — deleting
   // or editing the schedule has no effect on lists it already produced.
   scheduleId: {
     type: String,
