@@ -368,7 +368,7 @@ Meteor.methods({
   },
 
   /**
-   * Undoes a stock receipt — the inverse of "products.receiveStock".
+   * Undoes a stock receipt, the inverse of "products.receiveStock".
    */
   async "products.unreceiveStock"({ productId, siteId, quantity }) {
     check(productId, String);

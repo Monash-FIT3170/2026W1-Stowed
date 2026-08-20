@@ -41,7 +41,7 @@ Meteor.methods({
     if (inUseCount > 0) {
       throw new Meteor.Error(
         "category-in-use",
-        `Cannot delete this category — it is currently assigned to ${inUseCount} product${inUseCount !== 1 ? "s" : ""}.`,
+        `Cannot delete this category: it is currently assigned to ${inUseCount} product${inUseCount !== 1 ? "s" : ""}.`,
       );
     }
     await ProductCategories.removeAsync(categoryId);

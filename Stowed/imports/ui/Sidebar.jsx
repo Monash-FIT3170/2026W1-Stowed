@@ -6,7 +6,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
 import "./Global.css";
-import "./SideBar.css";
+import "./Sidebar.css";
 
 const WORKSPACE_LINKS = [
   { to: "/locations", label: "Locations", icon: "📍" },
@@ -49,7 +49,7 @@ export function Sidebar() {
   const organisation = useTracker(() => {
     if (!currentUser) return null;
     // Subscribing inside the tracker lets Meteor reactively re-run this when the
-    // subscription becomes ready and clean it up on unmount — no polling needed.
+    // subscription becomes ready and clean it up on unmount, no polling needed.
     const sub = Meteor.subscribe("currentOrganisation");
     if (!sub.ready()) return null;
     return Organisations.findOne(currentUser.profile.organisationId);

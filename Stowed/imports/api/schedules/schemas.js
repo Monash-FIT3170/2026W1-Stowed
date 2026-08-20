@@ -20,7 +20,7 @@ const ScheduleAutoConfigSchema = new SimpleSchema({
     allowedValues: Object.values(BUDGET_STRATEGIES),
   },
 
-  // null/omitted means no budget limit, every low stock product is included,
+  // null/omitted means no budget limit; every low stock product is included,
   // matching the dashboard's existing "blank budget" behaviour.
   budgetCents: {
     type: SimpleSchema.Integer,
