@@ -1,7 +1,7 @@
 import assert from "assert";
 
 // ---------------------------------------------------------------------------
-// Pure stock tracking logic, mirrors the quantity/reorderAt calculations
+// Pure stock tracking logic — mirrors the quantity/reorderAt calculations
 // used across the products methods and inventory list view.
 // ---------------------------------------------------------------------------
 

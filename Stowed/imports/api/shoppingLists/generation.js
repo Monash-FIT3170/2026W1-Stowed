@@ -23,7 +23,7 @@ export function toItem(product, frequency, addMode) {
 }
 
 // Same shape as toItem, but for schedules with an explicit quantity template
-// rather than a computed shortfall; re-snapshots current product data at
+// rather than a computed shortfall — re-snapshots current product data at
 // run time so a stale schedule template never ships outdated cost/stock info.
 export function toExplicitItem(product, quantityWanted) {
   return {

@@ -18,8 +18,8 @@ const PERMISSIONS = {
   "products.create": ROLES.ADMIN, // create new products + assign locations
   "products.update": ROLES.ADMIN, // edit product details / reassign locations
   "products.delete": ROLES.ADMIN, // Allow Admin
-  "products.restock": ROLES.STANDARD, // add stock, all staff can do this
-  "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it, all staff can do this
+  "products.restock": ROLES.STANDARD, // add stock — all staff can do this
+  "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
   "productCategories.manage": ROLES.ADMIN, // create new categories for products
   "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
@@ -178,7 +178,7 @@ Meteor.methods({
 
   // Self-registration: always requires an org code.
   // If the code is new, a new organisation is created and the registrant becomes its Owner.
-  // If the code already exists, registration is blocked; new members must be invited by the org owner.
+  // If the code already exists, registration is blocked - new members must be invited by the org owner.
   "users.register": async function ({ username, email, password, orgCode, orgName }) {
     check(username, String);
     check(email, String);
@@ -233,7 +233,7 @@ Meteor.methods({
 
       return userId;
     } catch (err) {
-      // Roll back the org we just created, no user means no org
+      // Roll back the org we just created - no user means no org
       await Organisations.removeAsync(organisationId);
       if (err.error === 403 || err.reason?.toLowerCase().includes("email")) {
         throw new Meteor.Error("email-taken", "An account with that email already exists.");
