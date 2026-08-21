@@ -190,9 +190,6 @@ Meteor.methods({
 
   /**
    * Updates a Product's details and replaces its location assignments.
-   *
-   * Fields the caller omits are left as they are rather than blanked, so a form
-   * that only edits part of a product can't wipe the rest of it.
    */
   async "products.update"({
     productId,
@@ -270,7 +267,6 @@ Meteor.methods({
       ...updateMetadata,
     };
 
-    // An omitted field means "leave it alone", so only write what was sent.
     for (const [field, value] of Object.entries({
       description,
       categoryId,
@@ -281,8 +277,6 @@ Meteor.methods({
       if (value !== undefined) $set[field] = value;
     }
 
-    // A blank reorder threshold means "no threshold", which is an absent field
-    // rather than a null one.
     const modifier = { $set };
     if (reorderAt == null) {
       modifier.$unset = { reorderAt: "" };
