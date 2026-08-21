@@ -13,6 +13,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
+import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
 import "./CreateProductPage.css";
 import "../Global.css";
 
@@ -57,11 +58,18 @@ export function EditProductPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  // Captured at load so the save summary can still name a category that gets
+  // deleted while the form is open.
+  const [originalCategoryName, setOriginalCategoryName] = useState("");
+
   const [imageUrls, setImageUrls] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
+
+  const canManageCategories = hasClientPermission(role, "productCategories.manage");
 
   const {
     loading,
@@ -98,6 +106,7 @@ export function EditProductPage() {
     if (!loading && product && !initialised) {
       setName(product.name ?? "");
       setCategoryId(product.categoryId ?? "");
+      setOriginalCategoryName(categories.find((c) => c._id === product.categoryId)?.name || "");
       setBrand(product.brand ?? "");
       setTotalQuantity(String(product.totalQuantity ?? ""));
       setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
@@ -113,7 +122,7 @@ export function EditProductPage() {
       );
       setInitialised(true);
     }
-  }, [loading, product, originalRecords, initialised]);
+  }, [loading, product, originalRecords, categories, initialised]);
 
   const parsedTotal = parseInt(totalQuantity, 10);
   const nameIsValid = name.trim().length > 0;
@@ -310,18 +319,31 @@ export function EditProductPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Category</label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="form-input"
-                  >
-                    <option value="">Select a category...</option>
-                    {categories.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <select
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="form-input"
+                      style={{ flex: 1 }}
+                    >
+                      <option value="">Select a category...</option>
+                      {categories.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    {canManageCategories && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setShowCategoryModal(true)}
+                        title="Manage categories"
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Brand</label>
@@ -619,7 +641,10 @@ export function EditProductPage() {
                     Category
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {categories.find((c) => c._id === changes.categoryId.from)?.name || "None"} →{" "}
+                    {categories.find((c) => c._id === changes.categoryId.from)?.name ||
+                      originalCategoryName ||
+                      "None"}{" "}
+                    →{" "}
                     {categories.find((c) => c._id === changes.categoryId.to)?.name || "None"}
                   </div>
                 </div>
@@ -774,6 +799,16 @@ export function EditProductPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showCategoryModal && (
+        <ManageCategoriesModal
+          categories={categories}
+          onClose={() => setShowCategoryModal(false)}
+          onCategoryDeleted={(deletedId) => {
+            if (categoryId === deletedId) setCategoryId("");
+          }}
+        />
       )}
     </div>
   );
