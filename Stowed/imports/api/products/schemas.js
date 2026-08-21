@@ -17,17 +17,7 @@ export const ProductSchema = new SimpleSchema({
     max: 500,
   },
 
-  tag: {
-    type: String,
-    optional: true,
-  },
-
   categoryId: {
-    type: String,
-    optional: true,
-  },
-
-  category: {
     type: String,
     optional: true,
   },

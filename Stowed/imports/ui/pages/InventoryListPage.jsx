@@ -5,14 +5,20 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
 import "../Global.css";
-import { searchProducts, filterLowStock, filterByStorageUnit } from "../../api/products/filters";
+import {
+  searchProducts,
+  filterLowStock,
+  filterByStorageUnit,
+  filterByCategory,
+} from "../../api/products/filters";
 
-const INVENTORY_FILTER_IDS = new Set(["all", "low-stock", "tag", "location"]);
+const INVENTORY_FILTER_IDS = new Set(["all", "low-stock", "category", "location"]);
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -73,19 +79,32 @@ export function InventoryListPage() {
   const PAGE_SIZE = 15;
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
+  const [categoryFilterId, setCategoryFilterId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
-    const sub1 = Meteor.subscribe("products");
-    Meteor.subscribe("productRecords");
-    Meteor.subscribe("locations.all");
-    return {
-      items: Products.find().fetch(),
-      loading: !sub1.ready(),
-      productRecords: ProductRecords.find().fetch(),
-      storageLocations: StorageLocations.find().fetch(),
-      storageUnits: StorageUnits.find().fetch(),
-    };
-  }, []);
+  const { items, loading, productRecords, categories, storageLocations, storageUnits } = useTracker(
+    () => {
+      const sub1 = Meteor.subscribe("products");
+      Meteor.subscribe("productRecords");
+      Meteor.subscribe("productCategories");
+      Meteor.subscribe("locations.all");
+      return {
+        items: Products.find().fetch(),
+        loading: !sub1.ready(),
+        productRecords: ProductRecords.find().fetch(),
+        categories: ProductCategories.find().fetch(),
+        storageLocations: StorageLocations.find().fetch(),
+        storageUnits: StorageUnits.find().fetch(),
+      };
+    },
+    [],
+  );
+
+  // Products store only a categoryId, so resolve names once per render pass
+  // rather than scanning the category list for every row.
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((cat) => [cat._id, cat.name])),
+    [categories],
+  );
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
@@ -103,12 +122,23 @@ export function InventoryListPage() {
     if (activeFilter === "low-stock") {
       result = filterLowStock(result);
     }
+    if (activeFilter === "category") {
+      result = filterByCategory(result, categoryFilterId);
+    }
     if (activeFilter === "location") {
       result = filterByStorageUnit(result, productRecords, storageLocations, locationFilterUnitId);
     }
     result = searchProducts(result, searchQuery);
     return result;
-  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
+  }, [
+    items,
+    activeFilter,
+    searchQuery,
+    categoryFilterId,
+    locationFilterUnitId,
+    storageLocations,
+    productRecords,
+  ]);
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -160,7 +190,7 @@ export function InventoryListPage() {
   const filters = [
     { id: "all", label: "All", count: items.length },
     { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
-    { id: "tag", label: "Tag ▾" },
+    { id: "category", label: "Category ▾" },
     { id: "location", label: "Location ▾" },
   ];
 
@@ -174,6 +204,7 @@ export function InventoryListPage() {
     setSearchParams(nextSearchParams);
     setCurrentPage(1);
     if (filter !== "location") setLocationFilterUnitId("");
+    if (filter !== "category") setCategoryFilterId("");
   };
 
   if (loading) return <div className="inventory-list-container">Loading...</div>;
@@ -209,7 +240,7 @@ export function InventoryListPage() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Search by ID, name, tag, or SKU"
+            placeholder="Search by ID, name, or SKU"
             className="search-input"
             style={{ background: "var(--card-bg)" }}
           />
@@ -220,6 +251,27 @@ export function InventoryListPage() {
           activeFilter={activeFilter}
           onFilterChange={handleFilterChange}
         />
+
+        {activeFilter === "category" && (
+          <div style={{ marginBottom: "12px" }}>
+            <select
+              value={categoryFilterId}
+              onChange={(e) => {
+                setCategoryFilterId(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="form-input"
+              style={{ maxWidth: "360px", background: "var(--card-bg)" }}
+            >
+              <option value="">All categories</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {activeFilter === "location" && (
           <div style={{ marginBottom: "12px" }}>
@@ -275,7 +327,7 @@ export function InventoryListPage() {
               <div className="table-header">
                 <span />
                 <span>Product</span>
-                <span>Tag</span>
+                <span>Category</span>
                 <span>Location</span>
                 <span>Stock</span>
                 <span>Status</span>
@@ -294,7 +346,9 @@ export function InventoryListPage() {
                     </Link>
                   </span>
                   <span>
-                    <span className="item-tag">{item.tag || "-"}</span>
+                    <span className="item-category">
+                      {categoryNameById.get(item.categoryId) || "-"}
+                    </span>
                   </span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
