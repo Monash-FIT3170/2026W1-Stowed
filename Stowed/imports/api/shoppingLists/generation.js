@@ -10,7 +10,7 @@ export function toItem(product, frequency, addMode) {
   return {
     productId: product._id,
     productName: product.name,
-    category: product.category,
+    categoryId: product.categoryId ?? "",
     inStock: product.totalQuantity ?? 0,
     reorderAt: product.reorderAt ?? 0,
     lowStockThreshold: product.lowStockThreshold ?? 0,
@@ -29,7 +29,7 @@ export function toExplicitItem(product, quantityWanted) {
   return {
     productId: product._id,
     productName: product.name,
-    category: product.category,
+    categoryId: product.categoryId ?? "",
     inStock: product.totalQuantity ?? 0,
     reorderAt: product.reorderAt ?? 0,
     lowStockThreshold: product.lowStockThreshold ?? 0,
