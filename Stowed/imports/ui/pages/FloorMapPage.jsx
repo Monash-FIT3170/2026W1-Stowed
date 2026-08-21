@@ -11,13 +11,14 @@ import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel"
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites, MapShapes } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, MapShapes, StorageLocations, StorageUnits } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
 import { UnitCard } from "./floorMapComponents/UnitCard";
 import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { buttonStyles } from "./floorMapComponents/FloorMapStyles";
+import { getStocktakeAlerts } from "/imports/api/locations/stocktake";
 
 const statusBarButtonStyle = {
   fontSize: "12px",
@@ -58,6 +59,15 @@ function FloorMapPageInner() {
     handleDeleteSelectedUnit,
   } = useEditor();
 
+  const { storageLocations, storageUnits } = useTracker(() => {
+    Meteor.subscribe("locations.all");
+
+    return {
+      storageLocations: StorageLocations.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+    };
+  });
+
   const { floorMapId } = useParams();
   const navigate = useNavigate();
 
@@ -84,6 +94,18 @@ function FloorMapPageInner() {
   const okItems = items.filter((i) => !i.isLow);
   const isEmpty = items.length === 0;
   const hasLow = lowItems.length > 0;
+
+  // get stocktake alert storage locations
+  const alerts = getStocktakeAlerts({
+      storageLocations,
+      storageUnits,
+      floorMaps,
+      sites,
+    });
+
+  const alertsByLocationId = new Map(
+    alerts.map((alert) => [alert.location._id, alert])
+  );
 
   const handleUnitSelect = (unitId) => {
     setSelectedStorageUnitId(unitId);
@@ -329,7 +351,9 @@ function FloorMapPageInner() {
                 className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}
               >
                 <div>
-                  <div className="panel-header-label">{selectedUnit.name}</div>
+                  <div className="panel-header-label">
+                    {selectedUnit.name}
+                  </div>
                   <div className="panel-header-title">
                     {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
                   </div>
@@ -360,13 +384,17 @@ function FloorMapPageInner() {
                       <div className="panel-section">
                         <div className="panel-section-title low">Low stock</div>
                         {lowItems.map((item, i) => (
-                          <div key={i} className="panel-item low">
-                            <div>
-                              <div className="panel-item-name">
-                                {item.product?.name ?? item.name}
-                              </div>
-                              <div className="panel-item-location">{item.locationName}</div>
+                        <div key={i} className="panel-item low">
+                          {alertsByLocationId.has(item.locationId) && (
+                            <div className="stocktake-alert">⚠️</div>
+                          )}
+
+                          <div>
+                            <div className="panel-item-name">
+                              {item.product?.name ?? item.name}
                             </div>
+                            <div className="panel-item-location">{item.locationName}</div>
+                          </div>
                             <div>
                               <div className="panel-item-qty low">{item.quantity}</div>
                               {item.reorderAt > 0 && (
@@ -381,13 +409,17 @@ function FloorMapPageInner() {
                       <div className="panel-section">
                         <div className="panel-section-title ok">In stock</div>
                         {okItems.map((item, i) => (
-                          <div key={i} className="panel-item ok">
-                            <div>
-                              <div className="panel-item-name">
-                                {item.product?.name ?? item.name}
-                              </div>
-                              <div className="panel-item-location">{item.locationName}</div>
+                        <div key={i} className="panel-item ok">
+                          {alertsByLocationId.has(item.locationId) && (
+                            <div className="stocktake-alert">⚠️</div>
+                          )}
+
+                          <div>
+                            <div className="panel-item-name">
+                              {item.product?.name ?? item.name}
                             </div>
+                            <div className="panel-item-location">{item.locationName}</div>
+                          </div>
                             <div>
                               <div className="panel-item-qty ok">{item.quantity}</div>
                               {item.reorderAt > 0 && (
