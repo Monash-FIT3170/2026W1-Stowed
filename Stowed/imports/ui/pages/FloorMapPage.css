@@ -109,11 +109,21 @@
 
 .panel-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 8px 10px;
   margin-bottom: 6px;
   border-radius: 8px;
+  gap: 8px;
+}
+
+.panel-item > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-item > div:last-child {
+  flex-shrink: 0;
+  text-align: right;
 }
 
 .panel-item.low {
@@ -264,4 +274,12 @@
     right: 14px;
     bottom: 14px;
   }
+}
+
+.stocktake-alert {
+  width: 20px;
+  min-width: 20px;
+  flex-shrink: 0;
+  text-align: center;
+  margin-right: 4px;
 }

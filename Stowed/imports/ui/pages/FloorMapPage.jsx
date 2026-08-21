@@ -385,9 +385,9 @@ function FloorMapPageInner() {
                         <div className="panel-section-title low">Low stock</div>
                         {lowItems.map((item, i) => (
                         <div key={i} className="panel-item low">
-                          {alertsByLocationId.has(item.locationId) && (
-                            <div className="stocktake-alert">⚠️</div>
-                          )}
+                          <div className="stocktake-alert">
+                            {alertsByLocationId.has(item.locationId) ? "⚠️" : ""}
+                          </div>
 
                           <div>
                             <div className="panel-item-name">
@@ -410,9 +410,9 @@ function FloorMapPageInner() {
                         <div className="panel-section-title ok">In stock</div>
                         {okItems.map((item, i) => (
                         <div key={i} className="panel-item ok">
-                          {alertsByLocationId.has(item.locationId) && (
-                            <div className="stocktake-alert">⚠️</div>
-                          )}
+                          <div className="stocktake-alert">
+                            {alertsByLocationId.has(item.locationId) ? "⚠️" : ""}
+                          </div>
 
                           <div>
                             <div className="panel-item-name">
