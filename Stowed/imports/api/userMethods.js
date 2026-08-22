@@ -23,6 +23,7 @@ const PERMISSIONS = {
   "products.uploadImage": ROLES.ADMIN, // attach images to products
   "productCategories.manage": ROLES.ADMIN, // create new categories for products
   "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
+  "products.export": ROLES.ADMIN, // download the full inventory + storage layout
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
