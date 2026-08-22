@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Meteor } from "meteor/meteor";
-import { Products, ProductRecords } from "../imports/api/products/collections";
+import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
 import { Organisations } from "../imports/api/organisations";
 import {
   Sites,
@@ -17,6 +17,7 @@ const TEST_FLOOR_MAP_ID = "test-floor-map-id-products";
 const TEST_STORAGE_UNIT_ID = "test-storage-unit-id-products";
 const TEST_LOCATION_ID = "loc-1-products";
 const TEST_ROLE = 3;
+const TEST_USERNAME = "testuser-products";
 
 const UNIT_SHAPE = {
   orgId: TEST_ORG_ID,
@@ -65,6 +66,7 @@ describe("Product methods", function () {
     await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
     await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
     await StorageLocations.removeAsync(TEST_LOCATION_ID);
+    await ProductActivities.removeAsync({ orgId: TEST_ORG_ID });
 
     await Organisations.insertAsync({
       _id: TEST_ORG_ID,
@@ -81,7 +83,7 @@ describe("Product methods", function () {
       profile: {
         organisationId: TEST_ORG_ID,
         role: TEST_ROLE,
-        username: "testuser-products",
+        username: TEST_USERNAME,
       },
     });
 
@@ -114,6 +116,7 @@ describe("Product methods", function () {
     await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
     await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
     await StorageLocations.removeAsync({ orgId: TEST_ORG_ID });
+    await ProductActivities.removeAsync({ orgId: TEST_ORG_ID });
   });
 
   function callMethod(name, params) {
@@ -155,6 +158,7 @@ describe("Product methods", function () {
     afterEach(async function () {
       if (createdProductId) {
         await ProductRecords.removeAsync({ productId: createdProductId });
+        await ProductActivities.removeAsync({ productId: createdProductId });
         await Products.removeAsync(createdProductId);
         createdProductId = null;
       }
@@ -175,6 +179,15 @@ describe("Product methods", function () {
       const product = await Products.findOneAsync(createdProductId);
       assert.strictEqual(product.name, "Safety Helmet");
       assert.strictEqual(product.totalQuantity, 10);
+      assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+      assert.strictEqual(product.updatedByUsername, TEST_USERNAME);
+      const activity = await ProductActivities.findOneAsync({
+        productId: createdProductId,
+        action: "created",
+      });
+      assert.strictEqual(activity.actorUsername, TEST_USERNAME);
+      assert.strictEqual(activity.quantityBefore, 0);
+      assert.strictEqual(activity.quantityAfter, 10);
     });
 
     it("creates a ProductRecord for each assignment", async function () {
@@ -266,11 +279,17 @@ describe("Product methods", function () {
   describe("products.delete", function () {
     it("removes the product from the database", async function () {
       const productId = await callMethod("products.createWithAssignments", makeCreateParams());
+      const productBeforeDelete = await Products.findOneAsync(productId);
 
       await callMethod("products.delete", { productId });
 
       const product = await Products.findOneAsync(productId);
+      const activity = await ProductActivities.findOneAsync({ productId, action: "deleted" });
       assert.strictEqual(product, undefined);
+      assert.strictEqual(activity.productName, productBeforeDelete.name);
+      assert.strictEqual(activity.quantityBefore, productBeforeDelete.totalQuantity);
+
+      await ProductActivities.removeAsync({ productId });
     });
 
     it("removes all associated ProductRecords", async function () {
@@ -297,6 +316,7 @@ describe("Product methods", function () {
       const records = await ProductRecords.find({ productId }).fetchAsync();
       assert.strictEqual(records.length, 0);
 
+      await ProductActivities.removeAsync({ productId });
       await StorageLocations.removeAsync("loc-2-products");
     });
 
@@ -329,12 +349,17 @@ describe("Product methods", function () {
     afterEach(async function () {
       if (productId) {
         await ProductRecords.removeAsync({ productId });
+        await ProductActivities.removeAsync({ productId });
         await Products.removeAsync(productId);
         productId = null;
       }
     });
 
     it("updates product fields in the database", async function () {
+      await Products.updateAsync(productId, {
+        $set: { updatedByUserId: "previous-user", updatedByUsername: "Previous user" },
+      });
+
       await callMethod("products.update", {
         ...makeCreateParams({
           name: "Updated Name",
@@ -352,6 +377,12 @@ describe("Product methods", function () {
       assert.strictEqual(product.category, "Power Tools");
       assert.strictEqual(product.brand, "DeWalt");
       assert.strictEqual(product.unitCost, 49.99);
+      assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+      assert.strictEqual(product.updatedByUsername, TEST_USERNAME);
+      const activity = await ProductActivities.findOneAsync({ productId, action: "updated" });
+      assert.strictEqual(activity.productName, "Updated Name");
+      assert.strictEqual(activity.quantityBefore, 50);
+      assert.strictEqual(activity.quantityAfter, 50);
     });
 
     it("replaces all ProductRecords with the new assignments", async function () {
@@ -445,6 +476,7 @@ describe("Product methods", function () {
         );
       } finally {
         await ProductRecords.removeAsync({ productId: otherProductId });
+        await ProductActivities.removeAsync({ productId: otherProductId });
         await Products.removeAsync(otherProductId);
       }
     });
@@ -522,12 +554,17 @@ describe("Product methods", function () {
     afterEach(async function () {
       if (productId) {
         await ProductRecords.removeAsync({ productId });
+        await ProductActivities.removeAsync({ productId });
         await Products.removeAsync(productId);
         productId = null;
       }
     });
 
     it("increases totalQuantity by additionalQuantity", async function () {
+      await Products.updateAsync(productId, {
+        $set: { updatedByUserId: "previous-user", updatedByUsername: "Previous user" },
+      });
+
       await callMethod("products.restock", {
         productId,
         additionalQuantity: 25,
@@ -536,6 +573,12 @@ describe("Product methods", function () {
 
       const product = await Products.findOneAsync(productId);
       assert.strictEqual(product.totalQuantity, 75);
+      assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+      assert.strictEqual(product.updatedByUsername, TEST_USERNAME);
+      const activity = await ProductActivities.findOneAsync({ productId, action: "restocked" });
+      assert.strictEqual(activity.quantityBefore, 50);
+      assert.strictEqual(activity.quantityAfter, 75);
+      assert.strictEqual(await ProductActivities.find({ productId }).countAsync(), 2);
     });
 
     it("replaces ProductRecords with the new assignment distribution", async function () {
@@ -675,6 +718,52 @@ describe("Product methods", function () {
       const records = await ProductRecords.find({ productId }).fetchAsync();
       assert.strictEqual(records.length, 1);
       assert.strictEqual(records[0].quantity, 50, "Original records must be unchanged");
+    });
+  });
+
+  // stocktake audit metadata
+  describe("stocktake.save product audit metadata", function () {
+    let productId;
+
+    beforeEach(async function () {
+      productId = await callMethod(
+        "products.createWithAssignments",
+        makeCreateParams({
+          name: `Stocktake Audit ${Date.now()}`,
+          totalQuantity: 10,
+          assignments: [{ locationId: TEST_LOCATION_ID, quantity: 10 }],
+        }),
+      );
+    });
+
+    afterEach(async function () {
+      if (productId) {
+        await ProductRecords.removeAsync({ productId });
+        await ProductActivities.removeAsync({ productId });
+        await Products.removeAsync(productId);
+        productId = null;
+      }
+    });
+
+    it("records the user when a stocktake changes a product quantity", async function () {
+      await Products.updateAsync(productId, {
+        $set: { updatedByUserId: "previous-user", updatedByUsername: "Previous user" },
+      });
+
+      const result = await callMethod("stocktake.save", {
+        locationId: TEST_LOCATION_ID,
+        lines: [{ productId, quantity: 7 }],
+      });
+
+      const product = await Products.findOneAsync(productId);
+      assert.strictEqual(result.productsChanged, 1);
+      assert.strictEqual(product.totalQuantity, 7);
+      assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
+      assert.strictEqual(product.updatedByUsername, TEST_USERNAME);
+      const activity = await ProductActivities.findOneAsync({ productId, action: "stocktake" });
+      assert.strictEqual(activity.quantityBefore, 10);
+      assert.strictEqual(activity.quantityAfter, 7);
+      assert.strictEqual(activity.locationName, "Test Location");
     });
   });
 });

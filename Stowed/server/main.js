@@ -3,6 +3,10 @@ import { Accounts } from "meteor/accounts-base";
 import { WebApp } from "meteor/webapp";
 import crypto from "crypto";
 import "/imports/api/products/methods";
+import "/imports/api/categories/methods";
+import "/imports/api/shoppingLists/methods";
+import "/imports/api/schedules/methods";
+import { startScheduler } from "/imports/api/schedules/scheduler";
 import "/imports/api/locations/methods";
 import "/imports/api/publications";
 import "/imports/api/userMethods";
@@ -15,8 +19,10 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { backfillProductActivities } from "/imports/api/products/activityBackfill";
+import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
 import { buildRectShape } from "/imports/api/locations/shapeUtils";
-import { Products, ProductRecords } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { Organisations } from "/imports/api/organisations";
 
 async function seedOrg() {
@@ -41,23 +47,39 @@ async function seedOrg() {
   return org._id;
 }
 
+async function seedCategory(seedOrgId, name, cache) {
+  if (cache.has(name)) return cache.get(name);
+
+  let category = await ProductCategories.findOneAsync({ orgId: seedOrgId, name });
+  if (!category) {
+    const categoryId = await ProductCategories.insertAsync({ orgId: seedOrgId, name });
+    category = { _id: categoryId };
+  }
+
+  cache.set(name, category._id);
+  return category._id;
+}
+
 async function seedProducts(seedOrgId) {
   const count = await Products.find().countAsync();
   if (count > 0) return;
 
   const now = new Date();
-  const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
+  const categoryCache = new Map();
+  const add = async ({ name, description, category, brand, unitCost, totalQuantity }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
       category,
+      categoryId: await seedCategory(seedOrgId, category, categoryCache),
       brand,
       unitCost,
       totalQuantity,
       images: [],
       createdAt: now,
       updatedAt: now,
+      updatedByUsername: "System",
     });
 
   await add({
@@ -470,6 +492,7 @@ async function seedOwner(seedOrgId) {
 Meteor.startup(async () => {
   await Sites.rawCollection().createIndex({ orgId: 1 });
   await Products.rawCollection().createIndex({ orgId: 1 });
+  await ProductActivities.rawCollection().createIndex({ orgId: 1, createdAt: -1 });
 
   await seedDatabase();
 });
@@ -482,14 +505,19 @@ async function seedDatabase() {
   await seedProducts(seedOrgId);
   await seedLocations(seedOrgId);
   await seedProductRecords();
+  await backfillProductActivities(seedOrgId);
+
+  startScheduler();
 }
 
 // Wipes every seeded collection (and all user accounts) so the database can be
 // re-seeded from scratch. Destructive - only reachable via the protected
 // /admin/reset-seed endpoint below.
 async function resetDatabase() {
+  await ProductActivities.removeAsync({});
   await ProductRecords.removeAsync({});
   await Products.removeAsync({});
+  await ProductCategories.removeAsync({});
   await StorageLocations.removeAsync({});
   await StorageUnits.removeAsync({});
   await FloorMaps.removeAsync({});
