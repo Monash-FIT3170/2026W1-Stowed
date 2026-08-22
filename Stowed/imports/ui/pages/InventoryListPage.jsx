@@ -81,8 +81,8 @@ export function InventoryListPage() {
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
   const [categoryFilterId, setCategoryFilterId] = useState("");
 
-  const { items, loading, productRecords, categories, storageLocations, storageUnits } = useTracker(
-    () => {
+  const { items, loading, productRecords, categories, storageLocations, storageUnits } =
+    useTracker(() => {
       const sub1 = Meteor.subscribe("products");
       Meteor.subscribe("productRecords");
       Meteor.subscribe("productCategories");
@@ -95,9 +95,7 @@ export function InventoryListPage() {
         storageLocations: StorageLocations.find().fetch(),
         storageUnits: StorageUnits.find().fetch(),
       };
-    },
-    [],
-  );
+    }, []);
 
   // Products store only a categoryId, so resolve names once per render pass
   // rather than scanning the category list for every row.

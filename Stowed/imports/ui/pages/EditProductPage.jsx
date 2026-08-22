@@ -644,8 +644,7 @@ export function EditProductPage() {
                     {categories.find((c) => c._id === changes.categoryId.from)?.name ||
                       originalCategoryName ||
                       "None"}{" "}
-                    →{" "}
-                    {categories.find((c) => c._id === changes.categoryId.to)?.name || "None"}
+                    → {categories.find((c) => c._id === changes.categoryId.to)?.name || "None"}
                   </div>
                 </div>
               )}
