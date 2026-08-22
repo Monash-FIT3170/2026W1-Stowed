@@ -136,8 +136,7 @@ describe("Product methods", function () {
     return {
       name: `Test Product ${Date.now()}`,
       description: "",
-      tag: "",
-      category: "",
+      categoryId: "",
       sku: "",
       brand: "",
       unitCost: 0,
@@ -363,7 +362,7 @@ describe("Product methods", function () {
       await callMethod("products.update", {
         ...makeCreateParams({
           name: "Updated Name",
-          category: "Power Tools",
+          categoryId: "cat-power-tools",
           brand: "DeWalt",
           unitCost: 49.99,
           totalQuantity: 50,
@@ -374,7 +373,7 @@ describe("Product methods", function () {
 
       const product = await Products.findOneAsync(productId);
       assert.strictEqual(product.name, "Updated Name");
-      assert.strictEqual(product.category, "Power Tools");
+      assert.strictEqual(product.categoryId, "cat-power-tools");
       assert.strictEqual(product.brand, "DeWalt");
       assert.strictEqual(product.unitCost, 49.99);
       assert.strictEqual(product.updatedByUserId, TEST_USER_ID);
