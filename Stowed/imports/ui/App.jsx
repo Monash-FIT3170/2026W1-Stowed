@@ -1,16 +1,19 @@
 import { lazy } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
-import { InventoryPage } from "./pages/InventoryPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
+import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { StocktakePage } from "./pages/StocktakePage";
+import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -61,16 +64,35 @@ export function App() {
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />
-            <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <Login />} />
+            <Route
+              path="/login"
+              element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
+            />
             <Route
               path="/"
+              element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />}
+            />
+            <Route
+              path="/dashboard"
               element={
                 isLoggedIn ? (
-                  hasClientPermission(role, "route:/inventory") ? (
-                    <InventoryPage />
+                  hasClientPermission(role, "route:/dashboard") ? (
+                    <DashboardPage />
                   ) : (
                     <Navigate to="/" replace />
                   )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                canAccessInventory ? (
+                  <Navigate to="/inventory/list" replace />
+                ) : isLoggedIn ? (
+                  <Navigate to="/" replace />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -88,7 +110,18 @@ export function App() {
               path="/inventory/:productId"
               element={canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace />}
             />
-            <Route path="/inventory/list" element={<InventoryListPage />} />
+            <Route
+              path="/inventory/list"
+              element={
+                canAccessInventory ? (
+                  <InventoryListPage />
+                ) : isLoggedIn ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
             <Route
               path="/floor-map"
               element={
@@ -132,6 +165,20 @@ export function App() {
               }
             />
             <Route
+              path="/locations/:locationId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/locations") ? (
+                    <LocationDetailPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
               path="/lists"
               element={
                 isLoggedIn ? (
@@ -145,7 +192,37 @@ export function App() {
                 )
               }
             />
+            <Route
+              path="/lists/:listId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/lists") ? (
+                    <ShoppingListDetailPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            {/* A stocktake is always scoped to one storage location, so the bare
+                path has nothing to show and falls back to the inventory page. */}
             <Route path="/stocktake" element={<Navigate to="/" replace />} />
+            <Route
+              path="/stocktake/:locationId"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/stocktake") ? (
+                    <StocktakePage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
             <Route
               path="/qr-codes"
               element={

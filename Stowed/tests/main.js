@@ -1,5 +1,6 @@
 import "./smoke.test.js";
 import "./inventoryList.test.js";
+import "./inventorySnapshot.test.js";
 import "./productDetail.test.js";
 import "./unitCollisions.test.js";
 import "./login.test.js";
@@ -15,5 +16,9 @@ import "./gridSnapping.test.js";
 import "./searchAndFilter.test.js";
 import "./fileUpload.test.js";
 import "./productMethods.test.js";
+import "./locationsPage.test.js";
+import "./locationDetail.test.js";
+import "./dashboardPreferences.test.js";
+import "./productActivityBackfill.test.js";
 import "./locationMethods.test.js";
 import "./productExport.test.js";

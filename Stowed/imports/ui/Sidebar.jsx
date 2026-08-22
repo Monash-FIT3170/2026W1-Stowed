@@ -6,13 +6,13 @@ import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
 import "./Global.css";
-import "./Sidebar.css";
+import "./SideBar.css";
 
 const WORKSPACE_LINKS = [
+  { to: "/dashboard", label: "Dashboard", icon: "⌂" },
   { to: "/locations", label: "Locations", icon: "📍" },
   { to: "/floor-map", label: "Floor Map", icon: "🗺" },
   { to: "/inventory", label: "Inventory", icon: "📦" },
-  { to: "/", label: "Inventory Page", icon: "✓" },
   { to: "/lists", label: "Lists", icon: "🛒" },
 ];
 
@@ -95,16 +95,18 @@ export function Sidebar() {
             <SectionLabel label="Workspace" />
             {WORKSPACE_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
               (link) => (
-                <SidebarLink key={link.to} {...link} end={link.to === "/"} />
+                <SidebarLink key={link.to} {...link} end={link.to === "/dashboard"} />
               ),
             )}
           </section>
 
           <section className="sidebar-section">
             <SectionLabel label="Tools" />
-            {TOOL_LINKS.map((link) => (
-              <SidebarLink key={link.to} {...link} />
-            ))}
+            {TOOL_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
+              (link) => (
+                <SidebarLink key={link.to} {...link} />
+              ),
+            )}
           </section>
 
           <section className="sidebar-section">
