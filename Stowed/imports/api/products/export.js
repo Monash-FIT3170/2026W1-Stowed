@@ -13,13 +13,36 @@ export const INVENTORY_COLUMNS = [
 ];
 
 export const LOCATION_COLUMNS = [
-  "locationCode",
   "site",
+  "siteDescription",
   "floorMap",
+  "floorWidth",
+  "floorHeight",
   "storageUnit",
   "storageUnitType",
+  "unitOffsetX",
+  "unitOffsetY",
+  "unitRotation",
+  "unitScaleX",
+  "unitScaleY",
   "storageLocation",
+  "locationCode",
 ];
+
+const EMPTY_UNIT = {
+  site: "",
+  siteDescription: "",
+  floorMap: "",
+  floorWidth: "",
+  floorHeight: "",
+  storageUnit: "",
+  storageUnitType: "",
+  unitOffsetX: "",
+  unitOffsetY: "",
+  unitRotation: "",
+  unitScaleX: "",
+  unitScaleY: "",
+};
 
 function blankIfMissing(value) {
   return value ?? "";
@@ -31,24 +54,65 @@ export function buildLocationRows({
   floorMaps = [],
   sites = [],
 }) {
-  const unitById = new Map(storageUnits.map((u) => [u._id, u]));
   const floorMapById = new Map(floorMaps.map((f) => [f._id, f]));
   const siteById = new Map(sites.map((s) => [s._id, s]));
 
-  return storageLocations.map((location) => {
-    const unit = unitById.get(location.storageUnitId);
-    const floorMap = unit ? floorMapById.get(unit.floorMapId) : null;
+  const locationsByUnitId = new Map();
+  for (const location of storageLocations) {
+    const existing = locationsByUnitId.get(location.storageUnitId) ?? [];
+    existing.push(location);
+    locationsByUnitId.set(location.storageUnitId, existing);
+  }
+
+  const rows = [];
+  const placed = new Set();
+
+  for (const unit of storageUnits) {
+    const floorMap = floorMapById.get(unit.floorMapId);
     const site = floorMap ? siteById.get(floorMap.siteId) : null;
 
-    return {
-      locationCode: blankIfMissing(location.code),
+    const base = {
       site: blankIfMissing(site?.name),
+      siteDescription: blankIfMissing(site?.description),
       floorMap: blankIfMissing(floorMap?.name),
-      storageUnit: blankIfMissing(unit?.name),
-      storageUnitType: blankIfMissing(unit?.type),
-      storageLocation: blankIfMissing(location.name),
+      floorWidth: blankIfMissing(floorMap?.floorSize?.width),
+      floorHeight: blankIfMissing(floorMap?.floorSize?.height),
+      storageUnit: blankIfMissing(unit.name),
+      storageUnitType: blankIfMissing(unit.type),
+      unitOffsetX: blankIfMissing(unit.offset?.x),
+      unitOffsetY: blankIfMissing(unit.offset?.y),
+      unitRotation: blankIfMissing(unit.rotation),
+      unitScaleX: blankIfMissing(unit.scale?.x),
+      unitScaleY: blankIfMissing(unit.scale?.y),
     };
-  });
+
+    const locations = locationsByUnitId.get(unit._id) ?? [];
+
+    if (locations.length === 0) {
+      rows.push({ ...base, storageLocation: "", locationCode: "" });
+      continue;
+    }
+
+    for (const location of locations) {
+      placed.add(location._id);
+      rows.push({
+        ...base,
+        storageLocation: blankIfMissing(location.name),
+        locationCode: blankIfMissing(location.code),
+      });
+    }
+  }
+
+  for (const location of storageLocations) {
+    if (placed.has(location._id)) continue;
+    rows.push({
+      ...EMPTY_UNIT,
+      storageLocation: blankIfMissing(location.name),
+      locationCode: blankIfMissing(location.code),
+    });
+  }
+
+  return rows;
 }
 
 export function buildInventoryRows({
@@ -76,9 +140,9 @@ export function buildInventoryRows({
       brand: blankIfMissing(product.brand),
       category: blankIfMissing(categoryNameById.get(product.categoryId)),
       totalQuantity: product.totalQuantity ?? 0,
-      reorderAt: product.reorderAt ?? "",
-      unitCost: product.unitCost ?? "",
-      purchaseCost: product.purchaseCost ?? "",
+      reorderAt: blankIfMissing(product.reorderAt),
+      unitCost: blankIfMissing(product.unitCost),
+      purchaseCost: blankIfMissing(product.purchaseCost),
       description: blankIfMissing(product.description),
     };
 
