@@ -1,11 +1,13 @@
 import { Meteor } from "meteor/meteor";
-import { check } from "meteor/check";
+import { check, Match } from "meteor/check";
 import {
     Sites,
     FloorMaps,
     StorageUnits,
     StorageLocations,
 } from "/imports/api/locations/collections";
+import { ImportRecords } from "/imports/api/importRecords/collections";
+import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
 import { getCallerOrgId, requirePermission } from "/imports/api/userMethods";
 
 const DEFAULT_FLOOR_SIZE = { width: 500, height: 500 };
@@ -173,28 +175,30 @@ function createDefaultShape(orgId, width = 2, height = 1) {
 
 async function findOrCreateSite({ orgId, name, description = "", now, siteMap }) {
     const key = name.toLowerCase();
-    let siteId = siteMap.get(key);
-    if (siteId) return siteId;
+    let cached = siteMap.get(key);
+    if (cached) return cached;
 
     const existing = await Sites.findOneAsync({ orgId, name });
     if (existing) {
-        siteMap.set(key, existing._id);
-        return existing._id;
+        cached = { id: existing._id, created: false };
+        siteMap.set(key, cached);
+        return cached;
     }
 
-    siteId = await Sites.insertAsync({ orgId, name, description, createdAt: now, updatedAt: now });
-    siteMap.set(key, siteId);
-    return siteId;
+    const siteId = await Sites.insertAsync({ orgId, name, description, createdAt: now, updatedAt: now });
+    cached = { id: siteId, created: true };
+    siteMap.set(key, cached);
+    return cached;
 }
 
 async function findOrCreateFloorMap({ orgId, siteId, name, floorSize, now, floorMapMap }) {
     const key = `${siteId}::${name.toLowerCase()}`;
-    let floorId = floorMapMap.get(key);
-    if (floorId) {
+    let cached = floorMapMap.get(key);
+    if (cached) {
         if (floorSize) {
-            await FloorMaps.updateAsync(floorId, { $set: { floorSize, updatedAt: now } });
+            await FloorMaps.updateAsync(cached.id, { $set: { floorSize, updatedAt: now } });
         }
-        return floorId;
+        return cached;
     }
 
     const existing = await FloorMaps.findOneAsync({ orgId, siteId, name });
@@ -202,11 +206,12 @@ async function findOrCreateFloorMap({ orgId, siteId, name, floorSize, now, floor
         if (floorSize) {
             await FloorMaps.updateAsync(existing._id, { $set: { floorSize, updatedAt: now } });
         }
-        floorMapMap.set(key, existing._id);
-        return existing._id;
+        cached = { id: existing._id, created: false };
+        floorMapMap.set(key, cached);
+        return cached;
     }
 
-    floorId = await FloorMaps.insertAsync({
+    const floorId = await FloorMaps.insertAsync({
         orgId,
         siteId,
         name,
@@ -216,14 +221,15 @@ async function findOrCreateFloorMap({ orgId, siteId, name, floorSize, now, floor
         createdAt: now,
         updatedAt: now,
     });
-    floorMapMap.set(key, floorId);
-    return floorId;
+    cached = { id: floorId, created: true };
+    floorMapMap.set(key, cached);
+    return cached;
 }
 
 async function findOrCreateStorageUnit({ orgId, floorMapId, name, type = "other", offset, width, height, now, unitMap }) {
     const key = `${floorMapId}::${name.toLowerCase()}`;
-    let unitId = unitMap.get(key);
-    if (unitId) return unitId;
+    let cached = unitMap.get(key);
+    if (cached) return cached;
 
     const existing = await StorageUnits.findOneAsync({ orgId, floorMapId, name });
     if (existing) {
@@ -241,11 +247,12 @@ async function findOrCreateStorageUnit({ orgId, floorMapId, name, type = "other"
         if (Object.keys(updates).length > 1) {
             await StorageUnits.updateAsync(existing._id, { $set: updates });
         }
-        unitMap.set(key, existing._id);
-        return existing._id;
+        cached = { id: existing._id, created: false };
+        unitMap.set(key, cached);
+        return cached;
     }
 
-    unitId = await StorageUnits.insertAsync({
+    const unitId = await StorageUnits.insertAsync({
         orgId,
         floorMapId,
         name,
@@ -257,8 +264,9 @@ async function findOrCreateStorageUnit({ orgId, floorMapId, name, type = "other"
         createdAt: now,
         updatedAt: now,
     });
-    unitMap.set(key, unitId);
-    return unitId;
+    cached = { id: unitId, created: true };
+    unitMap.set(key, cached);
+    return cached;
 }
 
 async function findOrCreateStorageLocation({ orgId, storageUnitId, name, code, lastStocktakeAt, now }) {
@@ -442,8 +450,13 @@ Meteor.methods({
         return { status: "ok", created, skippedDuplicates };
     },
 
-    async "bulk.importCombined"(csvText) {
+    async "bulk.importCombined"(payload) {
+        check(payload, Match.OneOf(String, Object));
+
+        const csvText = typeof payload === "string" ? payload : payload.text;
+        const fileName = typeof payload === "string" ? "Imported data" : payload.fileName || "Imported data";
         check(csvText, String);
+        check(fileName, String);
 
         if (!this.userId) {
             throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -454,17 +467,56 @@ Meteor.methods({
         const orgId = await getCallerOrgId(this.userId);
         if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
 
-        const rows = parseBulkImportRows(csvText);
-
         const now = new Date();
+        const importRecordId = await ImportRecords.insertAsync({
+            orgId,
+            userId: this.userId,
+            fileName,
+            status: "running",
+            createdIds: {
+                productIds: [],
+                locationIds: [],
+                storageUnitIds: [],
+                floorMapIds: [],
+                siteIds: [],
+            },
+            counts: {
+                createdProducts: 0,
+                createdLocations: 0,
+                skippedDuplicateProducts: 0,
+            },
+            createdAt: now,
+            updatedAt: now,
+        });
+
+        let rows;
+        try {
+            rows = parseBulkImportRows(csvText);
+        } catch (err) {
+            await ImportRecords.updateAsync(importRecordId, {
+                $set: {
+                    status: "failed",
+                    error: err.message || err.reason || String(err),
+                    updatedAt: new Date(),
+                },
+            });
+            throw err;
+        }
+
         const siteMap = new Map();
         const floorMapMap = new Map();
         const unitMap = new Map();
         const productGroups = new Map();
+        const createdSiteIds = new Set();
+        const createdFloorMapIds = new Set();
+        const createdStorageUnitIds = new Set();
+        const createdLocationIds = new Set();
+        const createdProductIds = new Set();
         let createdProducts = 0;
         let createdLocations = 0;
         let skippedDuplicateProducts = 0;
 
+        try {
         for (const r of rows) {
             // Ensure location hierarchy if provided
             const siteName = (getField(r, 'siteName', 'site.name', 'site_name') || "").trim();
@@ -492,20 +544,36 @@ Meteor.methods({
 
             let siteId = null;
             if (siteName) {
-                siteId = await findOrCreateSite({ orgId, name: siteName, now, siteMap });
+                const siteResult = await findOrCreateSite({ orgId, name: siteName, now, siteMap });
+                siteId = siteResult.id;
+                if (siteResult.created) createdSiteIds.add(siteId);
             }
 
             let floorId = null;
             if (floorName) {
-                const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                floorId = await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: floorName, floorSize, now, floorMapMap });
+                const parentSiteResult = siteId
+                    ? { id: siteId, created: false }
+                    : await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
+                const parentSiteId = parentSiteResult.id;
+                if (parentSiteResult.created) createdSiteIds.add(parentSiteId);
+                const floorResult = await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: floorName, floorSize, now, floorMapMap });
+                floorId = floorResult.id;
+                if (floorResult.created) createdFloorMapIds.add(floorId);
             }
 
             let unitId = null;
             if (unitName) {
-                const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
-                unitId = await findOrCreateStorageUnit({
+                const parentSiteResult = siteId
+                    ? { id: siteId, created: false }
+                    : await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
+                const parentSiteId = parentSiteResult.id;
+                if (parentSiteResult.created) createdSiteIds.add(parentSiteId);
+                const parentFloorResult = floorId
+                    ? { id: floorId, created: false }
+                    : await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
+                const parentFloorId = parentFloorResult.id;
+                if (parentFloorResult.created) createdFloorMapIds.add(parentFloorId);
+                const unitResult = await findOrCreateStorageUnit({
                     orgId,
                     floorMapId: parentFloorId,
                     name: unitName,
@@ -516,14 +584,26 @@ Meteor.methods({
                     now,
                     unitMap,
                 });
+                unitId = unitResult.id;
+                if (unitResult.created) createdStorageUnitIds.add(unitId);
             }
 
             // Create the explicit location from this row if provided
             let explicitLocationId = null;
             if (locationCode) {
-                const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
-                const targetUnit = unitId || await findOrCreateStorageUnit({
+                const parentSiteResult = siteId
+                    ? { id: siteId, created: false }
+                    : await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
+                const parentSiteId = parentSiteResult.id;
+                if (parentSiteResult.created) createdSiteIds.add(parentSiteId);
+                const parentFloorResult = floorId
+                    ? { id: floorId, created: false }
+                    : await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
+                const parentFloorId = parentFloorResult.id;
+                if (parentFloorResult.created) createdFloorMapIds.add(parentFloorId);
+                const targetUnitResult = unitId
+                    ? { id: unitId, created: false }
+                    : await findOrCreateStorageUnit({
                     orgId,
                     floorMapId: parentFloorId,
                     name: "Imported Unit",
@@ -534,6 +614,8 @@ Meteor.methods({
                     now,
                     unitMap,
                 });
+                const targetUnit = targetUnitResult.id;
+                if (targetUnitResult.created) createdStorageUnitIds.add(targetUnit);
                 const result = await findOrCreateStorageLocation({
                     orgId,
                     storageUnitId: targetUnit,
@@ -543,7 +625,10 @@ Meteor.methods({
                     now,
                 });
                 explicitLocationId = result.locationId;
-                if (result.created) createdLocations += 1;
+                if (result.created) {
+                    createdLocations += 1;
+                    createdLocationIds.add(result.locationId);
+                }
             }
 
             // If product fields exist, create product and assignments
@@ -585,9 +670,19 @@ Meteor.methods({
                         let loc = await StorageLocations.findOneAsync({ orgId, code });
                         if (!loc) {
                             // create location under explicit unit if available, else create under defaults
-                            const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                            const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
-                            const targetUnit = unitId || await findOrCreateStorageUnit({
+                            const parentSiteResult = siteId
+                                ? { id: siteId, created: false }
+                                : await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
+                            const parentSiteId = parentSiteResult.id;
+                            if (parentSiteResult.created) createdSiteIds.add(parentSiteId);
+                            const parentFloorResult = floorId
+                                ? { id: floorId, created: false }
+                                : await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
+                            const parentFloorId = parentFloorResult.id;
+                            if (parentFloorResult.created) createdFloorMapIds.add(parentFloorId);
+                            const targetUnitResult = unitId
+                                ? { id: unitId, created: false }
+                                : await findOrCreateStorageUnit({
                                 orgId,
                                 floorMapId: parentFloorId,
                                 name: "Imported Unit",
@@ -598,9 +693,14 @@ Meteor.methods({
                                 now,
                                 unitMap,
                             });
+                            const targetUnit = targetUnitResult.id;
+                            if (targetUnitResult.created) createdStorageUnitIds.add(targetUnit);
                             const result = await findOrCreateStorageLocation({ orgId, storageUnitId: targetUnit, name: code, code, lastStocktakeAt, now });
                             loc = { _id: result.locationId };
-                            if (result.created) createdLocations += 1;
+                            if (result.created) {
+                                createdLocations += 1;
+                                createdLocationIds.add(result.locationId);
+                            }
                         }
                         assignments.push({ locationId: loc._id, quantity: qty });
                     }
@@ -618,7 +718,7 @@ Meteor.methods({
 
         for (const product of productGroups.values()) {
             try {
-                await handler.call(this, {
+                const productId = await handler.call(this, {
                     name: product.name,
                     description: product.description,
                     tag: "",
@@ -636,6 +736,7 @@ Meteor.methods({
                 });
 
                 createdProducts += 1;
+                createdProductIds.add(productId);
             } catch (err) {
                 if (err?.error === "duplicate-name") {
                     skippedDuplicateProducts += 1;
@@ -645,6 +746,167 @@ Meteor.methods({
             }
         }
 
+        await ImportRecords.updateAsync(importRecordId, {
+            $set: {
+                status: "completed",
+                createdIds: {
+                    productIds: Array.from(createdProductIds),
+                    locationIds: Array.from(createdLocationIds),
+                    storageUnitIds: Array.from(createdStorageUnitIds),
+                    floorMapIds: Array.from(createdFloorMapIds),
+                    siteIds: Array.from(createdSiteIds),
+                },
+                counts: {
+                    createdProducts,
+                    createdLocations,
+                    skippedDuplicateProducts,
+                },
+                updatedAt: new Date(),
+            },
+        });
+
         return { status: "ok", createdProducts, createdLocations, skippedDuplicateProducts };
+        } catch (err) {
+            await ImportRecords.updateAsync(importRecordId, {
+                $set: {
+                    status: "failed",
+                    error: err.message || err.reason || String(err),
+                    createdIds: {
+                        productIds: Array.from(createdProductIds),
+                        locationIds: Array.from(createdLocationIds),
+                        storageUnitIds: Array.from(createdStorageUnitIds),
+                        floorMapIds: Array.from(createdFloorMapIds),
+                        siteIds: Array.from(createdSiteIds),
+                    },
+                    counts: {
+                        createdProducts,
+                        createdLocations,
+                        skippedDuplicateProducts,
+                    },
+                    updatedAt: new Date(),
+                },
+            });
+            throw err;
+        }
+    },
+
+    async "bulk.undoLatestImport"() {
+        if (!this.userId) {
+            throw new Meteor.Error("not-authorised", "You must be logged in.");
+        }
+
+        await requirePermission(this.userId, "products.create");
+        await requirePermission(this.userId, "locations.manage");
+
+        const orgId = await getCallerOrgId(this.userId);
+        if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+        const record = await ImportRecords.findOneAsync(
+            { orgId, status: "completed" },
+            { sort: { createdAt: -1 } },
+        );
+        if (!record) {
+            throw new Meteor.Error("not-found", "There is no completed import to undo.");
+        }
+
+        const createdIds = record.createdIds || {};
+        const productIds = createdIds.productIds || [];
+        const locationIds = createdIds.locationIds || [];
+        const storageUnitIds = createdIds.storageUnitIds || [];
+        const floorMapIds = createdIds.floorMapIds || [];
+        const siteIds = createdIds.siteIds || [];
+
+        const undone = {
+            products: 0,
+            locations: 0,
+            storageUnits: 0,
+            floorMaps: 0,
+            sites: 0,
+        };
+        const skipped = {
+            locations: 0,
+            storageUnits: 0,
+            floorMaps: 0,
+            sites: 0,
+        };
+
+        for (const productId of productIds) {
+            const product = await Products.findOneAsync({ _id: productId, orgId });
+            if (!product) continue;
+
+            await ProductRecords.removeAsync({ productId });
+            await ProductActivities.removeAsync({ orgId, productId });
+            await Products.removeAsync(productId);
+            undone.products += 1;
+        }
+
+        for (const locationId of locationIds) {
+            const location = await StorageLocations.findOneAsync({ _id: locationId, orgId });
+            if (!location) continue;
+
+            const stillUsed = await ProductRecords.findOneAsync({ locationId });
+            if (stillUsed) {
+                skipped.locations += 1;
+                continue;
+            }
+
+            await StorageLocations.removeAsync(locationId);
+            undone.locations += 1;
+        }
+
+        for (const storageUnitId of storageUnitIds) {
+            const storageUnit = await StorageUnits.findOneAsync({ _id: storageUnitId, orgId });
+            if (!storageUnit) continue;
+
+            const stillHasLocations = await StorageLocations.findOneAsync({ orgId, storageUnitId });
+            if (stillHasLocations) {
+                skipped.storageUnits += 1;
+                continue;
+            }
+
+            await StorageUnits.removeAsync(storageUnitId);
+            undone.storageUnits += 1;
+        }
+
+        for (const floorMapId of floorMapIds) {
+            const floorMap = await FloorMaps.findOneAsync({ _id: floorMapId, orgId });
+            if (!floorMap) continue;
+
+            const stillHasUnits = await StorageUnits.findOneAsync({ orgId, floorMapId });
+            if (stillHasUnits) {
+                skipped.floorMaps += 1;
+                continue;
+            }
+
+            await FloorMaps.removeAsync(floorMapId);
+            undone.floorMaps += 1;
+        }
+
+        for (const siteId of siteIds) {
+            const site = await Sites.findOneAsync({ _id: siteId, orgId });
+            if (!site) continue;
+
+            const stillHasFloors = await FloorMaps.findOneAsync({ orgId, siteId });
+            if (stillHasFloors) {
+                skipped.sites += 1;
+                continue;
+            }
+
+            await Sites.removeAsync(siteId);
+            undone.sites += 1;
+        }
+
+        await ImportRecords.updateAsync(record._id, {
+            $set: {
+                status: "undone",
+                undone,
+                skipped,
+                undoneAt: new Date(),
+                undoneByUserId: this.userId,
+                updatedAt: new Date(),
+            },
+        });
+
+        return { status: "ok", importRecordId: record._id, undone, skipped };
     },
 });
