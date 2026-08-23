@@ -1,7 +1,9 @@
 import "../Global.css";
 import "./DataToolsPage.css";
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
+import { ImportRecords } from "/imports/api/importRecords/collections";
 
 const JSON_TEMPLATE_ROWS = [
   {
@@ -127,24 +129,41 @@ function downloadSample() {
   });
 }
 
+function formatImportDate(date) {
+  if (!date) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function DataToolsPage() {
   const [combinedFile, setCombinedFile] = useState(null);
   const fileInputRef = useRef(null);
   const [status, setStatus] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const [activeImportAction, setActiveImportAction] = useState(null);
+  const { importRecords } = useTracker(() => {
+    Meteor.subscribe("importRecords");
+    return {
+      importRecords: ImportRecords.find({}, { sort: { createdAt: -1 } }).fetch(),
+    };
+  }, []);
+  const latestCompletedImport = useMemo(
+    () => importRecords.find((record) => record.status === "completed"),
+    [importRecords],
+  );
 
-  const handleUpload = async () => {
-    setStatus("Starting import...");
-
+  const importCombinedData = async ({ text, fileName }) => {
+    setIsImporting(true);
+    setActiveImportAction("import");
+    setStatus(`Uploading ${fileName}...`);
     try {
-      if (!combinedFile) {
-        setStatus("No file selected to import");
-        return;
-      }
-
-      setStatus("Uploading combined file...");
-      const text = await combinedFile.text();
       const result = await new Promise((res, rej) => {
-        Meteor.call("bulk.importCombined", text, (err, result) => {
+        Meteor.call("bulk.importCombined", { text, fileName }, (err, result) => {
           if (err) rej(err);
           else res(result);
         });
@@ -156,6 +175,55 @@ export function DataToolsPage() {
     } catch (err) {
       console.error(err);
       setStatus(`Import failed: ${err.message || err}`);
+    } finally {
+      setIsImporting(false);
+      setActiveImportAction(null);
+    }
+  };
+
+  const handleUpload = async () => {
+    setStatus("Starting import...");
+
+    try {
+      if (!combinedFile) {
+        setStatus("No file selected to import");
+        return;
+      }
+
+      const text = await combinedFile.text();
+      await importCombinedData({ text, fileName: combinedFile.name });
+    } catch (err) {
+      console.error(err);
+      setStatus(`Import failed: ${err.message || err}`);
+    }
+  };
+
+  const handleUndoLatestImport = async () => {
+    if (!latestCompletedImport) {
+      setStatus("No completed import to undo");
+      return;
+    }
+
+    setIsUndoing(true);
+    setActiveImportAction("undo");
+    setStatus(`Undoing ${latestCompletedImport.fileName || "latest import"}...`);
+
+    try {
+      const result = await new Promise((res, rej) => {
+        Meteor.call("bulk.undoLatestImport", (err, result) => {
+          if (err) rej(err);
+          else res(result);
+        });
+      });
+
+      const undone = result?.undone || {};
+      setStatus(`Undo complete. Removed ${undone.products || 0} product${undone.products === 1 ? "" : "s"} and ${undone.locations || 0} location${undone.locations === 1 ? "" : "s"}.`);
+    } catch (err) {
+      console.error(err);
+      setStatus(`Undo failed: ${err.message || err}`);
+    } finally {
+      setIsUndoing(false);
+      setActiveImportAction(null);
     }
   };
 
@@ -199,6 +267,7 @@ export function DataToolsPage() {
                 <button
                   className="btn-secondary file-chooser-button"
                   onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  disabled={isImporting || isUndoing}
                 >
                   Choose JSON
                 </button>
@@ -207,7 +276,11 @@ export function DataToolsPage() {
               </div>
 
               <div>
-                <button className="btn-primary" onClick={handleUpload} disabled={!combinedFile}>Import</button>
+                <div className="import-buttons">
+                  <button className="btn-primary" onClick={handleUpload} disabled={!combinedFile || isImporting || isUndoing}>
+                    {activeImportAction === "import" ? "Importing..." : "Import"}
+                  </button>
+                </div>
                 <div className="import-status">{status}</div>
               </div>
             </div>
@@ -217,6 +290,38 @@ export function DataToolsPage() {
             <div className="panel-card">
               <h4>Status</h4>
               <div className="status-box">{status || "No import in progress"}</div>
+            </div>
+            <div className="panel-card">
+              <div className="import-history-header">
+                <h4>Import History</h4>
+                <button
+                  className="btn-secondary"
+                  onClick={handleUndoLatestImport}
+                  disabled={!latestCompletedImport || isImporting || isUndoing}
+                >
+                  {activeImportAction === "undo" ? "Undoing..." : "Undo import"}
+                </button>
+              </div>
+              <div className="import-history-list">
+                {importRecords.length === 0 ? (
+                  <div className="small-muted">No imports yet</div>
+                ) : (
+                  importRecords.map((record) => {
+                    const counts = record.counts || {};
+                    return (
+                      <div key={record._id} className="import-history-item">
+                        <div className="import-history-title">{record.fileName || "Imported data"}</div>
+                        <div className="import-history-meta">
+                          {formatImportDate(record.createdAt)} · {record.status}
+                        </div>
+                        <div className="import-history-meta">
+                          {counts.createdProducts || 0} products · {counts.createdLocations || 0} locations
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </aside>
         </div>
