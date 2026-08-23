@@ -12,6 +12,7 @@ import "/imports/api/publications";
 import "/imports/api/userMethods";
 import { ROLES } from "/imports/api/roles";
 import "/imports/api/upload.js";
+import "/imports/api/bulkImport";
 import {
   Sites,
   FloorMaps,

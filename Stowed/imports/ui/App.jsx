@@ -19,6 +19,7 @@ import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
+import { DataToolsPage } from "./pages/DataToolsPage";
 
 const LocationsPage = lazy(() =>
   import("./pages/LocationsPage").then((module) => ({
@@ -256,6 +257,20 @@ export function App() {
                 isLoggedIn ? (
                   hasClientPermission(role, "route:/alerts") ? (
                     <AlertsPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/data-tools"
+              element={
+                isLoggedIn ? (
+                  hasClientPermission(role, "route:/data-tools") ? (
+                    <DataToolsPage />
                   ) : (
                     <Navigate to="/" replace />
                   )

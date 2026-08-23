@@ -21,3 +21,4 @@ import "./locationDetail.test.js";
 import "./dashboardPreferences.test.js";
 import "./productActivityBackfill.test.js";
 import "./locationMethods.test.js";
+import "./bulkImport.test.js";

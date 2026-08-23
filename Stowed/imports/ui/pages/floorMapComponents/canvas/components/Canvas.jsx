@@ -96,7 +96,7 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [floorSize.width, floorSize.height, scale]);
 
   useEffect(() => {
     function onKeyDown(e) {
