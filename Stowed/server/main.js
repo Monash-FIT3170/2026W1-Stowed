@@ -59,19 +59,38 @@ async function seedCategory(seedOrgId, name, cache) {
   return category._id;
 }
 
-async function seedProducts(seedOrgId) {
+// Returns the seeded category ids by name so seedProducts can attach them.
+// Each add() no-ops if that category already exists, so this is safe to re-run.
+async function seedCategories(seedOrgId) {
+  const categoryIds = new Map();
+  const add = (name) => seedCategory(seedOrgId, name, categoryIds);
+
+  await add("Electrical");
+  await add("Health & Safety");
+  await add("IT Accessories");
+  await add("IT Equipment");
+  await add("Lab Safety");
+  await add("Stationery");
+
+  return categoryIds;
+}
+
+async function seedProducts(seedOrgId, categoryIds) {
   const count = await Products.find().countAsync();
   if (count > 0) return;
 
   const now = new Date();
-  const categoryCache = new Map();
-  const add = async ({ name, description, category, brand, unitCost, totalQuantity }) =>
-    Products.insertAsync({
+  const add = async ({ name, description, category, brand, unitCost, totalQuantity }) => {
+    if (!categoryIds.has(category)) {
+      throw new Error(`Seed product "${name}" uses a category that was not seeded: ${category}`);
+    }
+
+    return Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
       category,
-      categoryId: await seedCategory(seedOrgId, category, categoryCache),
+      categoryId: categoryIds.get(category),
       brand,
       unitCost,
       totalQuantity,
@@ -80,6 +99,7 @@ async function seedProducts(seedOrgId) {
       updatedAt: now,
       updatedByUsername: "System",
     });
+  };
 
   await add({
     name: "Lab Safety Goggles",
@@ -501,7 +521,8 @@ Meteor.startup(async () => {
 async function seedDatabase() {
   const seedOrgId = await seedOrg();
   await seedOwner(seedOrgId);
-  await seedProducts(seedOrgId);
+  const categoryIds = await seedCategories(seedOrgId);
+  await seedProducts(seedOrgId, categoryIds);
   await seedLocations(seedOrgId);
   await seedProductRecords();
   await backfillProductActivities(seedOrgId);
