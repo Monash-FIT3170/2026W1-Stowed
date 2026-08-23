@@ -32,6 +32,52 @@ export function CreateShapeModal({ onClose, shape = null }) {
     );
   };
 
+  const handlePointDrag = (index, event) => {
+    const node = event.target;
+
+    const pixelX = Math.max(
+      0,
+      Math.min(node.x(), canvasWidth),
+    );
+
+    const pixelY = Math.max(
+      0,
+      Math.min(node.y(), canvasHeight),
+    );
+
+    // Keep the Konva node inside the canvas
+    node.position({
+      x: pixelX,
+      y: pixelY,
+    });
+
+    const newX = Number(
+      (
+        pixelX / CANVAS_CONFIG.PIXELS_PER_METER
+      ).toFixed(2),
+    );
+
+    const newY = Number(
+      (
+        pixelY / CANVAS_CONFIG.PIXELS_PER_METER
+      ).toFixed(2),
+    );
+
+    setPoints((currentPoints) =>
+      currentPoints.map((point, pointIndex) => {
+        if (pointIndex !== index) {
+          return point;
+        }
+
+        return {
+          ...point,
+          x: newX,
+          y: newY,
+        };
+      }),
+    );
+  };
+
   const handleAddPoint = () => {
     setPoints((currentPoints) => [
       ...currentPoints,
@@ -47,10 +93,13 @@ export function CreateShapeModal({ onClose, shape = null }) {
   };
 
   const handleCanvasClick = (event) => {
-    const stage = event.target.getStage();
     const pointer = stage.getPointerPosition();
+    const stage = event.target.getStage();
+
 
     if (!pointer) return;
+    if (!stage) return;
+    if (event.target !== stage) return;
 
     const x = pointer.x / CANVAS_CONFIG.PIXELS_PER_METER;
     const y = pointer.y / CANVAS_CONFIG.PIXELS_PER_METER;
@@ -237,6 +286,40 @@ export function CreateShapeModal({ onClose, shape = null }) {
                       y={y * CANVAS_CONFIG.PIXELS_PER_METER}
                       radius={6}
                       fill="#c45127"
+                      draggable
+                      onDragMove={(event) =>
+                        handlePointDrag(index, event)
+                      }
+                      onMouseEnter={(event) => {
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "grab";
+                        }
+                      }}
+                      onMouseLeave={(event) => {
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "crosshair";
+                        }
+                      }}
+                      onDragStart={(event) => {
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "grabbing";
+                        }
+                      }}
+                      onDragEnd={(event) => {
+                        handlePointDrag(index, event);
+
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "grab";
+                        }
+                      }}
                     />
                   );
                 })}
