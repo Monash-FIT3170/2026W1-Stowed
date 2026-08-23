@@ -11,6 +11,7 @@ import { DashboardPage } from "../imports/ui/pages/DashboardPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
 import { LocationsPage } from "../imports/ui/pages/LocationsPage";
 import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
+import { ProductCategories } from "../imports/api/categories/collections";
 import {
   FloorMaps,
   Sites,
@@ -284,7 +285,6 @@ describe("page rendering", function () {
           name: "Bolts",
           totalQuantity: 12,
           reorderAt: 10,
-          tag: "fasteners",
         },
       ];
 
@@ -316,7 +316,6 @@ describe("page rendering", function () {
           name: "Bolts",
           totalQuantity: 60,
           reorderAt: 10,
-          tag: "fasteners",
         },
       ];
 
@@ -359,7 +358,7 @@ describe("page rendering", function () {
     it("says No locations when a product is not stored anywhere", function () {
       const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
       const restoreProducts = stubCollectionFind(Products, [
-        { _id: "bolt", name: "Bolts", totalQuantity: 0, reorderAt: 10, tag: "fasteners" },
+        { _id: "bolt", name: "Bolts", totalQuantity: 0, reorderAt: 10 },
       ]);
       const restoreRecords = stubCollectionFind(ProductRecords, []);
       const restoreLocations = stubCollectionFind(StorageLocations, []);
@@ -380,7 +379,7 @@ describe("page rendering", function () {
     it("says No locations when every record points at a deleted location", function () {
       const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
       const restoreProducts = stubCollectionFind(Products, [
-        { _id: "bolt", name: "Bolts", totalQuantity: 4, reorderAt: 10, tag: "fasteners" },
+        { _id: "bolt", name: "Bolts", totalQuantity: 4, reorderAt: 10 },
       ]);
       const restoreRecords = stubCollectionFind(ProductRecords, [
         { _id: "r1", productId: "bolt", locationId: "gone", quantity: 4 },
@@ -403,8 +402,8 @@ describe("page rendering", function () {
     it("gives every row a view-more link to the product", function () {
       const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
       const restoreProducts = stubCollectionFind(Products, [
-        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 10, tag: "fasteners" },
-        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2, tag: "fasteners" },
+        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 10 },
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2 },
       ]);
       const restoreRecords = stubCollectionFind(ProductRecords, []);
       const restoreLocations = stubCollectionFind(StorageLocations, []);
@@ -430,7 +429,7 @@ describe("page rendering", function () {
     it("pluralises a single other location", function () {
       const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
       const restoreProducts = stubCollectionFind(Products, [
-        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2, tag: "fasteners" },
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2 },
       ]);
       const restoreRecords = stubCollectionFind(ProductRecords, [
         { _id: "r1", productId: "nut", locationId: "loc-small", quantity: 2 },
@@ -465,7 +464,6 @@ describe("page rendering", function () {
           name: "Washers",
           totalQuantity: 30,
           reorderAt: 5,
-          tag: "fasteners",
         },
       ];
 
@@ -530,6 +528,64 @@ describe("page rendering", function () {
       }
     });
 
+    it("shows the category name for a product's categoryId", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 2, categoryId: "cat-1" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+      const restoreCategories = stubCollectionFind(ProductCategories, [
+        { _id: "cat-1", orgId: "org-1", name: "Fasteners" },
+        { _id: "cat-2", orgId: "org-1", name: "Cleaning" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        assert.ok(html.includes("<span>Category</span>"));
+        assert.ok(html.includes('class="item-category">Fasteners<'));
+        assert.ok(!html.includes("Cleaning"));
+      } finally {
+        restoreCategories();
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("falls back to a dash when a product has no resolvable category", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 2 },
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2, categoryId: "deleted" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+      const restoreCategories = stubCollectionFind(ProductCategories, [
+        { _id: "cat-1", orgId: "org-1", name: "Fasteners" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        // No category pill for either row, and no stale category name.
+        assert.ok(!html.includes('class="item-category"'));
+        assert.ok(!html.includes("Fasteners"));
+      } finally {
+        restoreCategories();
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
     it("applies the out of stock filter from the url", function () {
       const items = [
         { _id: "paper", name: "Printer Paper", totalQuantity: 0, reorderAt: 10 },
@@ -581,7 +637,6 @@ describe("page rendering", function () {
           ["all", "All"],
           ["low-stock", "Low stock"],
           ["out-of-stock", "Out of stock"],
-          ["tag", "Tag"],
           ["location", "Location"],
         ].forEach(([id, label]) => {
           const html = renderWithRouter(

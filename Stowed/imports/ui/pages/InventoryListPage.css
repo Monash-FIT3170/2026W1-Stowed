@@ -1,12 +1,12 @@
 /* InventoryListPage.css - page-specific styles only */
-/* Tokens, breadcrumb, item-tag, sr-only, page-title live in Global.css */
+/* Tokens, breadcrumb, item-category, sr-only, page-title live in Global.css */
 
 .inventory-list-container {
   /* Shared column template for the header row, the bulk-action row and the
      data rows, so they stay aligned as the page grows to the viewport width.
      The flexible middle columns soak up the extra space; the thumbnail and
      checkbox columns stay fixed. */
-  --inventory-grid: 44px minmax(150px, 2.2fr) minmax(80px, 1.1fr) minmax(110px, 1.6fr)
+  --inventory-grid: 44px minmax(150px, 2.2fr) minmax(96px, 1.3fr) minmax(110px, 1.6fr)
     minmax(60px, 0.8fr) minmax(84px, 1.1fr) 96px 82px;
 
   padding: 0;

@@ -6,6 +6,7 @@ import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
 import { StorageUnits, StorageLocations } from "../../api/locations/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
@@ -26,7 +27,6 @@ const INVENTORY_FILTERS = [
   { id: "all", label: "All" },
   { id: "low-stock", label: "Low stock" },
   { id: "out-of-stock", label: "Out of stock" },
-  { id: "tag", label: "Tag ▾" },
   { id: "location", label: "Location ▾" },
 ];
 
@@ -92,18 +92,26 @@ export function InventoryListPage() {
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
-    const sub1 = Meteor.subscribe("products");
-    Meteor.subscribe("productRecords");
-    Meteor.subscribe("locations.all");
-    return {
-      items: Products.find().fetch(),
-      loading: !sub1.ready(),
-      productRecords: ProductRecords.find().fetch(),
-      storageLocations: StorageLocations.find().fetch(),
-      storageUnits: StorageUnits.find().fetch(),
-    };
-  }, []);
+  const { items, loading, productRecords, storageLocations, storageUnits, categories } =
+    useTracker(() => {
+      const sub1 = Meteor.subscribe("products");
+      Meteor.subscribe("productRecords");
+      Meteor.subscribe("locations.all");
+      Meteor.subscribe("productCategories");
+      return {
+        items: Products.find().fetch(),
+        loading: !sub1.ready(),
+        productRecords: ProductRecords.find().fetch(),
+        storageLocations: StorageLocations.find().fetch(),
+        storageUnits: StorageUnits.find().fetch(),
+        categories: ProductCategories.find().fetch(),
+      };
+    }, []);
+
+  function getCategoryName(categoryId) {
+    if (!categoryId) return null;
+    return categories.find((category) => category._id === categoryId)?.name ?? null;
+  }
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
@@ -253,7 +261,7 @@ export function InventoryListPage() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Search by ID, name, tag, or SKU"
+            placeholder="Search by ID, name, or SKU"
             className="search-input"
             style={{ background: "var(--card-bg)" }}
           />
@@ -319,7 +327,7 @@ export function InventoryListPage() {
               <div className="table-header">
                 <span />
                 <span>Product</span>
-                <span>Tag</span>
+                <span>Category</span>
                 <span>Location</span>
                 <span>Stock</span>
                 <span>Status</span>
@@ -339,7 +347,11 @@ export function InventoryListPage() {
                     </Link>
                   </span>
                   <span>
-                    <span className="item-tag">{item.tag || "-"}</span>
+                    {getCategoryName(item.categoryId) ? (
+                      <span className="item-category">{getCategoryName(item.categoryId)}</span>
+                    ) : (
+                      "-"
+                    )}
                   </span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>

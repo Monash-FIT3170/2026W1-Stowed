@@ -137,7 +137,6 @@ describeServer("Product methods", function () {
     return {
       name: `Test Product ${Date.now()}`,
       description: "",
-      tag: "",
       category: "",
       sku: "",
       brand: "",

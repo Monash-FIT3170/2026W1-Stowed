@@ -474,9 +474,9 @@ select.form-input.selected {
   justify-content: flex-end;
 }
 
-/* -- Item tags -- */
+/* -- Item categories -- */
 
-.item-tag {
+.item-category {
   background: var(--tag-bg);
   color: var(--tag-text);
   padding: 2px 8px;

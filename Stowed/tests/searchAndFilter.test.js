@@ -244,7 +244,6 @@ describe("filter chips", function () {
     { id: "all", label: "All", count: 8 },
     { id: "low-stock", label: "Low stock", count: 3 },
     { id: "out-of-stock", label: "Out of stock", count: 2 },
-    { id: "tag", label: "Tag" },
     { id: "location", label: "Location" },
   ];
 
@@ -327,8 +326,8 @@ describe("filter chips", function () {
   it("omits the count span when count is undefined", function () {
     const html = renderToStaticMarkup(
       React.createElement(FilterChips, {
-        filters: [{ id: "tag", label: "Tag" }],
-        activeFilter: "tag",
+        filters: [{ id: "location", label: "Location" }],
+        activeFilter: "location",
         onFilterChange: () => {},
       }),
     );

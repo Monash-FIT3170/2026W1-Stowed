@@ -82,7 +82,6 @@ Meteor.methods({
   async "products.createWithAssignments"({
     name,
     description = "",
-    tag = "",
     category = "",
     categoryId = "",
     sku = "",
@@ -99,7 +98,6 @@ Meteor.methods({
   }) {
     check(name, String);
     check(description, String);
-    check(tag, String);
     check(category, String);
     check(categoryId, String);
     check(sku, String);
@@ -152,7 +150,6 @@ Meteor.methods({
       orgId,
       name,
       description,
-      tag,
       category,
       categoryId,
       sku,
@@ -201,7 +198,6 @@ Meteor.methods({
     productId,
     name,
     description = "",
-    tag = "",
     category = "",
     sku = "",
     brand = "",
@@ -218,7 +214,6 @@ Meteor.methods({
     check(productId, String);
     check(name, String);
     check(description, String);
-    check(tag, String);
     check(category, String);
     check(sku, String);
     check(brand, String);
@@ -266,7 +261,6 @@ Meteor.methods({
       $set: {
         name,
         description,
-        tag,
         category,
         sku,
         brand,
