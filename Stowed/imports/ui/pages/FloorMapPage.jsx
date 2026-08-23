@@ -459,7 +459,12 @@ function FloorMapPageInner() {
                         }}
                         aria-label="Collapse sidebar"
                       >
-                        →
+                        <img 
+                          src="/sidebar-collapse.svg"
+                          alt=""
+                          width="18"
+                          height="18"
+                          />
                       </button>
                     </div>
                   ) : (
@@ -510,7 +515,12 @@ function FloorMapPageInner() {
                         }}
                         aria-label="Collapse sidebar"
                       >
-                        →
+                        <img 
+                          src="/sidebar-collapse.svg"
+                          alt=""
+                          width="18"
+                          height="18"
+                          />
                       </button>
                     </div>
                   )}
@@ -647,7 +657,12 @@ function FloorMapPageInner() {
                     }}
                     aria-label="Expand sidebar"
                   >
-                    ←
+                    <img 
+                      src="/sidebar-expand.svg"
+                      alt=""
+                      width="18"
+                      height="18"
+                    />
                   </button>
                 </div>
               )}
