@@ -254,10 +254,7 @@ Meteor.methods({
     }
 
     const members = await Meteor.users
-      .find(
-        { "profile.organisationId": orgId },
-        { fields: { "profile.username": 1, emails: 1 } },
-      )
+      .find({ "profile.organisationId": orgId }, { fields: { "profile.username": 1, emails: 1 } })
       .fetchAsync();
 
     return members

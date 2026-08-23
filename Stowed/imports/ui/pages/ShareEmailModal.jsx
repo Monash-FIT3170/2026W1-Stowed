@@ -23,9 +23,7 @@ export function ShareEmailModal({ list, onClose }) {
   useEffect(() => {
     callMethod("shoppingLists.listRecipients")
       .then((result) => setRecipients(result))
-      .catch((error) =>
-        setLoadError(error.reason || error.message || "Failed to load recipients."),
-      )
+      .catch((error) => setLoadError(error.reason || error.message || "Failed to load recipients."))
       .finally(() => setIsLoading(false));
   }, []);
 
