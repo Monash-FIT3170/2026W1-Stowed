@@ -470,4 +470,42 @@
   .locations-toolbar select {
     grid-column: 1 / -1;
   }
+
+  .locations-table {
+    min-width: 680px;
+  }
+
+  .locations-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .locations-card-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .locations-modal-backdrop {
+    align-items: flex-end;
+    padding: 10px;
+  }
+
+  .locations-modal {
+    max-height: calc(100dvh - 20px);
+  }
+}
+
+@media (max-width: 430px) {
+  .locations-content {
+    padding: 0 16px 32px;
+  }
+
+  .locations-summary-grid,
+  .locations-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .locations-tabs {
+    margin-right: -16px;
+    padding-right: 16px;
+  }
 }

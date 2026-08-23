@@ -3,7 +3,7 @@
 /* -- Sidebar shell -- */
 
 .sidebar {
-  width: 200px;
+  width: var(--sidebar-width, 200px);
   min-height: 100vh;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-light);
@@ -16,6 +16,7 @@
   top: 0;
   left: 0;
   overflow: hidden;
+  z-index: 900;
 }
 
 /* -- Logo -- */
@@ -129,6 +130,17 @@
   gap: 2px;
 }
 
+.sidebar-section-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-mobile-tabs,
+.sidebar-mobile-panel {
+  display: none;
+}
+
 /* -- Section label -- */
 
 .sidebar-section-label {
@@ -153,6 +165,7 @@
   color: var(--text-muted);
   text-decoration: none;
   transition: background 120ms ease;
+  min-height: 30px;
 }
 
 .sidebar-link:hover {
@@ -200,4 +213,188 @@
 .sidebar-logout:hover {
   background: var(--dark);
   color: var(--card-bg);
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    padding: 18px 12px;
+  }
+
+  .sidebar-logo-title {
+    font-size: 31px;
+  }
+
+  .sidebar-link {
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 760px), (max-width: 950px) and (max-height: 500px) {
+  .sidebar {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    min-height: 0;
+    max-height: 76px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border-light);
+    border-right: 0;
+    background: rgba(245, 239, 230, 0.96);
+    box-shadow: 0 -10px 24px rgba(26, 26, 26, 0.08);
+    backdrop-filter: blur(12px);
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    overflow: visible;
+  }
+
+  .sidebar-top {
+    display: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .sidebar-logo,
+  .sidebar-org,
+  .sidebar-user {
+    display: none;
+  }
+
+  .sidebar-logout {
+    display: flex;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 54px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 0;
+    padding: 7px 6px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+
+  .sidebar-mobile-tabs {
+    display: flex;
+    flex: 3 1 0;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .sidebar-mobile-tab {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 54px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 5px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  .sidebar-mobile-tab.active {
+    border-color: rgba(43, 31, 26, 0.1);
+    background: var(--dark);
+    color: var(--card-bg);
+    font-weight: 600;
+  }
+
+  .sidebar-mobile-tab-icon {
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  .sidebar-mobile-panel {
+    position: fixed;
+    right: 10px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 901;
+    display: block;
+    padding: 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 14px 34px rgba(26, 26, 26, 0.16);
+  }
+
+  .sidebar-mobile-panel[hidden] {
+    display: none;
+  }
+
+  .sidebar-mobile-panel-title {
+    margin: 0 2px 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-mobile-panel-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .sidebar-mobile-link {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 11px;
+    color: var(--text-dark);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .sidebar-mobile-link.active {
+    background: var(--dark);
+    color: var(--card-bg);
+  }
+
+  .sidebar-mobile-link:hover {
+    background: var(--input-bg);
+  }
+
+  .sidebar-mobile-link.active:hover {
+    background: var(--dark);
+  }
+
+  .sidebar-link {
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .sidebar-link.active {
+    border-radius: 12px;
+  }
+
+  .sidebar-link-icon {
+    width: auto;
+    font-size: 17px;
+  }
 }

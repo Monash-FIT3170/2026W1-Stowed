@@ -1,0 +1,602 @@
+[
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet A",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Shelf 1",
+    "locationCode": "NC-A1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Lab Safety Goggles",
+    "description": "Clear anti-fog safety goggles",
+    "category": "Safety",
+    "sku": "SAFE-GOG-001",
+    "brand": "Uvex",
+    "unitCost": 11.75,
+    "totalQuantity": 60,
+    "assignments": [
+      {
+        "locationCode": "NC-A1",
+        "quantity": 60
+      }
+    ],
+    "reorderAt": 50,
+    "qrCode": "QR-NC-A1-GOG"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet A",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Shelf 2",
+    "locationCode": "NC-A2",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Lab Safety Goggles",
+    "description": "Clear anti-fog safety goggles",
+    "category": "Safety",
+    "sku": "SAFE-GOG-002",
+    "brand": "Uvex",
+    "unitCost": 11.75,
+    "totalQuantity": 60,
+    "assignments": [
+      {
+        "locationCode": "NC-A2",
+        "quantity": 60
+      }
+    ],
+    "reorderAt": 50,
+    "qrCode": "QR-NC-A2-GOG"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet A",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Shelf 1",
+    "locationCode": "NC-A1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Nitrile Gloves (Box of 100)",
+    "description": "Box of 100 powder-free disposable gloves",
+    "category": "Safety",
+    "sku": "SAFE-GLV-BOX-100",
+    "brand": "Ansell",
+    "unitCost": 12.5,
+    "totalQuantity": 40,
+    "assignments": [
+      {
+        "locationCode": "NC-A1",
+        "quantity": 40
+      }
+    ],
+    "reorderAt": 25,
+    "qrCode": "QR-NC-A1-GLV-BOX"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet A",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Shelf 2",
+    "locationCode": "NC-A2",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "First Aid Kit",
+    "description": "Portable workplace first aid kit",
+    "category": "Safety",
+    "sku": "SAFE-FAK-001",
+    "brand": "FastAid",
+    "unitCost": 32,
+    "totalQuantity": 8,
+    "assignments": [
+      {
+        "locationCode": "NC-A2",
+        "quantity": 8
+      }
+    ],
+    "reorderAt": 4,
+    "qrCode": "QR-NC-A2-FAK"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet A",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Shelf 1",
+    "locationCode": "NC-A1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Nitrile Gloves",
+    "description": "Powder-free disposable gloves",
+    "category": "Safety",
+    "sku": "SAFE-GLV-001",
+    "brand": "Ansell",
+    "unitCost": 12.5,
+    "totalQuantity": 75,
+    "assignments": [
+      {
+        "locationCode": "NC-A1",
+        "quantity": 75
+      }
+    ],
+    "reorderAt": 25,
+    "qrCode": "QR-NC-A1-GLV"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet A",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Shelf 2",
+    "locationCode": "NC-A2",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Thermometer Covers",
+    "description": "Disposable thermometer probe covers",
+    "category": "Clinical",
+    "sku": "CLIN-TCOV-001",
+    "brand": "Braun",
+    "unitCost": 3.8,
+    "totalQuantity": 100,
+    "assignments": [
+      {
+        "locationCode": "NC-A2",
+        "quantity": 100
+      }
+    ],
+    "reorderAt": 50,
+    "qrCode": "QR-NC-A2-TCOV"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Rack C",
+    "storageUnitType": "rack",
+    "storageUnitOffsetX": 7,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 3,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "N-C1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "AA Batteries",
+    "description": "Alkaline AA battery packs",
+    "category": "Electronics",
+    "sku": "ELEC-AA-001",
+    "brand": "Energizer",
+    "unitCost": 9.2,
+    "totalQuantity": 40,
+    "assignments": [
+      {
+        "locationCode": "N-C1",
+        "quantity": 40
+      }
+    ],
+    "reorderAt": 30,
+    "qrCode": "QR-N-C1-AA"
+  },
+  {
+    "siteName": "South Depot",
+    "floorMapName": "Depot Ground Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Rack C",
+    "storageUnitType": "rack",
+    "storageUnitOffsetX": 7,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 3,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "SD-C1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "AA Batteries",
+    "description": "Alkaline AA battery packs",
+    "category": "Electronics",
+    "sku": "ELEC-AA-001",
+    "brand": "Energizer",
+    "unitCost": 9.2,
+    "totalQuantity": 35,
+    "assignments": [
+      {
+        "locationCode": "SD-C1",
+        "quantity": 35
+      }
+    ],
+    "reorderAt": 30,
+    "qrCode": "QR-SD-C1-AA"
+  },
+  {
+    "siteName": "East Clinic Storage",
+    "floorMapName": "Clinic Supply Room",
+    "floorMapWidth": 10,
+    "floorMapHeight": 7,
+    "storageUnitName": "Rack C",
+    "storageUnitType": "rack",
+    "storageUnitOffsetX": 7,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "E-C1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Thermometer Covers",
+    "description": "Disposable thermometer probe covers",
+    "category": "Clinical",
+    "sku": "CLIN-TCOV-001",
+    "brand": "Braun",
+    "unitCost": 3.8,
+    "totalQuantity": 60,
+    "assignments": [
+      {
+        "locationCode": "E-C1",
+        "quantity": 60
+      }
+    ],
+    "reorderAt": 50,
+    "qrCode": "QR-E-C1-TCOV"
+  },
+  {
+    "siteName": "South Depot",
+    "floorMapName": "Depot Ground Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Shelf A",
+    "storageUnitType": "shelf",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "SD-A2",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Thermometer Covers",
+    "description": "Disposable thermometer probe covers",
+    "category": "Clinical",
+    "sku": "CLIN-TCOV-001",
+    "brand": "Braun",
+    "unitCost": 3.8,
+    "totalQuantity": 40,
+    "assignments": [
+      {
+        "locationCode": "SD-A2",
+        "quantity": 40
+      }
+    ],
+    "reorderAt": 50,
+    "qrCode": "QR-SD-A2-TCOV"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Drawer D",
+    "storageUnitType": "drawer",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "N-D1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Cleaning Wipes",
+    "description": "Surface disinfectant wipes",
+    "category": "Cleaning",
+    "sku": "CLN-WIPE-001",
+    "brand": "Clinell",
+    "unitCost": 7.1,
+    "totalQuantity": 24,
+    "assignments": [
+      {
+        "locationCode": "N-D1",
+        "quantity": 24
+      }
+    ],
+    "reorderAt": 20,
+    "qrCode": "QR-N-D1-WIPE"
+  },
+  {
+    "siteName": "East Clinic Storage",
+    "floorMapName": "Clinic Supply Room",
+    "floorMapWidth": 10,
+    "floorMapHeight": 7,
+    "storageUnitName": "Drawer D",
+    "storageUnitType": "drawer",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "E-D1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Cleaning Wipes",
+    "description": "Surface disinfectant wipes",
+    "category": "Cleaning",
+    "sku": "CLN-WIPE-001",
+    "brand": "Clinell",
+    "unitCost": 7.1,
+    "totalQuantity": 26,
+    "assignments": [
+      {
+        "locationCode": "E-D1",
+        "quantity": 26
+      }
+    ],
+    "reorderAt": 20,
+    "qrCode": "QR-E-D1-WIPE"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Fridge E",
+    "storageUnitType": "fridge",
+    "storageUnitOffsetX": 4,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Assigned stock",
+    "locationCode": "N-E1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Lab Notebooks",
+    "description": "A4 bound lab notebooks",
+    "category": "Stationery",
+    "sku": "STAT-NOTE-001",
+    "brand": "Spirax",
+    "unitCost": 4.9,
+    "totalQuantity": 15,
+    "assignments": [
+      {
+        "locationCode": "N-E1",
+        "quantity": 15
+      }
+    ],
+    "reorderAt": 10,
+    "qrCode": "QR-N-E1-NOTE"
+  },
+  {
+    "siteName": "East Clinic Storage",
+    "floorMapName": "Clinic Supply Room",
+    "floorMapWidth": 10,
+    "floorMapHeight": 7,
+    "storageUnitName": "Locker E",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 4,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "E-E1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "USB-C Cables",
+    "description": "1m USB-C charging cables",
+    "category": "Electronics",
+    "sku": "ELEC-USBC-001",
+    "brand": "Belkin",
+    "unitCost": 8.5,
+    "totalQuantity": 22,
+    "assignments": [
+      {
+        "locationCode": "E-E1",
+        "quantity": 22
+      }
+    ],
+    "reorderAt": 12,
+    "qrCode": "QR-E-E1-USBC"
+  },
+  {
+    "siteName": "South Depot",
+    "floorMapName": "Depot Ground Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Locker E",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 4,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Assigned stock",
+    "locationCode": "SD-E1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Safety Goggles",
+    "description": "Clear anti-fog safety goggles",
+    "category": "Safety",
+    "sku": "SAFE-GOG-001",
+    "brand": "Uvex",
+    "unitCost": 11.75,
+    "totalQuantity": 18,
+    "assignments": [
+      {
+        "locationCode": "SD-E1",
+        "quantity": 18
+      }
+    ],
+    "reorderAt": 10,
+    "qrCode": "QR-SD-E1-GOG"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Locker F",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 7,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Assigned stock",
+    "locationCode": "N-F1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "First Aid Kits",
+    "description": "Portable workplace first aid kit",
+    "category": "Safety",
+    "sku": "SAFE-FAK-001",
+    "brand": "FastAid",
+    "unitCost": 32,
+    "totalQuantity": 6,
+    "assignments": [
+      {
+        "locationCode": "N-F1",
+        "quantity": 6
+      }
+    ],
+    "reorderAt": 4,
+    "qrCode": "QR-N-F1-FAK"
+  },
+  {
+    "siteName": "East Clinic Storage",
+    "floorMapName": "Clinic Supply Room",
+    "floorMapWidth": 10,
+    "floorMapHeight": 7,
+    "storageUnitName": "Cabinet F",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 7,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Assigned stock",
+    "locationCode": "E-F1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Printer Labels",
+    "description": "Thermal barcode label rolls",
+    "category": "Stationery",
+    "sku": "STAT-LBL-001",
+    "brand": "Dymo",
+    "unitCost": 14.3,
+    "totalQuantity": 30,
+    "assignments": [
+      {
+        "locationCode": "E-F1",
+        "quantity": 30
+      }
+    ],
+    "reorderAt": 15,
+    "qrCode": "QR-E-F1-LBL"
+  },
+  {
+    "siteName": "South Depot",
+    "floorMapName": "Depot Ground Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet B",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 4,
+    "storageUnitOffsetY": 1,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 2,
+    "locationName": "Assigned stock",
+    "locationCode": "SD-B2",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Cold Packs",
+    "description": "Reusable gel cold packs",
+    "category": "Clinical",
+    "sku": "CLIN-COLD-001",
+    "brand": "Medline",
+    "unitCost": 5.2,
+    "totalQuantity": 16,
+    "assignments": [
+      {
+        "locationCode": "SD-B2",
+        "quantity": 16
+      }
+    ],
+    "reorderAt": 8,
+    "qrCode": "QR-SD-B2-COLD"
+  },
+  {
+    "siteName": "North Campus Store",
+    "floorMapName": "North Main Floor",
+    "floorMapWidth": 12,
+    "floorMapHeight": 8,
+    "storageUnitName": "Cabinet G",
+    "storageUnitType": "cabinet",
+    "storageUnitOffsetX": 10,
+    "storageUnitOffsetY": 4,
+    "storageUnitWidth": 1,
+    "storageUnitHeight": 2,
+    "locationName": "Assigned stock",
+    "locationCode": "N-G1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Disposable Aprons",
+    "description": "Single-use protective aprons",
+    "category": "Safety",
+    "sku": "SAFE-APR-001",
+    "brand": "ProChoice",
+    "unitCost": 0.45,
+    "totalQuantity": 45,
+    "assignments": [
+      {
+        "locationCode": "N-G1",
+        "quantity": 45
+      }
+    ],
+    "reorderAt": 30,
+    "qrCode": "QR-N-G1-APR"
+  },
+  {
+    "siteName": "East Clinic Storage",
+    "floorMapName": "Clinic Supply Room",
+    "floorMapWidth": 10,
+    "floorMapHeight": 7,
+    "storageUnitName": "Rack G",
+    "storageUnitType": "rack",
+    "storageUnitOffsetX": 1,
+    "storageUnitOffsetY": 6,
+    "storageUnitWidth": 2,
+    "storageUnitHeight": 1,
+    "locationName": "Assigned stock",
+    "locationCode": "E-G1",
+    "lastStocktakeAt": "2026-08-23T00:00:00.000Z",
+    "name": "Spill Pads",
+    "description": "Absorbent spill response pads",
+    "category": "Cleaning",
+    "sku": "CLN-SPAD-001",
+    "brand": "SpilMax",
+    "unitCost": 2.35,
+    "totalQuantity": 28,
+    "assignments": [
+      {
+        "locationCode": "E-G1",
+        "quantity": 28
+      }
+    ],
+    "reorderAt": 20,
+    "qrCode": "QR-E-G1-SPAD"
+  }
+]

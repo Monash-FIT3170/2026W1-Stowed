@@ -182,3 +182,38 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 620px) {
+  .location-product-header {
+    display: none;
+  }
+
+  .location-product-row {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 13px 14px;
+  }
+
+  .location-product-row > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .location-product-view {
+    justify-self: end;
+  }
+
+  .location-detail-list > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .location-detail-list dd {
+    text-align: left;
+  }
+
+  .location-detail-summary {
+    grid-template-columns: 1fr;
+  }
+}

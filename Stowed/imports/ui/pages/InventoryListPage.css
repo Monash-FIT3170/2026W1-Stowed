@@ -213,10 +213,12 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+    padding: 8px 12px;
   }
 
   .table-row {
     grid-template-columns: 44px minmax(0, 1fr) 72px;
+    padding: 12px;
     row-gap: 8px;
   }
 
@@ -230,5 +232,20 @@
   .row-select {
     grid-column: 3;
     grid-row: 1;
+  }
+
+  .search-bar-container {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 430px) {
+  .table-row {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  .item-location,
+  .item-name-link {
+    overflow-wrap: anywhere;
   }
 }

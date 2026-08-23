@@ -19,6 +19,59 @@
   --danger: #cc0000;
   --dark: #2b1f1a;
   --cream: #fff6ef;
+  --sidebar-width: 200px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#react-target {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-primary);
+}
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* -- App shell -- */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  margin-left: var(--app-main-offset, 0);
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+.app-shell.is-authenticated {
+  --app-main-offset: var(--sidebar-width);
 }
 
 /* -- Page shell -- */
@@ -47,6 +100,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 /* -- Page title -- */
@@ -489,4 +543,71 @@ select.form-input.selected {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 184px;
+  }
+
+  .product-detail-header {
+    padding: 18px 22px 8px;
+  }
+
+  .header-title {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 760px), (max-width: 950px) and (max-height: 500px) {
+  .app-shell {
+    display: block;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .app-shell.is-authenticated {
+    --app-main-offset: 0;
+  }
+
+  .app-main {
+    min-height: auto;
+    padding-bottom: 104px;
+    overflow: visible;
+  }
+
+  .product-detail-header {
+    padding: 16px 16px 8px;
+  }
+
+  .header-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-title {
+    overflow-wrap: anywhere;
+    font-size: 24px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-location-item,
+  .create-product-footer,
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .create-product-footer {
+    padding: 18px 16px 24px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    min-height: 40px;
+  }
 }

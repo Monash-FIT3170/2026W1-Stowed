@@ -41,25 +41,9 @@ export function App() {
 
   return (
     <BrowserRouter>
-      <div
-        className="flex h-screen overflow-hidden"
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          display: "flex",
-          minHeight: "100vh",
-          overflow: "hidden",
-        }}
-      >
+      <div className={`app-shell${isLoggedIn ? " is-authenticated" : ""}`}>
         {isLoggedIn && <Sidebar />}
-        <main
-          className="flex-1 overflow-y-auto"
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            flex: 1,
-            overflowY: "auto",
-            marginLeft: isLoggedIn ? "200px" : "0",
-          }}
-        >
+        <main className="app-main">
           <Routes>
             {/* public routes */}
             <Route path="/register" element={<Register />} />

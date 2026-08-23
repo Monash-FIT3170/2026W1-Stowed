@@ -628,22 +628,74 @@ input.lists-qty-input:disabled {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
+
+  .lists-header {
+    min-width: 0;
+  }
 }
 
 @media (max-width: 620px) {
+  .lists-body {
+    padding: 18px 16px 40px;
+  }
+
+  .lists-header-actions,
   .lists-toolbar,
   .lists-add-row {
+    align-items: stretch;
+    flex-direction: column;
     flex-wrap: wrap;
+  }
+
+  .lists-name-edit {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lists-name-edit .form-input {
+    max-width: none;
+  }
+
+  .lists-name-edit-btn {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .lists-stats {
+    flex-direction: column;
   }
 
   .lists-add-qty {
     width: 100%;
   }
 
+  .lists-overview-header {
+    display: none;
+  }
+
+  .lists-overview-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    padding: 14px 0;
+  }
+
   .lists-table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
+  }
+
+  .lists-table th:first-child,
+  .lists-table td:first-child,
+  .saved-list-card .lists-table th:first-child,
+  .saved-list-card .lists-table td:first-child {
+    min-width: 240px;
+  }
+
+  .lists-budget-amount,
+  .lists-budget-strategy {
+    flex-basis: 100%;
+    max-width: none;
   }
 }
 
