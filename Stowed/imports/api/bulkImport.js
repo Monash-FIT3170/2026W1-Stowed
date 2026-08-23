@@ -9,6 +9,7 @@ import {
 import { getCallerOrgId, requirePermission } from "/imports/api/userMethods";
 
 const DEFAULT_FLOOR_SIZE = { width: 500, height: 500 };
+const IMPORT_PIXELS_PER_METER = 50;
 const DEFAULT_FLOOR_SETTINGS = {
     gridInterval: 1,
     showGrid: true,
@@ -31,6 +32,34 @@ function parseSimpleCsv(text) {
         headers.forEach((h, i) => (obj[h] = (parts[i] || "").trim()));
         return obj;
     });
+}
+
+function parseBulkImportRows(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        let parsed;
+        try {
+            parsed = JSON.parse(trimmed);
+        } catch {
+            throw new Meteor.Error("invalid-json", "The import file is not valid JSON.");
+        }
+
+        const rows = Array.isArray(parsed) ? parsed : parsed.rows || parsed.items || parsed.data;
+        if (!Array.isArray(rows)) {
+            throw new Meteor.Error("invalid-json", "JSON imports must be an array, or an object with a rows array.");
+        }
+
+        return rows.map((row) => {
+            if (!row || typeof row !== "object" || Array.isArray(row)) {
+                throw new Meteor.Error("invalid-json", "Each JSON import row must be an object.");
+            }
+            return row;
+        });
+    }
+
+    return parseSimpleCsv(text);
 }
 
 function decodeXml(value = "") {
@@ -78,21 +107,65 @@ function getOptionalInteger(value) {
     return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+function getOptionalNumber(value) {
+    if (value === undefined || value === null || String(value).trim() === "") return undefined;
+    const parsed = parseFloat(String(value));
+    return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function getOptionalDate(value) {
+    if (value === undefined || value === null || String(value).trim() === "") return undefined;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function toImportedFloorSize({ widthMeters, heightMeters }) {
+    return {
+        width: widthMeters * IMPORT_PIXELS_PER_METER,
+        height: heightMeters * IMPORT_PIXELS_PER_METER,
+    };
+}
+
+function parseAssignmentEntries(value) {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+        return value.map((assignment) => {
+            if (!assignment || typeof assignment !== "object") return null;
+            const code = getField(assignment, "locationCode", "code", "location_code", "location");
+            const quantity = getOptionalInteger(getField(assignment, "quantity", "qty", "totalQuantity", "total_quantity")) || 0;
+            return code ? { code: String(code).trim(), quantity } : null;
+        }).filter(Boolean);
+    }
+
+    if (typeof value === "object") {
+        return Object.entries(value).map(([code, quantity]) => ({
+            code: String(code).trim(),
+            quantity: getOptionalInteger(quantity) || 0,
+        })).filter((assignment) => assignment.code);
+    }
+
+    return String(value).split(";").map((piece) => {
+        const [code, qtyStr] = piece.split(":").map((s) => (s || "").trim());
+        return code ? { code, quantity: getOptionalInteger(qtyStr) || 0 } : null;
+    }).filter(Boolean);
+}
+
 function normalizeStorageUnitType(type) {
     const normalized = String(type || "other").trim().toLowerCase();
     return ALLOWED_STORAGE_UNIT_TYPES.has(normalized) ? normalized : "other";
 }
 
-function createDefaultShape(orgId) {
+function createDefaultShape(orgId, width = 2, height = 1) {
     return {
         orgId,
         shapeId: 1,
         name: "rect",
         points: [
             { x: 0, y: 0 },
-            { x: 100, y: 0 },
-            { x: 100, y: 40 },
-            { x: 0, y: 40 },
+            { x: width, y: 0 },
+            { x: width, y: height },
+            { x: 0, y: height },
         ],
         gridReference: { x: 0, y: 0 },
     };
@@ -114,13 +187,21 @@ async function findOrCreateSite({ orgId, name, description = "", now, siteMap })
     return siteId;
 }
 
-async function findOrCreateFloorMap({ orgId, siteId, name, now, floorMapMap }) {
+async function findOrCreateFloorMap({ orgId, siteId, name, floorSize, now, floorMapMap }) {
     const key = `${siteId}::${name.toLowerCase()}`;
     let floorId = floorMapMap.get(key);
-    if (floorId) return floorId;
+    if (floorId) {
+        if (floorSize) {
+            await FloorMaps.updateAsync(floorId, { $set: { floorSize, updatedAt: now } });
+        }
+        return floorId;
+    }
 
     const existing = await FloorMaps.findOneAsync({ orgId, siteId, name });
     if (existing) {
+        if (floorSize) {
+            await FloorMaps.updateAsync(existing._id, { $set: { floorSize, updatedAt: now } });
+        }
         floorMapMap.set(key, existing._id);
         return existing._id;
     }
@@ -130,7 +211,7 @@ async function findOrCreateFloorMap({ orgId, siteId, name, now, floorMapMap }) {
         siteId,
         name,
         imageUrl: "",
-        floorSize: DEFAULT_FLOOR_SIZE,
+        floorSize: floorSize ?? DEFAULT_FLOOR_SIZE,
         settings: DEFAULT_FLOOR_SETTINGS,
         createdAt: now,
         updatedAt: now,
@@ -139,13 +220,27 @@ async function findOrCreateFloorMap({ orgId, siteId, name, now, floorMapMap }) {
     return floorId;
 }
 
-async function findOrCreateStorageUnit({ orgId, floorMapId, name, type = "other", now, unitMap }) {
+async function findOrCreateStorageUnit({ orgId, floorMapId, name, type = "other", offset, width, height, now, unitMap }) {
     const key = `${floorMapId}::${name.toLowerCase()}`;
     let unitId = unitMap.get(key);
     if (unitId) return unitId;
 
     const existing = await StorageUnits.findOneAsync({ orgId, floorMapId, name });
     if (existing) {
+        const updates = { updatedAt: now };
+        if (offset) {
+            updates.offset = offset;
+        }
+        if (width !== undefined || height !== undefined) {
+            updates.shape = createDefaultShape(
+                orgId,
+                width ?? 2,
+                height ?? 1,
+            );
+        }
+        if (Object.keys(updates).length > 1) {
+            await StorageUnits.updateAsync(existing._id, { $set: updates });
+        }
         unitMap.set(key, existing._id);
         return existing._id;
     }
@@ -155,8 +250,8 @@ async function findOrCreateStorageUnit({ orgId, floorMapId, name, type = "other"
         floorMapId,
         name,
         type: normalizeStorageUnitType(type),
-        shape: createDefaultShape(orgId),
-        offset: { x: 0, y: 0 },
+        shape: createDefaultShape(orgId, width ?? 2, height ?? 1),
+        offset: offset ?? { x: 0, y: 0 },
         rotation: 0,
         scale: { x: 1, y: 1 },
         createdAt: now,
@@ -166,7 +261,7 @@ async function findOrCreateStorageUnit({ orgId, floorMapId, name, type = "other"
     return unitId;
 }
 
-async function findOrCreateStorageLocation({ orgId, storageUnitId, name, code, now }) {
+async function findOrCreateStorageLocation({ orgId, storageUnitId, name, code, lastStocktakeAt, now }) {
     const existing = code
         ? await StorageLocations.findOneAsync({ orgId, code })
         : await StorageLocations.findOneAsync({ orgId, storageUnitId, name });
@@ -178,6 +273,7 @@ async function findOrCreateStorageLocation({ orgId, storageUnitId, name, code, n
         storageUnitId,
         name,
         code,
+        lastStocktakeAt: lastStocktakeAt ?? now,
         createdAt: now,
         updatedAt: now,
     });
@@ -198,7 +294,7 @@ Meteor.methods({
         const orgId = await getCallerOrgId(this.userId);
         if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
 
-        const rows = parseSimpleCsv(csvText);
+        const rows = parseBulkImportRows(csvText);
 
         const now = new Date();
         const siteMap = new Map();
@@ -212,6 +308,7 @@ Meteor.methods({
             const unitType = getField(r, 'storageUnitType', 'storageUnit.type', 'storage_unit_type') || "other";
             const locationName = getField(r, 'locationName', 'storageLocation.name', 'location_name') || "Location";
             const locationCode = getField(r, 'locationCode', 'storageLocation.code', 'location_code') || "";
+            const lastStocktakeAt = getOptionalDate(getField(r, "lastStocktakeAt", "storageLocation.lastStocktakeAt", "last_stocktake_at")) ?? now;
 
             let siteId = siteMap.get(siteName);
             if (!siteId) {
@@ -245,7 +342,7 @@ Meteor.methods({
                 unitMap.set(unitKey, unitId);
             }
 
-            await StorageLocations.insertAsync({ orgId, storageUnitId: unitId, name: locationName, code: locationCode, createdAt: now, updatedAt: now });
+            await StorageLocations.insertAsync({ orgId, storageUnitId: unitId, name: locationName, code: locationCode, lastStocktakeAt, createdAt: now, updatedAt: now });
         }
 
         return { status: "ok", created: { sites: siteMap.size, floors: floorMapMap.size, units: unitMap.size, locations: rows.length } };
@@ -264,7 +361,7 @@ Meteor.methods({
         const orgId = await getCallerOrgId(this.userId);
         if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
 
-        const rows = parseSimpleCsv(csvText);
+        const rows = parseBulkImportRows(csvText);
 
         const now = new Date();
         let created = 0;
@@ -288,10 +385,8 @@ Meteor.methods({
 
             const assignments = [];
             if (assignmentsRaw) {
-                for (const piece of assignmentsRaw.split(";")) {
-                    const [code, qtyStr] = piece.split(":").map((s) => (s || "").trim());
-                    const qty = parseInt(qtyStr || "0", 10) || 0;
-                    if (!code) continue;
+                for (const assignment of parseAssignmentEntries(assignmentsRaw)) {
+                    const { code, quantity: qty } = assignment;
                     let loc = await StorageLocations.findOneAsync({ code });
                     if (!loc) {
                         // create fallback site/floor/unit on first missing location
@@ -306,7 +401,8 @@ Meteor.methods({
                             defaultUnitId = await StorageUnits.insertAsync({ orgId, floorMapId: defaultFloorId, name: "Imported Unit", type: "other", shape, offset: { x: 0, y: 0 }, scale: { x: 1, y: 1 }, createdAt: now, updatedAt: now });
                         }
 
-                        loc = await StorageLocations.insertAsync({ orgId, storageUnitId: defaultUnitId, name: code, code, createdAt: now, updatedAt: now });
+                        const locationId = await StorageLocations.insertAsync({ orgId, storageUnitId: defaultUnitId, name: code, code, lastStocktakeAt: now, createdAt: now, updatedAt: now });
+                        loc = { _id: locationId };
                     }
                     assignments.push({ locationId: loc._id, quantity: qty });
                 }
@@ -358,7 +454,7 @@ Meteor.methods({
         const orgId = await getCallerOrgId(this.userId);
         if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
 
-        const rows = parseSimpleCsv(csvText);
+        const rows = parseBulkImportRows(csvText);
 
         const now = new Date();
         const siteMap = new Map();
@@ -377,6 +473,22 @@ Meteor.methods({
             const unitType = (getField(r, 'storageUnitType', 'storageUnit.type', 'storage_unit_type') || "").trim();
             const locationName = (getField(r, 'locationName', 'storageLocation.name', 'location_name') || "").trim();
             const locationCode = (getField(r, 'locationCode', 'storageLocation.code', 'location_code') || "").trim();
+            const lastStocktakeAt = getOptionalDate(getField(r, "lastStocktakeAt", "storageLocation.lastStocktakeAt", "last_stocktake_at")) ?? now;
+            const floorMapWidth = getOptionalNumber(getField(r, "floorMapWidth", "floorMap.width", "floor_map_width"));
+            const floorMapHeight = getOptionalNumber(getField(r, "floorMapHeight", "floorMap.height", "floor_map_height"));
+            const floorSize = floorMapWidth !== undefined || floorMapHeight !== undefined
+                ? toImportedFloorSize({
+                    widthMeters: floorMapWidth ?? 10,
+                    heightMeters: floorMapHeight ?? 10,
+                })
+                : undefined;
+            const unitOffsetX = getOptionalNumber(getField(r, "storageUnitOffsetX", "storageUnit.offset.x", "storage_unit_offset_x", "unitX", "x"));
+            const unitOffsetY = getOptionalNumber(getField(r, "storageUnitOffsetY", "storageUnit.offset.y", "storage_unit_offset_y", "unitY", "y"));
+            const unitOffset = unitOffsetX !== undefined || unitOffsetY !== undefined
+                ? { x: unitOffsetX ?? 0, y: unitOffsetY ?? 0 }
+                : undefined;
+            const unitWidth = getOptionalNumber(getField(r, "storageUnitWidth", "storageUnit.width", "storage_unit_width", "unitWidth", "width"));
+            const unitHeight = getOptionalNumber(getField(r, "storageUnitHeight", "storageUnit.height", "storage_unit_height", "unitHeight", "height"));
 
             let siteId = null;
             if (siteName) {
@@ -386,18 +498,21 @@ Meteor.methods({
             let floorId = null;
             if (floorName) {
                 const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                floorId = await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: floorName, now, floorMapMap });
+                floorId = await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: floorName, floorSize, now, floorMapMap });
             }
 
             let unitId = null;
             if (unitName) {
                 const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", now, floorMapMap });
+                const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
                 unitId = await findOrCreateStorageUnit({
                     orgId,
                     floorMapId: parentFloorId,
                     name: unitName,
                     type: unitType || "other",
+                    offset: unitOffset,
+                    width: unitWidth,
+                    height: unitHeight,
                     now,
                     unitMap,
                 });
@@ -407,12 +522,15 @@ Meteor.methods({
             let explicitLocationId = null;
             if (locationCode) {
                 const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", now, floorMapMap });
+                const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
                 const targetUnit = unitId || await findOrCreateStorageUnit({
                     orgId,
                     floorMapId: parentFloorId,
                     name: "Imported Unit",
                     type: "other",
+                    offset: unitOffset,
+                    width: unitWidth,
+                    height: unitHeight,
                     now,
                     unitMap,
                 });
@@ -421,6 +539,7 @@ Meteor.methods({
                     storageUnitId: targetUnit,
                     name: locationName || locationCode,
                     code: locationCode,
+                    lastStocktakeAt,
                     now,
                 });
                 explicitLocationId = result.locationId;
@@ -461,24 +580,25 @@ Meteor.methods({
 
                 const assignments = [];
                 if (assignmentsRaw) {
-                    for (const piece of assignmentsRaw.split(";")) {
-                        const [code, qtyStr] = piece.split(":").map((s) => (s || "").trim());
-                        const qty = parseInt(qtyStr || "0", 10) || 0;
-                        if (!code) continue;
+                    for (const assignment of parseAssignmentEntries(assignmentsRaw)) {
+                        const { code, quantity: qty } = assignment;
                         let loc = await StorageLocations.findOneAsync({ orgId, code });
                         if (!loc) {
                             // create location under explicit unit if available, else create under defaults
                             const parentSiteId = siteId || await findOrCreateSite({ orgId, name: "Imported Site", now, siteMap });
-                            const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", now, floorMapMap });
+                            const parentFloorId = floorId || await findOrCreateFloorMap({ orgId, siteId: parentSiteId, name: "Imported Floor", floorSize, now, floorMapMap });
                             const targetUnit = unitId || await findOrCreateStorageUnit({
                                 orgId,
                                 floorMapId: parentFloorId,
                                 name: "Imported Unit",
                                 type: "other",
+                                offset: unitOffset,
+                                width: unitWidth,
+                                height: unitHeight,
                                 now,
                                 unitMap,
                             });
-                            const result = await findOrCreateStorageLocation({ orgId, storageUnitId: targetUnit, name: code, code, now });
+                            const result = await findOrCreateStorageLocation({ orgId, storageUnitId: targetUnit, name: code, code, lastStocktakeAt, now });
                             loc = { _id: result.locationId };
                             if (result.created) createdLocations += 1;
                         }
