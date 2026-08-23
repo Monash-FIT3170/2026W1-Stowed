@@ -19,7 +19,18 @@ import {
 
 const NO_LOCATIONS = "No locations";
 
-const INVENTORY_FILTER_IDS = new Set(["all", "low-stock", "tag", "location"]);
+// One source of truth for the chips and for the ?filter= values accepted from
+// the URL. Kept as separate lists, a newly added chip renders but is rejected by
+// the guard below, which silently drops the page back to "all".
+const INVENTORY_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "low-stock", label: "Low stock" },
+  { id: "out-of-stock", label: "Out of stock" },
+  { id: "tag", label: "Tag ▾" },
+  { id: "location", label: "Location ▾" },
+];
+
+const INVENTORY_FILTER_IDS = new Set(INVENTORY_FILTERS.map((filter) => filter.id));
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -187,13 +198,15 @@ export function InventoryListPage() {
     }
   };
 
-  const filters = [
-    { id: "all", label: "All", count: items.length },
-    { id: "low-stock", label: "Low stock", count: lowStockCount },
-    { id: "out-of-stock", label: "Out of stock", count: outOfStockCount },
-    { id: "tag", label: "Tag ▾" },
-    { id: "location", label: "Location ▾" },
-  ];
+  const filterCounts = {
+    all: items.length,
+    "low-stock": lowStockCount,
+    "out-of-stock": outOfStockCount,
+  };
+  const filters = INVENTORY_FILTERS.map((filter) => ({
+    ...filter,
+    count: filterCounts[filter.id],
+  }));
 
   const handleFilterChange = (filter) => {
     const nextSearchParams = new URLSearchParams(searchParams);

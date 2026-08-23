@@ -251,7 +251,7 @@ describe("page rendering", function () {
         assert.ok(html.includes("1 item needs attention"));
         assert.ok(html.includes("2 remaining"));
         assert.ok(html.includes("Min. 3"));
-        assert.ok(html.includes("/inventory/list?filter=low-stock"));
+        assert.ok(html.includes("/inventory?filter=low-stock"));
         assert.ok(html.includes("Recent activity"));
         assert.ok(html.includes("Showing 10 of 12 latest actions"));
         assert.ok(html.includes('aria-label="Recent inventory activity"'));
@@ -515,12 +515,83 @@ describe("page rendering", function () {
       try {
         const html = renderWithRouter(
           React.createElement(InventoryListPage),
-          "/inventory/list?filter=low-stock",
+          "/inventory?filter=low-stock",
         );
 
         assert.ok(html.includes("Printer Paper"));
         assert.ok(!html.includes(">Pens<"));
         assert.ok(html.includes("1 of 2 products shown"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("applies the out of stock filter from the url", function () {
+      const items = [
+        { _id: "paper", name: "Printer Paper", totalQuantity: 0, reorderAt: 10 },
+        { _id: "pens", name: "Pens", totalQuantity: 20, reorderAt: 5 },
+      ];
+
+      const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
+      const restoreProducts = stubCollectionFind(Products, items);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(
+          React.createElement(InventoryListPage),
+          "/inventory?filter=out-of-stock",
+        );
+
+        assert.ok(html.includes("Printer Paper"));
+        assert.ok(!html.includes(">Pens<"));
+        assert.ok(html.includes("1 of 2 products shown"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("accepts every rendered filter chip as a url filter", function () {
+      // The guard that validates ?filter= is built from the same list the chips
+      // render from, so a chip can never be unreachable through the URL.
+      const items = [{ _id: "pens", name: "Pens", totalQuantity: 20, reorderAt: 5 }];
+      const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
+      const restoreProducts = stubCollectionFind(Products, items);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        // The selected chip is the only one rendered without a border.
+        const selectedChip = (html) =>
+          (html.match(/<button[^>]*>(?:(?!<\/button>).)*<\/button>/g) || []).find((btn) =>
+            btn.includes("border:none"),
+          );
+
+        [
+          ["all", "All"],
+          ["low-stock", "Low stock"],
+          ["out-of-stock", "Out of stock"],
+          ["tag", "Tag"],
+          ["location", "Location"],
+        ].forEach(([id, label]) => {
+          const html = renderWithRouter(
+            React.createElement(InventoryListPage),
+            `/inventory?filter=${id}`,
+          );
+          const chip = selectedChip(html);
+          assert.ok(chip, `no chip rendered as selected for ${id}`);
+          assert.ok(chip.includes(`>${label}`), `${id} fell back to another chip: ${chip}`);
+        });
       } finally {
         restoreUnits();
         restoreLocations();
