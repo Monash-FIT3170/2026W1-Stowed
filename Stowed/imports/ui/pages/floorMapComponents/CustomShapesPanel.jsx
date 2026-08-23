@@ -72,6 +72,57 @@ const presetShapes = [
   },
 ];
 
+function ShapePreview({ points = [] }) {
+  if (!points.length) return null;
+
+  const normalisedPoints = normaliseShapePoints(points);
+  const { width, height } = getShapeBounds(normalisedPoints);
+
+  const safeWidth = width || 1;
+  const safeHeight = height || 1;
+
+  const padding = 4;
+  const previewSize = 28;
+
+  const availableSize = previewSize - padding * 2;
+
+  const scale = Math.min(
+    availableSize / safeWidth,
+    availableSize / safeHeight,
+  );
+
+  const scaledWidth = width * scale;
+  const scaledHeight = height * scale;
+
+  const offsetX = (previewSize - scaledWidth) / 2;
+  const offsetY = (previewSize - scaledHeight) / 2;
+
+  const polygonPoints = normalisedPoints
+    .map(
+      (point) =>
+        `${point.x * scale + offsetX},${point.y * scale + offsetY}`,
+    )
+    .join(" ");
+
+  return (
+    <svg
+      width={previewSize}
+      height={previewSize}
+      viewBox={`0 0 ${previewSize} ${previewSize}`}
+      style={customShapesPanelStyles.shapePreview}
+      aria-hidden="true"
+    >
+      <polygon
+        points={polygonPoints}
+        fill="#7a5230"
+        stroke="#7a5230"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function CustomShapesPanel({
   mapShapes = [],
   activeTool,
@@ -164,11 +215,13 @@ export function CustomShapesPanel({
               }}
               aria-pressed={activeTool === toolName}
             >
-              <span
-                style={customShapesPanelStyles.shapeName}
-              >
-                {shape.name}
-              </span>
+              <div style={customShapesPanelStyles.shapeButtonContent}>
+                <ShapePreview points={shape.points} />
+
+                <span style={customShapesPanelStyles.shapeName}>
+                  {shape.name}
+                </span>
+              </div>
             </button>
           );
         })}
@@ -214,13 +267,13 @@ export function CustomShapesPanel({
                     activeTool === toolName
                   }
                 >
-                  <span
-                    style={
-                      customShapesPanelStyles.shapeName
-                    }
-                  >
-                    {shape.name}
-                  </span>
+                  <div style={customShapesPanelStyles.shapeButtonContent}>
+                    <ShapePreview points={shape.points} />
+
+                    <span style={customShapesPanelStyles.shapeName}>
+                      {shape.name}
+                    </span>
+                  </div>
                 </button>
 
                 <button
