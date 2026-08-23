@@ -8,6 +8,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
   const [shapeName, setShapeName] = useState(
     shape?.name ?? "",
   );
+  const [deletePointMode, setDeletePointMode] = useState(false);
 
   const canvasWidth = 800;
   const canvasHeight = 300;
@@ -31,7 +32,17 @@ export function CreateShapeModal({ onClose, shape = null }) {
       ),
     );
   };
+  const handlePointClick = (index, event) => {
+    event.cancelBubble = true;
 
+    if (!deletePointMode) return;
+
+    setPoints((currentPoints) =>
+      currentPoints.filter(
+        (_, pointIndex) => pointIndex !== index,
+      ),
+    );
+  };
   const handlePointDrag = (index, event) => {
     const node = event.target;
 
@@ -93,16 +104,22 @@ export function CreateShapeModal({ onClose, shape = null }) {
   };
 
   const handleCanvasClick = (event) => {
-    const pointer = stage.getPointerPosition();
+    if (deletePointMode) return;
+
     const stage = event.target.getStage();
 
-
-    if (!pointer) return;
     if (!stage) return;
     if (event.target !== stage) return;
 
-    const x = pointer.x / CANVAS_CONFIG.PIXELS_PER_METER;
-    const y = pointer.y / CANVAS_CONFIG.PIXELS_PER_METER;
+    const pointer = stage.getPointerPosition();
+
+    if (!pointer) return;
+
+    const x =
+      pointer.x / CANVAS_CONFIG.PIXELS_PER_METER;
+
+    const y =
+      pointer.y / CANVAS_CONFIG.PIXELS_PER_METER;
 
     setPoints((currentPoints) => [
       ...currentPoints,
@@ -232,13 +249,34 @@ export function CreateShapeModal({ onClose, shape = null }) {
             </div>
 
             {points.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setPoints([])}
-                style={styles.clearButton}
-              >
-                Clear Points
-              </button>
+              <div style={styles.canvasActions}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDeletePointMode(
+                      (currentMode) => !currentMode,
+                    )
+                  }
+                  style={{
+                    ...styles.deletePointButton,
+                    ...(deletePointMode
+                      ? styles.deletePointButtonActive
+                      : {}),
+                  }}
+                >
+                  {deletePointMode
+                    ? "Done Deleting"
+                    : "Delete Point"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPoints([])}
+                  style={styles.clearButton}
+                >
+                  Clear Points
+                </button>
+              </div>
             )}
           </div>
 
@@ -249,7 +287,9 @@ export function CreateShapeModal({ onClose, shape = null }) {
               onClick={handleCanvasClick}
               style={{
                 backgroundColor: "#fbfaf8",
-                cursor: "crosshair",
+                cursor: deletePointMode
+                  ? "default"
+                  : "crosshair",
               }}
             >
               <Layer>
@@ -286,7 +326,13 @@ export function CreateShapeModal({ onClose, shape = null }) {
                       y={y * CANVAS_CONFIG.PIXELS_PER_METER}
                       radius={6}
                       fill="#c45127"
-                      draggable
+                      draggable={!deletePointMode}
+                      onClick={(event) =>
+                        handlePointClick(index, event)
+                      }
+                      onTap={(event) =>
+                        handlePointClick(index, event)
+                      }
                       onDragMove={(event) =>
                         handlePointDrag(index, event)
                       }
@@ -501,6 +547,28 @@ const styles = {
     cursor: "pointer",
     fontSize: 12,
     fontWeight: 500,
+  },
+  canvasActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+  },
+
+  deletePointButton: {
+    padding: "5px 10px",
+    border: "1px solid #d8d1c8",
+    borderRadius: 6,
+    backgroundColor: "#ffffff",
+    color: "#555555",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 500,
+  },
+
+  deletePointButtonActive: {
+    borderColor: "#b42318",
+    backgroundColor: "#fef3f2",
+    color: "#b42318",
   },
 
   canvasWrapper: {
