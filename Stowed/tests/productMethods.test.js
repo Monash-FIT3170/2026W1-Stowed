@@ -1,5 +1,6 @@
 import assert from "assert";
 import { Meteor } from "meteor/meteor";
+import { describeServer } from "./serverOnly";
 import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
 import { Organisations } from "../imports/api/organisations";
 import {
@@ -58,7 +59,7 @@ const STORAGE_LOCATION = {
   updatedAt: new Date(),
 };
 
-describe("Product methods", function () {
+describeServer("Product methods", function () {
   before(async function () {
     await Meteor.users.removeAsync(TEST_USER_ID);
     await Organisations.removeAsync(TEST_ORG_ID);
