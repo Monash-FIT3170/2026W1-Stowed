@@ -8,6 +8,7 @@ import { getBarcodeValue } from "/imports/api/products/codes";
 import { ProductBarcode } from "../components/ProductBarcode";
 import { LocationQRCode } from "../components/LocationQRCode";
 import "../Global.css";
+import "./QRCodesPage.css";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -33,6 +34,7 @@ export function QRCodesPage() {
   const [bulkMode, setBulkMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState([])
   const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState('')
 
   const { loading, products, units, floorMaps } = useTracker(() => {
     // Meteor.subscribe only exists on the client; static/server renders
@@ -70,12 +72,13 @@ export function QRCodesPage() {
 
   async function handleGenerate() {
     setGenerating(true)
+    setGenerateError('')
     try {
       await callMethod("products.bulkGenerateCodes", { productIds: selectedIds })
       setSelectedIds([])
       setBulkMode(false)
     } catch (err) {
-      console.log('bulk generate failed', err)
+      setGenerateError(err.reason || err.message || 'Failed to generate codes.')
     }
     setGenerating(false)
   }
@@ -130,7 +133,10 @@ export function QRCodesPage() {
             Storage unit QR codes
           </button>
           {tab === "products" && (
-            <button onClick={() => setBulkMode(!bulkMode)}>
+            <button
+              className={bulkMode ? "btn-primary" : "btn-secondary"}
+              onClick={() => setBulkMode(!bulkMode)}
+            >
               {bulkMode ? "Cancel bulk generate" : "Bulk generate"}
             </button>
           )}
@@ -158,27 +164,51 @@ export function QRCodesPage() {
           </div>
         ) : tab === "products" && bulkMode ? (
           <div className="detail-section">
-            <div>
-              <button onClick={selectAllCodeless}>Select all</button>
-              <button disabled={selectedIds.length === 0 || generating} onClick={handleGenerate}>
-                {generating ? "Generating..." : `Generate (${selectedIds.length})`}
-              </button>
+            <div className="bulk-toolbar">
+              <span className="bulk-selected-label">
+                {selectedIds.length} of {codelessProducts.length} selected
+              </span>
+              <div className="bulk-toolbar-actions">
+                <button className="btn-secondary" onClick={selectAllCodeless}>
+                  Select all
+                </button>
+                <button
+                  className="btn-primary"
+                  disabled={selectedIds.length === 0 || generating}
+                  onClick={handleGenerate}
+                >
+                  {generating ? "Generating..." : `Generate (${selectedIds.length})`}
+                </button>
+              </div>
             </div>
+            {generateError && <p className="bulk-error">{generateError}</p>}
             {codelessProducts.length === 0 ? (
-              <div>Every product already has a code.</div>
+              <div style={emptyStyle}>Every product already has a code.</div>
             ) : (
-              codelessProducts.map((product) => (
-                <div key={product._id}>
-                  <label>
+              codelessProducts.map((product) => {
+                const checked = selectedIds.includes(product._id)
+                return (
+                  <label
+                    key={product._id}
+                    className={checked ? "code-row selected" : "code-row"}
+                  >
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(product._id)}
+                      className="code-row-checkbox"
+                      checked={checked}
                       onChange={() => toggleSelected(product._id)}
+                      aria-label={`Select ${product.name}`}
                     />
-                    {product.name}
+                    <div style={{ minWidth: 0 }}>
+                      <strong>{product.name}</strong>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        {product.category ? `${product.category} · ` : ""}
+                        No code assigned
+                      </div>
+                    </div>
                   </label>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         ) : tab === "products" ? (
