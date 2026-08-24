@@ -1,5 +1,5 @@
 import { Meteor } from "meteor/meteor";
-import { Resend } from "resend";
+import { Resend } from "./resend";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || Meteor.settings?.RESEND_API_KEY;
 const RESEND_FROM = process.env.RESEND_FROM || Meteor.settings?.RESEND_FROM || "myapp@resend.dev";
