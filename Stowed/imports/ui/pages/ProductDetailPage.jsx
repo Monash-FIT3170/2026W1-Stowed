@@ -278,30 +278,6 @@ export function ProductDetailView({
               <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-current">Product</span>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button className="btn-secondary" onClick={() => navigate(-1)}>
-                Back
-              </button>
-              {canRestock && (
-                <button className="btn-secondary" onClick={openRestockModal}>
-                  Restock
-                </button>
-              )}
-              {canUpdate && (
-                <button
-                  className="btn-primary"
-                  onClick={handleUpdateClick}
-                  disabled={uploadingImage}
-                >
-                  Update
-                </button>
-              )}
-              {canDelete && (
-                <button className="btn-danger" onClick={() => setShowDeleteModal(true)}>
-                  Delete
-                </button>
-              )}
-            </div>
           </div>
 
           <h1 className="header-title">
@@ -519,6 +495,27 @@ export function ProductDetailView({
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="product-detail-actions">
+          <button className="btn-secondary" onClick={() => navigate(-1)}>
+            Back
+          </button>
+          {canRestock && (
+            <button className="btn-secondary" onClick={openRestockModal}>
+              Restock
+            </button>
+          )}
+          {canUpdate && (
+            <button className="btn-primary" onClick={handleUpdateClick} disabled={uploadingImage}>
+              Update
+            </button>
+          )}
+          {canDelete && (
+            <button className="btn-danger" onClick={() => setShowDeleteModal(true)}>
+              Delete
+            </button>
+          )}
         </div>
       </div>
 
