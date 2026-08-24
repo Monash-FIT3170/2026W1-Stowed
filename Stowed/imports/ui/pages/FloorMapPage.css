@@ -1,11 +1,4 @@
-/* FloorMapPage Styles */
-:root {
-  --bg-primary: #f5efe6;
-  --text-muted: #998874;
-  --text-dark: #1a1a1a;
-  --border-light: #efe7da;
-  --border-subtle: #d9cfc0;
-}
+/* FloorMapPage Styles — design tokens live in Global.css */
 
 /* -- SLIDE-OUT PANEL -- */
 .low-stock-panel {
@@ -246,6 +239,13 @@
   box-shadow: 0 8px 18px rgba(181, 83, 42, 0.22);
 }
 
+/* Keep the floating toggle clear of the fixed bottom nav bar */
+@media (max-width: 1024px) {
+  .floor-map-mode-toggle {
+    bottom: 88px;
+  }
+} 
+
 @media (max-width: 760px) {
   .floor-map-layout {
     flex-direction: column;
@@ -262,6 +262,6 @@
 
   .floor-map-mode-toggle {
     right: 14px;
-    bottom: 14px;
+    bottom: 84px;
   }
 }

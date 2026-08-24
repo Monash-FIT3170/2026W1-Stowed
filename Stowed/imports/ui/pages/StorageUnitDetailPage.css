@@ -366,7 +366,8 @@
   padding: 12px 14px;
 }
 
-.storage-location-list {
+/* scoped: Global.css has a flex .storage-location-list used by ProductDetailPage */
+.storage-detail-page .storage-location-list {
   display: grid;
 }
 
