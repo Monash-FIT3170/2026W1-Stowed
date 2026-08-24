@@ -60,9 +60,10 @@
     padding: 16px;
   }
 
+  /* Keep the action button (View all / View inventory) pinned top-right
+     next to the title instead of stacking it below on its own line —
+     same convention as .header-top elsewhere in the app. */
   .dashboard-widget-header {
-    align-items: flex-start;
-    flex-direction: column;
     gap: 10px;
   }
 }
