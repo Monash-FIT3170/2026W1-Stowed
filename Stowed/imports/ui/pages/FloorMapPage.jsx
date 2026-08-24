@@ -9,6 +9,7 @@ import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
+import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites, MapShapes } from "/imports/api/locations/collections";
@@ -35,6 +36,7 @@ const statusBarButtonStyle = {
 function FloorMapPageInner() {
   const { role } = useAuth();
   const canManage = hasClientPermission(role, "locations.manage");
+  const canStocktake = hasClientPermission(role, "stocktake.save");
 
   const {
     activeTool,
@@ -78,12 +80,6 @@ function FloorMapPageInner() {
       locationsReady: handle.ready(),
     };
   }, []);
-
-  const items = selectedUnit?.mockItems ?? lowStockByUnitId?.[selectedUnit?._id] ?? [];
-  const lowItems = items.filter((i) => i.isLow);
-  const okItems = items.filter((i) => !i.isLow);
-  const isEmpty = items.length === 0;
-  const hasLow = lowItems.length > 0;
 
   const handleUnitSelect = (unitId) => {
     setSelectedStorageUnitId(unitId);
@@ -322,86 +318,13 @@ function FloorMapPageInner() {
             borderLeft: `1px solid ${COLOURS.CARD_BORDER}`,
           }}
         >
-          {/* STOCK SLIDE-OUT PANEL - view mode only */}
+          {/* STOCKTAKE SLIDE-OUT PANEL - view mode only */}
           {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
-            <div className="low-stock-panel" style={{ borderLeft: "none", flex: "0 0 auto" }}>
-              <div
-                className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}
-              >
-                <div>
-                  <div className="panel-header-label">{selectedUnit.name}</div>
-                  <div className="panel-header-title">
-                    {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
-                  </div>
-                  <div
-                    className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}
-                  >
-                    {isEmpty
-                      ? "Empty"
-                      : hasLow
-                        ? `${lowItems.length} need attention`
-                        : `${okItems.length} products OK`}
-                  </div>
-                </div>
-                <button
-                  className="panel-close-btn"
-                  onClick={() => setIsStockPanelOpen(false)}
-                  aria-label="Close panel"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="panel-content">
-                {isEmpty ? (
-                  <div className="panel-empty">No products assigned to this unit.</div>
-                ) : (
-                  <>
-                    {lowItems.length > 0 && (
-                      <div className="panel-section">
-                        <div className="panel-section-title low">Low stock</div>
-                        {lowItems.map((item, i) => (
-                          <div key={i} className="panel-item low">
-                            <div>
-                              <div className="panel-item-name">
-                                {item.product?.name ?? item.name}
-                              </div>
-                              <div className="panel-item-location">{item.locationName}</div>
-                            </div>
-                            <div>
-                              <div className="panel-item-qty low">{item.quantity}</div>
-                              {item.reorderAt > 0 && (
-                                <div className="panel-item-threshold">min {item.reorderAt}</div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {okItems.length > 0 && (
-                      <div className="panel-section">
-                        <div className="panel-section-title ok">In stock</div>
-                        {okItems.map((item, i) => (
-                          <div key={i} className="panel-item ok">
-                            <div>
-                              <div className="panel-item-name">
-                                {item.product?.name ?? item.name}
-                              </div>
-                              <div className="panel-item-location">{item.locationName}</div>
-                            </div>
-                            <div>
-                              <div className="panel-item-qty ok">{item.quantity}</div>
-                              {item.reorderAt > 0 && (
-                                <div className="panel-item-threshold">min {item.reorderAt}</div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
+            <UnitStocktakePanel
+              unit={selectedUnit}
+              canStocktake={canStocktake}
+              onClose={() => setIsStockPanelOpen(false)}
+            />
           )}
 
           {/* EDIT MODE SIDEBAR - only accessible to admins/owners */}
