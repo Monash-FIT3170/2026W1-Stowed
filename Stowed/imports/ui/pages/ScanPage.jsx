@@ -1,15 +1,32 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { parseScannedUrl } from "/imports/api/products/codes";
+import { isPhoneViewport } from "../hooks/deviceDimension";
 import "../Global.css";
 import "./ScanPage.css";
+
+/**
+ * Where a scanned product should open. Checked at navigation time rather than
+ * held in state, so the scanner callback never reads a stale value.
+ */
+function scannedProductRoute(productId) {
+  return isPhoneViewport()
+    ? `/scan/product/${productId}`
+    : `/inventory/${productId}/edit?from=scan`;
+}
 
 /**
  * Camera scanner for product barcodes (Code-128) and storage unit QR codes.
  *  - QR with our own URL  -> navigate straight to that page
  *  - anything else        -> products.findByCode (sku, then _id) and navigate
+ *
+ * Where a product code lands depends on the screen:
+ *  - phone (< 768px) -> /scan/product/:id, the quick +/- stocktake screen.
+ *                       The full product editing page is not practical here,
+ *                       the screen is too small for it.
+ *  - tablet and up   -> /inventory/:id/edit, the full product editing page
  *
  * Camera requires a secure context: localhost works in dev, deployments
  * need HTTPS or the camera will not open.
@@ -21,6 +38,7 @@ export function ScanPage() {
   const [status, setStatus] = useState("Starting camera…");
   const [matches, setMatches] = useState([]);
   const [manualCode, setManualCode] = useState("");
+  const [cameraFailed, setCameraFailed] = useState(false);
 
   async function handleCode(text) {
     // goes to storage unit QR, same url
@@ -33,7 +51,7 @@ export function ScanPage() {
     // treat it as a product code (sku or _id).
     const result = await Meteor.callAsync("products.findByCode", { code: text });
     if (result.matches.length === 1) {
-      navigate(`/inventory/${result.matches[0]._id}`);
+      navigate(scannedProductRoute(result.matches[0]._id));
       return true;
     }
     if (result.matches.length > 1) {
@@ -41,16 +59,16 @@ export function ScanPage() {
       setStatus(`Multiple products share "${text}" — pick one:`);
       return false;
     }
-    setStatus(`No product found for "${text}". Keep scanning.`);
+    setStatus(
+      `No product matches "${text}". Check the product has a SKU set (Edit product → SKU), ` +
+        "then reprint its label.",
+    );
     return false;
   }
 
   useEffect(() => {
     const scanner = new Html5Qrcode("scan-region", {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-      ],
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128],
       useBarCodeDetectorIfSupported: true,
       verbose: false,
     });
@@ -80,6 +98,7 @@ export function ScanPage() {
         if (!stopped) setStatus("Point the camera at a barcode or QR code.");
       })
       .catch((err) => {
+        setCameraFailed(true);
         setStatus(
           `Camera unavailable: ${err?.message || err}. ` +
             "Allow camera access, or type the code below.",
@@ -89,16 +108,21 @@ export function ScanPage() {
     return () => {
       stopped = true;
       // StrictMode mounts twice in dev — stop() may reject if never started.
-      scanner
-        .stop()
-        .catch(() => {})
-        .finally(() => {
-          try {
-            scanner.clear();
-          } catch {
-            /* already cleared */
+      const teardown = async () => {
+        try {
+          if (scanner.isScanning) {
+            await scanner.stop();
           }
-        });
+        } catch {
+          /* not running — nothing to stop */
+        }
+        try {
+          scanner.clear();
+        } catch {
+          /* already cleared */
+        }
+      };
+      teardown();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -133,6 +157,13 @@ export function ScanPage() {
         <div className="detail-section scan-camera-card">
           <div id="scan-region" />
           <p className="scan-status">{status}</p>
+          <p className="scan-camera-help">
+            {cameraFailed ? (
+              <Link to="/scan/settings">Camera blocked? Fix it here →</Link>
+            ) : (
+              <Link to="/scan/settings">Camera settings</Link>
+            )}
+          </p>
         </div>
 
         {matches.length > 1 && (
@@ -142,7 +173,7 @@ export function ScanPage() {
                 key={match._id}
                 type="button"
                 className="scan-match-row"
-                onClick={() => navigate(`/inventory/${match._id}`)}
+                onClick={() => navigate(scannedProductRoute(match._id))}
               >
                 <span className="scan-match-name">{match.name}</span>
                 {match.sku && <span className="scan-match-sku">SKU {match.sku}</span>}

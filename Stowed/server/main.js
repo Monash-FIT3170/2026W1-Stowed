@@ -42,13 +42,14 @@ async function seedProducts(seedOrgId) {
   if (count > 0) return;
 
   const now = new Date();
-  const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
+  const add = ({ name, description, category, brand, unitCost, totalQuantity, sku }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
       category,
       brand,
+      sku,
       unitCost,
       totalQuantity,
       images: [],

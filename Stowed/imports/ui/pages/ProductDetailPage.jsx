@@ -150,6 +150,7 @@ export function ProductDetailView({
   const storageAssignments = records.length
     ? records.map((record) => ({
         key: record._id,
+        locationId: record.locationId,
         label: buildLocationLabel(
           record.locationId,
           storageLocations,

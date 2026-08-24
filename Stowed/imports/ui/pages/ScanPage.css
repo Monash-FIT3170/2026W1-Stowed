@@ -102,8 +102,6 @@
   flex-shrink: 0;
 }
 
-/* -- Phone -- */
-
 @media (max-width: 640px) {
   .scan-page .scan-page-body {
     padding: 0 16px 40px;
@@ -113,4 +111,19 @@
   .scan-page #scan-region {
     min-height: 220px;
   }
+}
+
+.scan-page .scan-camera-help {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.scan-page .scan-camera-help a {
+  color: var(--accent-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.scan-page .scan-camera-help a:hover {
+  text-decoration: underline;
 }
