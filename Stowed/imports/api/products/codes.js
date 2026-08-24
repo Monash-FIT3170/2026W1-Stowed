@@ -32,3 +32,8 @@ export function parseScannedUrl(text, origin) {
     return null;
   }
 }
+
+export function generateSku() {
+  const rand = Math.random().toString(36).slice(2, 8).toUpperCase()
+  return 'SKU-' + rand
+}
