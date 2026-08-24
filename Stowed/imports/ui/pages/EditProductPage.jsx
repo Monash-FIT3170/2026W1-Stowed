@@ -145,10 +145,20 @@ export function EditProductPage() {
     if (brand !== (product.brand || "")) result.brand = { from: product.brand || "", to: brand };
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
-    if (parseFloat(unitCost) !== product.unitCost)
-      result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
-    if (parseFloat(purchaseCost) !== product.purchaseCost)
-      result.purchaseCost = { from: product.purchaseCost, to: parseFloat(purchaseCost) };
+    // An empty money field saves as 0 (see confirmSave), so compare against
+    // that rather than parseFloat("") — which is NaN and would both register a
+    // phantom change and render as "$NaN".
+    const toMoney = (value) => {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const fromUnitCost = product.unitCost ?? 0;
+    const toUnitCost = toMoney(unitCost);
+    if (toUnitCost !== fromUnitCost) result.unitCost = { from: fromUnitCost, to: toUnitCost };
+    const fromPurchaseCost = product.purchaseCost ?? 0;
+    const toPurchaseCost = toMoney(purchaseCost);
+    if (toPurchaseCost !== fromPurchaseCost)
+      result.purchaseCost = { from: fromPurchaseCost, to: toPurchaseCost };
     const parsedReorderAt = reorderAt !== "" ? parseInt(reorderAt, 10) : null;
     const originalReorderAt = product.reorderAt ?? null;
     if (parsedReorderAt !== originalReorderAt)
@@ -661,7 +671,7 @@ export function EditProductPage() {
                     Brand
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {changes.brand.from} → {changes.brand.to}
+                    {changes.brand.from || "-"} → {changes.brand.to || "-"}
                   </div>
                 </div>
               )}
@@ -693,7 +703,7 @@ export function EditProductPage() {
                     Sell price
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    ${changes.unitCost.from} → ${changes.unitCost.to}
+                    ${changes.unitCost.from.toFixed(2)} → ${changes.unitCost.to.toFixed(2)}
                   </div>
                 </div>
               )}
@@ -709,7 +719,7 @@ export function EditProductPage() {
                     Purchase price
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    ${changes.purchaseCost.from} → ${changes.purchaseCost.to}
+                    ${changes.purchaseCost.from.toFixed(2)} → ${changes.purchaseCost.to.toFixed(2)}
                   </div>
                 </div>
               )}
