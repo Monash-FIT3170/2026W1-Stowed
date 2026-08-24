@@ -19,6 +19,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { currency, sortByCategory, categoryNameOf } from "./shoppingListHelpers";
+import { ShareEmailModal } from "./ShareEmailModal";
 
 import "./ListsPage.css";
 
@@ -61,6 +62,7 @@ export function ShoppingListDetailPage() {
   const [nameDraft, setNameDraft] = useState("");
   const [allocationLocationByProductId, setAllocationLocationByProductId] = useState({});
   const [allocationError, setAllocationError] = useState("");
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const {
     list,
@@ -812,6 +814,13 @@ export function ShoppingListDetailPage() {
                 </button>
                 <button
                   type="button"
+                  className="btn-secondary lists-full-btn"
+                  onClick={() => setIsShareModalOpen(true)}
+                >
+                  Share via email
+                </button>
+                <button
+                  type="button"
                   className="btn-danger lists-full-btn"
                   onClick={discard}
                   disabled={isReadOnly}
@@ -849,6 +858,10 @@ export function ShoppingListDetailPage() {
           </div>
         </div>
       </div>
+
+      {isShareModalOpen && list && (
+        <ShareEmailModal list={list} onClose={() => setIsShareModalOpen(false)} />
+      )}
     </div>
   );
 }
