@@ -13,6 +13,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
+import { useToast } from "../components/Toast";
 import "./CreateProductPage.css";
 import "../Global.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
@@ -60,7 +61,7 @@ export function CreateProductPage() {
   const [imageUrls, setImageUrls] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const toast = useToast();
   const fileInputRef = useRef(null);
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -113,11 +114,10 @@ export function CreateProductPage() {
     if (!file) return;
 
     if (!isImageFile(file)) {
-      setUploadError("Please select an image file.");
+      toast.error("Please select an image file.");
       return;
     }
 
-    setUploadError("");
     setUploadingImage(true);
     try {
       const url = await uploadImageToServer(file);
@@ -128,7 +128,7 @@ export function CreateProductPage() {
       });
     } catch (error) {
       console.error("Image upload failed:", error);
-      setUploadError("Upload failed. Please try again.");
+      toast.error("Image upload failed. Please try again.");
     } finally {
       setUploadingImage(false);
     }
@@ -163,9 +163,11 @@ export function CreateProductPage() {
         })),
       });
 
+      toast.success(`"${name}" created.`);
       navigate("/inventory");
     } catch (error) {
       console.error("Failed to create product:", error);
+      toast.error(error.reason || error.message || "Failed to create product.");
     }
   }
 
@@ -474,12 +476,6 @@ export function CreateProductPage() {
                     style={{ display: "none" }}
                   />
                 </div>
-
-                {uploadError && (
-                  <p className="warning-text" style={{ marginTop: "8px" }}>
-                    {uploadError}
-                  </p>
-                )}
               </div>
             </div>
           </div>

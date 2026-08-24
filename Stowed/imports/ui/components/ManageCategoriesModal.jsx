@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Meteor } from "meteor/meteor";
+import { useToast } from "./Toast";
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -17,16 +18,16 @@ export function ManageCategoriesModal({ categories = [], onClose, onCategoryDele
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
-  async function run(action, fallbackMessage) {
+  async function run(action, fallbackMessage, successMessage) {
     setBusy(true);
     try {
       await action();
-      setError("");
+      if (successMessage) toast.success(successMessage);
     } catch (err) {
-      setError(err.reason || err.message || fallbackMessage);
+      toast.error(err.reason || err.message || fallbackMessage);
     } finally {
       setBusy(false);
     }
@@ -35,27 +36,39 @@ export function ManageCategoriesModal({ categories = [], onClose, onCategoryDele
   function handleCreate() {
     const name = newCategoryName.trim();
     if (!name) return;
-    return run(async () => {
-      await callMethod("productCategories.create", { name });
-      setNewCategoryName("");
-    }, "Could not add that category. Try a different name.");
+    return run(
+      async () => {
+        await callMethod("productCategories.create", { name });
+        setNewCategoryName("");
+      },
+      "Could not add that category. Try a different name.",
+      "Category added.",
+    );
   }
 
   function confirmRename(id) {
     const name = editingName.trim();
     if (!name) return;
-    return run(async () => {
-      await callMethod("productCategories.rename", { categoryId: id, name });
-      setEditingId(null);
-      setEditingName("");
-    }, "Could not rename that category.");
+    return run(
+      async () => {
+        await callMethod("productCategories.rename", { categoryId: id, name });
+        setEditingId(null);
+        setEditingName("");
+      },
+      "Could not rename that category.",
+      "Category renamed.",
+    );
   }
 
   function handleDelete(id) {
-    return run(async () => {
-      await callMethod("productCategories.delete", { categoryId: id });
-      onCategoryDeleted?.(id);
-    }, "Could not delete that category.");
+    return run(
+      async () => {
+        await callMethod("productCategories.delete", { categoryId: id });
+        onCategoryDeleted?.(id);
+      },
+      "Could not delete that category.",
+      "Category deleted.",
+    );
   }
 
   function startRename(id, currentName) {
@@ -66,7 +79,6 @@ export function ManageCategoriesModal({ categories = [], onClose, onCategoryDele
   function handleClose() {
     setEditingId(null);
     setEditingName("");
-    setError("");
     onClose();
   }
 
@@ -199,12 +211,6 @@ export function ManageCategoriesModal({ categories = [], onClose, onCategoryDele
             + Add
           </button>
         </div>
-
-        {error && (
-          <p className="warning-text" style={{ marginTop: "10px" }}>
-            {error}
-          </p>
-        )}
 
         <div className="modal-actions" style={{ marginTop: "24px" }}>
           <button type="button" className="btn-secondary" disabled={busy} onClick={handleClose}>

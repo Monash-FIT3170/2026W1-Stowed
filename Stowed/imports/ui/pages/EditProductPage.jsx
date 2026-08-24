@@ -14,6 +14,7 @@ import {
 } from "/imports/api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
+import { useToast } from "../components/Toast";
 import "./CreateProductPage.css";
 import "../Global.css";
 
@@ -56,7 +57,7 @@ export function EditProductPage() {
   const [initialised, setInitialised] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
+  const toast = useToast();
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   // Captured at load so the save summary can still name a category that gets
@@ -250,7 +251,6 @@ export function EditProductPage() {
 
   async function confirmSave() {
     setIsSaving(true);
-    setSaveError("");
     try {
       await callMethod("products.update", {
         productId,
@@ -267,10 +267,11 @@ export function EditProductPage() {
           quantity: parseInt(a.quantity, 10),
         })),
       });
+      toast.success(`"${name.trim()}" updated.`);
       navigate(`/inventory/${productId}`);
     } catch (error) {
       console.error("Failed to update product:", error);
-      setSaveError(error.reason || error.message || "Failed to save changes.");
+      toast.error(error.reason || error.message || "Failed to save changes.");
       setIsSaving(false);
     }
   }
@@ -783,7 +784,6 @@ export function EditProductPage() {
               )}
             </div>
 
-            {saveError && <div className="warning-text">{saveError}</div>}
             <div className="modal-actions">
               <button
                 className="btn-secondary"

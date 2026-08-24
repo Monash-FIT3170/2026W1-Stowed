@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useToast } from "../components/Toast";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
@@ -70,8 +71,7 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
   const [addingProductId, setAddingProductId] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
-  const [savedMessage, setSavedMessage] = useState("");
+  const toast = useToast();
 
   // Reseed when the page moves to a different location. Deliberately not keyed
   // on `rows` itself: that identity changes on every reactive re-run, which
@@ -81,8 +81,6 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
     setDraft(toDraft(rows));
     setAddingProductId("");
     setIsAdding(false);
-    setSaveError("");
-    setSavedMessage("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationId]);
 
@@ -136,14 +134,10 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
     setDraft(toDraft(rows));
     setAddingProductId("");
     setIsAdding(false);
-    setSaveError("");
-    setSavedMessage("");
   }
 
   async function saveStocktake() {
     setIsSaving(true);
-    setSaveError("");
-    setSavedMessage("");
 
     try {
       // The kept lines are the location's new contents; the server deletes
@@ -162,9 +156,9 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
           .filter((line) => !line.removed)
           .map((line) => ({ ...line, quantity: String(toCount(line.quantity)) })),
       );
-      setSavedMessage("Stocktake saved");
+      toast.success("Stocktake saved.");
     } catch (error) {
-      setSaveError(error.reason || error.message || "Could not save the stocktake.");
+      toast.error(error.reason || error.message || "Could not save the stocktake.");
     } finally {
       setIsSaving(false);
     }
@@ -230,9 +224,6 @@ export function StocktakeView({ location, unit, floorMap, site, rows = [], produ
           <span>Last counted {formatDate(location.lastStocktakeAt)}</span>
           {isDirty && <span className="stocktake-dirty">Unsaved changes</span>}
         </div>
-
-        {saveError && <p className="stocktake-error">{saveError}</p>}
-        {savedMessage && !isDirty && <p className="stocktake-saved">{savedMessage}</p>}
       </header>
 
       <section className="stocktake-panel">
