@@ -42,6 +42,7 @@ export function QRCodesPage() {
   const [unitBulkMode, setUnitBulkMode] = useState(false)
   const [selectedUnitIds, setSelectedUnitIds] = useState([])
   const [unitGenerating, setUnitGenerating] = useState(false)
+  const [unitGenerateError, setUnitGenerateError] = useState('')
 
   const { loading, products, units, floorMaps } = useTracker(() => {
     // Meteor.subscribe only exists on the client; static/server renders
@@ -104,12 +105,13 @@ export function QRCodesPage() {
 
   async function handleGenerateUnits() {
     setUnitGenerating(true)
+    setUnitGenerateError('')
     try {
       await callMethod("storageUnits.bulkGenerateCodes", { unitIds: selectedUnitIds })
       setSelectedUnitIds([])
       setUnitBulkMode(false)
     } catch (err) {
-      console.log('bulk generate failed', err)
+      setUnitGenerateError(err.reason || err.message || 'Failed to generate codes.')
     }
     setUnitGenerating(false)
   }
@@ -191,9 +193,16 @@ export function QRCodesPage() {
             </div>
           )}
           {tab === "units" && (
-            <button onClick={() => setUnitBulkMode(!unitBulkMode)}>
-              {unitBulkMode ? "Cancel bulk generate" : "Bulk generate"}
-            </button>
+            <div style={{ marginLeft: "auto" }}>
+              <button
+                className={unitBulkMode ? "bulk-generate-toggle active" : "bulk-generate-toggle"}
+                onClick={() => setUnitBulkMode(!unitBulkMode)}
+              >
+                {unitBulkMode
+                  ? "‹ Back to codes"
+                  : `Select units to generate codes (${codelessUnits.length})`}
+              </button>
+            </div>
           )}
         </div>
 
@@ -273,30 +282,47 @@ export function QRCodesPage() {
           </div>
         ) : tab === "units" && unitBulkMode ? (
           <div className="detail-section">
-            <div>
-              <button onClick={selectAllCodelessUnits}>Select all</button>
-              <button
-                disabled={selectedUnitIds.length === 0 || unitGenerating}
-                onClick={handleGenerateUnits}
-              >
-                {unitGenerating ? "Generating..." : `Generate (${selectedUnitIds.length})`}
-              </button>
+            <div className="bulk-toolbar">
+              <span className="bulk-selected-label">
+                {selectedUnitIds.length} of {codelessUnits.length} selected
+              </span>
+              <div className="bulk-toolbar-actions">
+                <button className="btn-secondary" onClick={selectAllCodelessUnits}>
+                  Select all
+                </button>
+                <button
+                  className="btn-primary"
+                  disabled={selectedUnitIds.length === 0 || unitGenerating}
+                  onClick={handleGenerateUnits}
+                >
+                  {unitGenerating ? "Generating..." : `Generate (${selectedUnitIds.length})`}
+                </button>
+              </div>
             </div>
+            {unitGenerateError && <p className="bulk-error">{unitGenerateError}</p>}
             {codelessUnits.length === 0 ? (
-              <div>Every storage unit already has a code.</div>
+              <div style={emptyStyle}>Every storage unit already has a code.</div>
             ) : (
-              codelessUnits.map((unit) => (
-                <div key={unit._id}>
-                  <label>
+              codelessUnits.map((unit) => {
+                const checked = selectedUnitIds.includes(unit._id)
+                return (
+                  <label key={unit._id} className={checked ? "code-row selected" : "code-row"}>
                     <input
                       type="checkbox"
-                      checked={selectedUnitIds.includes(unit._id)}
+                      className="code-row-checkbox"
+                      checked={checked}
                       onChange={() => toggleSelectedUnit(unit._id)}
+                      aria-label={`Select ${unit.name}`}
                     />
-                    {unit.name}
+                    <div style={{ minWidth: 0 }}>
+                      <strong>{unit.name}</strong>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        {unit.type} · No code assigned
+                      </div>
+                    </div>
                   </label>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         ) : (
