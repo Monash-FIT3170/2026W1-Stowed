@@ -5,17 +5,22 @@ import { useTracker } from "meteor/react-meteor-data";
 import { Products, ProductRecords } from "../../api/products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { ProductThumbnail } from "../components/ProductThumbnail";
+import { useIsDesktop } from "../hooks/deviceDimension";
 import "../Global.css";
 import "./ScanUpdatePage.css";
 
 /**
- * Quick stock update after scanning a product barcode.
- * Shows only: picture, name, current quantity, [-] [+] and Save.
- * On success: "Scan next" (primary) or "View item details" (secondary).
+ * Quick stock update after scanning a product barcode. This is the hand-held
+ * screen: picture, name, location, current quantity, [-] [+] and Save. After
+ * saving it asks whether to open the full product details.
+ *
+ * Laptop-width visitors are redirected to the product editing page instead,
+ * which is what the client asked for on desktop.
  */
 export function ScanUpdatePage() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const isDesktop = useIsDesktop();
 
   const { loading, product, records, storageLocations, storageUnits, floorMaps, sites } =
     useTracker(() => {
@@ -63,6 +68,14 @@ export function ScanUpdatePage() {
     if (!locationId && locationOptions.length) setLocationId(locationOptions[0].locationId);
   }, [locationOptions, locationId]);
 
+  // On a laptop the client wants the editing page straight away, so anyone who
+  // reaches this route on a wide screen (deep link, resized window) is passed on.
+  useEffect(() => {
+    if (isDesktop) {
+      navigate(`/inventory/${productId}/edit?from=scan`, { replace: true });
+    }
+  }, [isDesktop, productId, navigate]);
+
   const selected = locationOptions.find((o) => o.locationId === locationId);
   const currentQty = selected ? selected.quantity : 0;
   const nextQty = Math.max(0, currentQty + delta);
@@ -85,6 +98,9 @@ export function ScanUpdatePage() {
       setSaving(false);
     }
   }
+
+  // Redirect above is in flight — render nothing rather than flashing this UI.
+  if (isDesktop) return null;
 
   if (loading) {
     return (
@@ -117,15 +133,16 @@ export function ScanUpdatePage() {
           </div>
           <h1 className="scan-update-title">Stock saved</h1>
           <p className="scan-update-message">
-            <strong>{saved.name}</strong> — {saved.newQuantity} at this location,{" "}
-            {saved.newTotal} in total.
+            <strong>{saved.name}</strong> — {saved.newQuantity} at this location, {saved.newTotal}{" "}
+            in total.
           </p>
+          <p className="scan-update-question">Open the full product details?</p>
           <div className="scan-update-actions">
-            <Link to="/scan" className="btn-primary scan-update-link">
-              Scan next
+            <Link to={`/inventory/${productId}`} className="btn-primary scan-update-link">
+              Yes, open details
             </Link>
-            <Link to={`/inventory/${productId}`} className="btn-secondary scan-update-link">
-              View item details
+            <Link to="/scan" className="btn-secondary scan-update-link">
+              No, scan next
             </Link>
           </div>
         </div>

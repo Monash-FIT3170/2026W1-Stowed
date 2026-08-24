@@ -179,3 +179,11 @@
 .scan-update-page .scan-update-success .scan-update-actions {
   width: 100%;
 }
+
+/* Post-save prompt: "Open the full product details?" */
+.scan-update-page .scan-update-question {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
