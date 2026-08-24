@@ -212,7 +212,11 @@ export function DataToolsPage() {
         ? ` Skipped ${skipped} duplicate product${skipped === 1 ? "" : "s"}.`
         : "";
       setStatus(
-        `Import complete. Created ${result?.createdProducts || 0} product${result?.createdProducts === 1 ? "" : "s"} and ${result?.createdLocations || 0} location${result?.createdLocations === 1 ? "" : "s"}.${skippedMessage}`,
+        `Import complete. Created ${result?.createdProducts || 0} product${
+          result?.createdProducts === 1 ? "" : "s"
+        } and ${result?.createdLocations || 0} location${
+          result?.createdLocations === 1 ? "" : "s"
+        }.${skippedMessage}`,
       );
     } catch (err) {
       console.error(err);
@@ -260,7 +264,9 @@ export function DataToolsPage() {
 
       const undone = result?.undone || {};
       setStatus(
-        `Undo complete. Removed ${undone.products || 0} product${undone.products === 1 ? "" : "s"} and ${undone.locations || 0} location${undone.locations === 1 ? "" : "s"}.`,
+        `Undo complete. Removed ${undone.products || 0} product${
+          undone.products === 1 ? "" : "s"
+        } and ${undone.locations || 0} location${undone.locations === 1 ? "" : "s"}.`,
       );
     } catch (err) {
       console.error(err);
@@ -341,34 +347,6 @@ export function DataToolsPage() {
               </div>
             </div>
 
-            <div className="tools-card bulk-card">
-              <div className="bulk-import-hero">
-                <h2>Bulk Data Export</h2>
-              </div>
-
-              <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
-                Download your full inventory and storage layout as CSV files. Open them in Excel, or
-                use them as templates when importing data from another system.
-              </p>
-
-              <div className="templates-row">
-                <button
-                  className="btn-primary"
-                  onClick={openExportModal}
-                  disabled={!canExport}
-                  style={{ width: "auto", padding: "0 20px" }}
-                >
-                  Bulk export
-                </button>
-              </div>
-
-              {!canExport && (
-                <p className="warning-text" style={{ marginTop: "10px" }}>
-                  You need admin access to export data.
-                </p>
-              )}
-            </div>
-
             <aside className="actions-panel import-actions">
               <div className="panel-card">
                 <h4>Status</h4>
@@ -410,6 +388,34 @@ export function DataToolsPage() {
                 </div>
               </div>
             </aside>
+          </div>
+
+          <div className="tools-card bulk-card" style={{ marginTop: "16px" }}>
+            <div className="bulk-import-hero">
+              <h2>Bulk Data Export</h2>
+            </div>
+
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
+              Download your full inventory and storage layout as CSV files. Open them in Excel, or
+              use them as templates when importing data from another system.
+            </p>
+
+            <div className="templates-row">
+              <button
+                className="btn-primary"
+                onClick={openExportModal}
+                disabled={!canExport}
+                style={{ width: "auto", padding: "0 20px" }}
+              >
+                Bulk export
+              </button>
+            </div>
+
+            {!canExport && (
+              <p className="warning-text" style={{ marginTop: "10px" }}>
+                You need admin access to export data.
+              </p>
+            )}
           </div>
         </div>
       </div>
