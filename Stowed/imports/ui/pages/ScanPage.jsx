@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { parseScannedUrl } from "/imports/api/products/codes";
-import { isDesktopViewport } from "../hooks/deviceDimension";
+import { isPhoneViewport } from "../hooks/deviceDimension";
 import "../Global.css";
 import "./ScanPage.css";
 
@@ -12,9 +12,9 @@ import "./ScanPage.css";
  * held in state, so the scanner callback never reads a stale value.
  */
 function scannedProductRoute(productId) {
-  return isDesktopViewport()
-    ? `/inventory/${productId}/edit?from=scan`
-    : `/scan/product/${productId}`;
+  return isPhoneViewport()
+    ? `/scan/product/${productId}`
+    : `/inventory/${productId}/edit?from=scan`;
 }
 
 /**
@@ -23,10 +23,10 @@ function scannedProductRoute(productId) {
  *  - anything else        -> products.findByCode (sku, then _id) and navigate
  *
  * Where a product code lands depends on the screen:
- *  - phone / tablet -> /scan/product/:id, the quick +/- stocktake screen.
- *                      The full product editing page is not practical here,
- *                      the screen is too small for it.
- *  - laptop and up  -> /inventory/:id/edit, the full product editing page
+ *  - phone (< 768px) -> /scan/product/:id, the quick +/- stocktake screen.
+ *                       The full product editing page is not practical here,
+ *                       the screen is too small for it.
+ *  - tablet and up   -> /inventory/:id/edit, the full product editing page
  *
  * Camera requires a secure context: localhost works in dev, deployments
  * need HTTPS or the camera will not open.

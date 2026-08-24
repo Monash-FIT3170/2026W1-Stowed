@@ -17,18 +17,22 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 export const BREAKPOINTS = {
   phone: 640,
   phoneWide: 760,
-  tablet: 900,
+  tablet: 768,
+  tabletWide: 900,
   desktop: 1024,
 };
 
-/** Laptops and larger. Below this the app is treated as hand-held. */
-export const DESKTOP_MIN_WIDTH = BREAKPOINTS.desktop;
+/**
+ * Phones only. A tablet starts at 768px, so anything below that is a screen
+ * held in one hand — too small for the full product editing form.
+ */
+export const PHONE_MAX_WIDTH = BREAKPOINTS.tablet - 1;
 
 /** Build a media query string from a breakpoint. */
 export const minWidth = (px) => `(min-width: ${px}px)`;
 export const maxWidth = (px) => `(max-width: ${px}px)`;
 
-export const DESKTOP_QUERY = minWidth(DESKTOP_MIN_WIDTH);
+export const PHONE_QUERY = maxWidth(PHONE_MAX_WIDTH);
 
 function getMediaQueryList(query) {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -41,8 +45,7 @@ function getMediaQueryList(query) {
  * One-shot check, safe to call from event handlers and callbacks.
  *
  * Server renders (and the pageRendering tests) have no `window`, so this
- * reports false there — the hand-held layout is the safe default because it
- * works at every width.
+ * reports false there.
  */
 export function matchesMediaQuery(query) {
   const mediaQueryList = getMediaQueryList(query);
@@ -76,12 +79,12 @@ export function useMediaQuery(query) {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/** True on laptops and wider. */
-export function isDesktopViewport() {
-  return matchesMediaQuery(DESKTOP_QUERY);
+/** True on phone-sized screens only. Tablets and larger report false. */
+export function isPhoneViewport() {
+  return matchesMediaQuery(PHONE_QUERY);
 }
 
-/** Reactive version of isDesktopViewport, for use during render. */
-export function useIsDesktop() {
-  return useMediaQuery(DESKTOP_QUERY);
+/** Reactive version of isPhoneViewport, for use during render. */
+export function useIsPhone() {
+  return useMediaQuery(PHONE_QUERY);
 }

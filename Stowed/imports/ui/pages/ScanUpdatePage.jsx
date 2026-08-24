@@ -5,7 +5,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { Products, ProductRecords } from "../../api/products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { ProductThumbnail } from "../components/ProductThumbnail";
-import { useIsDesktop } from "../hooks/deviceDimension";
+import { useIsPhone } from "../hooks/deviceDimension";
 import "../Global.css";
 import "./ScanUpdatePage.css";
 
@@ -14,13 +14,13 @@ import "./ScanUpdatePage.css";
  * screen: picture, name, location, current quantity, [-] [+] and Save. After
  * saving it asks whether to open the full product details.
  *
- * Laptop-width visitors are redirected to the product editing page instead,
- * which is what the client asked for on desktop.
+ * Tablet-width and larger visitors are redirected to the product editing page
+ * instead, with no prompt — the client asked for that to be immediate.
  */
 export function ScanUpdatePage() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const isDesktop = useIsDesktop();
+  const isPhone = useIsPhone();
 
   const { loading, product, records, storageLocations, storageUnits, floorMaps, sites } =
     useTracker(() => {
@@ -68,13 +68,13 @@ export function ScanUpdatePage() {
     if (!locationId && locationOptions.length) setLocationId(locationOptions[0].locationId);
   }, [locationOptions, locationId]);
 
-  // On a laptop the client wants the editing page straight away, so anyone who
-  // reaches this route on a wide screen (deep link, resized window) is passed on.
+  // Only phones use this screen. Tablets and larger go straight to the editing
+  // page, including anyone who reaches this route by deep link or by resizing.
   useEffect(() => {
-    if (isDesktop) {
+    if (!isPhone) {
       navigate(`/inventory/${productId}/edit?from=scan`, { replace: true });
     }
-  }, [isDesktop, productId, navigate]);
+  }, [isPhone, productId, navigate]);
 
   const selected = locationOptions.find((o) => o.locationId === locationId);
   const currentQty = selected ? selected.quantity : 0;
@@ -100,7 +100,7 @@ export function ScanUpdatePage() {
   }
 
   // Redirect above is in flight — render nothing rather than flashing this UI.
-  if (isDesktop) return null;
+  if (!isPhone) return null;
 
   if (loading) {
     return (
