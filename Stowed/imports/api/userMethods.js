@@ -26,6 +26,7 @@ const PERMISSIONS = {
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
+  'locations.bulkGenerateCodes': ROLES.ADMIN,
 
   // Routes
   "route:/inventory": ROLES.STANDARD,

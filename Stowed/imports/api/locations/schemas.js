@@ -193,6 +193,8 @@ export const StorageUnitSchema = new SimpleSchema({
     type: String,
     optional: true,
   },
+
+  qrGenerated: {type: Boolean, optional: true, defaultValue: false}
 });
 
 /**
