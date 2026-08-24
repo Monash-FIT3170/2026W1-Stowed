@@ -22,9 +22,11 @@ const PERMISSIONS = {
   "products.uploadImage": ROLES.ADMIN, // attach images to products
   "products.findByCode": ROLES.STANDARD, // resolve a scanned barcode to a product
   "products.adjustStock": ROLES.STANDARD, // scan-driven +/- and set-count stock updates
-  
+  "products.bulkGenerateCodes": ROLES.ADMIN,
+
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
+  "locations.bulkGenerateCodes": ROLES.ADMIN,
 
   // Routes
   "route:/inventory": ROLES.STANDARD,

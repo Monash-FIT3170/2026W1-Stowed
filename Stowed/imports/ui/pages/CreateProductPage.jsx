@@ -239,7 +239,7 @@ export function CreateProductPage() {
                       placeholder="e.g. Duracell"
                     />
                   </div>
-                                    <div className="form-group">
+                  <div className="form-group">
                     <label>SKU / barcode value</label>
                     <input
                       type="text"

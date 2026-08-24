@@ -411,6 +411,14 @@ async function seedLocations(seedOrgId) {
   });
 }
 
+async function backfillUnitCodes() {
+  await StorageUnits.updateAsync(
+    { qrGenerated: { $ne: true } },
+    { $set: { qrGenerated: true } },
+    { multi: true },
+  );
+}
+
 async function seedOwner(seedOrgId) {
   const existing = await Meteor.users.findOneAsync({
     username: "monash~admin",
@@ -436,6 +444,7 @@ Meteor.startup(async () => {
   const seedOrgId = await seedOrg();
   await seedOwner(seedOrgId);
   await seedProducts(seedOrgId);
+  await backfillUnitCodes();
   await seedLocations(seedOrgId);
   await seedProductRecords();
 });

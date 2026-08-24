@@ -52,7 +52,10 @@ describe("barcode/QR helpers", function () {
     });
 
     it("rejects foreign-origin URLs", function () {
-      assert.strictEqual(parseScannedUrl("https://evil.example.com/locations/unit/x", origin), null);
+      assert.strictEqual(
+        parseScannedUrl("https://evil.example.com/locations/unit/x", origin),
+        null,
+      );
     });
 
     it("rejects plain text (treated as a product code instead)", function () {

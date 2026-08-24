@@ -163,7 +163,7 @@
 .sidebar-section-links {
   display: flex;
   flex-direction: column;
-  gap: 2px; 
+  gap: 2px;
 }
 
 .sidebar-link:hover {
@@ -257,7 +257,7 @@
 }
 
 .app-main.with-sidebar {
-  margin-left: 200px; 
+  margin-left: 200px;
 }
 
 /* -- smaller device, side bar moves to bottom bar -- */
@@ -319,7 +319,9 @@
     letter-spacing: 0.4px;
     border-radius: 999px;
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    transition:
+      background 120ms ease,
+      color 120ms ease;
   }
 
   .sidebar-section-label.open {

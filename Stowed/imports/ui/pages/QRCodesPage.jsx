@@ -8,6 +8,24 @@ import { getBarcodeValue } from "/imports/api/products/codes";
 import { ProductBarcode } from "../components/ProductBarcode";
 import { LocationQRCode } from "../components/LocationQRCode";
 import "../Global.css";
+import "./QRCodesPage.css";
+
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+}
+
+function hasCode(product) {
+  return !!(product.sku && product.sku.trim());
+}
+
+function hasUnitCode(unit) {
+  return !!unit.qrGenerated;
+}
 
 /**
  * Codes hub: every product's Code-128 barcode and every storage unit's QR.
@@ -17,6 +35,14 @@ import "../Global.css";
 export function QRCodesPage() {
   const [tab, setTab] = useState("products");
   const [category, setCategory] = useState("all");
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
+  const [unitBulkMode, setUnitBulkMode] = useState(false);
+  const [selectedUnitIds, setSelectedUnitIds] = useState([]);
+  const [unitGenerating, setUnitGenerating] = useState(false);
+  const [unitGenerateError, setUnitGenerateError] = useState("");
 
   const { loading, products, units, floorMaps } = useTracker(() => {
     // Meteor.subscribe only exists on the client; static/server renders
@@ -38,6 +64,53 @@ export function QRCodesPage() {
   const visibleProducts =
     category === "all" ? products : products.filter((p) => p.category === category);
   const floorMapName = (unit) => floorMaps.find((f) => f._id === unit.floorMapId)?.name || "";
+
+  const codelessProducts = products.filter((p) => !hasCode(p));
+  const codelessUnits = units.filter((u) => !hasUnitCode(u));
+
+  function toggleSelected(id) {
+    if (selectedIds.includes(id)) setSelectedIds(selectedIds.filter((x) => x !== id));
+    else setSelectedIds([...selectedIds, id]);
+  }
+
+  function selectAllCodeless() {
+    setSelectedIds(codelessProducts.map((p) => p._id));
+  }
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setGenerateError("");
+    try {
+      await callMethod("products.bulkGenerateCodes", { productIds: selectedIds });
+      setSelectedIds([]);
+      setBulkMode(false);
+    } catch (err) {
+      setGenerateError(err.reason || err.message || "Failed to generate codes.");
+    }
+    setGenerating(false);
+  }
+
+  function toggleSelectedUnit(id) {
+    if (selectedUnitIds.includes(id)) setSelectedUnitIds(selectedUnitIds.filter((x) => x !== id));
+    else setSelectedUnitIds([...selectedUnitIds, id]);
+  }
+
+  function selectAllCodelessUnits() {
+    setSelectedUnitIds(codelessUnits.map((u) => u._id));
+  }
+
+  async function handleGenerateUnits() {
+    setUnitGenerating(true);
+    setUnitGenerateError("");
+    try {
+      await callMethod("storageUnits.bulkGenerateCodes", { unitIds: selectedUnitIds });
+      setSelectedUnitIds([]);
+      setUnitBulkMode(false);
+    } catch (err) {
+      setUnitGenerateError(err.reason || err.message || "Failed to generate codes.");
+    }
+    setUnitGenerating(false);
+  }
 
   const rowStyle = {
     display: "flex",
@@ -69,8 +142,8 @@ export function QRCodesPage() {
           </Link>
         </div>
         <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: "4px 0 0" }}>
-          Product barcodes open the product&apos;s page when scanned; storage unit QR codes open
-          the unit&apos;s page. Print labels from each detail page, or scan with the button above.
+          Product barcodes open the product&apos;s page when scanned; storage unit QR codes open the
+          unit&apos;s page. Print labels from each detail page, or scan with the button above.
         </p>
       </div>
 
@@ -88,27 +161,98 @@ export function QRCodesPage() {
           >
             Storage unit QR codes
           </button>
+
           {tab === "products" && (
-            <select
-              className="form-input"
-              style={{ width: "auto", marginLeft: "auto" }}
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              aria-label="Filter by category"
-            >
-              <option value="all">All categories ({products.length})</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto" }}>
+              {!bulkMode && (
+                <select
+                  className="form-input"
+                  style={{ width: "auto" }}
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  aria-label="Filter by category"
+                >
+                  <option value="all">All categories ({products.length})</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                className={bulkMode ? "bulk-generate-toggle active" : "bulk-generate-toggle"}
+                onClick={() => setBulkMode(!bulkMode)}
+              >
+                {bulkMode
+                  ? "‹ Back to codes"
+                  : `Select products to generate codes (${codelessProducts.length})`}
+              </button>
+            </div>
+          )}
+          {tab === "units" && (
+            <div style={{ marginLeft: "auto" }}>
+              <button
+                className={unitBulkMode ? "bulk-generate-toggle active" : "bulk-generate-toggle"}
+                onClick={() => setUnitBulkMode(!unitBulkMode)}
+              >
+                {unitBulkMode
+                  ? "‹ Back to codes"
+                  : `Select units to generate codes (${codelessUnits.length})`}
+              </button>
+            </div>
           )}
         </div>
 
         {loading ? (
           <div className="detail-section">
             <div style={emptyStyle}>Loading…</div>
+          </div>
+        ) : tab === "products" && bulkMode ? (
+          <div className="detail-section">
+            <div className="bulk-toolbar">
+              <span className="bulk-selected-label">
+                {selectedIds.length} of {codelessProducts.length} selected
+              </span>
+              <div className="bulk-toolbar-actions">
+                <button className="btn-secondary" onClick={selectAllCodeless}>
+                  Select all
+                </button>
+                <button
+                  className="btn-primary"
+                  disabled={selectedIds.length === 0 || generating}
+                  onClick={handleGenerate}
+                >
+                  {generating ? "Generating..." : `Generate (${selectedIds.length})`}
+                </button>
+              </div>
+            </div>
+            {generateError && <p className="bulk-error">{generateError}</p>}
+            {codelessProducts.length === 0 ? (
+              <div style={emptyStyle}>Every product already has a code.</div>
+            ) : (
+              codelessProducts.map((product) => {
+                const checked = selectedIds.includes(product._id);
+                return (
+                  <label key={product._id} className={checked ? "code-row selected" : "code-row"}>
+                    <input
+                      type="checkbox"
+                      className="code-row-checkbox"
+                      checked={checked}
+                      onChange={() => toggleSelected(product._id)}
+                      aria-label={`Select ${product.name}`}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <strong>{product.name}</strong>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        {product.category ? `${product.category} · ` : ""}
+                        No code assigned
+                      </div>
+                    </div>
+                  </label>
+                );
+              })
+            )}
           </div>
         ) : tab === "products" ? (
           <div className="detail-section">
@@ -129,6 +273,51 @@ export function QRCodesPage() {
                   <ProductBarcode value={getBarcodeValue(product)} height={40} />
                 </div>
               ))
+            )}
+          </div>
+        ) : tab === "units" && unitBulkMode ? (
+          <div className="detail-section">
+            <div className="bulk-toolbar">
+              <span className="bulk-selected-label">
+                {selectedUnitIds.length} of {codelessUnits.length} selected
+              </span>
+              <div className="bulk-toolbar-actions">
+                <button className="btn-secondary" onClick={selectAllCodelessUnits}>
+                  Select all
+                </button>
+                <button
+                  className="btn-primary"
+                  disabled={selectedUnitIds.length === 0 || unitGenerating}
+                  onClick={handleGenerateUnits}
+                >
+                  {unitGenerating ? "Generating..." : `Generate (${selectedUnitIds.length})`}
+                </button>
+              </div>
+            </div>
+            {unitGenerateError && <p className="bulk-error">{unitGenerateError}</p>}
+            {codelessUnits.length === 0 ? (
+              <div style={emptyStyle}>Every storage unit already has a code.</div>
+            ) : (
+              codelessUnits.map((unit) => {
+                const checked = selectedUnitIds.includes(unit._id);
+                return (
+                  <label key={unit._id} className={checked ? "code-row selected" : "code-row"}>
+                    <input
+                      type="checkbox"
+                      className="code-row-checkbox"
+                      checked={checked}
+                      onChange={() => toggleSelectedUnit(unit._id)}
+                      aria-label={`Select ${unit.name}`}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <strong>{unit.name}</strong>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        {unit.type} · No code assigned
+                      </div>
+                    </div>
+                  </label>
+                );
+              })
             )}
           </div>
         ) : (
