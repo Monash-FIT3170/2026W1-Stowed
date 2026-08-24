@@ -13,18 +13,18 @@ import "./QRCodesPage.css";
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
     Meteor.call(methodName, params, (error, result) => {
-      if (error) reject(error)
-        else resolve(result)
+      if (error) reject(error);
+      else resolve(result);
     });
   });
 }
 
 function hasCode(product) {
-  return !!(product.sku && product.sku.trim())
+  return !!(product.sku && product.sku.trim());
 }
 
 function hasUnitCode(unit) {
-  return !!unit.qrGenerated
+  return !!unit.qrGenerated;
 }
 
 /**
@@ -35,14 +35,14 @@ function hasUnitCode(unit) {
 export function QRCodesPage() {
   const [tab, setTab] = useState("products");
   const [category, setCategory] = useState("all");
-  const [bulkMode, setBulkMode] = useState(false)
-  const [selectedIds, setSelectedIds] = useState([])
-  const [generating, setGenerating] = useState(false)
-  const [generateError, setGenerateError] = useState('')
-  const [unitBulkMode, setUnitBulkMode] = useState(false)
-  const [selectedUnitIds, setSelectedUnitIds] = useState([])
-  const [unitGenerating, setUnitGenerating] = useState(false)
-  const [unitGenerateError, setUnitGenerateError] = useState('')
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
+  const [unitBulkMode, setUnitBulkMode] = useState(false);
+  const [selectedUnitIds, setSelectedUnitIds] = useState([]);
+  const [unitGenerating, setUnitGenerating] = useState(false);
+  const [unitGenerateError, setUnitGenerateError] = useState("");
 
   const { loading, products, units, floorMaps } = useTracker(() => {
     // Meteor.subscribe only exists on the client; static/server renders
@@ -65,55 +65,51 @@ export function QRCodesPage() {
     category === "all" ? products : products.filter((p) => p.category === category);
   const floorMapName = (unit) => floorMaps.find((f) => f._id === unit.floorMapId)?.name || "";
 
-  const codelessProducts = products.filter((p) => !hasCode(p))
-  const codelessUnits = units.filter((u) => !hasUnitCode(u))
+  const codelessProducts = products.filter((p) => !hasCode(p));
+  const codelessUnits = units.filter((u) => !hasUnitCode(u));
 
   function toggleSelected(id) {
-    if (selectedIds.includes(id))
-      setSelectedIds(selectedIds.filter((x) => x !== id))
-    else
-    setSelectedIds([...selectedIds, id])
+    if (selectedIds.includes(id)) setSelectedIds(selectedIds.filter((x) => x !== id));
+    else setSelectedIds([...selectedIds, id]);
   }
 
   function selectAllCodeless() {
-    setSelectedIds(codelessProducts.map((p) => p._id))
+    setSelectedIds(codelessProducts.map((p) => p._id));
   }
 
   async function handleGenerate() {
-    setGenerating(true)
-    setGenerateError('')
+    setGenerating(true);
+    setGenerateError("");
     try {
-      await callMethod("products.bulkGenerateCodes", { productIds: selectedIds })
-      setSelectedIds([])
-      setBulkMode(false)
+      await callMethod("products.bulkGenerateCodes", { productIds: selectedIds });
+      setSelectedIds([]);
+      setBulkMode(false);
     } catch (err) {
-      setGenerateError(err.reason || err.message || 'Failed to generate codes.')
+      setGenerateError(err.reason || err.message || "Failed to generate codes.");
     }
-    setGenerating(false)
+    setGenerating(false);
   }
 
   function toggleSelectedUnit(id) {
-    if (selectedUnitIds.includes(id))
-      setSelectedUnitIds(selectedUnitIds.filter((x) => x !== id))
-    else
-    setSelectedUnitIds([...selectedUnitIds, id])
+    if (selectedUnitIds.includes(id)) setSelectedUnitIds(selectedUnitIds.filter((x) => x !== id));
+    else setSelectedUnitIds([...selectedUnitIds, id]);
   }
 
   function selectAllCodelessUnits() {
-    setSelectedUnitIds(codelessUnits.map((u) => u._id))
+    setSelectedUnitIds(codelessUnits.map((u) => u._id));
   }
 
   async function handleGenerateUnits() {
-    setUnitGenerating(true)
-    setUnitGenerateError('')
+    setUnitGenerating(true);
+    setUnitGenerateError("");
     try {
-      await callMethod("storageUnits.bulkGenerateCodes", { unitIds: selectedUnitIds })
-      setSelectedUnitIds([])
-      setUnitBulkMode(false)
+      await callMethod("storageUnits.bulkGenerateCodes", { unitIds: selectedUnitIds });
+      setSelectedUnitIds([]);
+      setUnitBulkMode(false);
     } catch (err) {
-      setUnitGenerateError(err.reason || err.message || 'Failed to generate codes.')
+      setUnitGenerateError(err.reason || err.message || "Failed to generate codes.");
     }
-    setUnitGenerating(false)
+    setUnitGenerating(false);
   }
 
   const rowStyle = {
@@ -146,8 +142,8 @@ export function QRCodesPage() {
           </Link>
         </div>
         <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: "4px 0 0" }}>
-          Product barcodes open the product&apos;s page when scanned; storage unit QR codes open
-          the unit&apos;s page. Print labels from each detail page, or scan with the button above.
+          Product barcodes open the product&apos;s page when scanned; storage unit QR codes open the
+          unit&apos;s page. Print labels from each detail page, or scan with the button above.
         </p>
       </div>
 
@@ -188,7 +184,9 @@ export function QRCodesPage() {
                 className={bulkMode ? "bulk-generate-toggle active" : "bulk-generate-toggle"}
                 onClick={() => setBulkMode(!bulkMode)}
               >
-                {bulkMode ? "‹ Back to codes" : `Select products to generate codes (${codelessProducts.length})`}
+                {bulkMode
+                  ? "‹ Back to codes"
+                  : `Select products to generate codes (${codelessProducts.length})`}
               </button>
             </div>
           )}
@@ -234,12 +232,9 @@ export function QRCodesPage() {
               <div style={emptyStyle}>Every product already has a code.</div>
             ) : (
               codelessProducts.map((product) => {
-                const checked = selectedIds.includes(product._id)
+                const checked = selectedIds.includes(product._id);
                 return (
-                  <label
-                    key={product._id}
-                    className={checked ? "code-row selected" : "code-row"}
-                  >
+                  <label key={product._id} className={checked ? "code-row selected" : "code-row"}>
                     <input
                       type="checkbox"
                       className="code-row-checkbox"
@@ -255,7 +250,7 @@ export function QRCodesPage() {
                       </div>
                     </div>
                   </label>
-                )
+                );
               })
             )}
           </div>
@@ -304,7 +299,7 @@ export function QRCodesPage() {
               <div style={emptyStyle}>Every storage unit already has a code.</div>
             ) : (
               codelessUnits.map((unit) => {
-                const checked = selectedUnitIds.includes(unit._id)
+                const checked = selectedUnitIds.includes(unit._id);
                 return (
                   <label key={unit._id} className={checked ? "code-row selected" : "code-row"}>
                     <input
@@ -321,7 +316,7 @@ export function QRCodesPage() {
                       </div>
                     </div>
                   </label>
-                )
+                );
               })
             )}
           </div>

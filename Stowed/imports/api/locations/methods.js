@@ -308,33 +308,34 @@ Meteor.methods({
     await StorageUnits.removeAsync(storageUnitId);
   },
 
-  async 'storageUnits.bulkGenerateCodes'({unitIds}) {
-    check(unitIds, [String])
+  async "storageUnits.bulkGenerateCodes"({ unitIds }) {
+    check(unitIds, [String]);
 
     if (!this.userId) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.")
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
-    await requirePermission(this.userId, "locations.bulkGenerateCodes")
-    const orgId = await getCallerOrgId(this.userId)
-    const debugMode = false
+    await requirePermission(this.userId, "locations.bulkGenerateCodes");
+    const orgId = await getCallerOrgId(this.userId);
 
-    const now = new Date()
-    let updated = 0
-    const results = []
+    const now = new Date();
+    let updated = 0;
+    const results = [];
     for (const unitId of unitIds) {
-      const unit = await StorageUnits.findOneAsync({ _id: unitId, orgId })
-      if (!unit) { continue }
+      const unit = await StorageUnits.findOneAsync({ _id: unitId, orgId });
+      if (!unit) {
+        continue;
+      }
       if (unit.qrGenerated) {
-          results.push({ unitId, skipped: true })
-        continue
+        results.push({ unitId, skipped: true });
+        continue;
       }
 
-      await StorageUnits.updateAsync(unitId, { $set: { qrGenerated: true, updatedAt: now } })
-      updated = updated + 1
-      results.push({ unitId, skipped: false })
+      await StorageUnits.updateAsync(unitId, { $set: { qrGenerated: true, updatedAt: now } });
+      updated = updated + 1;
+      results.push({ unitId, skipped: false });
     }
 
-    return { updated, results }
+    return { updated, results };
   },
 
   /**

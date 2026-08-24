@@ -139,7 +139,7 @@ export function ProductDetailView({
 
   // For each image, determine whether it originates from the uploaded images
   // `imageUrls` (current edited/uploaded images)
-  // `item.images` (persisted uploads) as removable sources. 
+  // `item.images` (persisted uploads) as removable sources.
   // Fallback `photoUrl` or `catalogImages` are not removable.
   const removableFlags = galleryImages.map((img) => {
     if (imageUrls.length > 0) return imageUrls.includes(img);
@@ -503,9 +503,7 @@ export function ProductDetailView({
               <div className="section-content qr-section">
                 <div className="qr-container">
                   <ProductBarcode value={getBarcodeValue(item)} className="qr-code" />
-                  <p className="qr-label">
-                    {item.sku ? `SKU: ${item.sku}` : `ID: ${item._id}`}
-                  </p>
+                  <p className="qr-label">{item.sku ? `SKU: ${item.sku}` : `ID: ${item._id}`}</p>
                   <p className="qr-label">{item.location}</p>
                 </div>
                 <button className="btn-print" onClick={() => window.print()}>

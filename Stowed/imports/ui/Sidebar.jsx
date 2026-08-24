@@ -37,8 +37,8 @@ function SidebarLink({ to, label, icon, end }) {
 }
 
 function SectionLabel({ label, isOpen, onToggle }) {
-  return ( 
-  <button
+  return (
+    <button
       type="button"
       className={`sidebar-section-label${isOpen ? " open" : ""}`}
       onClick={onToggle}
@@ -56,7 +56,7 @@ export function Sidebar() {
   const navigate = useNavigate();
   const [openSection, setOpenSection] = useState(null);
   const toggle = (name) => setOpenSection(openSection === name ? null : name);
-   
+
   const organisation = useTracker(() => {
     if (!currentUser) return null;
     // Subscribing inside the tracker lets Meteor reactively re-run this when the
@@ -102,12 +102,14 @@ export function Sidebar() {
 
         <nav className="sidebar-nav">
           <section className="sidebar-section">
-            <SectionLabel label="Workspace"
+            <SectionLabel
+              label="Workspace"
               isOpen={openSection === "Workspace"}
               onToggle={() => toggle("Workspace")}
             />
-            <div className={`sidebar-section-links${openSection === "Workspace" ? " open" : ""}`}
-              onClick={() => setOpenSection(null)} 
+            <div
+              className={`sidebar-section-links${openSection === "Workspace" ? " open" : ""}`}
+              onClick={() => setOpenSection(null)}
             >
               {WORKSPACE_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
                 (link) => (
@@ -123,7 +125,8 @@ export function Sidebar() {
               isOpen={openSection === "Tools"}
               onToggle={() => toggle("Tools")}
             />
-            <div className={`sidebar-section-links${openSection === "Tools" ? " open" : ""}`}
+            <div
+              className={`sidebar-section-links${openSection === "Tools" ? " open" : ""}`}
               onClick={() => setOpenSection(null)}
             >
               {TOOL_LINKS.map((link) => (
@@ -152,7 +155,8 @@ export function Sidebar() {
               isOpen={openSection === "Account"}
               onToggle={() => toggle("Account")}
             />
-            <div className={`sidebar-section-links${openSection === "Account" ? " open" : ""}`}
+            <div
+              className={`sidebar-section-links${openSection === "Account" ? " open" : ""}`}
               onClick={() => setOpenSection(null)}
             >
               {ACCOUNT_LINKS.map((link) => (

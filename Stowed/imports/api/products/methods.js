@@ -382,40 +382,41 @@ Meteor.methods({
     );
   },
 
-  async 'products.bulkGenerateCodes'({productIds}) {
-    check(productIds, [String])
+  async "products.bulkGenerateCodes"({ productIds }) {
+    check(productIds, [String]);
 
     if (!this.userId) {
-      throw new Meteor.Error("not-authorised", "You must be logged in.")
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
     }
-    await requirePermission(this.userId, "products.bulkGenerateCodes")
-    const orgId = await getCallerOrgId(this.userId)
-    const debugMode = false
+    await requirePermission(this.userId, "products.bulkGenerateCodes");
+    const orgId = await getCallerOrgId(this.userId);
 
-    const now = new Date()
-    let updated = 0
-    const results = []
+    const now = new Date();
+    let updated = 0;
+    const results = [];
     for (const productId of productIds) {
-      const product = await Products.findOneAsync({ _id: productId, orgId })
-      if (!product) { continue }
+      const product = await Products.findOneAsync({ _id: productId, orgId });
+      if (!product) {
+        continue;
+      }
       if (product.sku && product.sku.trim()) {
-          results.push({ productId, sku: product.sku, skipped: true })
-        continue
+        results.push({ productId, sku: product.sku, skipped: true });
+        continue;
       }
 
-      let sku = generateSku()
-      let clash = await Products.findOneAsync({ orgId, sku })
+      let sku = generateSku();
+      let clash = await Products.findOneAsync({ orgId, sku });
       while (clash) {
-        sku = generateSku()
-        clash = await Products.findOneAsync({ orgId, sku })
+        sku = generateSku();
+        clash = await Products.findOneAsync({ orgId, sku });
       }
 
-      await Products.updateAsync(productId, { $set: { sku, updatedAt: now } })
-      updated = updated + 1
-      results.push({ productId, sku, skipped: false })
+      await Products.updateAsync(productId, { $set: { sku, updatedAt: now } });
+      updated = updated + 1;
+      results.push({ productId, sku, skipped: false });
     }
 
-    return { updated, results }
+    return { updated, results };
   },
 });
 
@@ -423,7 +424,7 @@ Meteor.methods({
   /**
    * Resolve a scanned barcode value value in caller's org.
    * SKUs are not unique (barcodes for SKU-less products encode the _id).
-   * falls back to a direct _id lookup 
+   * falls back to a direct _id lookup
    */
   async "products.findByCode"({ code }) {
     check(code, String);
@@ -459,7 +460,10 @@ Meteor.methods({
  * Used by the scan-driven stock methods so the "sum of records === total"
  */
 async function syncProductTotal(productId, now) {
-  const records = await ProductRecords.find({ productId }, { fields: { quantity: 1 } }).fetchAsync();
+  const records = await ProductRecords.find(
+    { productId },
+    { fields: { quantity: 1 } },
+  ).fetchAsync();
   const total = records.reduce((sum, r) => sum + (r.quantity || 0), 0);
   await Products.updateAsync(productId, { $set: { totalQuantity: total, updatedAt: now } });
   return total;
@@ -491,7 +495,10 @@ Meteor.methods({
 
     if (!record) {
       if (delta < 0) {
-        throw new Meteor.Error("no-stock-at-location", "This product has no stock at that location.");
+        throw new Meteor.Error(
+          "no-stock-at-location",
+          "This product has no stock at that location.",
+        );
       }
       await ProductRecords.insertAsync({
         productId,

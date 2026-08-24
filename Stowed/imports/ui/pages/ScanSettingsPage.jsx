@@ -156,8 +156,8 @@ export function ScanSettingsPage() {
           {testMessage && <p className="scan-settings-message">{testMessage}</p>}
           {!secure && (
             <p className="scan-settings-warning">
-              Camera access needs a secure connection (HTTPS or localhost). This page is on
-              plain HTTP, so the browser will refuse the camera regardless of permission.
+              Camera access needs a secure connection (HTTPS or localhost). This page is on plain
+              HTTP, so the browser will refuse the camera regardless of permission.
             </p>
           )}
         </div>
@@ -167,8 +167,8 @@ export function ScanSettingsPage() {
             <h2 className="section-title">How to re-allow the camera</h2>
             <div className="section-content">
               <p className="scan-settings-note">
-                Once a site is blocked, browsers do not let the site ask again — you have to
-                unblock it in the browser itself. Steps for your browser:
+                Once a site is blocked, browsers do not let the site ask again — you have to unblock
+                it in the browser itself. Steps for your browser:
               </p>
               <ol className="scan-settings-steps">
                 {INSTRUCTIONS[browser].map((step) => (

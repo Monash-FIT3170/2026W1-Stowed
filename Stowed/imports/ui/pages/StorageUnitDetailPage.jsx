@@ -41,7 +41,7 @@ export function StorageUnitDetailPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-    const { role } = useAuth();
+  const { role } = useAuth();
   const canAdjustStock = hasClientPermission(role, "products.adjustStock");
   const [stockError, setStockError] = useState("");
 
@@ -267,7 +267,7 @@ export function StorageUnitDetailPage() {
           </div>
         </section>
 
-                <section className="storage-panel storage-panel-wide">
+        <section className="storage-panel storage-panel-wide">
           <div className="storage-section-title">
             <span className="storage-section-icon">SL</span>
             What is stored in this unit
@@ -291,10 +291,15 @@ export function StorageUnitDetailPage() {
                           liveItems ? (
                             <div className="storage-stored-item" key={item.recordId}>
                               <span>
-                                <Link to={`/inventory/${item.productId}`} className="storage-item-link">
+                                <Link
+                                  to={`/inventory/${item.productId}`}
+                                  className="storage-item-link"
+                                >
                                   {item.name}
                                 </Link>
-                                <small>{item.sku ? `SKU ${item.sku}` : `ID ${item.productId}`}</small>
+                                <small>
+                                  {item.sku ? `SKU ${item.sku}` : `ID ${item.productId}`}
+                                </small>
                               </span>
                               {canAdjustStock ? (
                                 <StockAdjuster
