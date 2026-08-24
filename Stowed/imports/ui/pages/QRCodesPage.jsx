@@ -23,6 +23,10 @@ function hasCode(product) {
   return !!(product.sku && product.sku.trim())
 }
 
+function hasUnitCode(unit) {
+  return !!unit.qrGenerated
+}
+
 /**
  * Codes hub: every product's Code-128 barcode and every storage unit's QR.
  * Product rows filter by category; each row links to its detail page where
@@ -35,6 +39,9 @@ export function QRCodesPage() {
   const [selectedIds, setSelectedIds] = useState([])
   const [generating, setGenerating] = useState(false)
   const [generateError, setGenerateError] = useState('')
+  const [unitBulkMode, setUnitBulkMode] = useState(false)
+  const [selectedUnitIds, setSelectedUnitIds] = useState([])
+  const [unitGenerating, setUnitGenerating] = useState(false)
 
   const { loading, products, units, floorMaps } = useTracker(() => {
     // Meteor.subscribe only exists on the client; static/server renders
@@ -58,6 +65,7 @@ export function QRCodesPage() {
   const floorMapName = (unit) => floorMaps.find((f) => f._id === unit.floorMapId)?.name || "";
 
   const codelessProducts = products.filter((p) => !hasCode(p))
+  const codelessUnits = units.filter((u) => !hasUnitCode(u))
 
   function toggleSelected(id) {
     if (selectedIds.includes(id))
@@ -81,6 +89,29 @@ export function QRCodesPage() {
       setGenerateError(err.reason || err.message || 'Failed to generate codes.')
     }
     setGenerating(false)
+  }
+
+  function toggleSelectedUnit(id) {
+    if (selectedUnitIds.includes(id))
+      setSelectedUnitIds(selectedUnitIds.filter((x) => x !== id))
+    else
+    setSelectedUnitIds([...selectedUnitIds, id])
+  }
+
+  function selectAllCodelessUnits() {
+    setSelectedUnitIds(codelessUnits.map((u) => u._id))
+  }
+
+  async function handleGenerateUnits() {
+    setUnitGenerating(true)
+    try {
+      await callMethod("storageUnits.bulkGenerateCodes", { unitIds: selectedUnitIds })
+      setSelectedUnitIds([])
+      setUnitBulkMode(false)
+    } catch (err) {
+      console.log('bulk generate failed', err)
+    }
+    setUnitGenerating(false)
   }
 
   const rowStyle = {
@@ -159,6 +190,11 @@ export function QRCodesPage() {
               </button>
             </div>
           )}
+          {tab === "units" && (
+            <button onClick={() => setUnitBulkMode(!unitBulkMode)}>
+              {unitBulkMode ? "Cancel bulk generate" : "Bulk generate"}
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -231,6 +267,34 @@ export function QRCodesPage() {
                     </div>
                   </div>
                   <ProductBarcode value={getBarcodeValue(product)} height={40} />
+                </div>
+              ))
+            )}
+          </div>
+        ) : tab === "units" && unitBulkMode ? (
+          <div className="detail-section">
+            <div>
+              <button onClick={selectAllCodelessUnits}>Select all</button>
+              <button
+                disabled={selectedUnitIds.length === 0 || unitGenerating}
+                onClick={handleGenerateUnits}
+              >
+                {unitGenerating ? "Generating..." : `Generate (${selectedUnitIds.length})`}
+              </button>
+            </div>
+            {codelessUnits.length === 0 ? (
+              <div>Every storage unit already has a code.</div>
+            ) : (
+              codelessUnits.map((unit) => (
+                <div key={unit._id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selectedUnitIds.includes(unit._id)}
+                      onChange={() => toggleSelectedUnit(unit._id)}
+                    />
+                    {unit.name}
+                  </label>
                 </div>
               ))
             )}
