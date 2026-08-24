@@ -65,7 +65,7 @@ export function StorageUnit({
           fill={unit.fill}
           stroke={isSelected ? COLOURS.ACCENT : "transparent"}
           strokeWidth={2}
-          cornerRadius={4}
+          cornerRadius={0}
           opacity={0.85}
         />
       )}
