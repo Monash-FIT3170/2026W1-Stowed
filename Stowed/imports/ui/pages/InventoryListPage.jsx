@@ -14,11 +14,25 @@ import "../Global.css";
 import {
   searchProducts,
   filterLowStock,
+  filterOutOfStock,
   filterByStorageUnit,
   filterByCategory,
 } from "../../api/products/filters";
 
-const INVENTORY_FILTER_IDS = new Set(["all", "low-stock", "category", "location"]);
+const NO_LOCATIONS = "No locations";
+
+// One source of truth for the chips and for the ?filter= values accepted from
+// the URL. Kept as separate lists, a newly added chip renders but is rejected by
+// the guard below, which silently drops the page back to "all".
+const INVENTORY_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "low-stock", label: "⚠ Low stock" },
+  { id: "out-of-stock", label: "Out of stock" },
+  { id: "category", label: "Category ▾" },
+  { id: "location", label: "Location ▾" },
+];
+
+const INVENTORY_FILTER_IDS = new Set(INVENTORY_FILTERS.map((filter) => filter.id));
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -106,19 +120,41 @@ export function InventoryListPage() {
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
-    if (!records.length) return "-";
-    const first = records[0];
-    const loc = storageLocations.find((l) => l._id === first.locationId);
-    if (!loc) return "-";
+    // Nothing stored anywhere, or every record points at a location that no
+    // longer exists: say so rather than leaving the cell looking empty.
+    if (!records.length) return NO_LOCATIONS;
+
+    // Lead with the location holding the most stock, not whichever record the
+    // collection happened to return first. Records are merged per location
+    // when they are written, so there is one record per location here.
+    const ranked = [...records].sort((a, b) => b.quantity - a.quantity);
+    const primary = ranked.find((r) => storageLocations.some((l) => l._id === r.locationId));
+    if (!primary) return NO_LOCATIONS;
+
+    const loc = storageLocations.find((l) => l._id === primary.locationId);
     const unit = storageUnits.find((u) => u._id === loc.storageUnitId);
     const label = unit ? `${unit.name} · ${loc.name}` : loc.name;
-    return records.length > 1 ? `${label} +${records.length - 1}` : label;
+
+    const otherCount = records.length - 1;
+    if (otherCount < 1) return label;
+
+    return (
+      <>
+        {label}
+        <Link to={`/inventory/${productId}`} className="item-location-more">
+          and {otherCount} other location{otherCount === 1 ? "" : "s"}
+        </Link>
+      </>
+    );
   }
 
   const filteredItems = useMemo(() => {
     let result = items;
     if (activeFilter === "low-stock") {
       result = filterLowStock(result);
+    }
+    if (activeFilter === "out-of-stock") {
+      result = filterOutOfStock(result);
     }
     if (activeFilter === "category") {
       result = filterByCategory(result, categoryFilterId);
@@ -142,6 +178,7 @@ export function InventoryListPage() {
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const lowStockCount = filterLowStock(items).length;
+  const outOfStockCount = filterOutOfStock(items).length;
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedProductIds.includes(item._id)),
@@ -185,12 +222,15 @@ export function InventoryListPage() {
     }
   };
 
-  const filters = [
-    { id: "all", label: "All", count: items.length },
-    { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
-    { id: "category", label: "Category ▾" },
-    { id: "location", label: "Location ▾" },
-  ];
+  const filterCounts = {
+    all: items.length,
+    "low-stock": lowStockCount,
+    "out-of-stock": outOfStockCount,
+  };
+  const filters = INVENTORY_FILTERS.map((filter) => ({
+    ...filter,
+    count: filterCounts[filter.id],
+  }));
 
   const handleFilterChange = (filter) => {
     const nextSearchParams = new URLSearchParams(searchParams);
@@ -229,7 +269,7 @@ export function InventoryListPage() {
         </div>
       </div>
 
-      <div style={{ padding: "0 28px 48px" }}>
+      <div className="inventory-list-body">
         <div className="search-bar-container">
           <input
             type="text"
@@ -330,6 +370,7 @@ export function InventoryListPage() {
                 <span>Stock</span>
                 <span>Status</span>
                 <span />
+                <span />
               </div>
               {pagedItems.map((item) => (
                 <div key={item._id} className="table-row">
@@ -351,6 +392,9 @@ export function InventoryListPage() {
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
                   <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />
+                  <Link to={`/inventory/${item._id}`} className="item-view-more">
+                    View more
+                  </Link>
                   <label className="row-select">
                     <input
                       type="checkbox"

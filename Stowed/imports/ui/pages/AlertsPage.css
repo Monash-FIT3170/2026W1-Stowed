@@ -1,5 +1,5 @@
 /* Stocktake alerts list. Colours follow the StatusBadge palette so an overdue
-   alert reads the same as a "Low!" badge elsewhere in the app. */
+   alert reads the same as a low stock badge elsewhere in the app. */
 
 .alerts-summary {
   display: flex;

@@ -44,7 +44,7 @@ export function CreateProductPage() {
 
   useEffect(() => {
     if (role !== null && !hasClientPermission(role, "products.create")) {
-      navigate("/inventory/list", { replace: true });
+      navigate("/inventory", { replace: true });
     }
   }, [role, navigate]);
 
@@ -163,7 +163,7 @@ export function CreateProductPage() {
         })),
       });
 
-      navigate("/inventory/list");
+      navigate("/inventory");
     } catch (error) {
       console.error("Failed to create product:", error);
     }

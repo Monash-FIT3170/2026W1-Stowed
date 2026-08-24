@@ -41,7 +41,7 @@ export function EditProductPage() {
 
   useEffect(() => {
     if (role !== null && !hasClientPermission(role, "products.update")) {
-      navigate("/inventory/list", { replace: true });
+      navigate("/inventory", { replace: true });
     }
   }, [role, navigate]);
 
@@ -282,7 +282,7 @@ export function EditProductPage() {
     <div className="product-detail-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <Link to="/inventory/list" className="breadcrumb-link">
+          <Link to="/inventory" className="breadcrumb-link">
             Inventory
           </Link>
           <span className="breadcrumb-separator">/</span>

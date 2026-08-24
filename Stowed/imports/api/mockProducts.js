@@ -4,7 +4,6 @@ export const mockProducts = [
   {
     _id: "1",
     name: "AAA Battery Pack",
-    tag: "electrical",
     description: "Alkaline rechargeable AAA battery pack (4-pack).",
     photoUrl:
       "https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png",
@@ -28,7 +27,6 @@ export const mockProducts = [
   {
     _id: "2",
     name: "Safety Helmet",
-    tag: "safety",
     description: "Industrial safety helmet with adjustable strap.",
     photoUrl:
       "https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1",
@@ -52,7 +50,6 @@ export const mockProducts = [
   {
     _id: "3",
     name: "Hard Hat Liner",
-    tag: "safety",
     description: "Replacement liner for hard hats.",
     photoUrl: "https://www.example.com/images/liner.png",
     updatedAt: new Date("2026-04-25"),
@@ -73,7 +70,6 @@ export const mockProducts = [
   {
     _id: "4",
     name: "Work Gloves",
-    tag: "safety",
     description: "General purpose work gloves.",
     photoUrl: "https://www.example.com/images/gloves.png",
     updatedAt: new Date("2026-04-24"),
@@ -94,7 +90,6 @@ export const mockProducts = [
   {
     _id: "5",
     name: "Steel Toe Boots",
-    tag: "safety",
     description: "Durable steel-toe work boots.",
     photoUrl: "/boots.png",
     updatedAt: new Date("2026-04-22"),
@@ -115,7 +110,6 @@ export const mockProducts = [
   {
     _id: "6",
     name: "Hex bolts M8",
-    tag: "fasteners",
     description: "M8 hex bolts, stainless steel.",
     photoUrl: "https://www.example.com/images/bolts.png",
     updatedAt: new Date("2026-04-20"),
@@ -136,7 +130,6 @@ export const mockProducts = [
   {
     _id: "7",
     name: "Wood screws",
-    tag: "fasteners",
     description: "Assorted wood screws.",
     photoUrl: "https://www.example.com/images/screws.png",
     updatedAt: new Date("2026-04-18"),
@@ -157,7 +150,6 @@ export const mockProducts = [
   {
     _id: "8",
     name: "Cable ties 200mm",
-    tag: "misc",
     description: "200mm nylon cable ties, pack of 100.",
     photoUrl: "https://www.example.com/images/ties.png",
     updatedAt: new Date("2026-04-15"),
