@@ -3,13 +3,30 @@ import { useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { parseScannedUrl } from "/imports/api/products/codes";
+import { isDesktopViewport } from "../hooks/deviceDimension";
 import "../Global.css";
 import "./ScanPage.css";
+
+/**
+ * Where a scanned product should open. Checked at navigation time rather than
+ * held in state, so the scanner callback never reads a stale value.
+ */
+function scannedProductRoute(productId) {
+  return isDesktopViewport()
+    ? `/inventory/${productId}/edit?from=scan`
+    : `/scan/product/${productId}`;
+}
 
 /**
  * Camera scanner for product barcodes (Code-128) and storage unit QR codes.
  *  - QR with our own URL  -> navigate straight to that page
  *  - anything else        -> products.findByCode (sku, then _id) and navigate
+ *
+ * Where a product code lands depends on the screen:
+ *  - phone / tablet -> /scan/product/:id, the quick +/- stocktake screen.
+ *                      The full product editing page is not practical here,
+ *                      the screen is too small for it.
+ *  - laptop and up  -> /inventory/:id/edit, the full product editing page
  *
  * Camera requires a secure context: localhost works in dev, deployments
  * need HTTPS or the camera will not open.
@@ -34,7 +51,7 @@ export function ScanPage() {
     // treat it as a product code (sku or _id).
     const result = await Meteor.callAsync("products.findByCode", { code: text });
     if (result.matches.length === 1) {
-      navigate(`/scan/product/${result.matches[0]._id}`);
+      navigate(scannedProductRoute(result.matches[0]._id));
       return true;
     }
     if (result.matches.length > 1) {
@@ -51,10 +68,7 @@ export function ScanPage() {
 
   useEffect(() => {
     const scanner = new Html5Qrcode("scan-region", {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-      ],
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128],
       useBarCodeDetectorIfSupported: true,
       verbose: false,
     });
@@ -159,7 +173,7 @@ export function ScanPage() {
                 key={match._id}
                 type="button"
                 className="scan-match-row"
-                onClick={() => navigate(`/scan/product/${match._id}`)}
+                onClick={() => navigate(scannedProductRoute(match._id))}
               >
                 <span className="scan-match-name">{match.name}</span>
                 {match.sku && <span className="scan-match-sku">SKU {match.sku}</span>}

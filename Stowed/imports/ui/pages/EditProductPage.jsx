@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
@@ -35,7 +35,15 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 export function EditProductPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { role } = useAuth();
+
+  // ScanPage sends laptop users straight here with ?from=scan. Jump to the
+  // stock they are standing in front of instead of making them hunt for it.
+  const cameFromScan = searchParams.get("from") === "scan";
+  const storageSectionRef = useRef(null);
+  const scannedQuantityRef = useRef(null);
+  const [scanFocusDone, setScanFocusDone] = useState(false);
 
   useEffect(() => {
     if (role !== null && !hasClientPermission(role, "products.update")) {
@@ -99,6 +107,18 @@ export function EditProductPage() {
       setInitialised(true);
     }
   }, [loading, product, originalRecords, initialised]);
+
+  // Runs once, after the form has been filled from the product record.
+  // originalRecords is sorted by quantity, so index 0 is the main location.
+  useEffect(() => {
+    if (!cameFromScan || !initialised || scanFocusDone) return;
+    const input = scannedQuantityRef.current;
+    if (!input) return;
+    storageSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    input.focus();
+    input.select();
+    setScanFocusDone(true);
+  }, [cameFromScan, initialised, scanFocusDone]);
 
   const parsedTotal = parseInt(totalQuantity, 10);
   const nameIsValid = name.trim().length > 0;
@@ -270,6 +290,17 @@ export function EditProductPage() {
             Edit <em>{name}</em>
           </h1>
         </div>
+        {cameFromScan && (
+          <p
+            style={{
+              margin: "4px 0 0",
+              fontSize: "13px",
+              color: "var(--text-muted)",
+            }}
+          >
+            Scanned — update the stock below, then save.
+          </p>
+        )}
       </div>
 
       <div className="product-detail-grid">
@@ -368,7 +399,7 @@ export function EditProductPage() {
             </div>
           </div>
 
-          <div className="detail-section">
+          <div className="detail-section" ref={storageSectionRef}>
             <h2 className="section-title">
               <span className="section-badge lc">LC</span>
               Storage locations
@@ -412,6 +443,7 @@ export function EditProductPage() {
                     type="number"
                     min="0"
                     placeholder="Qty"
+                    ref={index === 0 ? scannedQuantityRef : null}
                     value={assignment.quantity}
                     onChange={(e) => updateAssignment(index, "quantity", e.target.value)}
                     className="form-input"
