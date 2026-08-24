@@ -9,6 +9,19 @@ import { ProductBarcode } from "../components/ProductBarcode";
 import { LocationQRCode } from "../components/LocationQRCode";
 import "../Global.css";
 
+function callMethod(methodName, params) {
+  return new Promise((resolve, reject) => {
+    Meteor.call(methodName, params, (error, result) => {
+      if (error) reject(error)
+        else resolve(result)
+    });
+  });
+}
+
+function hasCode(product) {
+  return !!(product.sku && product.sku.trim())
+}
+
 /**
  * Codes hub: every product's Code-128 barcode and every storage unit's QR.
  * Product rows filter by category; each row links to its detail page where
@@ -17,6 +30,9 @@ import "../Global.css";
 export function QRCodesPage() {
   const [tab, setTab] = useState("products");
   const [category, setCategory] = useState("all");
+  const [bulkMode, setBulkMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState([])
+  const [generating, setGenerating] = useState(false)
 
   const { loading, products, units, floorMaps } = useTracker(() => {
     // Meteor.subscribe only exists on the client; static/server renders
@@ -38,6 +54,31 @@ export function QRCodesPage() {
   const visibleProducts =
     category === "all" ? products : products.filter((p) => p.category === category);
   const floorMapName = (unit) => floorMaps.find((f) => f._id === unit.floorMapId)?.name || "";
+
+  const codelessProducts = products.filter((p) => !hasCode(p))
+
+  function toggleSelected(id) {
+    if (selectedIds.includes(id))
+      setSelectedIds(selectedIds.filter((x) => x !== id))
+    else
+    setSelectedIds([...selectedIds, id])
+  }
+
+  function selectAllCodeless() {
+    setSelectedIds(codelessProducts.map((p) => p._id))
+  }
+
+  async function handleGenerate() {
+    setGenerating(true)
+    try {
+      await callMethod("products.bulkGenerateCodes", { productIds: selectedIds })
+      setSelectedIds([])
+      setBulkMode(false)
+    } catch (err) {
+      console.log('bulk generate failed', err)
+    }
+    setGenerating(false)
+  }
 
   const rowStyle = {
     display: "flex",
@@ -89,6 +130,11 @@ export function QRCodesPage() {
             Storage unit QR codes
           </button>
           {tab === "products" && (
+            <button onClick={() => setBulkMode(!bulkMode)}>
+              {bulkMode ? "Cancel bulk generate" : "Bulk generate"}
+            </button>
+          )}
+          {tab === "products" && !bulkMode && (
             <select
               className="form-input"
               style={{ width: "auto", marginLeft: "auto" }}
@@ -109,6 +155,31 @@ export function QRCodesPage() {
         {loading ? (
           <div className="detail-section">
             <div style={emptyStyle}>Loading…</div>
+          </div>
+        ) : tab === "products" && bulkMode ? (
+          <div className="detail-section">
+            <div>
+              <button onClick={selectAllCodeless}>Select all</button>
+              <button disabled={selectedIds.length === 0 || generating} onClick={handleGenerate}>
+                {generating ? "Generating..." : `Generate (${selectedIds.length})`}
+              </button>
+            </div>
+            {codelessProducts.length === 0 ? (
+              <div>Every product already has a code.</div>
+            ) : (
+              codelessProducts.map((product) => (
+                <div key={product._id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(product._id)}
+                      onChange={() => toggleSelected(product._id)}
+                    />
+                    {product.name}
+                  </label>
+                </div>
+              ))
+            )}
           </div>
         ) : tab === "products" ? (
           <div className="detail-section">
