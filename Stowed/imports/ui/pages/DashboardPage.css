@@ -68,7 +68,6 @@
 .dashboard-customize-button:focus-visible,
 .dashboard-customizer button:focus-visible,
 .dashboard-widget-edit-bar button:focus-visible,
-.dashboard-show-more-button:focus-visible,
 .dashboard-cleared-state button:focus-visible {
   outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
@@ -556,35 +555,10 @@
   white-space: nowrap;
 }
 
-.dashboard-recent-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 8px 0;
-  border-top: 1px solid var(--border-light);
-}
-
-.dashboard-recent-footer span {
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
-.dashboard-show-more-button {
-  padding: 7px 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  background: var(--card-bg);
-  color: var(--text-dark);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.dashboard-show-more-button:hover {
-  border-color: var(--accent-secondary);
-  background: var(--input-bg);
+/* Invisible marker at the end of the list — scrolling it into view loads
+   the next batch automatically instead of a "Show N more" click. */
+.dashboard-recent-sentinel {
+  height: 1px;
 }
 
 .dashboard-snapshot-empty,
@@ -682,13 +656,8 @@
     display: none;
   }
 
-  .dashboard-snapshot-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .dashboard-stocktake-row,
-  .dashboard-low-stock-row,
-  .dashboard-recent-row {
+  .dashboard-low-stock-row {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
@@ -699,9 +668,45 @@
     text-align: left;
   }
 
+  /* Recent activity row: keep the date pinned top-right like a card
+     header instead of stacking it as its own full-width line below the
+     product name — same idea as everywhere else, less scrolling. */
+  .dashboard-recent-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "product time"
+      "product user";
+    align-items: start;
+    column-gap: 8px;
+    row-gap: 2px;
+  }
+
+  .dashboard-recent-product {
+    grid-area: product;
+  }
+
   .dashboard-recent-update {
-    align-items: flex-start;
-    text-align: left;
+    display: contents;
+  }
+
+  .dashboard-recent-time {
+    grid-area: time;
+    justify-self: end;
+  }
+
+  .dashboard-recent-user {
+    grid-area: user;
+    justify-self: end;
+  }
+
+  /* Let the list grow with the page instead of scrolling inside its own
+     boxed-in region — a nested scrollbar on a phone fights the page's
+     own scroll gesture. */
+  .dashboard-recent-scroll {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
   }
 }
 
