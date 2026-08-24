@@ -262,7 +262,7 @@ const normaliseVector = (vector) => {
  * @param {*} p3 point 3 
  * @returns 
  */
-const crossProd = (p1, p2, p3) => (p2.x - p1.x) * (p3.y = p2.y) - (p2.y - p1.y) * (p3.x - p2.x);
+const crossProd = (p1, p2, p3) => (p2.x - p1.x) * (p3.y - p2.y) - (p2.y - p1.y) * (p3.x - p2.x);
 
 
 /**
