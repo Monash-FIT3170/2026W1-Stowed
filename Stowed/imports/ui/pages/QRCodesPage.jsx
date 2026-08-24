@@ -132,29 +132,32 @@ export function QRCodesPage() {
           >
             Storage unit QR codes
           </button>
+
           {tab === "products" && (
-            <button
-              className={bulkMode ? "btn-primary" : "btn-secondary"}
-              onClick={() => setBulkMode(!bulkMode)}
-            >
-              {bulkMode ? "Cancel bulk generate" : "Bulk generate"}
-            </button>
-          )}
-          {tab === "products" && !bulkMode && (
-            <select
-              className="form-input"
-              style={{ width: "auto", marginLeft: "auto" }}
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              aria-label="Filter by category"
-            >
-              <option value="all">All categories ({products.length})</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto" }}>
+              {!bulkMode && (
+                <select
+                  className="form-input"
+                  style={{ width: "auto" }}
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  aria-label="Filter by category"
+                >
+                  <option value="all">All categories ({products.length})</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                className={bulkMode ? "bulk-generate-toggle active" : "bulk-generate-toggle"}
+                onClick={() => setBulkMode(!bulkMode)}
+              >
+                {bulkMode ? "‹ Back to codes" : `Select products to generate codes (${codelessProducts.length})`}
+              </button>
+            </div>
           )}
         </div>
 
