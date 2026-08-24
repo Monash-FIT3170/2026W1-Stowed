@@ -5,8 +5,8 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
-import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { ProductCategories } from "/imports/api/categories/collections";
+import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
@@ -16,6 +16,7 @@ import {
   filterLowStock,
   filterOutOfStock,
   filterByStorageUnit,
+  filterByCategory,
 } from "../../api/products/filters";
 
 const NO_LOCATIONS = "No locations";
@@ -25,8 +26,9 @@ const NO_LOCATIONS = "No locations";
 // the guard below, which silently drops the page back to "all".
 const INVENTORY_FILTERS = [
   { id: "all", label: "All" },
-  { id: "low-stock", label: "Low stock" },
+  { id: "low-stock", label: "⚠ Low stock" },
   { id: "out-of-stock", label: "Out of stock" },
+  { id: "category", label: "Category ▾" },
   { id: "location", label: "Location ▾" },
 ];
 
@@ -91,27 +93,30 @@ export function InventoryListPage() {
   const PAGE_SIZE = 15;
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
+  const [categoryFilterId, setCategoryFilterId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits, categories } =
+  const { items, loading, productRecords, categories, storageLocations, storageUnits } =
     useTracker(() => {
       const sub1 = Meteor.subscribe("products");
       Meteor.subscribe("productRecords");
-      Meteor.subscribe("locations.all");
       Meteor.subscribe("productCategories");
+      Meteor.subscribe("locations.all");
       return {
         items: Products.find().fetch(),
         loading: !sub1.ready(),
         productRecords: ProductRecords.find().fetch(),
+        categories: ProductCategories.find().fetch(),
         storageLocations: StorageLocations.find().fetch(),
         storageUnits: StorageUnits.find().fetch(),
-        categories: ProductCategories.find().fetch(),
       };
     }, []);
 
-  function getCategoryName(categoryId) {
-    if (!categoryId) return null;
-    return categories.find((category) => category._id === categoryId)?.name ?? null;
-  }
+  // Products store only a categoryId, so resolve names once per render pass
+  // rather than scanning the category list for every row.
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((cat) => [cat._id, cat.name])),
+    [categories],
+  );
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
@@ -151,12 +156,23 @@ export function InventoryListPage() {
     if (activeFilter === "out-of-stock") {
       result = filterOutOfStock(result);
     }
+    if (activeFilter === "category") {
+      result = filterByCategory(result, categoryFilterId);
+    }
     if (activeFilter === "location") {
       result = filterByStorageUnit(result, productRecords, storageLocations, locationFilterUnitId);
     }
     result = searchProducts(result, searchQuery);
     return result;
-  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
+  }, [
+    items,
+    activeFilter,
+    searchQuery,
+    categoryFilterId,
+    locationFilterUnitId,
+    storageLocations,
+    productRecords,
+  ]);
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -226,6 +242,7 @@ export function InventoryListPage() {
     setSearchParams(nextSearchParams);
     setCurrentPage(1);
     if (filter !== "location") setLocationFilterUnitId("");
+    if (filter !== "category") setCategoryFilterId("");
   };
 
   if (loading) return <div className="inventory-list-container">Loading...</div>;
@@ -272,6 +289,27 @@ export function InventoryListPage() {
           activeFilter={activeFilter}
           onFilterChange={handleFilterChange}
         />
+
+        {activeFilter === "category" && (
+          <div style={{ marginBottom: "12px" }}>
+            <select
+              value={categoryFilterId}
+              onChange={(e) => {
+                setCategoryFilterId(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="form-input"
+              style={{ maxWidth: "360px", background: "var(--card-bg)" }}
+            >
+              <option value="">All categories</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {activeFilter === "location" && (
           <div style={{ marginBottom: "12px" }}>
@@ -347,11 +385,9 @@ export function InventoryListPage() {
                     </Link>
                   </span>
                   <span>
-                    {getCategoryName(item.categoryId) ? (
-                      <span className="item-category">{getCategoryName(item.categoryId)}</span>
-                    ) : (
-                      "-"
-                    )}
+                    <span className="item-category">
+                      {categoryNameById.get(item.categoryId) || "-"}
+                    </span>
                   </span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>

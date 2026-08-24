@@ -71,3 +71,8 @@ export function filterByStorageUnit(products, productRecords, storageLocations, 
   );
   return products.filter((item) => productIdsInUnit.has(item._id));
 }
+
+export function filterByCategory(products, categoryId) {
+  if (!categoryId) return products;
+  return products.filter((item) => item.categoryId === categoryId);
+}

@@ -12,6 +12,7 @@ import {
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
 import "./CreateProductPage.css";
 import "../Global.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
@@ -63,19 +64,15 @@ export function CreateProductPage() {
   const fileInputRef = useRef(null);
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editingName, setEditingName] = useState("");
-  const [categoryError, setCategoryError] = useState("");
 
   const { products, categories, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
       Meteor.subscribe("products");
-      Meteor.subscribe("productCategories"); // NEW
+      Meteor.subscribe("productCategories");
       Meteor.subscribe("locations.all");
       return {
         products: Products.find().fetch(),
-        categories: ProductCategories.find().fetch(), // NEW
+        categories: ProductCategories.find().fetch(),
         sites: Sites.find().fetch(),
         floorMaps: FloorMaps.find().fetch(),
         storageUnits: StorageUnits.find().fetch(),
@@ -108,44 +105,6 @@ export function CreateProductPage() {
 
   function updateAssignment(index, field, value) {
     setAssignments(assignments.map((a, i) => (i === index ? { ...a, [field]: value } : a)));
-  }
-
-  async function handleCreateCategory() {
-    if (!newCategoryName.trim()) return;
-    try {
-      await callMethod("productCategories.create", { name: newCategoryName.trim() });
-      setNewCategoryName("");
-      setCategoryError("");
-    } catch (err) {
-      setCategoryError(err.reason || err.message || "Failed to create category.");
-    }
-  }
-
-  async function confirmRename(id) {
-    if (!editingName.trim()) return;
-    try {
-      await callMethod("productCategories.rename", { categoryId: id, name: editingName.trim() });
-      setEditingId(null);
-      setEditingName("");
-      setCategoryError("");
-    } catch (err) {
-      setCategoryError(err.reason || err.message || "Failed to rename category.");
-    }
-  }
-
-  async function handleDeleteCategory(id) {
-    try {
-      await callMethod("productCategories.delete", { categoryId: id });
-      if (categoryId === id) setCategoryId("");
-      setCategoryError("");
-    } catch (err) {
-      setCategoryError(err.reason || err.message || "Failed to delete category.");
-    }
-  }
-
-  function startRename(id, currentName) {
-    setEditingId(id);
-    setEditingName(currentName);
   }
 
   async function handleImageSelect(event) {
@@ -537,126 +496,13 @@ export function CreateProductPage() {
       </div>
 
       {showCategoryModal && (
-        <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: "440px", width: "100%" }}>
-            <h3 className="modal-title" style={{ marginBottom: "4px" }}>
-              Manage categories
-            </h3>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "var(--text-muted, #998874)",
-                marginBottom: "20px",
-              }}
-            >
-              Add categories staff can pick from when creating a product.
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-                marginBottom: "20px",
-                maxHeight: "220px",
-                overflowY: "auto",
-              }}
-            >
-              {categories.length === 0 && (
-                <p style={{ fontSize: "13px", color: "#998874" }}>No categories yet.</p>
-              )}
-              {categories.map((cat) => (
-                <div
-                  key={cat._id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    background: "var(--card-bg-subtle, #f5efe6)",
-                  }}
-                >
-                  {editingId === cat._id ? (
-                    <input
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      className="form-input"
-                      style={{ flex: 1 }}
-                      autoFocus
-                    />
-                  ) : (
-                    <span style={{ flex: 1, fontSize: "14px" }}>{cat.name}</span>
-                  )}
-
-                  {editingId === cat._id ? (
-                    <>
-                      <button className="btn-secondary" onClick={() => confirmRename(cat._id)}>
-                        Save
-                      </button>
-                      <button className="btn-secondary" onClick={() => setEditingId(null)}>
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="btn-secondary"
-                        onClick={() => startRename(cat._id, cat.name)}
-                      >
-                        Rename
-                      </button>
-                      <button className="btn-danger" onClick={() => handleDeleteCategory(cat._id)}>
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", gap: "10px" }}>
-              <input
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="form-input"
-                placeholder="New category name"
-                style={{ flex: 1 }}
-              />
-              <button
-                className="btn-primary"
-                onClick={handleCreateCategory}
-                style={{
-                  borderRadius: "8px",
-                  width: "auto",
-                  padding: "0 20px",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                + Add
-              </button>
-            </div>
-
-            {categoryError && (
-              <p className="warning-text" style={{ marginTop: "10px" }}>
-                {categoryError}
-              </p>
-            )}
-
-            <div className="modal-actions" style={{ marginTop: "24px" }}>
-              <button
-                className="btn-secondary"
-                onClick={() => {
-                  setShowCategoryModal(false);
-                  setEditingId(null);
-                  setCategoryError("");
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <ManageCategoriesModal
+          categories={categories}
+          onClose={() => setShowCategoryModal(false)}
+          onCategoryDeleted={(deletedId) => {
+            if (categoryId === deletedId) setCategoryId("");
+          }}
+        />
       )}
     </>
   );

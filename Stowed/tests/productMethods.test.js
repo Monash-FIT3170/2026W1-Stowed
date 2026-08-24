@@ -1,6 +1,5 @@
 import assert from "assert";
 import { Meteor } from "meteor/meteor";
-import { describeServer } from "./serverOnly";
 import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
 import { Organisations } from "../imports/api/organisations";
 import {
@@ -59,7 +58,7 @@ const STORAGE_LOCATION = {
   updatedAt: new Date(),
 };
 
-describeServer("Product methods", function () {
+describe("Product methods", function () {
   before(async function () {
     await Meteor.users.removeAsync(TEST_USER_ID);
     await Organisations.removeAsync(TEST_ORG_ID);
@@ -137,7 +136,7 @@ describeServer("Product methods", function () {
     return {
       name: `Test Product ${Date.now()}`,
       description: "",
-      category: "",
+      categoryId: "",
       sku: "",
       brand: "",
       unitCost: 0,
@@ -363,7 +362,7 @@ describeServer("Product methods", function () {
       await callMethod("products.update", {
         ...makeCreateParams({
           name: "Updated Name",
-          category: "Power Tools",
+          categoryId: "cat-power-tools",
           brand: "DeWalt",
           unitCost: 49.99,
           totalQuantity: 50,
@@ -374,7 +373,7 @@ describeServer("Product methods", function () {
 
       const product = await Products.findOneAsync(productId);
       assert.strictEqual(product.name, "Updated Name");
-      assert.strictEqual(product.category, "Power Tools");
+      assert.strictEqual(product.categoryId, "cat-power-tools");
       assert.strictEqual(product.brand, "DeWalt");
       assert.strictEqual(product.unitCost, 49.99);
       assert.strictEqual(product.updatedByUserId, TEST_USER_ID);

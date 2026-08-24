@@ -22,11 +22,6 @@ export const ProductSchema = new SimpleSchema({
     optional: true,
   },
 
-  category: {
-    type: String,
-    optional: true,
-  },
-
   sku: {
     type: String,
     optional: true,
