@@ -30,6 +30,10 @@
   --cream: #fff6ef;
 }
 
+body {
+  font-family: Inter, sans-serif;
+}
+
 /* -- Page shell -- */
 
 .product-detail-container {
@@ -62,7 +66,6 @@
 
 .header-title {
   font-size: 28px;
-  font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
   color: var(--text-dark);
   margin: 4px 0 8px 0;

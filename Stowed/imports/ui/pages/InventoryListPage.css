@@ -17,6 +17,24 @@
   padding: 0 28px 48px;
 }
 
+.inventory-list-heading {
+  padding: 16px 20px 0;
+  margin-bottom: 8px;
+}
+
+.inventory-list-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-dark);
+}
+
+.inventory-list-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .search-bar-container {
   display: flex;
   gap: 8px;

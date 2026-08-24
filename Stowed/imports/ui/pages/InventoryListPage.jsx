@@ -337,9 +337,9 @@ export function InventoryListPage() {
         ) : (
           <>
             <div className="detail-section">
-              <div style={{ padding: "16px 20px 0", marginBottom: "8px" }}>
-                <div className="recent-items-title">Inventory List</div>
-                <div className="recent-items-subtitle">
+              <div className="inventory-list-heading">
+                <div className="inventory-list-title">Inventory List</div>
+                <div className="inventory-list-subtitle">
                   {filteredItems.length} of {items.length} products shown
                 </div>
               </div>

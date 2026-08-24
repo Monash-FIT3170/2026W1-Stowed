@@ -362,12 +362,24 @@ export function ProductDetailView({
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Category</label>
-                    <div className="form-tag">{categoryName}</div>
+                    <label htmlFor="category">Category</label>
+                      <input
+                        id="category"
+                        type="text"
+                        value={item.category != null ? item.category : "No category specified"}
+                        readOnly
+                        className={`form-input ${!item.category ? "empty-field" : ""}`}
+                      />
                   </div>
                   <div className="form-group">
-                    <label>Brand</label>
-                    <div className="form-tag">{item.brand || "-"}</div>
+                     <label htmlFor="brand">Brand</label>
+                    <input
+                      id="brand"
+                      type="text"
+                      value={item.brand != null ? item.brand : "No brand specified"}
+                      readOnly
+                      className={`form-input ${!item.brand ? "empty-field" : ""}`}
+                    />
                   </div>
                 </div>
               </div>
@@ -420,6 +432,7 @@ export function ProductDetailView({
                       value={reorderAt != null ? reorderAt : "Not set"}
                       readOnly
                       className="form-input"
+                      className={`form-input ${reorderAt == null ? "empty-field" : ""}`}
                     />
                   </div>
                 </div>
@@ -523,9 +536,15 @@ export function ProductDetailView({
               </h2>
               <div className="section-content qr-section">
                 <div className="qr-container">
-                  <img src={qrCode} alt="QR Code" className="qr-code" />
                   <p className="qr-label">SKU: {item.sku}</p>
                   <p className="qr-label">{item.location}</p>
+                  {qrCode ? (
+                    <img src={qrCode} alt="QR Code" className="qr-code" />
+                  ) : (
+                    <div className="qr-placeholder">
+                      No QR code
+                    </div>
+                  )}
                 </div>
                 <button className="btn-print">Print label</button>
               </div>
