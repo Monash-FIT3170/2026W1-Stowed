@@ -10,7 +10,7 @@ const itemPattern = {
   productId: String,
   productName: String,
   sku: Match.Maybe(String),
-  category: Match.Maybe(String),
+  categoryId: Match.Maybe(String),
   inStock: Match.Integer,
   reorderAt: Match.Integer,
   lowStockThreshold: Match.Integer,

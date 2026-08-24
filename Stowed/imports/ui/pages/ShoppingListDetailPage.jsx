@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
@@ -11,13 +11,14 @@ import { ShoppingLists } from "/imports/api/shoppingLists/collections";
 import { toItem, isLowStock } from "/imports/api/shoppingLists/generation";
 
 import { Products } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import {
   Sites,
   FloorMaps,
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
-import { currency, sortByCategory } from "./shoppingListHelpers";
+import { currency, sortByCategory, categoryNameOf } from "./shoppingListHelpers";
 import { ShareEmailModal } from "./ShareEmailModal";
 
 import "./ListsPage.css";
@@ -63,21 +64,36 @@ export function ShoppingListDetailPage() {
   const [allocationError, setAllocationError] = useState("");
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  const { list, sites, floorMaps, storageUnits, storageLocations, products, listsReady } =
-    useTracker(() => {
-      const listsSub = Meteor.subscribe("shoppingLists");
-      Meteor.subscribe("locations.all");
-      Meteor.subscribe("products");
-      return {
-        list: ShoppingLists.findOne(listId),
-        sites: Sites.find().fetch(),
-        floorMaps: FloorMaps.find().fetch(),
-        storageUnits: StorageUnits.find().fetch(),
-        storageLocations: StorageLocations.find().fetch(),
-        products: Products.find({}, { sort: { name: 1 } }).fetch(),
-        listsReady: listsSub.ready(),
-      };
-    }, [listId]);
+  const {
+    list,
+    sites,
+    floorMaps,
+    storageUnits,
+    storageLocations,
+    products,
+    categories,
+    listsReady,
+  } = useTracker(() => {
+    const listsSub = Meteor.subscribe("shoppingLists");
+    Meteor.subscribe("locations.all");
+    Meteor.subscribe("products");
+    Meteor.subscribe("productCategories");
+    return {
+      list: ShoppingLists.findOne(listId),
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+      products: Products.find({}, { sort: { name: 1 } }).fetch(),
+      categories: ProductCategories.find().fetch(),
+      listsReady: listsSub.ready(),
+    };
+  }, [listId]);
+
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((cat) => [cat._id, cat.name])),
+    [categories],
+  );
 
   const locationOptions = sites.map((site) => ({ id: site._id, label: site.name }));
   const storageLocationOptions = storageLocations.map((location) => ({
@@ -333,7 +349,7 @@ export function ShoppingListDetailPage() {
           <span className="lists-product-meta">
             {item.allocatedLocationName
               ? `Allocated to ${item.allocatedLocationName}`
-              : `${item.brand ? `${item.brand} · ` : ""}${item.category}`}
+              : categoryNameOf(item, categoryNameById)}
           </span>
         </td>
 
@@ -414,12 +430,12 @@ export function ShoppingListDetailPage() {
   }
 
   function renderCategoryGroupedRows(groupItems) {
-    const sorted = sortByCategory(groupItems);
+    const sorted = sortByCategory(groupItems, categoryNameById);
     const rows = [];
     let lastCategory = null;
 
     sorted.forEach((item) => {
-      const cat = item.category || "Uncategorized";
+      const cat = categoryNameOf(item, categoryNameById);
       if (cat !== lastCategory) {
         rows.push(
           <tr key={`divider-${cat}`} className="lists-divider">
@@ -437,7 +453,7 @@ export function ShoppingListDetailPage() {
   function renderGroup(groupItems) {
     return groupByCategory
       ? renderCategoryGroupedRows(groupItems)
-      : sortByCategory(groupItems).map(renderRow);
+      : sortByCategory(groupItems, categoryNameById).map(renderRow);
   }
 
   if (!listsReady) {
@@ -702,7 +718,8 @@ export function ShoppingListDetailPage() {
                           <div className="lists-allocation-product">
                             <span className="lists-product-name">{item.productName}</span>
                             <span className="lists-product-meta">
-                              {item.quantityWanted} received &middot; {item.category}
+                              {item.quantityWanted} received &middot;{" "}
+                              {categoryNameOf(item, categoryNameById)}
                             </span>
                           </div>
 
