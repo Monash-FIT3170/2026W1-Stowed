@@ -181,4 +181,14 @@
   .location-detail-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Location details / Stocktake schedule / Stock summary: side by side
+     under the inventory table instead of one long stacked column — up
+     to 3 across, dropping to fewer automatically as space gets tighter
+     (down to 1 on a phone). */
+  .location-detail-grid .right-column {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
 }

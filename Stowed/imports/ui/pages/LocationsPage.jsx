@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -108,6 +108,16 @@ export function LocationsPage() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Which row's "⋮" action menu is open — tablet/phone only, see the table render.
+  const [openRowMenuId, setOpenRowMenuId] = useState(null);
+  useEffect(() => {
+    if (!openRowMenuId) return undefined;
+    const closeOnOutsideClick = (event) => {
+      if (!event.target.closest(".locations-actions-cell")) setOpenRowMenuId(null);
+    };
+    document.addEventListener("click", closeOnOutsideClick);
+    return () => document.removeEventListener("click", closeOnOutsideClick);
+  }, [openRowMenuId]);
 
   const { loading, sites, floorMaps, storageUnits, storageLocations, productRecords } =
     useTracker(() => {
@@ -454,67 +464,119 @@ export function LocationsPage() {
                   <thead>
                     <tr>
                       <th>Location</th>
-                      <th>Physical path</th>
-                      <th>Products</th>
-                      <th>Stocktake</th>
-                      <th>Last counted</th>
+                      <th>Details</th>
+                      <th className="locations-products-cell">Products</th>
                       <th aria-label="Actions" />
                     </tr>
                   </thead>
                   <tbody>
-                    {visibleLocations.map((row) => (
-                      <tr key={row.location._id}>
-                        <td>
-                          <Link
-                            className="locations-name-link"
-                            to={`/locations/${row.location._id}`}
-                          >
-                            <strong>{row.location.name || "Unnamed location"}</strong>
-                          </Link>
-                          <span className="locations-code">{row.location.code || "No code"}</span>
-                        </td>
-                        <td>
-                          <span className="locations-path">{row.path || "Unlinked location"}</span>
-                        </td>
-                        <td>{row.itemCount}</td>
-                        <td>
-                          <StatusBadge status={row.stocktakeStatus} />
-                        </td>
-                        <td>{formatDate(row.location.lastStocktakeAt)}</td>
-                        <td>
-                          <div className="locations-row-actions">
-                            <Link to={`/locations/${row.location._id}`}>View</Link>
-                            {row.floorMap && (
-                              <button
-                                type="button"
-                                onClick={() => navigate(`/floor-map/${row.floorMap._id}`)}
-                              >
-                                Open map
-                              </button>
+                    {visibleLocations.map((row) => {
+                      const rowId = row.location._id;
+                      const menuOpen = openRowMenuId === rowId;
+                      const closeMenu = () => setOpenRowMenuId(null);
+                      // Defined once, rendered twice below: inline on a laptop,
+                      // inside the "⋮" popup on tablet/phone. Keeps both in sync.
+                      const actions = [
+                        { key: "view", element: <Link to={`/locations/${rowId}`}>View</Link> },
+                        row.floorMap && {
+                          key: "map",
+                          element: (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/floor-map/${row.floorMap._id}`)}
+                            >
+                              Open map
+                            </button>
+                          ),
+                        },
+                        canManage && {
+                          key: "edit",
+                          element: (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(TABS.LOCATIONS, row.location)}
+                            >
+                              Edit
+                            </button>
+                          ),
+                        },
+                        canManage && {
+                          key: "delete",
+                          element: (
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() =>
+                                setDeleteTarget({ type: TABS.LOCATIONS, record: row.location })
+                              }
+                            >
+                              Delete
+                            </button>
+                          ),
+                        },
+                      ].filter(Boolean);
+
+                      return (
+                        <tr key={rowId}>
+                          <td>
+                            <Link className="locations-name-link" to={`/locations/${rowId}`}>
+                              <strong>{row.location.name || "Unnamed location"}</strong>
+                            </Link>
+                            <span className="locations-code">
+                              {row.location.code || "No code"}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="locations-path">
+                              {row.path || "Unlinked location"}
+                            </span>
+                            <div className="locations-details-status-row">
+                              <StatusBadge status={row.stocktakeStatus} />
+                            </div>
+                            <div className="locations-details-meta">
+                              {/* Phone only — the Products column is hidden there,
+                                  see the media query in LocationsPage.css. */}
+                              <span className="locations-product-count-inline">
+                                {row.itemCount} product{row.itemCount === 1 ? "" : "s"}
+                              </span>
+                              <span className="locations-meta-separator" aria-hidden="true">
+                                |
+                              </span>
+                              <span className="locations-last-counted">
+                                Last counted {formatDate(row.location.lastStocktakeAt)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="locations-products-cell">{row.itemCount}</td>
+                          <td className="locations-actions-cell">
+                            {/* Laptop: plain inline links */}
+                            <div className="locations-row-actions" onClick={closeMenu}>
+                              {actions.map((action) => (
+                                <span key={action.key}>{action.element}</span>
+                              ))}
+                            </div>
+
+                            {/* Tablet/phone: the same actions behind a "⋮" trigger */}
+                            <button
+                              type="button"
+                              className="locations-row-menu-trigger"
+                              aria-label="Row actions"
+                              aria-expanded={menuOpen}
+                              onClick={() => setOpenRowMenuId(menuOpen ? null : rowId)}
+                            >
+                              ⋮
+                            </button>
+                            {menuOpen && (
+                              <div className="locations-row-menu" onClick={closeMenu}>
+                                {actions.map((action) => (
+                                  <span key={action.key}>{action.element}</span>
+                                ))}
+                              </div>
                             )}
-                            {canManage && (
-                              <button
-                                type="button"
-                                onClick={() => openEdit(TABS.LOCATIONS, row.location)}
-                              >
-                                Edit
-                              </button>
-                            )}
-                            {canManage && (
-                              <button
-                                type="button"
-                                className="danger"
-                                onClick={() =>
-                                  setDeleteTarget({ type: TABS.LOCATIONS, record: row.location })
-                                }
-                              >
-                                Delete
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
