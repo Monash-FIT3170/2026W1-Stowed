@@ -74,10 +74,9 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
               onHoverEnd?.();
             }}
             onClick={() => {
-              const unitWithItems = { ...unit, mockItems: items };
-              setSelectedUnit(unitWithItems);
+              setSelectedUnit(unit);
               setIsPanelOpen(true);
-              onUnitClick?.(unit._id || unit.id, unitWithItems);
+              onUnitClick?.(unit._id || unit.id);
             }}
           />
         );
