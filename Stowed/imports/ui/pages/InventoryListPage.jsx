@@ -24,7 +24,7 @@ const NO_LOCATIONS = "No locations";
 // One source of truth for the chips and for the ?filter= values accepted from
 // the URL. Kept as separate lists, a newly added chip renders but is rejected by
 // the guard below, which silently drops the page back to "all".
-const INVENTORY_FILTERS = [
+export const INVENTORY_FILTERS = [
   { id: "all", label: "All" },
   { id: "low-stock", label: "⚠ Low stock" },
   { id: "out-of-stock", label: "Out of stock" },
@@ -250,13 +250,6 @@ export function InventoryListPage() {
   return (
     <div className="inventory-list-container">
       <div className="product-detail-header">
-        <div className="breadcrumb">
-          <Link to="/dashboard" className="breadcrumb-link">
-            Dashboard
-          </Link>
-          <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-current">All products</span>
-        </div>
         <div className="header-top">
           <h1 className="header-title">
             All <em>Products</em>
