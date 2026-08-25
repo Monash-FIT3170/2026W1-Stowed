@@ -89,7 +89,7 @@ export function App() {
               path="/inventory"
               element={
                 canAccessInventory ? (
-                  <Navigate to="/inventory/list" replace />
+                  <InventoryListPage />
                 ) : isLoggedIn ? (
                   <Navigate to="/" replace />
                 ) : (
@@ -108,18 +108,6 @@ export function App() {
             <Route
               path="/inventory/:productId"
               element={canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace />}
-            />
-            <Route
-              path="/inventory/list"
-              element={
-                canAccessInventory ? (
-                  <InventoryListPage />
-                ) : isLoggedIn ? (
-                  <Navigate to="/" replace />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
             />
             <Route
               path="/floor-map"

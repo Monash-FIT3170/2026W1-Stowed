@@ -65,16 +65,29 @@ async function seedProducts(seedOrgId) {
 
   const now = new Date();
   const categoryCache = new Map();
-  const add = async ({ name, description, category, brand, unitCost, totalQuantity }) =>
+
+  // `category` is a name used to find or create the ProductCategories document.
+  // Only the resulting categoryId is stored on the product.
+  const add = async ({
+    name,
+    description,
+    category,
+    brand,
+    sku,
+    unitCost,
+    totalQuantity,
+    reorderAt,
+  }) =>
     Products.insertAsync({
       orgId: seedOrgId,
       name,
       description,
-      category,
       categoryId: await seedCategory(seedOrgId, category, categoryCache),
       brand,
+      sku,
       unitCost,
       totalQuantity,
+      reorderAt,
       images: [],
       createdAt: now,
       updatedAt: now,
@@ -86,80 +99,100 @@ async function seedProducts(seedOrgId) {
     description: "ANSI-rated chemical splash goggles for laboratory use.",
     category: "Lab Safety",
     brand: "3M",
+    sku: "PPE-GOG-001",
     unitCost: 12.5,
     totalQuantity: 60,
+    reorderAt: 15,
   });
   await add({
     name: "Nitrile Gloves (Box of 100)",
     description: "Powder-free nitrile examination gloves, medium size.",
     category: "Lab Safety",
     brand: "Ansell",
+    sku: "PPE-GLV-100M",
     unitCost: 18.9,
     totalQuantity: 40,
+    reorderAt: 15,
   });
   await add({
     name: "USB-A to USB-C Cable",
     description: "1.8m braided USB-A to USB-C charging and data cable.",
     category: "IT Accessories",
     brand: "Belkin",
+    sku: "CBL-USBC-18",
     unitCost: 14.95,
     totalQuantity: 35,
+    reorderAt: 10,
   });
   await add({
     name: "HDMI Cable (2m)",
     description: "High-speed HDMI 2.0 cable for display connections.",
     category: "IT Accessories",
     brand: "Belkin",
+    sku: "CBL-HDMI-2M",
     unitCost: 19.95,
     totalQuantity: 28,
+    reorderAt: 10,
   });
   await add({
     name: "Wireless Keyboard",
     description: "Compact wireless keyboard with USB receiver.",
     category: "IT Equipment",
     brand: "Logitech",
+    sku: "ITE-KBD-WL01",
     unitCost: 49.0,
     totalQuantity: 15,
+    reorderAt: 20,
   });
   await add({
     name: "Ethernet Patch Cable (Cat6)",
     description: "2m Cat6 RJ45 patch cable for network connections.",
     category: "IT Accessories",
     brand: "Belkin",
+    sku: "CBL-CAT6-2M",
     unitCost: 8.5,
     totalQuantity: 50,
+    reorderAt: 20,
   });
   await add({
     name: "Whiteboard Markers (Pack of 12)",
     description: "Assorted colour dry-erase markers with chisel tip.",
     category: "Stationery",
     brand: "Artline",
+    sku: "STA-MKR-12",
     unitCost: 11.2,
     totalQuantity: 30,
+    reorderAt: 10,
   });
   await add({
     name: "A4 Copy Paper (Ream)",
     description: "80gsm A4 copy paper, 500 sheets per ream.",
     category: "Stationery",
     brand: "Reflex",
+    sku: "STA-PPR-A4",
     unitCost: 6.95,
     totalQuantity: 120,
+    reorderAt: 40,
   });
   await add({
     name: "Extension Power Board (6-outlet)",
     description: "6-outlet surge-protected power board with 1.8m cord.",
     category: "Electrical",
     brand: "HPM",
+    sku: "ELE-PWR-6O",
     unitCost: 34.0,
     totalQuantity: 22,
+    reorderAt: 8,
   });
   await add({
     name: "First Aid Kit",
     description: "Workplace first aid kit compliant with AS2675 standards.",
     category: "Health & Safety",
     brand: "St John",
+    sku: "HS-FAK-001",
     unitCost: 55.0,
     totalQuantity: 8,
+    reorderAt: 10,
   });
 }
 

@@ -5,14 +5,34 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import "./InventoryListPage.css";
 import "../Global.css";
-import { searchProducts, filterLowStock, filterByStorageUnit } from "../../api/products/filters";
+import {
+  searchProducts,
+  filterLowStock,
+  filterOutOfStock,
+  filterByStorageUnit,
+  filterByCategory,
+} from "../../api/products/filters";
 
-const INVENTORY_FILTER_IDS = new Set(["all", "low-stock", "tag", "location"]);
+const NO_LOCATIONS = "No locations";
+
+// One source of truth for the chips and for the ?filter= values accepted from
+// the URL. Kept as separate lists, a newly added chip renders but is rejected by
+// the guard below, which silently drops the page back to "all".
+const INVENTORY_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "low-stock", label: "⚠ Low stock" },
+  { id: "out-of-stock", label: "Out of stock" },
+  { id: "category", label: "Category ▾" },
+  { id: "location", label: "Location ▾" },
+];
+
+const INVENTORY_FILTER_IDS = new Set(INVENTORY_FILTERS.map((filter) => filter.id));
 
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
@@ -73,29 +93,59 @@ export function InventoryListPage() {
   const PAGE_SIZE = 15;
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
+  const [categoryFilterId, setCategoryFilterId] = useState("");
 
-  const { items, loading, productRecords, storageLocations, storageUnits } = useTracker(() => {
-    const sub1 = Meteor.subscribe("products");
-    Meteor.subscribe("productRecords");
-    Meteor.subscribe("locations.all");
-    return {
-      items: Products.find().fetch(),
-      loading: !sub1.ready(),
-      productRecords: ProductRecords.find().fetch(),
-      storageLocations: StorageLocations.find().fetch(),
-      storageUnits: StorageUnits.find().fetch(),
-    };
-  }, []);
+  const { items, loading, productRecords, categories, storageLocations, storageUnits } =
+    useTracker(() => {
+      const sub1 = Meteor.subscribe("products");
+      Meteor.subscribe("productRecords");
+      Meteor.subscribe("productCategories");
+      Meteor.subscribe("locations.all");
+      return {
+        items: Products.find().fetch(),
+        loading: !sub1.ready(),
+        productRecords: ProductRecords.find().fetch(),
+        categories: ProductCategories.find().fetch(),
+        storageLocations: StorageLocations.find().fetch(),
+        storageUnits: StorageUnits.find().fetch(),
+      };
+    }, []);
+
+  // Products store only a categoryId, so resolve names once per render pass
+  // rather than scanning the category list for every row.
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((cat) => [cat._id, cat.name])),
+    [categories],
+  );
 
   function getLocationLabel(productId) {
     const records = productRecords.filter((r) => r.productId === productId);
-    if (!records.length) return "-";
-    const first = records[0];
-    const loc = storageLocations.find((l) => l._id === first.locationId);
-    if (!loc) return "-";
+    // Nothing stored anywhere, or every record points at a location that no
+    // longer exists: say so rather than leaving the cell looking empty.
+    if (!records.length) return NO_LOCATIONS;
+
+    // Lead with the location holding the most stock, not whichever record the
+    // collection happened to return first. Records are merged per location
+    // when they are written, so there is one record per location here.
+    const ranked = [...records].sort((a, b) => b.quantity - a.quantity);
+    const primary = ranked.find((r) => storageLocations.some((l) => l._id === r.locationId));
+    if (!primary) return NO_LOCATIONS;
+
+    const loc = storageLocations.find((l) => l._id === primary.locationId);
     const unit = storageUnits.find((u) => u._id === loc.storageUnitId);
     const label = unit ? `${unit.name} · ${loc.name}` : loc.name;
-    return records.length > 1 ? `${label} +${records.length - 1}` : label;
+
+    const otherCount = records.length - 1;
+    if (otherCount < 1) return label;
+
+    return (
+      <>
+        {label}
+        <Link to={`/inventory/${productId}`} className="item-location-more">
+          and {otherCount} other location{otherCount === 1 ? "" : "s"}
+        </Link>
+      </>
+    );
   }
 
   const filteredItems = useMemo(() => {
@@ -103,17 +153,32 @@ export function InventoryListPage() {
     if (activeFilter === "low-stock") {
       result = filterLowStock(result);
     }
+    if (activeFilter === "out-of-stock") {
+      result = filterOutOfStock(result);
+    }
+    if (activeFilter === "category") {
+      result = filterByCategory(result, categoryFilterId);
+    }
     if (activeFilter === "location") {
       result = filterByStorageUnit(result, productRecords, storageLocations, locationFilterUnitId);
     }
     result = searchProducts(result, searchQuery);
     return result;
-  }, [items, activeFilter, searchQuery, locationFilterUnitId, storageLocations, productRecords]);
+  }, [
+    items,
+    activeFilter,
+    searchQuery,
+    categoryFilterId,
+    locationFilterUnitId,
+    storageLocations,
+    productRecords,
+  ]);
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
   const pagedItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const lowStockCount = filterLowStock(items).length;
+  const outOfStockCount = filterOutOfStock(items).length;
 
   const selectedItems = useMemo(
     () => items.filter((item) => selectedProductIds.includes(item._id)),
@@ -157,12 +222,15 @@ export function InventoryListPage() {
     }
   };
 
-  const filters = [
-    { id: "all", label: "All", count: items.length },
-    { id: "low-stock", label: "⚠ Low stock", count: lowStockCount },
-    { id: "tag", label: "Tag ▾" },
-    { id: "location", label: "Location ▾" },
-  ];
+  const filterCounts = {
+    all: items.length,
+    "low-stock": lowStockCount,
+    "out-of-stock": outOfStockCount,
+  };
+  const filters = INVENTORY_FILTERS.map((filter) => ({
+    ...filter,
+    count: filterCounts[filter.id],
+  }));
 
   const handleFilterChange = (filter) => {
     const nextSearchParams = new URLSearchParams(searchParams);
@@ -174,6 +242,7 @@ export function InventoryListPage() {
     setSearchParams(nextSearchParams);
     setCurrentPage(1);
     if (filter !== "location") setLocationFilterUnitId("");
+    if (filter !== "category") setCategoryFilterId("");
   };
 
   if (loading) return <div className="inventory-list-container">Loading...</div>;
@@ -200,7 +269,7 @@ export function InventoryListPage() {
         </div>
       </div>
 
-      <div style={{ padding: "0 28px 48px" }}>
+      <div className="inventory-list-body">
         <div className="search-bar-container">
           <input
             type="text"
@@ -209,7 +278,7 @@ export function InventoryListPage() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Search by ID, name, tag, or SKU"
+            placeholder="Search by ID, name, or SKU"
             className="search-input"
             style={{ background: "var(--card-bg)" }}
           />
@@ -220,6 +289,27 @@ export function InventoryListPage() {
           activeFilter={activeFilter}
           onFilterChange={handleFilterChange}
         />
+
+        {activeFilter === "category" && (
+          <div style={{ marginBottom: "12px" }}>
+            <select
+              value={categoryFilterId}
+              onChange={(e) => {
+                setCategoryFilterId(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="form-input"
+              style={{ maxWidth: "360px", background: "var(--card-bg)" }}
+            >
+              <option value="">All categories</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {activeFilter === "location" && (
           <div style={{ marginBottom: "12px" }}>
@@ -275,10 +365,11 @@ export function InventoryListPage() {
               <div className="table-header">
                 <span />
                 <span>Product</span>
-                <span>Tag</span>
+                <span>Category</span>
                 <span>Location</span>
                 <span>Stock</span>
                 <span>Status</span>
+                <span />
                 <span />
               </div>
               {pagedItems.map((item) => (
@@ -294,11 +385,16 @@ export function InventoryListPage() {
                     </Link>
                   </span>
                   <span>
-                    <span className="item-tag">{item.tag || "-"}</span>
+                    <span className="item-category">
+                      {categoryNameById.get(item.categoryId) || "-"}
+                    </span>
                   </span>
                   <span className="item-location">{getLocationLabel(item._id)}</span>
                   <span>{item.totalQuantity}</span>
                   <StatusBadge quantity={item.totalQuantity} threshold={item.reorderAt ?? null} />
+                  <Link to={`/inventory/${item._id}`} className="item-view-more">
+                    View more
+                  </Link>
                   <label className="row-select">
                     <input
                       type="checkbox"

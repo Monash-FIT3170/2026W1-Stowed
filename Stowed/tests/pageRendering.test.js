@@ -11,6 +11,7 @@ import { DashboardPage } from "../imports/ui/pages/DashboardPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
 import { LocationsPage } from "../imports/ui/pages/LocationsPage";
 import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
+import { ProductCategories } from "../imports/api/categories/collections";
 import {
   FloorMaps,
   Sites,
@@ -57,6 +58,13 @@ function stubCollectionFind(collection, results) {
       collection.findOne = originalFindOne;
     }
   };
+}
+
+function anchorWithClass(html, className) {
+  // Attribute order in the rendered markup is an implementation detail of
+  // react-router's Link, so match the tag and inspect it rather than assuming.
+  const match = html.match(new RegExp(`<a[^>]*class="${className}"[^>]*>`));
+  return match ? match[0] : "";
 }
 
 describe("page rendering", function () {
@@ -244,7 +252,7 @@ describe("page rendering", function () {
         assert.ok(html.includes("1 item needs attention"));
         assert.ok(html.includes("2 remaining"));
         assert.ok(html.includes("Min. 3"));
-        assert.ok(html.includes("/inventory/list?filter=low-stock"));
+        assert.ok(html.includes("/inventory?filter=low-stock"));
         assert.ok(html.includes("Recent activity"));
         assert.ok(html.includes("Showing 10 of 12 latest actions"));
         assert.ok(html.includes('aria-label="Recent inventory activity"'));
@@ -277,7 +285,6 @@ describe("page rendering", function () {
           name: "Bolts",
           totalQuantity: 12,
           reorderAt: 10,
-          tag: "fasteners",
         },
       ];
 
@@ -302,6 +309,154 @@ describe("page rendering", function () {
       }
     });
 
+    it("leads the location column with the largest holding, not the first record", function () {
+      const items = [
+        {
+          _id: "bolt",
+          name: "Bolts",
+          totalQuantity: 60,
+          reorderAt: 10,
+        },
+      ];
+
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, items);
+      // Deliberately ordered so the biggest holding is neither first nor last.
+      const restoreRecords = stubCollectionFind(ProductRecords, [
+        { _id: "r1", productId: "bolt", locationId: "loc-small", quantity: 5 },
+        { _id: "r2", productId: "bolt", locationId: "loc-big", quantity: 50 },
+        { _id: "r3", productId: "bolt", locationId: "loc-mid", quantity: 5 },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, [
+        { _id: "loc-small", storageUnitId: "unit-1", name: "Shelf 1" },
+        { _id: "loc-big", storageUnitId: "unit-1", name: "Shelf 2" },
+        { _id: "loc-mid", storageUnitId: "unit-1", name: "Shelf 3" },
+      ]);
+      const restoreUnits = stubCollectionFind(StorageUnits, [
+        { _id: "unit-1", name: "Warehouse A" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        assert.ok(html.includes("Warehouse A · Shelf 2"));
+        assert.ok(!html.includes("Warehouse A · Shelf 1"));
+        assert.ok(html.includes("and 2 other locations"));
+
+        // The overflow count links through to the product, where the full
+        // per-location breakdown lives.
+        assert.ok(anchorWithClass(html, "item-location-more").includes('href="/inventory/bolt"'));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("says No locations when a product is not stored anywhere", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 0, reorderAt: 10 },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+        assert.ok(html.includes("No locations"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("says No locations when every record points at a deleted location", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 4, reorderAt: 10 },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, [
+        { _id: "r1", productId: "bolt", locationId: "gone", quantity: 4 },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+        assert.ok(html.includes("No locations"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("gives every row a view-more link to the product", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 10 },
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2 },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        const viewLinks = html.match(/<a[^>]*class="item-view-more"[^>]*>/g) || [];
+        assert.strictEqual(viewLinks.length, 2);
+        assert.ok(viewLinks[0].includes('href="/inventory/bolt"'));
+        assert.ok(viewLinks[1].includes('href="/inventory/nut"'));
+        assert.ok(html.includes("View more"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("pluralises a single other location", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2 },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, [
+        { _id: "r1", productId: "nut", locationId: "loc-small", quantity: 2 },
+        { _id: "r2", productId: "nut", locationId: "loc-big", quantity: 7 },
+      ]);
+      const restoreLocations = stubCollectionFind(StorageLocations, [
+        { _id: "loc-small", storageUnitId: "unit-1", name: "Shelf 1" },
+        { _id: "loc-big", storageUnitId: "unit-1", name: "Shelf 2" },
+      ]);
+      const restoreUnits = stubCollectionFind(StorageUnits, [
+        { _id: "unit-1", name: "Warehouse A" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        assert.ok(html.includes("and 1 other location"));
+        assert.ok(!html.includes("and 1 other locations"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
     it("hides privileged actions for standard inventory list", function () {
       const items = [
         {
@@ -309,7 +464,6 @@ describe("page rendering", function () {
           name: "Washers",
           totalQuantity: 30,
           reorderAt: 5,
-          tag: "fasteners",
         },
       ];
 
@@ -359,12 +513,140 @@ describe("page rendering", function () {
       try {
         const html = renderWithRouter(
           React.createElement(InventoryListPage),
-          "/inventory/list?filter=low-stock",
+          "/inventory?filter=low-stock",
         );
 
         assert.ok(html.includes("Printer Paper"));
         assert.ok(!html.includes(">Pens<"));
         assert.ok(html.includes("1 of 2 products shown"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("shows the category name for a product's categoryId", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 2, categoryId: "cat-1" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+      const restoreCategories = stubCollectionFind(ProductCategories, [
+        { _id: "cat-1", orgId: "org-1", name: "Fasteners" },
+        { _id: "cat-2", orgId: "org-1", name: "Cleaning" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        assert.ok(html.includes("<span>Category</span>"));
+        assert.ok(html.includes('class="item-category">Fasteners<'));
+        assert.ok(!html.includes("Cleaning"));
+      } finally {
+        restoreCategories();
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("falls back to a dash when a product has no resolvable category", function () {
+      const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+      const restoreProducts = stubCollectionFind(Products, [
+        { _id: "bolt", name: "Bolts", totalQuantity: 12, reorderAt: 2 },
+        { _id: "nut", name: "Nuts", totalQuantity: 9, reorderAt: 2, categoryId: "deleted" },
+      ]);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+      const restoreCategories = stubCollectionFind(ProductCategories, [
+        { _id: "cat-1", orgId: "org-1", name: "Fasteners" },
+      ]);
+
+      try {
+        const html = renderWithRouter(React.createElement(InventoryListPage));
+
+        // No category pill for either row, and no stale category name.
+        assert.ok(!html.includes('class="item-category"'));
+        assert.ok(!html.includes("Fasteners"));
+      } finally {
+        restoreCategories();
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("applies the out of stock filter from the url", function () {
+      const items = [
+        { _id: "paper", name: "Printer Paper", totalQuantity: 0, reorderAt: 10 },
+        { _id: "pens", name: "Pens", totalQuantity: 20, reorderAt: 5 },
+      ];
+
+      const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
+      const restoreProducts = stubCollectionFind(Products, items);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        const html = renderWithRouter(
+          React.createElement(InventoryListPage),
+          "/inventory?filter=out-of-stock",
+        );
+
+        assert.ok(html.includes("Printer Paper"));
+        assert.ok(!html.includes(">Pens<"));
+        assert.ok(html.includes("1 of 2 products shown"));
+      } finally {
+        restoreUnits();
+        restoreLocations();
+        restoreRecords();
+        restoreProducts();
+        restoreMeteor();
+      }
+    });
+
+    it("accepts every rendered filter chip as a url filter", function () {
+      // The guard that validates ?filter= is built from the same list the chips
+      // render from, so a chip can never be unreachable through the URL.
+      const items = [{ _id: "pens", name: "Pens", totalQuantity: 20, reorderAt: 5 }];
+      const restoreMeteor = stubMeteor({ role: ROLES.STANDARD });
+      const restoreProducts = stubCollectionFind(Products, items);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+
+      try {
+        // The selected chip is the only one rendered without a border.
+        const selectedChip = (html) =>
+          (html.match(/<button[^>]*>(?:(?!<\/button>).)*<\/button>/g) || []).find((btn) =>
+            btn.includes("border:none"),
+          );
+
+        [
+          ["all", "All"],
+          ["low-stock", "Low stock"],
+          ["out-of-stock", "Out of stock"],
+          ["location", "Location"],
+        ].forEach(([id, label]) => {
+          const html = renderWithRouter(
+            React.createElement(InventoryListPage),
+            `/inventory?filter=${id}`,
+          );
+          const chip = selectedChip(html);
+          assert.ok(chip, `no chip rendered as selected for ${id}`);
+          assert.ok(chip.includes(`>${label}`), `${id} fell back to another chip: ${chip}`);
+        });
       } finally {
         restoreUnits();
         restoreLocations();

@@ -22,7 +22,7 @@ export const ShoppingListProductSchema = new SimpleSchema({
     optional: true,
   },
 
-  category: {
+  categoryId: {
     type: String,
     optional: true,
   },
