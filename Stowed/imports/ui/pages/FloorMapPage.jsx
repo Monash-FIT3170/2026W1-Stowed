@@ -767,8 +767,10 @@ function FloorMapPageInner() {
       {isFloorMapSettingsOpen && (
         <FloorMapSettingsModal
           floorSize={floorSize}
+          gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
+
         />
       )}
 
@@ -781,6 +783,7 @@ function FloorMapPageInner() {
           snapToGrid={canvasSettings.snapToGrid}
           onSave={handleEditorSettingsSave}
           onClose={() => setEditorSettingsOpen(false)}
+          floorSize={floorSize}
         />
       )}
 
