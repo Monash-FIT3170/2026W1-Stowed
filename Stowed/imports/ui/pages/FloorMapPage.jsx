@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
@@ -37,6 +37,7 @@ function FloorMapPageInner() {
   const { role } = useAuth();
   const canManage = hasClientPermission(role, "locations.manage");
   const canStocktake = hasClientPermission(role, "stocktake.save");
+  const canvasRef = useRef(null);
 
   const {
     activeTool,
@@ -236,6 +237,13 @@ function FloorMapPageInner() {
             <>
               <button
                 type="button"
+                onClick={() => canvasRef.current?.exportPng()}
+                style={statusBarButtonStyle}
+              >
+                Export as PNG
+              </button>
+              <button
+                type="button"
                 onClick={() => setFloorMapSettingsOpen(true)}
                 style={statusBarButtonStyle}
               >
@@ -297,6 +305,7 @@ function FloorMapPageInner() {
         >
           {locationsReady && (
             <Canvas
+              ref={canvasRef}
               key={floorMapId ?? "default"}
               style={{ display: "block", width: "100%", height: "100%" }}
               isCanvasEditMode={isCanvasEditMode}
