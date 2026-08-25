@@ -24,6 +24,7 @@ import { Accounts } from "meteor/accounts-base";
 import { WebApp } from "meteor/webapp";
 import crypto from "crypto";
 import "/imports/api/products/methods";
+import "/imports/api/products/searchMethods";
 import "/imports/api/categories/methods";
 import "/imports/api/shoppingLists/methods";
 import "/imports/api/schedules/methods";
