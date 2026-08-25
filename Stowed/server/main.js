@@ -1,3 +1,24 @@
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+
+// Meteor runs the server bundle from .meteor/local/build/programs/server, not
+// the project root, so dotenv's default cwd-relative lookup can't find .env.
+// Walk up from cwd to find it instead of hardcoding Meteor's internal build depth.
+(function loadEnvFile() {
+  let dir = process.cwd();
+  for (let i = 0; i < 10; i++) {
+    const candidate = path.join(dir, ".env");
+    if (fs.existsSync(candidate)) {
+      dotenv.config({ path: candidate });
+      return;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return;
+    dir = parent;
+  }
+})();
+
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
 import { WebApp } from "meteor/webapp";

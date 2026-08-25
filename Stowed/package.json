@@ -16,6 +16,7 @@
     "@react-email/render": "^2.1.0",
     "@swc/helpers": "^0.5.17",
     "@tailwindcss/postcss": "^4.2.2",
+    "dotenv": "^17.4.2",
     "fuse.js": "^7.3.0",
     "konva": "^10.2.5",
     "meteor-node-stubs": "^1.2.12",
