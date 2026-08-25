@@ -1,18 +1,27 @@
 import { useRef, useEffect, useReducer } from "react";
 import { Stage } from "react-konva";
 import Konva from "konva";
+import { useTracker } from "meteor/react-meteor-data";
+import { Meteor } from "meteor/meteor";
 
 import { useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import {
+  StorageLocations,
+  StorageUnits,
+  FloorMaps,
+  Sites,
+} from "/imports/api/locations/collections";
 
 import { GridLayer } from "./layers/GridLayer";
 import { UnitLayer } from "./layers/UnitLayer";
 import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
+import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
 
 if (typeof window !== "undefined") {
   Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
@@ -20,6 +29,17 @@ if (typeof window !== "undefined") {
 
 export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
   const { units, commitUnits, floorSize, canvasSettings } = useEditor();
+
+  const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
+    Meteor.subscribe("locations.all");
+
+    return {
+      storageLocations: StorageLocations.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      sites: Sites.find().fetch(),
+    };
+  });
 
   const width = floorSize.width;
   const height = floorSize.height;
@@ -178,6 +198,16 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
               isCanvasEditMode={isCanvasEditMode}
               onHover={(data) => setTooltip?.(data)}
               onHoverEnd={() => setTooltip?.(null)}
+              onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+            />
+
+            <StocktakeAlertLayer
+              units={units}
+              storageLocations={storageLocations}
+              storageUnits={storageUnits}
+              floorMaps={floorMaps}
+              sites={sites}
+              isCanvasEditMode={isCanvasEditMode}
               onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
             />
           </Stage>
