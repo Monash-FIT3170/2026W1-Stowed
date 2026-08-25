@@ -35,7 +35,6 @@ export function ProductDetailView({
   item,
   productId,
   records = [],
-  categories = [],
   sites = [],
   floorMaps = [],
   storageUnits = [],
@@ -135,7 +134,6 @@ export function ProductDetailView({
 
   const unitCost = Number(item.unitCost);
   const purchaseCost = Number(item.purchaseCost);
-  const categoryName = categories.find((c) => c._id === item.categoryId)?.name || "-";
   const reorderAt = item.reorderAt ?? null;
   const galleryImages = imageUrls.length > 0 ? imageUrls : item.images || [];
 
@@ -432,7 +430,6 @@ export function ProductDetailView({
                       value={reorderAt != null ? reorderAt : "Not set"}
                       readOnly
                       className="form-input"
-                      className={`form-input ${reorderAt == null ? "empty-field" : ""}`}
                     />
                   </div>
                 </div>
