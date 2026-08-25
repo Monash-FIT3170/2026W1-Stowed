@@ -9,7 +9,7 @@
 
 .dashboard-page-heading {
   margin: 0 0 4px;
-    font-family:
+  font-family:
     Inter,
     ui-sans-serif,
     system-ui,
@@ -24,7 +24,7 @@
 
 .dashboard-page-subheading {
   margin: 0;
-    font-family:
+  font-family:
     Inter,
     ui-sans-serif,
     system-ui,
@@ -116,7 +116,7 @@
 
 .dashboard-customizer-copy h2 {
   margin: 0;
-    font-family:
+  font-family:
     Inter,
     ui-sans-serif,
     system-ui,
@@ -332,7 +332,7 @@
 }
 
 .dashboard-cleared-state strong {
-    font-family:
+  font-family:
     Inter,
     ui-sans-serif,
     system-ui,
@@ -632,7 +632,7 @@
 .dashboard-stocktake-empty strong,
 .dashboard-low-stock-empty strong,
 .dashboard-recent-empty strong {
-    font-family:
+  font-family:
     Inter,
     ui-sans-serif,
     system-ui,

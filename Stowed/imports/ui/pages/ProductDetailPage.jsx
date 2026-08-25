@@ -361,16 +361,16 @@ export function ProductDetailView({
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="category">Category</label>
-                      <input
-                        id="category"
-                        type="text"
-                        value={item.category != null ? item.category : "No category specified"}
-                        readOnly
-                        className={`form-input ${!item.category ? "empty-field" : ""}`}
-                      />
+                    <input
+                      id="category"
+                      type="text"
+                      value={item.category != null ? item.category : "No category specified"}
+                      readOnly
+                      className={`form-input ${!item.category ? "empty-field" : ""}`}
+                    />
                   </div>
                   <div className="form-group">
-                     <label htmlFor="brand">Brand</label>
+                    <label htmlFor="brand">Brand</label>
                     <input
                       id="brand"
                       type="text"
@@ -538,9 +538,7 @@ export function ProductDetailView({
                   {qrCode ? (
                     <img src={qrCode} alt="QR Code" className="qr-code" />
                   ) : (
-                    <div className="qr-placeholder">
-                      No QR code
-                    </div>
+                    <div className="qr-placeholder">No QR code</div>
                   )}
                 </div>
                 <button className="btn-print">Print label</button>
