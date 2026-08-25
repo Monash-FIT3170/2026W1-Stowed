@@ -1,4 +1,4 @@
-import { useRef, useEffect, useReducer } from "react";
+import { useRef, useEffect, useReducer, forwardRef, useImperativeHandle } from "react";
 import { Stage } from "react-konva";
 import Konva from "konva";
 import { useTracker } from "meteor/react-meteor-data";
@@ -27,7 +27,10 @@ if (typeof window !== "undefined") {
   Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
 }
 
-export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
+export const Canvas = forwardRef(function Canvas(
+  { style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip },
+  ref,
+) {
   const { units, commitUnits, floorSize, canvasSettings } = useEditor();
 
   const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
@@ -140,6 +143,21 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleCopy, handlePaste, handleDuplicate, handleDelete]);
+
+  useImperativeHandle(ref, () => ({
+    exportPng() {
+      const stage = stageRef.current;
+      if (!stage) return;
+      stage.batchDraw();
+      requestAnimationFrame(() => {
+        const dataUrl = stage.toDataURL({ pixelRatio: 2 });
+        const link = document.createElement("a");
+        link.download = "floor-map.png";
+        link.href = dataUrl;
+        link.click();
+      });
+    },
+  }));
 
   return (
     <div
@@ -274,7 +292,7 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
       </div>
     </div>
   );
-}
+});
 
 const zoomButtonStyle = {
   width: 26,
