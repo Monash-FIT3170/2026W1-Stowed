@@ -9,7 +9,12 @@ import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
 import { CANVAS_CONFIG } from "../CanvasConfig";
-import { StorageLocations, StorageUnits, FloorMaps, Sites } from "/imports/api/locations/collections";
+import {
+  StorageLocations,
+  StorageUnits,
+  FloorMaps,
+  Sites,
+} from "/imports/api/locations/collections";
 
 import { GridLayer } from "./layers/GridLayer";
 import { UnitLayer } from "./layers/UnitLayer";

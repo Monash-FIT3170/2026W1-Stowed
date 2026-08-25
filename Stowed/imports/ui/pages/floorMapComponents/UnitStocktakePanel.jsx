@@ -153,6 +153,15 @@ export function UnitStocktakePanelView({ unitName, rows = [], canStocktake = fal
                 <ul className="panel-locations">
                   {sectionRows.map(({ location, daysUntilDue }) => (
                     <li className={`panel-location ${status}`} key={location._id}>
+                      {status !== STOCKTAKE_STATUS.OK && (
+                        <span
+                          className="panel-location-alert"
+                          title="Stocktake due"
+                          aria-hidden="true"
+                        >
+                          ⚠️
+                        </span>
+                      )}
                       <Link className="panel-location-main" to={`/locations/${location._id}`}>
                         <span className="panel-location-name">
                           {location.name || "Unnamed location"}

@@ -139,6 +139,12 @@
   gap: 8px;
 }
 
+.panel-location-alert {
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1;
+}
+
 .panel-item > div:nth-child(2) {
   flex: 1;
   min-width: 0;
@@ -339,12 +345,4 @@
     right: 14px;
     bottom: 14px;
   }
-}
-
-.stocktake-alert {
-  width: 20px;
-  min-width: 20px;
-  flex-shrink: 0;
-  text-align: center;
-  margin-right: 4px;
 }
