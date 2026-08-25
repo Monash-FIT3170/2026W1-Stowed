@@ -250,6 +250,9 @@ export function InventoryListPage() {
   return (
     <div className="inventory-list-container">
       <div className="product-detail-header">
+        <div className="breadcrumb">
+          <span className="breadcrumb-current">All products</span>
+        </div>
         <div className="header-top">
           <h1 className="header-title">
             All <em>Products</em>

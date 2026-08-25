@@ -352,6 +352,9 @@ export function LocationsPage() {
   return (
     <div className="product-detail-container locations-directory">
       <div className="product-detail-header">
+        <div className="breadcrumb">
+          <span className="breadcrumb-current">Locations</span>
+        </div>
         <div className="header-top locations-heading-row">
           <div>
             <h1 className="header-title">

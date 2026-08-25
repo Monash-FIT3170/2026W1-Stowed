@@ -178,7 +178,10 @@ export function CreateProductPage() {
         <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              <span className="breadcrumb-link">Inventory</span> &nbsp;/ &nbsp;
+              <Link to="/inventory" className="breadcrumb-link">
+                Inventory
+              </Link>
+              <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-current">Create product</span>
             </div>
           </div>
