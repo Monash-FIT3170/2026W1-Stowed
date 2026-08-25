@@ -258,9 +258,14 @@ export function InventoryListPage() {
             All <em>Products</em>
           </h1>
           {canCreate && (
-            <Link to="/inventory/new">
-              <button className="btn-primary">+ Add product</button>
-            </Link>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <Link to="/inventory/new">
+                <button className="btn-primary">+ Add product manually</button>
+              </Link>
+              <Link to="/inventory/new/search">
+                <button className="btn-primary">+ Add product via Search</button>
+              </Link>
+            </div>
           )}
         </div>
       </div>

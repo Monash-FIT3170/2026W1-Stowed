@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
+import { ProductSearchTestPage } from "./pages/ProductSearchTestPage";
 import { ListsPage } from "./pages/ListsPage";
 import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
@@ -100,6 +101,10 @@ export function App() {
             <Route
               path="/inventory/new"
               element={canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/inventory/new/search"
+              element={canAccessInventory ? <ProductSearchTestPage /> : <Navigate to="/" replace />}
             />
             <Route
               path="/inventory/:productId/edit"
