@@ -94,6 +94,19 @@ function FloorMapPageInner() {
     setSelectedUnit(unit);
     setIsStockPanelOpen(!!unitId);
   };
+
+  const handleCanvasModeToggle = () => {
+    const nextEditMode = !isCanvasEditMode;
+
+    if (!nextEditMode) {
+      setSelectedStorageUnitId(null);
+      setSelectedUnit(null);
+      setIsStockPanelOpen(false);
+      setTooltip(null);
+    }
+
+    setCanvasEditMode(nextEditMode);
+  };
   const handleEditShape = (shape) => {
     setEditingShape(shape);
     setIsCreateShapeOpen(true);
@@ -264,7 +277,7 @@ function FloorMapPageInner() {
 
           <button
             type="button"
-            onClick={() => canManage && setCanvasEditMode(!isCanvasEditMode)}
+            onClick={() => canManage && handleCanvasModeToggle()}
             disabled={!canManage}
             style={{
               fontSize: "10px",

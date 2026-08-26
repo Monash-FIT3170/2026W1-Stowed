@@ -74,6 +74,12 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
   });
 
   useEffect(() => {
+    if (!isCanvasEditMode) {
+      dispatch({ type: CANVAS_ACTIONS.DESELECT_ALL });
+    }
+  }, [isCanvasEditMode]);
+
+  useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
