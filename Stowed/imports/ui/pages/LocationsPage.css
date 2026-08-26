@@ -109,21 +109,31 @@
   margin-bottom: 14px;
 }
 
+/* Match the shared .form-input control (see Global.css) so location forms
+   look identical to the rest of the app's fields. */
 .locations-toolbar input,
 .locations-toolbar select,
 .locations-form-field input,
 .locations-form-field select,
 .locations-form-field textarea {
   width: 100%;
+  min-height: 38px;
   box-sizing: border-box;
-  padding: 9px 11px;
-  border: 1px solid var(--border-light);
+  padding: 9px 12px;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   outline: none;
-  background: var(--card-bg);
+  background: var(--input-bg);
   color: var(--text-dark);
   font: inherit;
   font-size: 13px;
+  line-height: 1.4;
+}
+
+.locations-form-field textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .locations-toolbar input:focus,
@@ -131,7 +141,7 @@
 .locations-form-field input:focus,
 .locations-form-field select:focus,
 .locations-form-field textarea:focus {
-  border-color: var(--accent-primary);
+  border-color: var(--accent-secondary);
 }
 
 .locations-table-shell {
