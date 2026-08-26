@@ -7,7 +7,7 @@ import {
 
 const presetShapes = [
   {
-    shapeId: "preset-square",
+    shapeId: -1,
     name: "Square",
     points: [
       { x: 0, y: 0 },
@@ -23,7 +23,7 @@ const presetShapes = [
   },
 
   {
-    shapeId: "preset-rectangle",
+    shapeId: -2,
     name: "Rectangle",
     points: [
       { x: 0, y: 0 },
@@ -39,7 +39,7 @@ const presetShapes = [
   },
 
   {
-    shapeId: "preset-triangle",
+    shapeId: -3,
     name: "Triangle",
     points: [
       { x: 0, y: 0 },
@@ -54,7 +54,7 @@ const presetShapes = [
   },
 
   {
-    shapeId: "preset-l-shape",
+    shapeId: -4,
     name: "L Shape",
     points: [
       { x: 0, y: 0 },
