@@ -42,6 +42,39 @@ async function seedProducts(seedOrgId) {
   if (count > 0) return;
 
   const now = new Date();
+  const createRectangleGeometry = ({
+    shapeId,
+    name,
+    x,
+    y,
+    width,
+    height,
+  }) => ({
+    shape: {
+      orgId: seedOrgId,
+      shapeId,
+      name,
+      points: [
+        { x: 0, y: 0 },
+        { x: width, y: 0 },
+        { x: width, y: height },
+        { x: 0, y: height },
+      ],
+      gridReference: {
+        x: 0,
+        y: 0,
+      },
+    },
+    offset: {
+      x,
+      y,
+    },
+    rotation: 0,
+    scale: {
+      x: 1,
+      y: 1,
+    },
+  });
   const add = ({ name, description, category, brand, unitCost, totalQuantity }) =>
     Products.insertAsync({
       orgId: seedOrgId,
@@ -275,23 +308,37 @@ async function seedLocations(seedOrgId) {
     createdAt: now,
     updatedAt: now,
   });
-
   // Science storeroom: Cabinet A and Cabinet B
   const sciCabAId = await StorageUnits.insertAsync({
     orgId: seedOrgId,
     floorMapId: scienceFloorId,
     name: "Cabinet A",
     type: "cabinet",
-    position: { x: 24, y: 24, width: 100, height: 60 },
+    ...createRectangleGeometry({
+      shapeId: 1,
+      name: "Cabinet A",
+      x: 24,
+      y: 24,
+      width: 100,
+      height: 60,
+    }),
     createdAt: now,
     updatedAt: now,
   });
+
   const sciCabBId = await StorageUnits.insertAsync({
     orgId: seedOrgId,
     floorMapId: scienceFloorId,
     name: "Cabinet B",
     type: "cabinet",
-    position: { x: 150, y: 24, width: 100, height: 60 },
+    ...createRectangleGeometry({
+      shapeId: 2,
+      name: "Cabinet B",
+      x: 150,
+      y: 24,
+      width: 100,
+      height: 60,
+    }),
     createdAt: now,
     updatedAt: now,
   });
@@ -302,16 +349,31 @@ async function seedLocations(seedOrgId) {
     floorMapId: itFloorId,
     name: "Equipment Rack 1",
     type: "rack",
-    position: { x: 24, y: 24, width: 80, height: 120 },
+    ...createRectangleGeometry({
+      shapeId: 3,
+      name: "Equipment Rack 1",
+      x: 24,
+      y: 24,
+      width: 80,
+      height: 120,
+    }),
     createdAt: now,
     updatedAt: now,
   });
+
   const itShelfId = await StorageUnits.insertAsync({
     orgId: seedOrgId,
     floorMapId: itFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 130, y: 24, width: 120, height: 60 },
+    ...createRectangleGeometry({
+      shapeId: 4,
+      name: "Shelf A",
+      x: 130,
+      y: 24,
+      width: 120,
+      height: 60,
+    }),
     createdAt: now,
     updatedAt: now,
   });
@@ -322,10 +384,18 @@ async function seedLocations(seedOrgId) {
     floorMapId: generalFloorId,
     name: "Shelf A",
     type: "shelf",
-    position: { x: 24, y: 24, width: 160, height: 60 },
+    ...createRectangleGeometry({
+      shapeId: 5,
+      name: "Shelf A",
+      x: 24,
+      y: 24,
+      width: 160,
+      height: 60,
+    }),
     createdAt: now,
     updatedAt: now,
   });
+
 
   // Science Cabinet A locations
   await StorageLocations.insertAsync({
