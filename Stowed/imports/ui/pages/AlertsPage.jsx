@@ -10,11 +10,9 @@ import {
 } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import {
-  getLocationStocktakeStatus,
-  getDaysUntilDue,
-  getNextStocktakeDate,
-  DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+  describeStocktakeTiming,
   DUE_SOON_DAYS,
+  getStocktakeAlerts,
   STOCKTAKE_STATUS,
 } from "/imports/api/locations/stocktake";
 import { FilterChips } from "../components/FilterChips";
@@ -32,17 +30,6 @@ function formatDate(date) {
     month: "short",
     year: "numeric",
   });
-}
-
-// "12 days overdue" / "due in 3 days" — the headline on each alert.
-function describeTiming(daysUntilDue) {
-  if (daysUntilDue === null) return "Never counted";
-  if (daysUntilDue > 0) {
-    return `Due in ${daysUntilDue} day${daysUntilDue === 1 ? "" : "s"}`;
-  }
-  const overdueBy = Math.abs(daysUntilDue);
-  if (overdueBy === 0) return "Due today";
-  return `${overdueBy} day${overdueBy === 1 ? "" : "s"} overdue`;
 }
 
 /**
@@ -81,9 +68,6 @@ export function AlertsPage() {
     }, []);
 
   const alerts = useMemo(() => {
-    const unitsById = new Map(storageUnits.map((unit) => [unit._id, unit]));
-    const floorMapsById = new Map(floorMaps.map((floorMap) => [floorMap._id, floorMap]));
-    const sitesById = new Map(sites.map((site) => [site._id, site]));
     const productsById = new Map(products.map((product) => [product._id, product]));
 
     // locationId -> [{ name, quantity }]
@@ -96,29 +80,11 @@ export function AlertsPage() {
       itemsByLocationId.set(record.locationId, existing);
     }
 
-    const now = new Date();
-
-    return (
-      storageLocations
-        .map((location) => {
-          const unit = unitsById.get(location.storageUnitId);
-          const floorMap = unit ? floorMapsById.get(unit.floorMapId) : null;
-          const site = floorMap ? sitesById.get(floorMap.siteId) : null;
-          const intervalDays = site?.stocktakeIntervalDays ?? DEFAULT_STOCKTAKE_INTERVAL_DAYS;
-
-          return {
-            location,
-            status: getLocationStocktakeStatus(location.lastStocktakeAt, intervalDays, now),
-            daysUntilDue: getDaysUntilDue(location.lastStocktakeAt, intervalDays, now),
-            dueDate: getNextStocktakeDate(location.lastStocktakeAt, intervalDays),
-            intervalDays,
-            path: [site?.name, floorMap?.name, unit?.name].filter(Boolean).join(" › "),
-            items: itemsByLocationId.get(location._id) ?? [],
-          };
-        })
-        .filter((alert) => alert.status !== STOCKTAKE_STATUS.OK)
-        // Most urgent first: the further past its deadline, the higher it sits.
-        .sort((a, b) => (a.daysUntilDue ?? 0) - (b.daysUntilDue ?? 0))
+    return getStocktakeAlerts({ storageLocations, storageUnits, floorMaps, sites }).map(
+      (alert) => ({
+        ...alert,
+        items: itemsByLocationId.get(alert.location._id) ?? [],
+      }),
     );
   }, [storageLocations, storageUnits, floorMaps, sites, products, productRecords]);
 
@@ -150,8 +116,6 @@ export function AlertsPage() {
     <div className="product-detail-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Tools</span>
-          <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Alerts</span>
         </div>
         <div className="header-top">
@@ -217,7 +181,7 @@ export function AlertsPage() {
                           </div>
                           <span className={`alert-badge ${alert.status}`}>
                             {isOverdue && "⚠ "}
-                            {describeTiming(alert.daysUntilDue)}
+                            {describeStocktakeTiming(alert.daysUntilDue)}
                           </span>
                         </div>
 

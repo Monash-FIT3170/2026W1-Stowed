@@ -1,6 +1,9 @@
 /**
  * Visual status indicator for an item's stock level.
- * Colours match the Bloom design palette.
+ *
+ * Three states, matching the product detail header: out of stock at zero, low
+ * at or below the reorder threshold, in stock otherwise. An item with no
+ * threshold can only be out of stock or in stock.
  *
  * @param {Object} props
  * @param {number} props.quantity - Current stock quantity.
@@ -9,21 +12,19 @@
 export function StatusBadge({ quantity, threshold }) {
   let label;
   let style;
-  let icon = "";
 
-  if (threshold == null) {
-    label = "In stock";
-    style = { background: "#D5E5D0", color: "#4A7A5C" };
-  } else if (quantity <= threshold) {
-    label = "Low!";
-    icon = "⚠ ";
-    style = { background: "#F8DDD2", color: "#B5532A" };
-  } else if (quantity <= threshold * 1.5) {
-    label = "Getting low";
-    style = { background: "#FAEAD0", color: "#C4882B" };
+  if (quantity <= 0) {
+    label = "Out of stock";
+    style = {
+      background: "var(--status-out-of-stock-bg)",
+      color: "var(--status-out-of-stock-text)",
+    };
+  } else if (threshold != null && quantity <= threshold) {
+    label = "Low stock";
+    style = { background: "var(--status-low-stock-bg)", color: "var(--status-low-stock-text)" };
   } else {
     label = "In stock";
-    style = { background: "#D5E5D0", color: "#4A7A5C" };
+    style = { background: "var(--status-in-stock-bg)", color: "var(--status-in-stock-text)" };
   }
 
   return (
@@ -37,7 +38,6 @@ export function StatusBadge({ quantity, threshold }) {
         display: "inline-block",
       }}
     >
-      {icon}
       {label}
     </span>
   );

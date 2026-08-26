@@ -5,6 +5,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import {
   Sites,
   FloorMaps,
@@ -12,6 +13,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
+import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
 import "./CreateProductPage.css";
 import "../Global.css";
 
@@ -39,15 +41,16 @@ export function EditProductPage() {
 
   useEffect(() => {
     if (role !== null && !hasClientPermission(role, "products.update")) {
-      navigate("/inventory/list", { replace: true });
+      navigate("/inventory", { replace: true });
     }
   }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [purchaseCost, setPurchaseCost] = useState("");
   const [reorderAt, setReorderAt] = useState("");
   const [assignments, setAssignments] = useState([]);
   const [initialised, setInitialised] = useState(false);
@@ -55,36 +58,59 @@ export function EditProductPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  // Captured at load so the save summary can still name a category that gets
+  // deleted while the form is open.
+  const [originalCategoryName, setOriginalCategoryName] = useState("");
+
   const [imageUrls, setImageUrls] = useState([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const { loading, product, originalRecords, sites, floorMaps, storageUnits, storageLocations } =
-    useTracker(() => {
-      const subProducts = Meteor.subscribe("products");
-      const subRecords = Meteor.subscribe("productRecords");
-      const subLocations = Meteor.subscribe("locations.all");
-      const loading = !subProducts.ready() || !subRecords.ready() || !subLocations.ready();
-      return {
-        loading,
-        product: Products.findOne(productId),
-        originalRecords: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
-        sites: Sites.find().fetch(),
-        floorMaps: FloorMaps.find().fetch(),
-        storageUnits: StorageUnits.find().fetch(),
-        storageLocations: StorageLocations.find().fetch(),
-      };
-    }, [productId]);
+  const canManageCategories = hasClientPermission(role, "productCategories.manage");
+
+  const {
+    loading,
+    product,
+    originalRecords,
+    categories,
+    sites,
+    floorMaps,
+    storageUnits,
+    storageLocations,
+  } = useTracker(() => {
+    const subProducts = Meteor.subscribe("products");
+    const subRecords = Meteor.subscribe("productRecords");
+    const subCategories = Meteor.subscribe("productCategories");
+    const subLocations = Meteor.subscribe("locations.all");
+    const loading =
+      !subProducts.ready() ||
+      !subRecords.ready() ||
+      !subCategories.ready() ||
+      !subLocations.ready();
+    return {
+      loading,
+      product: Products.findOne(productId),
+      originalRecords: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
+      categories: ProductCategories.find().fetch(),
+      sites: Sites.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      storageLocations: StorageLocations.find().fetch(),
+    };
+  }, [productId]);
 
   useEffect(() => {
     if (!loading && product && !initialised) {
       setName(product.name ?? "");
-      setCategory(product.category ?? "");
+      setCategoryId(product.categoryId ?? "");
+      setOriginalCategoryName(categories.find((c) => c._id === product.categoryId)?.name || "");
       setBrand(product.brand ?? "");
       setTotalQuantity(String(product.totalQuantity ?? ""));
       setUnitCost(product.unitCost != null ? String(product.unitCost) : "");
+      setPurchaseCost(product.purchaseCost != null ? String(product.purchaseCost) : "");
       setReorderAt(product.reorderAt != null ? String(product.reorderAt) : "");
       setImageUrls(product.images || []);
       setMainImageIndex(product.mainImageIndex || 0);
@@ -96,7 +122,7 @@ export function EditProductPage() {
       );
       setInitialised(true);
     }
-  }, [loading, product, originalRecords, initialised]);
+  }, [loading, product, originalRecords, categories, initialised]);
 
   const parsedTotal = parseInt(totalQuantity, 10);
   const nameIsValid = name.trim().length > 0;
@@ -113,13 +139,15 @@ export function EditProductPage() {
     const result = {};
 
     if (name.trim() !== product.name) result.name = { from: product.name, to: name.trim() };
-    if (category !== (product.category || ""))
-      result.category = { from: product.category || "", to: category };
+    if (categoryId !== (product.categoryId || ""))
+      result.categoryId = { from: product.categoryId || "", to: categoryId };
     if (brand !== (product.brand || "")) result.brand = { from: product.brand || "", to: brand };
     if (parsedTotal !== product.totalQuantity)
       result.totalQuantity = { from: product.totalQuantity, to: parsedTotal };
     if (parseFloat(unitCost) !== product.unitCost)
       result.unitCost = { from: product.unitCost, to: parseFloat(unitCost) };
+    if (parseFloat(purchaseCost) !== product.purchaseCost)
+      result.purchaseCost = { from: product.purchaseCost, to: parseFloat(purchaseCost) };
     const parsedReorderAt = reorderAt !== "" ? parseInt(reorderAt, 10) : null;
     const originalReorderAt = product.reorderAt ?? null;
     if (parsedReorderAt !== originalReorderAt)
@@ -157,10 +185,11 @@ export function EditProductPage() {
     initialised,
     product,
     name,
-    category,
+    categoryId,
     brand,
     parsedTotal,
     unitCost,
+    purchaseCost,
     reorderAt,
     imageUrls,
     validAssignments,
@@ -226,10 +255,11 @@ export function EditProductPage() {
       await callMethod("products.update", {
         productId,
         name: name.trim(),
-        category,
+        categoryId,
         brand,
         totalQuantity: parsedTotal,
         unitCost: unitCost !== "" ? parseFloat(unitCost) : 0,
+        purchaseCost: purchaseCost !== "" ? parseFloat(purchaseCost) : 0,
         reorderAt: reorderAt !== "" ? parseInt(reorderAt, 10) : undefined,
         images: imageUrls,
         assignments: validAssignments.map((a) => ({
@@ -252,7 +282,7 @@ export function EditProductPage() {
     <div className="product-detail-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <Link to="/inventory/list" className="breadcrumb-link">
+          <Link to="/inventory" className="breadcrumb-link">
             Inventory
           </Link>
           <span className="breadcrumb-separator">/</span>
@@ -289,12 +319,31 @@ export function EditProductPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Category</label>
-                  <input
-                    type="text"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="form-input"
-                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <select
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="form-input"
+                      style={{ flex: 1 }}
+                    >
+                      <option value="">Select a category...</option>
+                      {categories.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    {canManageCategories && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setShowCategoryModal(true)}
+                        title="Manage categories"
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Brand</label>
@@ -317,7 +366,7 @@ export function EditProductPage() {
             <div className="section-content">
               <div className="form-row">
                 <div className="form-group">
-                  <label>Unit cost</label>
+                  <label>Sell Price</label>
                   <input
                     type="number"
                     min="0"
@@ -329,6 +378,20 @@ export function EditProductPage() {
                   />
                 </div>
                 <div className="form-group">
+                  <label>Purchase Price</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={purchaseCost}
+                    onChange={(e) => setPurchaseCost(e.target.value)}
+                    className="form-input"
+                    placeholder="$0.00"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
                   <label>Total stock</label>
                   <input
                     type="number"
@@ -338,8 +401,6 @@ export function EditProductPage() {
                     min="0"
                   />
                 </div>
-              </div>
-              <div className="form-row">
                 <div className="form-group">
                   <label>Reorder at</label>
                   <input
@@ -574,19 +635,16 @@ export function EditProductPage() {
                   </div>
                 </div>
               )}
-              {changes.category && (
+              {changes.categoryId && (
                 <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      color: "var(--text-dark)",
-                      marginBottom: "2px",
-                    }}
-                  >
+                  <div style={{ fontWeight: 600, color: "var(--text-dark)", marginBottom: "2px" }}>
                     Category
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
-                    {changes.category.from} → {changes.category.to}
+                    {categories.find((c) => c._id === changes.categoryId.from)?.name ||
+                      originalCategoryName ||
+                      "None"}{" "}
+                    → {categories.find((c) => c._id === changes.categoryId.to)?.name || "None"}
                   </div>
                 </div>
               )}
@@ -631,10 +689,26 @@ export function EditProductPage() {
                       marginBottom: "2px",
                     }}
                   >
-                    Unit cost
+                    Sell price
                   </div>
                   <div style={{ color: "var(--text-muted)" }}>
                     ${changes.unitCost.from} → ${changes.unitCost.to}
+                  </div>
+                </div>
+              )}
+              {changes.purchaseCost && (
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text-dark)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Purchase price
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>
+                    ${changes.purchaseCost.from} → ${changes.purchaseCost.to}
                   </div>
                 </div>
               )}
@@ -724,6 +798,16 @@ export function EditProductPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showCategoryModal && (
+        <ManageCategoriesModal
+          categories={categories}
+          onClose={() => setShowCategoryModal(false)}
+          onCategoryDeleted={(deletedId) => {
+            if (categoryId === deletedId) setCategoryId("");
+          }}
+        />
       )}
     </div>
   );

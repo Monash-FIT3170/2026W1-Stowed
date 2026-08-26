@@ -17,8 +17,21 @@
   --tag-bg: #f5efe6;
   --tag-text: #5c4f3f;
   --danger: #cc0000;
+
+  /* Stock status, shared by the StatusBadge component and the product detail
+     header so the same product reads the same on every page. */
+  --status-in-stock-bg: #dcfce7;
+  --status-in-stock-text: #166534;
+  --status-low-stock-bg: #ffedd5;
+  --status-low-stock-text: #b45309;
+  --status-out-of-stock-bg: #fee2e2;
+  --status-out-of-stock-text: #991b1b;
   --dark: #2b1f1a;
   --cream: #fff6ef;
+}
+
+body {
+  font-family: Inter, sans-serif;
 }
 
 /* -- Page shell -- */
@@ -53,7 +66,6 @@
 
 .header-title {
   font-size: 28px;
-  font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
   color: var(--text-dark);
   margin: 4px 0 8px 0;
@@ -465,9 +477,9 @@ select.form-input.selected {
   justify-content: flex-end;
 }
 
-/* -- Item tags -- */
+/* -- Item categories -- */
 
-.item-tag {
+.item-category {
   background: var(--tag-bg);
   color: var(--tag-text);
   padding: 2px 8px;

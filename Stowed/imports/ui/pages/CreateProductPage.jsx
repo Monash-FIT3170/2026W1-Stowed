@@ -5,19 +5,20 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products } from "/imports/api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import {
   Sites,
   FloorMaps,
   StorageUnits,
   StorageLocations,
 } from "/imports/api/locations/collections";
+import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
 import "./CreateProductPage.css";
 import "../Global.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 
 // Helpers
 
-// Wraps Meteor.call in a Promise so we can use async/await.
 function callMethod(methodName, params) {
   return new Promise((resolve, reject) => {
     Meteor.call(methodName, params, (error, result) => {
@@ -27,8 +28,6 @@ function callMethod(methodName, params) {
   });
 }
 
-// Builds a full readable path for a StorageLocation, e.g.:
-// "Main Warehouse → Ground Floor → Shelf A → Bay 1"
 function buildLocationLabel(location, storageUnits, floorMaps, sites) {
   const unit = storageUnits.find((u) => u._id === location.storageUnitId);
   const floorMap = unit ? floorMaps.find((f) => f._id === unit.floorMapId) : null;
@@ -45,15 +44,16 @@ export function CreateProductPage() {
 
   useEffect(() => {
     if (role !== null && !hasClientPermission(role, "products.create")) {
-      navigate("/inventory/list", { replace: true });
+      navigate("/inventory", { replace: true });
     }
   }, [role, navigate]);
 
   const [name, setName] = useState("");
   const [description] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [brand, setBrand] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [purchaseCost, setPurchaseCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [reorderAt, setReorderAt] = useState("");
   const [assignments, setAssignments] = useState([]);
@@ -63,38 +63,37 @@ export function CreateProductPage() {
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
-  const { products, sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
-    Meteor.subscribe("products");
-    Meteor.subscribe("locations.all");
-    return {
-      products: Products.find().fetch(),
-      sites: Sites.find().fetch(),
-      floorMaps: FloorMaps.find().fetch(),
-      storageUnits: StorageUnits.find().fetch(),
-      storageLocations: StorageLocations.find().fetch(),
-    };
-  }, []);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  // Derived validation
+  const { products, categories, sites, floorMaps, storageUnits, storageLocations } =
+    useTracker(() => {
+      Meteor.subscribe("products");
+      Meteor.subscribe("productCategories");
+      Meteor.subscribe("locations.all");
+      return {
+        products: Products.find().fetch(),
+        categories: ProductCategories.find().fetch(),
+        sites: Sites.find().fetch(),
+        floorMaps: FloorMaps.find().fetch(),
+        storageUnits: StorageUnits.find().fetch(),
+        storageLocations: StorageLocations.find().fetch(),
+      };
+    }, []);
 
   const parsedTotal = parseInt(totalQuantity, 10);
 
   const nameIsValid = name.trim().length > 0;
   const totalQuantityIsValid = totalQuantity !== "" && !isNaN(parsedTotal);
 
-  // Case-insensitive check against all existing product names.
   const isDuplicate =
     nameIsValid && products.some((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase());
 
-  // Only count rows that have both a location and a quantity filled in.
   const validAssignments = assignments.filter((a) => a.locationId && a.quantity !== "");
   const assignedTotal = validAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
   const remaining = totalQuantityIsValid ? parsedTotal - assignedTotal : null;
   const isBalanced = totalQuantityIsValid && remaining === 0;
 
   const canSubmit = nameIsValid && totalQuantityIsValid && isBalanced && !isDuplicate;
-
-  // Assignment handlers
 
   function addAssignment() {
     setAssignments([...assignments, { locationId: "", quantity: "" }]);
@@ -110,7 +109,6 @@ export function CreateProductPage() {
 
   async function handleImageSelect(event) {
     const file = event.target.files?.[0];
-    // Reset so picking the same file twice still fires onChange.
     event.target.value = "";
     if (!file) return;
 
@@ -125,7 +123,6 @@ export function CreateProductPage() {
       const url = await uploadImageToServer(file);
       setImageUrls((prev) => {
         const next = [...prev, url];
-        // If this is the first image, make it the main one.
         if (prev.length === 0) setMainImageIndex(0);
         return next;
       });
@@ -146,8 +143,6 @@ export function CreateProductPage() {
     });
   }
 
-  // Submit
-
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -155,9 +150,10 @@ export function CreateProductPage() {
       await callMethod("products.createWithAssignments", {
         name,
         description,
-        category,
+        categoryId,
         brand,
         unitCost: unitCost ? parseFloat(unitCost) : undefined,
+        purchaseCost: purchaseCost ? parseFloat(purchaseCost) : undefined,
         totalQuantity: parsedTotal,
         reorderAt: reorderAt ? parseInt(reorderAt, 10) : undefined,
         images: imageUrls,
@@ -167,15 +163,14 @@ export function CreateProductPage() {
         })),
       });
 
-      navigate("/inventory/list");
+      navigate("/inventory");
     } catch (error) {
       console.error("Failed to create product:", error);
     }
   }
 
   const locationsExist = storageLocations.length > 0;
-
-  // Render
+  const canManageCategories = hasClientPermission(role, "productCategories.manage");
 
   return (
     <>
@@ -183,7 +178,10 @@ export function CreateProductPage() {
         <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              <span className="breadcrumb-link">Inventory</span> &nbsp;/ &nbsp;
+              <Link to="/inventory" className="breadcrumb-link">
+                Inventory
+              </Link>
+              <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-current">Create product</span>
             </div>
           </div>
@@ -194,7 +192,6 @@ export function CreateProductPage() {
 
         <div className="product-detail-grid">
           <div className="left-column">
-            {/* Core identification */}
             <div className="detail-section">
               <div className="section-title">
                 <span className="section-badge" style={{ background: "#d6ede8", color: "#4a8c78" }}>
@@ -219,13 +216,31 @@ export function CreateProductPage() {
                 <div className="form-row">
                   <div className="form-group">
                     <label>Category</label>
-                    <input
-                      type="text"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="form-input"
-                      placeholder="e.g. electrical"
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <select
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                        className="form-input"
+                        style={{ flex: 1 }}
+                      >
+                        <option value="">Select a category...</option>
+                        {categories.map((cat) => (
+                          <option key={cat._id} value={cat._id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                      {canManageCategories && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => setShowCategoryModal(true)}
+                          title="Manage categories"
+                        >
+                          +
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="form-group">
                     <label>Brand</label>
@@ -241,7 +256,6 @@ export function CreateProductPage() {
               </div>
             </div>
 
-            {/* Operational details */}
             <div className="detail-section">
               <div className="section-title">
                 <span className="section-badge" style={{ background: "#fde8d8", color: "#b5532a" }}>
@@ -252,7 +266,7 @@ export function CreateProductPage() {
               <div className="section-content">
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Unit cost</label>
+                    <label>Sell Price</label>
                     <input
                       type="number"
                       min="0"
@@ -264,6 +278,20 @@ export function CreateProductPage() {
                     />
                   </div>
                   <div className="form-group">
+                    <label>Purchase Price</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={purchaseCost}
+                      onChange={(e) => setPurchaseCost(e.target.value)}
+                      className="form-input"
+                      placeholder="$0.00"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
                     <label>Current stock</label>
                     <input
                       type="number"
@@ -274,22 +302,21 @@ export function CreateProductPage() {
                       placeholder="0"
                     />
                   </div>
-                </div>
-                <div className="form-group">
-                  <label>Reorder at</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={reorderAt}
-                    onChange={(e) => setReorderAt(e.target.value)}
-                    className="form-input"
-                    placeholder="Leave blank for no threshold"
-                  />
+                  <div className="form-group">
+                    <label>Reorder at</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={reorderAt}
+                      onChange={(e) => setReorderAt(e.target.value)}
+                      className="form-input"
+                      placeholder="Leave blank for no threshold"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Assign to locations */}
             <div className="detail-section">
               <div className="section-title">
                 <span className="section-badge" style={{ background: "#f5efe6", color: "#998874" }}>
@@ -363,9 +390,7 @@ export function CreateProductPage() {
             </div>
           </div>
 
-          {/* Right column */}
           <div className="right-column">
-            {/* Visual catalogue */}
             <div className="detail-section">
               <div className="section-title">
                 <span className="section-badge" style={{ background: "#d6ede8", color: "#4a8c78" }}>
@@ -472,6 +497,16 @@ export function CreateProductPage() {
           </button>
         </div>
       </div>
+
+      {showCategoryModal && (
+        <ManageCategoriesModal
+          categories={categories}
+          onClose={() => setShowCategoryModal(false)}
+          onCategoryDeleted={(deletedId) => {
+            if (categoryId === deletedId) setCategoryId("");
+          }}
+        />
+      )}
     </>
   );
 }

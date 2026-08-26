@@ -17,8 +17,6 @@ export function ForecastPage() {
     <div className="product-detail-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Tools</span>
-          <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Forecast</span>
         </div>
         <div className="header-top">
