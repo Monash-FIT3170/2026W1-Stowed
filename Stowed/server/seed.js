@@ -5,6 +5,7 @@ import {
   Sites,
   FloorMaps,
   StorageUnits,
+  MapShapes,
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { buildRectShape } from "/imports/api/locations/shapeUtils";
@@ -341,6 +342,7 @@ export async function resetDatabase() {
   await ProductCategories.removeAsync({});
   await StorageLocations.removeAsync({});
   await StorageUnits.removeAsync({});
+  await MapShapes.removeAsync({});
   await FloorMaps.removeAsync({});
   await Sites.removeAsync({});
   await Organisations.removeAsync({});
