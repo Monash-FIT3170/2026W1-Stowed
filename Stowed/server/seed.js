@@ -122,9 +122,6 @@ async function seedProducts(seedOrgId) {
 }
 
 async function seedLocations(seedOrgId) {
-  const existingSite = await Sites.findOneAsync({ orgId: seedOrgId });
-  if (existingSite) return existingSite._id;
-
   const now = new Date();
 
   const monthsAgo = (months) => {
@@ -133,41 +130,71 @@ async function seedLocations(seedOrgId) {
     return date;
   };
 
-  const siteId = await Sites.insertAsync({
-    orgId: seedOrgId,
-    ...LOCATION_LAYOUT.site,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  for (const floor of LOCATION_LAYOUT.floors) {
-    const floorMapId = await FloorMaps.insertAsync({
+  let site = await Sites.findOneAsync({ orgId: seedOrgId, name: LOCATION_LAYOUT.site.name });
+  if (!site) {
+    const siteId = await Sites.insertAsync({
       orgId: seedOrgId,
-      siteId,
-      name: floor.name,
-      imageUrl: "",
+      ...LOCATION_LAYOUT.site,
       createdAt: now,
       updatedAt: now,
     });
+    site = { _id: siteId };
+  }
+  const siteId = site._id;
 
-    for (const unitDef of floor.units) {
-      const unitId = await StorageUnits.insertAsync({
+  for (const floor of LOCATION_LAYOUT.floors) {
+    let floorMap = await FloorMaps.findOneAsync({ orgId: seedOrgId, siteId, name: floor.name });
+    if (!floorMap) {
+      const floorMapId = await FloorMaps.insertAsync({
         orgId: seedOrgId,
-        floorMapId,
-        name: unitDef.name,
-        type: unitDef.type,
-        shape: {
-          ...buildRectShape({ width: unitDef.width, height: unitDef.height, name: unitDef.name }),
-          orgId: seedOrgId,
-        },
-        offset: { x: unitDef.x, y: unitDef.y },
-        rotation: 0,
-        scale: { x: 1, y: 1 },
+        siteId,
+        name: floor.name,
+        imageUrl: "",
         createdAt: now,
         updatedAt: now,
       });
+      floorMap = { _id: floorMapId };
+    }
+    const floorMapId = floorMap._id;
+
+    for (const unitDef of floor.units) {
+      let unit = await StorageUnits.findOneAsync({
+        orgId: seedOrgId,
+        floorMapId,
+        name: unitDef.name,
+      });
+      if (!unit) {
+        const unitId = await StorageUnits.insertAsync({
+          orgId: seedOrgId,
+          floorMapId,
+          name: unitDef.name,
+          type: unitDef.type,
+          shape: {
+            ...buildRectShape({
+              width: unitDef.width,
+              height: unitDef.height,
+              name: unitDef.name,
+            }),
+            orgId: seedOrgId,
+          },
+          offset: { x: unitDef.x, y: unitDef.y },
+          rotation: 0,
+          scale: { x: 1, y: 1 },
+          createdAt: now,
+          updatedAt: now,
+        });
+        unit = { _id: unitId };
+      }
+      const unitId = unit._id;
 
       for (const loc of unitDef.locations) {
+        const existingLoc = await StorageLocations.findOneAsync({
+          orgId: seedOrgId,
+          storageUnitId: unitId,
+          code: loc.code,
+        });
+        if (existingLoc) continue;
+
         await StorageLocations.insertAsync({
           orgId: seedOrgId,
           storageUnitId: unitId,
@@ -185,9 +212,6 @@ async function seedLocations(seedOrgId) {
 }
 
 async function seedProductRecords() {
-  const count = await ProductRecords.find().countAsync();
-  if (count > 0) return;
-
   const now = new Date();
   const products = await Products.find().fetchAsync();
   const productsByName = new Map(products.map((p) => [p.name, p]));
@@ -199,6 +223,12 @@ async function seedProductRecords() {
     const product = productsByName.get(productName);
     const location = locationsByCode.get(locationCode);
     if (!product || !location) continue;
+
+    const existing = await ProductRecords.findOneAsync({
+      productId: product._id,
+      locationId: location._id,
+    });
+    if (existing) continue;
 
     await ProductRecords.insertAsync({
       productId: product._id,

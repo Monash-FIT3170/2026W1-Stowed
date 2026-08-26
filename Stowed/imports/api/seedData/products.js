@@ -483,19 +483,6 @@ export const PRODUCT_CATALOGUE = [
       "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Inateck_WP1002_Wireless_Presenter_%2816593914759%29.jpg/500px-Inateck_WP1002_Wireless_Presenter_%2816593914759%29.jpg",
   },
   {
-    name: "Conference Speakerphone",
-    description: "USB/Bluetooth conference speakerphone for meeting rooms.",
-    category: "AV Equipment",
-    brand: "Jabra",
-    sku: "AV-SPK-001",
-    unitCost: 299.0,
-    totalQuantity: 7,
-    reorderAt: 3,
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Jabra_Speak_410.png/500px-Jabra_Speak_410.png",
-  },
-
-  {
     name: "Basketball (Size 7)",
     description: "Indoor/outdoor composite leather basketball, size 7.",
     category: "Sports & Recreation",

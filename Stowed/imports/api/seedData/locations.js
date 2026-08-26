@@ -248,7 +248,6 @@ export const PRODUCT_RECORD_PLAN = [
   ["Projector Screen (Portable, 1.8m)", "AV-1", 4],
   ["Projector Screen (Portable, 1.8m)", "AV-2", 4],
   ["Wireless Presenter Remote", "AV-2", 14],
-  ["Conference Speakerphone", "AV-2", 7],
 
   ["Basketball (Size 7)", "SPT-1", 12],
   ["Yoga Mat", "SPT-1", 10],
