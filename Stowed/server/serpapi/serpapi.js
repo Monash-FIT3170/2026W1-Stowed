@@ -26,7 +26,10 @@ async function callSerpApi(params) {
   const data = await response.json();
 
   if (!response.ok || data.error) {
-    throw new Meteor.Error("serpapi-request-failed", data.error || `SerpApi request failed (${response.status}).`);
+    throw new Meteor.Error(
+      "serpapi-request-failed",
+      data.error || `SerpApi request failed (${response.status}).`,
+    );
   }
 
   return data;
