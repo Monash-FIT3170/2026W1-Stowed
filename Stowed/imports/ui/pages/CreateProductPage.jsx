@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
@@ -40,7 +40,9 @@ function buildLocationLabel(location, storageUnits, floorMaps, sites) {
 
 export function CreateProductPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { role } = useAuth();
+  const prefill = location.state?.prefill;
 
   useEffect(() => {
     if (role !== null && !hasClientPermission(role, "products.create")) {
@@ -48,16 +50,16 @@ export function CreateProductPage() {
     }
   }, [role, navigate]);
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(prefill?.name || "");
   const [description] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [brand, setBrand] = useState("");
-  const [unitCost, setUnitCost] = useState("");
+  const [unitCost, setUnitCost] = useState(prefill?.unitCost ?? "");
   const [purchaseCost, setPurchaseCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [reorderAt, setReorderAt] = useState("");
   const [assignments, setAssignments] = useState([]);
-  const [imageUrls, setImageUrls] = useState([]);
+  const [imageUrls, setImageUrls] = useState(prefill?.images || []);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -189,6 +191,12 @@ export function CreateProductPage() {
             Create <em>Product</em>
           </h1>
         </div>
+
+        {prefill && (
+          <p className="warning-text" style={{ marginBottom: "16px", padding: "0 28px" }}>
+            Prefilled from your search result, review the details before saving.
+          </p>
+        )}
 
         <div className="product-detail-grid">
           <div className="left-column">
