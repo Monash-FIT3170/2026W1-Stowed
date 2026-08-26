@@ -96,13 +96,13 @@ async function seedCategory(seedOrgId, name, cache) {
 }
 
 async function seedProducts(seedOrgId) {
-  const count = await Products.find().countAsync();
-  if (count > 0) return;
-
   const now = new Date();
   const categoryCache = new Map();
 
   for (const item of PRODUCT_CATALOGUE) {
+    const existing = await Products.findOneAsync({ orgId: seedOrgId, name: item.name });
+    if (existing) continue;
+
     await Products.insertAsync({
       orgId: seedOrgId,
       name: item.name,
