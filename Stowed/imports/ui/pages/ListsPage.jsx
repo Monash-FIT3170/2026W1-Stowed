@@ -123,8 +123,6 @@ export function ListsPage() {
     <div className="product-detail-container">
       <div className="product-detail-header lists-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Workspace</span>
-          <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Lists</span>
         </div>
 

@@ -156,6 +156,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         reorderAt: threshold,
         isLow,
         locationName: location.name,
+        locationId: record.locationId,
       });
     });
 

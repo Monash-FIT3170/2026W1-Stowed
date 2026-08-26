@@ -13,6 +13,7 @@ import {
 } from "/imports/api/locations/collections";
 import { ProductRecords } from "/imports/api/products/collections";
 import { isImageFile, uploadImageToServer } from "/imports/api/upload";
+import { useToast } from "../components/Toast";
 import {
   DEFAULT_STOCKTAKE_INTERVAL_DAYS,
   getLocationStocktakeStatus,
@@ -105,7 +106,7 @@ export function LocationsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORMS.location);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [status, setStatus] = useState({ type: "", message: "" });
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   // Which row's "⋮" action menu is open — tablet/phone only, see the table render.
@@ -196,7 +197,6 @@ export function LocationsPage() {
     setQuery("");
     setSiteFilter("");
     setStocktakeFilter("");
-    setStatus({ type: "", message: "" });
   }
 
   function openCreate() {
@@ -243,7 +243,6 @@ export function LocationsPage() {
   async function saveForm(event) {
     event.preventDefault();
     setSubmitting(true);
-    setStatus({ type: "", message: "" });
     try {
       if (formMode === TABS.LOCATIONS) {
         const params = {
@@ -301,9 +300,9 @@ export function LocationsPage() {
       }
       setFormMode(null);
       setEditing(null);
-      setStatus({ type: "success", message: `${editing ? "Changes" : "Record"} saved.` });
+      toast.success(`${editing ? "Changes" : "Record"} saved.`);
     } catch (error) {
-      setStatus({ type: "error", message: error.reason || error.message || "Could not save." });
+      toast.error(error.reason || error.message || "Could not save.");
     } finally {
       setSubmitting(false);
     }
@@ -313,7 +312,7 @@ export function LocationsPage() {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!isImageFile(file)) {
-      setStatus({ type: "error", message: "Choose a valid image file." });
+      toast.error("Choose a valid image file.");
       return;
     }
     setUploading(true);
@@ -321,7 +320,7 @@ export function LocationsPage() {
       const imageUrl = await uploadImageToServer(file);
       setForm((current) => ({ ...current, imageUrl }));
     } catch (error) {
-      setStatus({ type: "error", message: error.reason || "Image upload failed." });
+      toast.error(error.reason || "Image upload failed.");
     } finally {
       setUploading(false);
     }
@@ -330,7 +329,6 @@ export function LocationsPage() {
   async function confirmDelete() {
     if (!deleteTarget) return;
     setSubmitting(true);
-    setStatus({ type: "", message: "" });
     try {
       if (deleteTarget.type === TABS.LOCATIONS) {
         await callMethod("storageLocations.delete", { storageLocationId: deleteTarget.record._id });
@@ -340,9 +338,9 @@ export function LocationsPage() {
         await callMethod("sites.delete", { siteId: deleteTarget.record._id });
       }
       setDeleteTarget(null);
-      setStatus({ type: "success", message: "Deleted." });
+      toast.success("Deleted.");
     } catch (error) {
-      setStatus({ type: "error", message: error.reason || error.message || "Could not delete." });
+      toast.error(error.reason || error.message || "Could not delete.");
     } finally {
       setSubmitting(false);
     }
@@ -363,8 +361,6 @@ export function LocationsPage() {
     <div className="product-detail-container locations-directory">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Workspace</span>
-          <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Locations</span>
         </div>
         <div className="header-top locations-heading-row">
@@ -385,12 +381,6 @@ export function LocationsPage() {
       </div>
 
       <div className="locations-content">
-        {status.message && (
-          <div className={`locations-message ${status.type}`} role="status">
-            {status.message}
-          </div>
-        )}
-
         <div className="locations-tabs" role="tablist" aria-label="Location directory views">
           {tabConfig.map((tab) => (
             <button

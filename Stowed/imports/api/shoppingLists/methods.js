@@ -3,12 +3,14 @@ import { check, Match } from "meteor/check";
 import { ShoppingLists } from "./collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 import { LIST_STATUSES } from "./constants";
+import { sendEmail } from "../../../server/email/resend";
+import { buildShoppingListEmailHtml } from "../../../server/email/shoppingListEmail";
 
 const itemPattern = {
   productId: String,
   productName: String,
   sku: Match.Maybe(String),
-  category: Match.Maybe(String),
+  categoryId: Match.Maybe(String),
   inStock: Match.Integer,
   reorderAt: Match.Integer,
   lowStockThreshold: Match.Integer,
@@ -107,5 +109,39 @@ Meteor.methods({
     await requirePermission(this.userId, "shoppingLists.delete");
 
     await ShoppingLists.removeAsync(listId);
+  },
+
+  async "shoppingLists.shareByEmail"({ listId, recipientEmails }) {
+    check(listId, String);
+    check(recipientEmails, [String]);
+
+    if (recipientEmails.length === 0) {
+      throw new Meteor.Error("no-recipients", "Select at least one recipient.");
+    }
+
+    await assertOrgAccess(ShoppingLists, listId, this.userId);
+    await requirePermission(this.userId, "shoppingLists.share");
+
+    const orgId = await getCallerOrgId(this.userId);
+    const recipients = await Meteor.users
+      .find(
+        { "profile.organisationId": orgId, "emails.address": { $in: recipientEmails } },
+        { fields: { emails: 1 } },
+      )
+      .fetchAsync();
+
+    const allowedEmails = recipients.map((user) => user.emails[0].address);
+    if (allowedEmails.length === 0) {
+      throw new Meteor.Error("invalid-recipients", "None of the selected recipients are valid.");
+    }
+
+    const list = await ShoppingLists.findOneAsync(listId);
+    const html = buildShoppingListEmailHtml(list);
+
+    await sendEmail({
+      to: allowedEmails,
+      subject: `Shopping list: ${list.name}`,
+      html,
+    });
   },
 });

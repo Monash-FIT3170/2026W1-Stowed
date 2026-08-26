@@ -80,8 +80,8 @@
   min-width: 0;
 }
 
-/* Stock status badge in the product header (renamed from panel-status-badge
-   to stop clashing with the floor map's badge of the same name) */
+/* Stock status for the product header: green in stock, orange at or below the
+   reorder threshold, red at zero. */
 .product-status-badge {
   display: inline-block;
   padding: 4px 10px;
@@ -91,19 +91,19 @@
   margin-bottom: 10px;
 }
 
-.product-status-badge.low {
-  background: #fee2e2;
-  color: #991b1b;
+.product-status-badge.in-stock {
+  background: var(--status-in-stock-bg);
+  color: var(--status-in-stock-text);
 }
 
-.product-status-badge.ok {
-  background: #dcfce7;
-  color: #166534;
+.product-status-badge.low-stock {
+  background: var(--status-low-stock-bg);
+  color: var(--status-low-stock-text);
 }
 
-.product-status-badge.empty {
-  background: var(--tag-bg);
-  color: var(--text-muted);
+.product-status-badge.out-of-stock {
+  background: var(--status-out-of-stock-bg);
+  color: var(--status-out-of-stock-text);
 }
 
 .header-meta {
@@ -154,6 +154,22 @@
 
 /* -- Print styles for the QR label -- */
 
+/* .qr-section/.qr-container/.qr-code/.qr-label already live in Global.css —
+   this is the one addition specific to this page, shown before a QR/barcode
+   exists yet. */
+.qr-placeholder {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Print styles for QR label */
 @media print {
   body * {
     visibility: hidden;
@@ -177,6 +193,18 @@
   }
 }
 
-/* Icon stays beside the title/status/meta at every width instead of
+/* .qr-label/.modal-*/.warning-text/.create-product-footer already live in
+   Global.css — not redefining them here.
+   Icon stays beside the title/status/meta at every width instead of
    stacking above it — the title wraps and the meta line wraps instead,
    so the icon never ends up sitting above a wide stretch of empty space. */
+@media (max-width: 900px) {
+  .product-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+}
+
+.empty-field {
+  color: var(--text-muted);
+}

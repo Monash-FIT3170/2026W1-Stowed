@@ -198,7 +198,7 @@ function LowStockWidget({ lowStockCount, lowStockPreview, productsLoading }) {
             : "Stock levels across your inventory"
       }
       action={
-        <Link to="/inventory/list?filter=low-stock" className="dashboard-action-link">
+        <Link to="/inventory?filter=low-stock" className="dashboard-action-link">
           View inventory →
         </Link>
       }
@@ -414,13 +414,13 @@ export function DashboardPage() {
     {
       label: "Units on hand",
       value: inventorySnapshot.unitsOnHand,
-      to: "/inventory/list",
+      to: "/inventory",
       tone: "neutral",
     },
     {
       label: "Products",
       value: inventorySnapshot.productCount,
-      to: "/inventory/list",
+      to: "/inventory",
       tone: "neutral",
     },
     {

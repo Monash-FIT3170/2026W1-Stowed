@@ -20,7 +20,7 @@ const WORKSPACE_LINKS = [
 const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
   { to: "/forecast", label: "Forecast", icon: "🔮" },
-  { to: "/alerts", label: "Alerts", icon: "⚠️" },
+  { to: "/alerts", label: "Stocktake alerts", icon: "⚠️" },
 ];
 
 /* Stroke-only line icons for the slim landscape rail, which is too narrow

@@ -71,8 +71,6 @@ export function ViewAccounts() {
     <div className="view-accounts-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Account management</span>
-          <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">All accounts</span>
         </div>
         <div className="header-top">
