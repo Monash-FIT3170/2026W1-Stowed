@@ -2,6 +2,7 @@ import assert from "assert";
 import {
   buildLocationRows,
   buildInventoryRows,
+  buildImportRows,
   buildExport,
   toCsv,
   INVENTORY_COLUMNS,
@@ -10,14 +11,36 @@ import {
 
 const SITES = [{ _id: "site-1", name: "Clayton Campus" }];
 
-const FLOOR_MAPS = [{ _id: "floor-1", siteId: "site-1", name: "Building 18" }];
+const FLOOR_MAPS = [
+  { _id: "floor-1", siteId: "site-1", name: "Building 18", floorSize: { width: 600, height: 400 } },
+];
 
 const STORAGE_UNITS = [
-  { _id: "unit-1", floorMapId: "floor-1", name: "Cabinet A", type: "cabinet" },
+  {
+    _id: "unit-1",
+    floorMapId: "floor-1",
+    name: "Cabinet A",
+    type: "cabinet",
+    offset: { x: 1, y: 2 },
+    shape: {
+      points: [
+        { x: 0, y: 0 },
+        { x: 2, y: 0 },
+        { x: 2, y: 1 },
+        { x: 0, y: 1 },
+      ],
+    },
+  },
 ];
 
 const STORAGE_LOCATIONS = [
-  { _id: "loc-1", storageUnitId: "unit-1", name: "Shelf 1", code: "SC-A1" },
+  {
+    _id: "loc-1",
+    storageUnitId: "unit-1",
+    name: "Shelf 1",
+    code: "SC-A1",
+    lastStocktakeAt: new Date("2026-08-23T00:00:00.000Z"),
+  },
   { _id: "loc-2", storageUnitId: "unit-1", name: "Shelf 2", code: "SC-A2" },
 ];
 
@@ -177,6 +200,7 @@ describe("export - buildExport", function () {
     const result = buildExport(FIXTURE);
     assert.strictEqual(result.locations.length, 2);
     assert.strictEqual(result.inventory.length, 2);
+    assert.strictEqual(result.importRows.length, 2);
   });
 
   it("only references location codes present in the locations table", function () {
@@ -186,6 +210,64 @@ describe("export - buildExport", function () {
       if (row.locationCode === "") continue;
       assert.ok(known.has(row.locationCode), `unknown code ${row.locationCode}`);
     }
+  });
+});
+
+describe("export - buildImportRows", function () {
+  it("returns JSON rows matching the bulk import template", function () {
+    const [row] = buildImportRows(FIXTURE);
+    assert.strictEqual(row.siteName, "Clayton Campus");
+    assert.strictEqual(row.floorMapName, "Building 18");
+    assert.strictEqual(row.floorMapWidth, 12);
+    assert.strictEqual(row.floorMapHeight, 8);
+    assert.strictEqual(row.storageUnitName, "Cabinet A");
+    assert.strictEqual(row.storageUnitType, "cabinet");
+    assert.strictEqual(row.storageUnitOffsetX, 1);
+    assert.strictEqual(row.storageUnitOffsetY, 2);
+    assert.strictEqual(row.storageUnitWidth, 2);
+    assert.strictEqual(row.storageUnitHeight, 1);
+    assert.strictEqual(row.locationName, "Shelf 1");
+    assert.strictEqual(row.locationCode, "SC-A1");
+    assert.strictEqual(row.lastStocktakeAt, "2026-08-23T00:00:00.000Z");
+    assert.strictEqual(row.name, "Lab Safety Goggles");
+    assert.strictEqual(row.category, "Lab Safety");
+    assert.deepStrictEqual(row.assignments, [{ locationCode: "SC-A1", quantity: 35 }]);
+  });
+
+  it("exports per-location quantities so re-importing rebuilds the product total", function () {
+    const rows = buildImportRows(FIXTURE);
+    assert.deepStrictEqual(
+      rows.map((row) => row.totalQuantity),
+      [35, 25],
+    );
+  });
+
+  it("includes locations that do not currently hold products", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      productRecords: [PRODUCT_RECORDS[0]],
+    });
+    const emptyLocationRow = rows.find((row) => row.locationCode === "SC-A2");
+    assert.ok(emptyLocationRow);
+    assert.strictEqual(emptyLocationRow.name, "");
+    assert.deepStrictEqual(emptyLocationRow.assignments, []);
+  });
+
+  it("includes products with no location assignments", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      productRecords: [],
+      storageLocations: [],
+    });
+    assert.strictEqual(rows.length, 2);
+    const productRow = rows.find((row) => row.name === "Lab Safety Goggles");
+    assert.ok(productRow);
+    assert.strictEqual(productRow.siteName, "Unassigned Stock");
+    assert.strictEqual(productRow.locationCode, "UNASSIGNED-prod-1");
+    assert.strictEqual(productRow.totalQuantity, 60);
+    assert.deepStrictEqual(productRow.assignments, [
+      { locationCode: "UNASSIGNED-prod-1", quantity: 60 },
+    ]);
   });
 });
 

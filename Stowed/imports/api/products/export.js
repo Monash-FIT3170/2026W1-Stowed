@@ -29,6 +29,8 @@ export const LOCATION_COLUMNS = [
   "locationCode",
 ];
 
+const IMPORT_PIXELS_PER_METER = 50;
+
 const EMPTY_UNIT = {
   site: "",
   siteDescription: "",
@@ -46,6 +48,67 @@ const EMPTY_UNIT = {
 
 function blankIfMissing(value) {
   return value ?? "";
+}
+
+function toImportFloorMeters(value) {
+  return typeof value === "number" ? value / IMPORT_PIXELS_PER_METER : "";
+}
+
+function toIsoString(value) {
+  return value instanceof Date ? value.toISOString() : blankIfMissing(value);
+}
+
+function getShapeSize(unit) {
+  const points = unit?.shape?.points;
+  if (!Array.isArray(points) || points.length === 0) {
+    return { width: "", height: "" };
+  }
+
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  return {
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+}
+
+function unassignedLocationCode(product) {
+  return `UNASSIGNED-${product?._id || product?.sku || product?.name || "PRODUCT"}`.slice(0, 50);
+}
+
+function buildImportLocationFields({ location, unit, floorMap, site }) {
+  const shapeSize = getShapeSize(unit);
+
+  return {
+    siteName: blankIfMissing(site?.name),
+    floorMapName: blankIfMissing(floorMap?.name),
+    floorMapWidth: toImportFloorMeters(floorMap?.floorSize?.width),
+    floorMapHeight: toImportFloorMeters(floorMap?.floorSize?.height),
+    storageUnitName: blankIfMissing(unit?.name),
+    storageUnitType: blankIfMissing(unit?.type),
+    storageUnitOffsetX: blankIfMissing(unit?.offset?.x),
+    storageUnitOffsetY: blankIfMissing(unit?.offset?.y),
+    storageUnitWidth: shapeSize.width,
+    storageUnitHeight: shapeSize.height,
+    locationName: blankIfMissing(location?.name),
+    locationCode: blankIfMissing(location?.code),
+    lastStocktakeAt: toIsoString(location?.lastStocktakeAt),
+  };
+}
+
+function buildImportProductFields(product, categoryName, assignments, totalQuantity) {
+  return {
+    name: blankIfMissing(product?.name),
+    description: blankIfMissing(product?.description),
+    category: blankIfMissing(categoryName || product?.category),
+    sku: blankIfMissing(product?.sku),
+    brand: blankIfMissing(product?.brand),
+    unitCost: blankIfMissing(product?.unitCost),
+    totalQuantity: totalQuantity ?? product?.totalQuantity ?? 0,
+    assignments,
+    reorderAt: blankIfMissing(product?.reorderAt),
+    qrCode: blankIfMissing(product?.qrCode),
+  };
 }
 
 export function buildLocationRows({
@@ -165,10 +228,123 @@ export function buildInventoryRows({
   return rows;
 }
 
+export function buildImportRows({
+  products = [],
+  productRecords = [],
+  storageLocations = [],
+  storageUnits = [],
+  floorMaps = [],
+  sites = [],
+  categories = [],
+}) {
+  const categoryNameById = new Map(categories.map((c) => [c._id, c.name]));
+  const unitById = new Map(storageUnits.map((unit) => [unit._id, unit]));
+  const floorMapById = new Map(floorMaps.map((floorMap) => [floorMap._id, floorMap]));
+  const siteById = new Map(sites.map((site) => [site._id, site]));
+  const locationById = new Map(storageLocations.map((location) => [location._id, location]));
+  const productById = new Map(products.map((product) => [product._id, product]));
+  const usedLocationIds = new Set();
+  const usedProductIds = new Set();
+  const usedUnitIds = new Set();
+
+  function hierarchyForLocation(location) {
+    const unit = location ? unitById.get(location.storageUnitId) : null;
+    const floorMap = unit ? floorMapById.get(unit.floorMapId) : null;
+    const site = floorMap ? siteById.get(floorMap.siteId) : null;
+    if (unit) usedUnitIds.add(unit._id);
+    return { location, unit, floorMap, site };
+  }
+
+  const rows = [];
+
+  for (const record of productRecords) {
+    const product = productById.get(record.productId);
+    if (!product) continue;
+
+    const location = locationById.get(record.locationId);
+    const locationCode = location?.code ?? "";
+    if (location) usedLocationIds.add(location._id);
+    usedProductIds.add(product._id);
+
+    rows.push({
+      ...buildImportLocationFields(hierarchyForLocation(location)),
+      ...buildImportProductFields(
+        product,
+        categoryNameById.get(product.categoryId),
+        locationCode ? [{ locationCode, quantity: record.quantity ?? 0 }] : [],
+        record.quantity ?? 0,
+      ),
+    });
+  }
+
+  for (const location of storageLocations) {
+    if (usedLocationIds.has(location._id)) continue;
+    rows.push({
+      ...buildImportLocationFields(hierarchyForLocation(location)),
+      ...buildImportProductFields(null, "", [], ""),
+    });
+  }
+
+  for (const unit of storageUnits) {
+    if (usedUnitIds.has(unit._id)) continue;
+    const floorMap = floorMapById.get(unit.floorMapId);
+    rows.push({
+      ...buildImportLocationFields({
+        location: null,
+        unit,
+        floorMap,
+        site: floorMap ? siteById.get(floorMap.siteId) : null,
+      }),
+      ...buildImportProductFields(null, "", [], ""),
+    });
+  }
+
+  for (const product of products) {
+    if (usedProductIds.has(product._id)) continue;
+    const hasUnassignedStock = (product.totalQuantity ?? 0) > 0;
+    const locationCode = hasUnassignedStock ? unassignedLocationCode(product) : "";
+    rows.push({
+      ...buildImportLocationFields({
+        location: hasUnassignedStock
+          ? { name: "Unassigned Stock", code: locationCode, lastStocktakeAt: "" }
+          : null,
+        unit: hasUnassignedStock
+          ? {
+              name: "Unassigned Stock",
+              type: "other",
+              offset: { x: 0, y: 0 },
+              shape: {
+                points: [
+                  { x: 0, y: 0 },
+                  { x: 1, y: 0 },
+                  { x: 1, y: 1 },
+                  { x: 0, y: 1 },
+                ],
+              },
+            }
+          : null,
+        floorMap: hasUnassignedStock
+          ? { name: "Unassigned Stock", floorSize: { width: 500, height: 500 } }
+          : null,
+        site: hasUnassignedStock ? { name: "Unassigned Stock" } : null,
+      }),
+      ...buildImportProductFields(
+        product,
+        categoryNameById.get(product.categoryId),
+        hasUnassignedStock ? [{ locationCode, quantity: product.totalQuantity ?? 0 }] : [],
+        product.totalQuantity ?? 0,
+      ),
+    });
+  }
+
+  return rows;
+}
+
 export function buildExport(data) {
   return {
     locations: buildLocationRows(data),
     inventory: buildInventoryRows(data),
+    importRows: buildImportRows(data),
   };
 }
 

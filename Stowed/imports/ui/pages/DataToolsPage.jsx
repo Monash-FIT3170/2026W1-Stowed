@@ -133,6 +133,14 @@ function downloadCsv(filename, csv) {
   URL.revokeObjectURL(url);
 }
 
+function downloadJson(filename, data) {
+  downloadFile({
+    content: JSON.stringify(data, null, 2),
+    type: "application/json",
+    filename,
+  });
+}
+
 export function DataToolsPage() {
   const { role } = useAuth();
   const canExport = hasClientPermission(role, "products.export");
@@ -193,6 +201,10 @@ export function DataToolsPage() {
 
   function downloadLocations() {
     downloadCsv(`stowed-locations-${stamp()}.csv`, toCsv(exportData.locations, LOCATION_COLUMNS));
+  }
+
+  function downloadFullImportJson() {
+    downloadJson(`stowed-full-import-${stamp()}.json`, exportData.importRows || []);
   }
 
   const importCombinedData = async ({ text, fileName }) => {
@@ -396,8 +408,8 @@ export function DataToolsPage() {
             </div>
 
             <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
-              Download your full inventory and storage layout as CSV files. Open them in Excel, or
-              use them as templates when importing data from another system.
+              Download your full inventory and storage layout as CSV files, or export one JSON file
+              that can be imported back into Stowed.
             </p>
 
             <div className="templates-row">
@@ -482,6 +494,28 @@ export function DataToolsPage() {
                     </div>
                   </div>
                   <button className="btn-secondary" onClick={downloadLocations}>
+                    Download
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "8px",
+                    background: "var(--card-bg-subtle, #f5efe6)",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "14px", fontWeight: 600 }}>Full export (JSON)</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      {exportData.importRows?.length || 0} row
+                      {(exportData.importRows?.length || 0) !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                  <button className="btn-secondary" onClick={downloadFullImportJson}>
                     Download
                   </button>
                 </div>
