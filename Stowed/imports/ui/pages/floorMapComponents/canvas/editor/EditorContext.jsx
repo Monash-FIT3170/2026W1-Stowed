@@ -394,6 +394,30 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
   }
 
+  async function handleChangeShape(shape) {
+    if (!selectedUnit) return;
+
+    try {
+      await callMethod("storageUnits.update", {
+        storageUnitId: selectedUnit._id,
+        floorMapId: selectedUnit.floorMapId,
+        name: selectedUnit.name,
+        type: selectedUnit.type,
+        shape: shape,
+        offset: selectedUnit.offset,
+        rotation: selectedUnit.rotation,
+        scale: selectedUnit.scale,
+        fill: selectedUnit.fill
+      });
+    } catch (error) {
+      alert(
+        error.reason ||
+          "Ensure that a valid shape has been selected to change to.",
+      );
+    }
+
+  }
+
   async function handleDeleteShape(shape) {
     // validate something is selected
     if (!shape) return;
