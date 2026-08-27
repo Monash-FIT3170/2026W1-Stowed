@@ -23,6 +23,12 @@ export const COLOURS = {
   CANVAS_FILL: "#fdf7f2",
   CANVAS_LABEL: "#998874",
   CANVAS_GRID: "#d9cfc0",
+
+  // Storage unit colours
+  UNIT_DEFAULT: "#7a5230",
+  OVER_TRANSPARENT: "rgba(0, 0, 0, 0.08)",
+  OVER_GREEN: "rgba(34, 197, 94, 0.50)",
+  OVER_RED: "rgba(220, 38, 38, 0.60)",
 };
 
 const baseButton = {

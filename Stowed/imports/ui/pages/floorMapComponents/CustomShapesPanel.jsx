@@ -1,4 +1,4 @@
-import { buttonStyles, customShapesPanelStyles } from "./FloorMapStyles";
+import { buttonStyles, COLOURS, customShapesPanelStyles } from "./FloorMapStyles";
 import { dragState } from "./canvas/editor/DragState";
 import { getShapeBounds, normaliseShapePoints } from "./canvas/editor/utils/ShapeGeometry";
 
@@ -33,7 +33,7 @@ export function CustomShapesPanel({ mapShapes = [], activeTool, setActiveTool })
 
       width,
       height,
-      fill: "#7a5230",
+      fill: COLOURS.UNIT_DEFAULT,
 
       rotation: 0,
 

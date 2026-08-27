@@ -10,6 +10,7 @@ import {
   getTransformedBounds,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { COLOURS } from "../../FloorMapStyles";
 
 /**
  * Maps a StorageUnit to a the rectangle model the canvas currently renders.
@@ -35,7 +36,7 @@ function mapStorageUnitToCanvasUnit(unit) {
     offset: unit.offset,
     rotation: unit.rotation ?? 0,
     scale: unit.scale,
-    fill: unit.fill || "#7a5230",
+    fill: unit.fill || COLOURS.UNIT_DEFAULT,
   };
 }
 
@@ -253,7 +254,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             offset: newOffset,
             rotation: unit.rotation ?? 0,
             scale: newScale,
-            fill: unit.fill || "#7a5230",
+            fill: unit.fill || COLOURS.UNIT_DEFAULT,
           });
 
           savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
@@ -273,7 +274,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             offset,
             rotation: 0,
             scale,
-            fill: unit.fill || "#7a5230",
+            fill: unit.fill || COLOURS.UNIT_DEFAULT,
           });
 
           savedCanvasUnits.push({
@@ -389,7 +390,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }

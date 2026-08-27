@@ -1,6 +1,7 @@
 import { Layer, Line, Rect } from "react-konva";
 import { useEditor } from "../../editor/EditorContext";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
+import { COLOURS } from "../../../FloorMapStyles";
 import { flattenPoints, isDrawnShape } from "../units/StorageUnit";
 
 export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanvasEditMode }) {
@@ -24,10 +25,10 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
         // All ok - subtle green tint
         const fill =
           items.length === 0
-            ? "rgba(0, 0, 0, 0)"
+            ? COLOURS.OVER_TRANSPARENT
             : hasLowStock
-              ? "rgba(220, 38, 38, 0.45)"
-              : "rgba(34, 197, 94, 0.30)";
+              ? COLOURS.OVER_RED
+              : COLOURS.OVER_GREEN;
 
         const isDrawn = isDrawnShape(unit);
 
