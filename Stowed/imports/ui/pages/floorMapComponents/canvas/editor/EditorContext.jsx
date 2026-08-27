@@ -10,6 +10,7 @@ import {
   getTransformedBounds,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { normaliseShapePoints } from "./utils/ShapeGeometry";
 
 /**
  * Maps a StorageUnit to a the rectangle model the canvas currently renders.
@@ -397,24 +398,32 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   async function handleChangeShape(shape) {
     if (!selectedUnit) return;
 
+    // normalise custom shapes whose points can have huge variation
+    const normalisedPoints = normaliseShapePoints(shape.points);
 
+    const normalisedShape = {
+      ...shape,
+      points: normalisedPoints
+    };
 
-  const newBounds = getTransformedBounds(shape, {
-    offset: selectedUnit.offset,
-    rotation: selectedUnit.rotation,
-    scale: selectedUnit.scale,
-  });
+  
+    // updates unit details based on new shape
+    const newBounds = getTransformedBounds(normalisedShape, {
+      offset: selectedUnit.offset,
+      rotation: selectedUnit.rotation,
+      scale: selectedUnit.scale,
+    });
 
-  const updatedUnit = {
-    ...selectedUnit,
-    shape,
-    x: selectedUnit.x,
-    y: selectedUnit.y,
-    width: newBounds.width,
-    height: newBounds.height
-  }
+    const updatedUnit = {
+      ...selectedUnit,
+      shape: normalisedShape,
+      x: selectedUnit.x,
+      y: selectedUnit.y,
+      width: newBounds.width,
+      height: newBounds.height
+    }
 
-
+    // updates unsaved map configs 
     if (!selectedUnit._id) {
       commitUnits((prev) => 
         prev.map((u) =>
@@ -423,7 +432,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       );
       setSelectedUnit(updatedUnit);
       return;
-  }
+    }
 
     try {
       
@@ -432,19 +441,22 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         floorMapId: floorMap._id,
         name: selectedUnit.name,
         type: selectedUnit.type,
-        shape,
+        shape: normalisedShape,
         offset: selectedUnit.offset,
         rotation: selectedUnit.rotation,
         scale: selectedUnit.scale,
         fill: selectedUnit.fill
       });
 
+      // update view
       commitUnits((prev) => 
         prev.map((u) =>
           u.id === selectedUnit.id ? updatedUnit : u
         )
       );
+
       setSelectedUnit(updatedUnit);
+
     } catch (error) {
       alert(
         error.reason ||
