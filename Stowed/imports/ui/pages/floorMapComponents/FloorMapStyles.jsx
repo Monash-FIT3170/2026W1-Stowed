@@ -271,7 +271,7 @@ export const customShapesPanelStyles = {
   shapeButtonContent: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     width: "100%",
   },
 
@@ -307,17 +307,18 @@ export const customShapesPanelStyles = {
   shapeRow: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     width: "100%",
   },
 
   editButton: {
-    padding: "8px 10px",
+    minHeight: 40,
+    padding: "6px 6px",
     border: "1px solid #d8d1c8",
     borderRadius: 8,
     backgroundColor: "#ffffff",
     cursor: "pointer",
-    fontSize: 12,
+    fontSize: 16,
     color: "#7a5230",
   },
 
@@ -326,7 +327,7 @@ export const customShapesPanelStyles = {
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    minHeight: 44,
+    minHeight: 40,
     padding: "6px 10px",
     borderRadius: 8,
     fontSize: 11,
