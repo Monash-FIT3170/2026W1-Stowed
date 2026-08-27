@@ -272,7 +272,21 @@ export const toolbarStyles = {
     background: COLOURS.CARD_BORDER,
   },
 };
+
 export const customShapesPanelStyles = {
+  shapeButtonContent: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+  },
+
+  shapePreview: {
+    width: 28,
+    height: 28,
+    flexShrink: 0,
+    display: "block",
+  },
   container: {
     width: "100%",
     display: "flex",
@@ -296,12 +310,30 @@ export const customShapesPanelStyles = {
     gap: 6,
   },
 
+  shapeRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    width: "100%",
+  },
+
+  editButton: {
+    minHeight: 40,
+    padding: "6px 6px",
+    border: "1px solid #d8d1c8",
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    cursor: "pointer",
+    fontSize: 16,
+    color: "#7a5230",
+  },
+
   shapeButton: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    minHeight: 34,
+    minHeight: 40,
     padding: "6px 10px",
     borderRadius: 8,
     fontSize: 11,

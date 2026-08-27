@@ -324,14 +324,40 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   // --- PLACEMENT ---
-  function handlePlaceUnit(template) {
-    setPendingUnit(template);
-    setActiveTool(TOOLS.ADD);
-  }
+  async function handleUnitPlaced() {
+    if (!floorMap) {
+      alert("No floor map exists in database.");
+      return;
+    }
 
-  function handleUnitPlaced() {
-    setPendingUnit(null);
-    setActiveTool(TOOLS.SELECT);
+    const activeFloorMapId = floorMap._id;
+
+    try {
+      for (const unit of units) {
+        if (!unit._id) { // only interested in adding the unit that doesn't already exist
+          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+          const shape = hasCustomShape
+            ? unit.shape
+            : buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
+          const offset = { x: Number(unit.x), y: Number(unit.y) };
+          const scale = { x: 1, y: 1 };
+
+          await callMethod("storageUnits.create", {
+            floorMapId: activeFloorMapId,
+            name: unit.name,
+            type: unit.type || "other",
+            shape,
+            offset,
+            rotation: 0,
+            scale,
+            fill: unit.fill || "#7a5230",
+          });
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert(error.reason || "Failed to create unit.");
+    }
   }
 
   // --- FLOOR MAP SETTINGS ---
@@ -395,6 +421,17 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
   }
 
+  async function handleDeleteShape(shape) {
+    // validate something is selected
+    if (!shape) return;
+
+    try {
+      await callMethod("mapShapes.delete", { shape });
+    } catch (error) {
+      alert(error.reason || "Cannot delete this shape. Make sure it is not used for any storage units first.");
+    }
+  };
+
   const value = {
     // Tool
     activeTool,
@@ -434,7 +471,6 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     handleLoadLayout,
 
     // Placement helpers
-    handlePlaceUnit,
     handleUnitPlaced,
 
     // Low stock
@@ -448,6 +484,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected unit
     handleDeleteSelectedUnit,
+
+    // Delete selected shape
+    handleDeleteShape,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

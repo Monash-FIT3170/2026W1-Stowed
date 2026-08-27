@@ -11,7 +11,7 @@ import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel"
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites, MapShapes } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, StorageUnits, MapShapes } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -56,6 +56,7 @@ function FloorMapPageInner() {
     setSelectedUnit,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
+    handleDeleteShape,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -66,14 +67,16 @@ function FloorMapPageInner() {
   const [tooltip, setTooltip] = useState(null);
   const [isStockPanelOpen, setIsStockPanelOpen] = useState(false);
   const [isCreateShapeOpen, setIsCreateShapeOpen] = useState(false);
+  const [editingShape, setEditingShape] = useState(null);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
-  // Fetch all sites and floor maps
-  const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
+  // Fetch all sites, floor maps, storage units and shapes
+  const { sites, floorMaps, storageUnits, mapShapes, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
       mapShapes: MapShapes.find({}, { sort: { name: 1 } }).fetch(),
       locationsReady: handle.ready(),
     };
@@ -90,6 +93,23 @@ function FloorMapPageInner() {
     const unit = units.find((u) => u._id === unitId || u.id === unitId) ?? null;
     setSelectedUnit(unit);
     setIsStockPanelOpen(!!unitId);
+  };
+
+  const handleCanvasModeToggle = () => {
+    const nextEditMode = !isCanvasEditMode;
+
+    if (!nextEditMode) {
+      setSelectedStorageUnitId(null);
+      setSelectedUnit(null);
+      setIsStockPanelOpen(false);
+      setTooltip(null);
+    }
+
+    setCanvasEditMode(nextEditMode);
+  };
+  const handleEditShape = (shape) => {
+    setEditingShape(shape);
+    setIsCreateShapeOpen(true);
   };
 
   const updateSelectedUnit = (patch) => {
@@ -257,7 +277,7 @@ function FloorMapPageInner() {
 
           <button
             type="button"
-            onClick={() => canManage && setCanvasEditMode(!isCanvasEditMode)}
+            onClick={() => canManage && handleCanvasModeToggle()}
             disabled={!canManage}
             style={{
               fontSize: "10px",
@@ -600,12 +620,17 @@ function FloorMapPageInner() {
                             mapShapes={mapShapes}
                             activeTool={activeTool}
                             setActiveTool={setActiveTool}
+                            onEditShape={handleEditShape}
+                            onDeleteShape={handleDeleteShape}
                           />
                         </div>
                         <div style={{ padding: "0 12px 12px", boxSizing: "border-box" }}>
                           <button
                             type="button"
-                            onClick={() => setIsCreateShapeOpen(true)}
+                            onClick={() => {
+                              setEditingShape(null);
+                              setIsCreateShapeOpen(true);
+                            }}
                             style={{
                               ...buttonStyles.base,
                               ...buttonStyles.secondary,
@@ -769,8 +794,16 @@ function FloorMapPageInner() {
         />
       )}
 
-      {/* CREATE SHAPE MODAL */}
-      {isCreateShapeOpen && <CreateShapeModal onClose={() => setIsCreateShapeOpen(false)} />}
+      {/* CREATE / EDIT SHAPE MODAL */}
+      {isCreateShapeOpen && (
+        <CreateShapeModal
+          shape={editingShape}
+          onClose={() => {
+            setIsCreateShapeOpen(false);
+            setEditingShape(null);
+          }}
+        />
+      )}
     </div>
   );
 }
