@@ -397,16 +397,31 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   async function handleChangeShape(shape) {
     if (!selectedUnit) return;
 
-    console.log(selectedUnit.id);
-    console.log(floorMap._id);
+
+
+  const newBounds = getTransformedBounds(shape, {
+    offset: selectedUnit.offset,
+    rotation: selectedUnit.rotation,
+    scale: selectedUnit.scale,
+  });
+
+  const updatedUnit = {
+    ...selectedUnit,
+    shape,
+    x: selectedUnit.x,
+    y: selectedUnit.y,
+    width: newBounds.width,
+    height: newBounds.height
+  }
+
 
     if (!selectedUnit._id) {
       commitUnits((prev) => 
         prev.map((u) =>
-          u.id === selectedUnit.id ? {...u, shape} : u
+          u.id === selectedUnit.id ? updatedUnit : u
         )
       );
-      setSelectedUnit((prev) => (prev ? {...prev, shape} : prev));
+      setSelectedUnit(updatedUnit);
       return;
   }
 
@@ -417,12 +432,19 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         floorMapId: floorMap._id,
         name: selectedUnit.name,
         type: selectedUnit.type,
-        shape: shape,
+        shape,
         offset: selectedUnit.offset,
         rotation: selectedUnit.rotation,
         scale: selectedUnit.scale,
         fill: selectedUnit.fill
       });
+
+      commitUnits((prev) => 
+        prev.map((u) =>
+          u.id === selectedUnit.id ? updatedUnit : u
+        )
+      );
+      setSelectedUnit(updatedUnit);
     } catch (error) {
       alert(
         error.reason ||
