@@ -194,7 +194,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     });
   }
 
-  async function handleSaveLayout() {
+  async function handleSaveLayout(silent = false) {
     if (!floorMap) {
       alert("No floor map exists in database.");
       return;
@@ -289,7 +289,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       setUnits(savedCanvasUnits);
       historyRef.current = { stack: [savedCanvasUnits], index: 0 };
-      alert("Layout saved to database!");
+      if (!silent) {
+        alert("Layout saved to database!");
+      }
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
@@ -388,7 +390,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }

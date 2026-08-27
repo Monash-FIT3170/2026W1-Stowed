@@ -4,6 +4,7 @@ import {
   getShapeBounds,
   normaliseShapePoints,
 } from "./canvas/editor/utils/ShapeGeometry";
+import { useEditor } from "./canvas/editor/EditorContext";
 
 const presetShapes = [
   {
@@ -130,6 +131,10 @@ export function CustomShapesPanel({
   onEditShape,
   onDeleteShape,
 }) {
+  const {
+    handleSaveLayout,
+  } = useEditor();
+
   const getToolName = (shape) => `shape-${shape.shapeId}`;
 
   const getShapeButtonStyle = (toolName) => ({
@@ -185,6 +190,7 @@ export function CustomShapesPanel({
   }
 
   function handleDragEnd() {
+    handleSaveLayout(true); // save the layout to get the new unit in the DB
     dragState.template = null;
   }
 
