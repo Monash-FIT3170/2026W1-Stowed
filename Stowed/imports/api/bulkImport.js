@@ -19,6 +19,10 @@ const DEFAULT_FLOOR_SETTINGS = {
 };
 const ALLOWED_STORAGE_UNIT_TYPES = new Set(["shelf", "cabinet", "rack", "drawer", "fridge", "other", "custom"]);
 
+function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function parseSimpleCsv(text) {
     const trimmed = text.trim();
     if (trimmed.startsWith("<?xml") || trimmed.includes("<Workbook")) {
@@ -153,6 +157,31 @@ function parseAssignmentEntries(value) {
     }).filter(Boolean);
 }
 
+function mergeAssignmentsByLocation(assignments) {
+    const quantitiesByLocationId = new Map();
+    for (const { locationId, quantity } of assignments) {
+        quantitiesByLocationId.set(locationId, (quantitiesByLocationId.get(locationId) ?? 0) + quantity);
+    }
+    return Array.from(quantitiesByLocationId.entries()).map(([locationId, quantity]) => ({ locationId, quantity }));
+}
+
+async function findExistingProductByName({ orgId, name }) {
+    return Products.findOneAsync({
+        orgId,
+        name: { $regex: new RegExp(`^${escapeRegExp(name.trim())}$`, "i") },
+    });
+}
+
+async function buildRestockAssignments(productId, importedAssignments) {
+    const existingRecords = await ProductRecords.find({ productId }).fetchAsync();
+    const assignments = existingRecords.map((record) => ({
+        locationId: record.locationId,
+        quantity: record.quantity,
+    }));
+    assignments.push(...importedAssignments);
+    return mergeAssignmentsByLocation(assignments);
+}
+
 function normalizeStorageUnitType(type) {
     const normalized = String(type || "other").trim().toLowerCase();
     return ALLOWED_STORAGE_UNIT_TYPES.has(normalized) ? normalized : "other";
@@ -178,7 +207,10 @@ async function findOrCreateSite({ orgId, name, description = "", now, siteMap })
     let cached = siteMap.get(key);
     if (cached) return cached;
 
-    const existing = await Sites.findOneAsync({ orgId, name });
+    const existing = await Sites.findOneAsync({
+        orgId,
+        name: { $regex: new RegExp(`^${escapeRegExp(name)}$`, "i") },
+    });
     if (existing) {
         cached = { id: existing._id, created: false };
         siteMap.set(key, cached);
@@ -318,11 +350,8 @@ Meteor.methods({
             const locationCode = getField(r, 'locationCode', 'storageLocation.code', 'location_code') || "";
             const lastStocktakeAt = getOptionalDate(getField(r, "lastStocktakeAt", "storageLocation.lastStocktakeAt", "last_stocktake_at")) ?? now;
 
-            let siteId = siteMap.get(siteName);
-            if (!siteId) {
-                siteId = await Sites.insertAsync({ orgId, name: siteName, description: "", createdAt: now, updatedAt: now });
-                siteMap.set(siteName, siteId);
-            }
+            const siteResult = await findOrCreateSite({ orgId, name: siteName, now, siteMap });
+            const siteId = siteResult.id;
 
             const floorKey = `${siteName}::${floorName}`;
             let floorId = floorMapMap.get(floorKey);
@@ -373,6 +402,7 @@ Meteor.methods({
 
         const now = new Date();
         let created = 0;
+        let updated = 0;
         let skippedDuplicates = 0;
         // default parents for any created locations
         let defaultSiteId = null;
@@ -395,7 +425,7 @@ Meteor.methods({
             if (assignmentsRaw) {
                 for (const assignment of parseAssignmentEntries(assignmentsRaw)) {
                     const { code, quantity: qty } = assignment;
-                    let loc = await StorageLocations.findOneAsync({ code });
+                    let loc = await StorageLocations.findOneAsync({ orgId, code });
                     if (!loc) {
                         // create fallback site/floor/unit on first missing location
                         if (!defaultSiteId) {
@@ -418,6 +448,21 @@ Meteor.methods({
 
             const handler = Meteor.server.method_handlers["products.createWithAssignments"];
             if (!handler) throw new Meteor.Error("server-error", "Products handler not available");
+
+            const existingProduct = await findExistingProductByName({ orgId, name });
+            if (existingProduct) {
+                const restockHandler = Meteor.server.method_handlers["products.restock"];
+                if (!restockHandler) throw new Meteor.Error("server-error", "Products restock handler not available");
+                if (totalQuantity > 0) {
+                    await restockHandler.call(this, {
+                        productId: existingProduct._id,
+                        additionalQuantity: totalQuantity,
+                        assignments: await buildRestockAssignments(existingProduct._id, assignments),
+                    });
+                    updated += 1;
+                }
+                continue;
+            }
 
             try {
                 await handler.call(this, {
@@ -447,7 +492,7 @@ Meteor.methods({
             }
         }
 
-        return { status: "ok", created, skippedDuplicates };
+        return { status: "ok", created, updated, skippedDuplicates };
     },
 
     async "bulk.importCombined"(payload) {
@@ -479,9 +524,11 @@ Meteor.methods({
                 storageUnitIds: [],
                 floorMapIds: [],
                 siteIds: [],
+                stockDeltas: [],
             },
             counts: {
                 createdProducts: 0,
+                updatedProducts: 0,
                 createdLocations: 0,
                 skippedDuplicateProducts: 0,
             },
@@ -512,7 +559,9 @@ Meteor.methods({
         const createdStorageUnitIds = new Set();
         const createdLocationIds = new Set();
         const createdProductIds = new Set();
+        const stockDeltas = [];
         let createdProducts = 0;
+        let updatedProducts = 0;
         let createdLocations = 0;
         let skippedDuplicateProducts = 0;
 
@@ -717,6 +766,29 @@ Meteor.methods({
         if (!handler) throw new Meteor.Error("server-error", "Products handler not available");
 
         for (const product of productGroups.values()) {
+            const existingProduct = await findExistingProductByName({ orgId, name: product.name });
+            if (existingProduct) {
+                if (product.totalQuantity > 0) {
+                    const restockHandler = Meteor.server.method_handlers["products.restock"];
+                    if (!restockHandler) throw new Meteor.Error("server-error", "Products restock handler not available");
+                    const importedAssignments = mergeAssignmentsByLocation(product.assignments);
+
+                    await restockHandler.call(this, {
+                        productId: existingProduct._id,
+                        additionalQuantity: product.totalQuantity,
+                        assignments: await buildRestockAssignments(existingProduct._id, importedAssignments),
+                    });
+
+                    updatedProducts += 1;
+                    stockDeltas.push({
+                        productId: existingProduct._id,
+                        totalQuantity: product.totalQuantity,
+                        assignments: importedAssignments,
+                    });
+                }
+                continue;
+            }
+
             try {
                 const productId = await handler.call(this, {
                     name: product.name,
@@ -755,9 +827,11 @@ Meteor.methods({
                     storageUnitIds: Array.from(createdStorageUnitIds),
                     floorMapIds: Array.from(createdFloorMapIds),
                     siteIds: Array.from(createdSiteIds),
+                    stockDeltas,
                 },
                 counts: {
                     createdProducts,
+                    updatedProducts,
                     createdLocations,
                     skippedDuplicateProducts,
                 },
@@ -765,7 +839,7 @@ Meteor.methods({
             },
         });
 
-        return { status: "ok", createdProducts, createdLocations, skippedDuplicateProducts };
+        return { status: "ok", createdProducts, updatedProducts, createdLocations, skippedDuplicateProducts };
         } catch (err) {
             await ImportRecords.updateAsync(importRecordId, {
                 $set: {
@@ -777,9 +851,11 @@ Meteor.methods({
                         storageUnitIds: Array.from(createdStorageUnitIds),
                         floorMapIds: Array.from(createdFloorMapIds),
                         siteIds: Array.from(createdSiteIds),
+                        stockDeltas,
                     },
                     counts: {
                         createdProducts,
+                        updatedProducts,
                         createdLocations,
                         skippedDuplicateProducts,
                     },
@@ -815,9 +891,11 @@ Meteor.methods({
         const storageUnitIds = createdIds.storageUnitIds || [];
         const floorMapIds = createdIds.floorMapIds || [];
         const siteIds = createdIds.siteIds || [];
+        const stockDeltas = createdIds.stockDeltas || [];
 
         const undone = {
             products: 0,
+            updatedProducts: 0,
             locations: 0,
             storageUnits: 0,
             floorMaps: 0,
@@ -838,6 +916,38 @@ Meteor.methods({
             await ProductActivities.removeAsync({ orgId, productId });
             await Products.removeAsync(productId);
             undone.products += 1;
+        }
+
+        for (const delta of stockDeltas) {
+            const product = await Products.findOneAsync({ _id: delta.productId, orgId });
+            if (!product) continue;
+
+            for (const assignment of delta.assignments || []) {
+                const record = await ProductRecords.findOneAsync({
+                    productId: delta.productId,
+                    locationId: assignment.locationId,
+                });
+                if (!record) continue;
+
+                if (record.quantity <= assignment.quantity) {
+                    await ProductRecords.removeAsync(record._id);
+                } else {
+                    await ProductRecords.updateAsync(record._id, {
+                        $set: {
+                            quantity: record.quantity - assignment.quantity,
+                            updatedAt: new Date(),
+                        },
+                    });
+                }
+            }
+
+            await Products.updateAsync(delta.productId, {
+                $set: {
+                    totalQuantity: Math.max(0, (product.totalQuantity ?? 0) - (delta.totalQuantity ?? 0)),
+                    updatedAt: new Date(),
+                },
+            });
+            undone.updatedProducts += 1;
         }
 
         for (const locationId of locationIds) {

@@ -220,15 +220,19 @@ export function DataToolsPage() {
       });
 
       const skipped = result?.skippedDuplicateProducts || 0;
+      const updated = result?.updatedProducts || 0;
       const skippedMessage = skipped
         ? ` Skipped ${skipped} duplicate product${skipped === 1 ? "" : "s"}.`
+        : "";
+      const updatedMessage = updated
+        ? ` Updated ${updated} existing product${updated === 1 ? "" : "s"}.`
         : "";
       setStatus(
         `Import complete. Created ${result?.createdProducts || 0} product${
           result?.createdProducts === 1 ? "" : "s"
         } and ${result?.createdLocations || 0} location${
           result?.createdLocations === 1 ? "" : "s"
-        }.${skippedMessage}`,
+        }.${updatedMessage}${skippedMessage}`,
       );
     } catch (err) {
       console.error(err);
