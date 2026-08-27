@@ -57,6 +57,7 @@ function FloorMapPageInner() {
     lowStockByUnitId,
     handleDeleteSelectedUnit,
     handleDeleteShape,
+    handleChangeShape
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -547,6 +548,7 @@ function FloorMapPageInner() {
                             onEditShape={handleEditShape}
                             onDeleteShape={handleDeleteShape}
                             isChangingShape={isChangingShape}
+                            onChangeShape={handleChangeShape}
                           />
                       </div>
 

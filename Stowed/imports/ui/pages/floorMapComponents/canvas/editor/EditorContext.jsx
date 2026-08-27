@@ -397,10 +397,24 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   async function handleChangeShape(shape) {
     if (!selectedUnit) return;
 
+    console.log(selectedUnit.id);
+    console.log(floorMap._id);
+
+    if (!selectedUnit._id) {
+      commitUnits((prev) => 
+        prev.map((u) =>
+          u.id === selectedUnit.id ? {...u, shape} : u
+        )
+      );
+      setSelectedUnit((prev) => (prev ? {...prev, shape} : prev));
+      return;
+  }
+
     try {
+      
       await callMethod("storageUnits.update", {
         storageUnitId: selectedUnit._id,
-        floorMapId: selectedUnit.floorMapId,
+        floorMapId: floorMap._id,
         name: selectedUnit.name,
         type: selectedUnit.type,
         shape: shape,
@@ -482,9 +496,11 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected unit
     handleDeleteSelectedUnit,
+    handleChangeShape,
 
     // Delete selected shape
     handleDeleteShape,
+
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

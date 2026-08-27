@@ -222,6 +222,7 @@ Meteor.methods({
     scale,
     fill,
   }) {
+    
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
@@ -258,6 +259,7 @@ Meteor.methods({
     const orgId = await getCallerOrgId(this.userId);
 
     await StorageUnits.updateAsync(storageUnitId, {
+
       $set: {
         floorMapId,
         name,
