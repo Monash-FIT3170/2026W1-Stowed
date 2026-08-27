@@ -132,7 +132,7 @@ export function CustomShapesPanel({
   onDeleteShape,
 }) {
   const {
-    handleSaveLayout,
+    handleUnitPlaced,
   } = useEditor();
 
   const getToolName = (shape) => `shape-${shape.shapeId}`;
@@ -190,7 +190,7 @@ export function CustomShapesPanel({
   }
 
   function handleDragEnd() {
-    handleSaveLayout(true); // save the layout to get the new unit in the DB
+    handleUnitPlaced(true); // save the layout to get the new unit in the DB
     dragState.template = null;
   }
 
