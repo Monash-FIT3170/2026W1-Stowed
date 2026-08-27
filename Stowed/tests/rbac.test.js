@@ -16,6 +16,8 @@ describe("Role-Based Access Control", function () {
     assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/inventory"), true);
     assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/qr-codes"), false);
     assert.strictEqual(hasClientPermission(ROLES.ADMIN, "route:/qr-codes"), true);
+    assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/settings"), false);
+    assert.strictEqual(hasClientPermission(ROLES.ADMIN, "route:/settings"), true);
     assert.strictEqual(hasClientPermission(ROLES.ADMIN, "route:/accounts"), false);
     assert.strictEqual(hasClientPermission(ROLES.OWNER, "route:/accounts"), true);
   });

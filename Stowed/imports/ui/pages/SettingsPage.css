@@ -1,4 +1,4 @@
-/* DataToolsPage.css - styles following the v3-bloom design tokens */
+/* SettingsPage.css - styles following the v3-bloom design tokens */
 
 .bulk-import-wrapper {
   display: grid;
@@ -113,7 +113,7 @@
     grid-template-columns: 1fr;
   }
 }
-.data-tools-wrap {
+.settings-wrap {
   padding: 24px;
 }
 

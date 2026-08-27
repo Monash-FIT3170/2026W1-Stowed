@@ -20,7 +20,6 @@ const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
   { to: "/forecast", label: "Forecast", icon: "🔮" },
   { to: "/alerts", label: "Alerts", icon: "⚠️" },
-  { to: "/data-tools", label: "Data Tools", icon: "🔃" },
 ];
 
 function SidebarLink({ to, label, icon, end }) {
@@ -61,12 +60,17 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  const ALL_ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
+  const ALL_ACCOUNT_LINKS = [
+    { to: "/register", label: "Create Account" },
+  ];
   if (role >= ROLES.OWNER) {
     ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
+  ALL_ACCOUNT_LINKS.push({ to: "/settings", label: "Settings" });
   const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
-    link.to === "/register" ? hasClientPermission(role, "create-users") : true,
+    link.to === "/register"
+      ? hasClientPermission(role, "create-users")
+      : hasClientPermission(role, `route:${link.to}`),
   );
 
   return (
@@ -111,12 +115,7 @@ export function Sidebar() {
 
           <section className="sidebar-section">
             <SectionLabel label="Account" />
-            {ACCOUNT_LINKS.filter((link) => {
-              if (link.to === "/register") {
-                return hasClientPermission(role, "create-users");
-              }
-              return true;
-            }).map((link) => (
+            {ACCOUNT_LINKS.map((link) => (
               <SidebarLink key={link.to} to={link.to} label={link.label} />
             ))}
           </section>

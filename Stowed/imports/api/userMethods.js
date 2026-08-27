@@ -37,7 +37,7 @@ const PERMISSIONS = {
   "route:/lists": ROLES.STANDARD,
   "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
   "route:/qr-codes": ROLES.ADMIN,
-  "route:/data-tools": ROLES.ADMIN,
+  "route:/settings": ROLES.ADMIN,
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
   "route:/create-product": ROLES.ADMIN,

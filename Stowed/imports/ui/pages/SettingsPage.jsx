@@ -6,7 +6,7 @@ import { hasClientPermission } from "/imports/api/userMethods";
 import { toCsv, INVENTORY_COLUMNS, LOCATION_COLUMNS } from "/imports/api/products/export";
 import { ImportRecords } from "/imports/api/importRecords/collections";
 import "../Global.css";
-import "./DataToolsPage.css";
+import "./SettingsPage.css";
 
 const JSON_TEMPLATE_ROWS = [
   {
@@ -141,7 +141,7 @@ function downloadJson(filename, data) {
   });
 }
 
-export function DataToolsPage() {
+export function SettingsPage() {
   const { role } = useAuth();
   const canExport = hasClientPermission(role, "products.export");
 
@@ -331,18 +331,18 @@ export function DataToolsPage() {
       <div className="product-detail-container">
         <div className="product-detail-header">
           <div className="breadcrumb">
-            <span className="breadcrumb-link">Tools</span>
+            <span className="breadcrumb-link">Account</span>
             <span className="breadcrumb-separator">/</span>
-            <span className="breadcrumb-current">Data Tools</span>
+            <span className="breadcrumb-current">Settings</span>
           </div>
           <div className="header-top">
             <h1 className="header-title">
-              <em>Data Tools</em>
+              <em>Settings</em>
             </h1>
           </div>
         </div>
 
-        <div className="data-tools-wrap">
+        <div className="settings-wrap">
           <div className="bulk-import-wrapper">
             <div className="tools-card bulk-card">
               <div className="bulk-import-hero">
@@ -580,4 +580,4 @@ export function DataToolsPage() {
   );
 }
 
-export default DataToolsPage;
+export default SettingsPage;

@@ -19,7 +19,7 @@ import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
-import { DataToolsPage } from "./pages/DataToolsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 const LocationsPage = lazy(() =>
   import("./pages/LocationsPage").then((module) => ({
@@ -266,11 +266,11 @@ export function App() {
               }
             />
             <Route
-              path="/data-tools"
+              path="/settings"
               element={
                 isLoggedIn ? (
-                  hasClientPermission(role, "route:/data-tools") ? (
-                    <DataToolsPage />
+                  hasClientPermission(role, "route:/settings") ? (
+                    <SettingsPage />
                   ) : (
                     <Navigate to="/" replace />
                   )
