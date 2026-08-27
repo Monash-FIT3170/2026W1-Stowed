@@ -66,10 +66,17 @@
   justify-content: space-between;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .import-history-header h4 {
   margin: 0;
+}
+
+.import-history-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .import-history-list {

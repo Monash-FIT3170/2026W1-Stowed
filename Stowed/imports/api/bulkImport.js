@@ -1019,4 +1019,19 @@ Meteor.methods({
 
         return { status: "ok", importRecordId: record._id, undone, skipped };
     },
+
+    async "bulk.clearImportHistory"() {
+        if (!this.userId) {
+            throw new Meteor.Error("not-authorised", "You must be logged in.");
+        }
+
+        await requirePermission(this.userId, "products.create");
+        await requirePermission(this.userId, "locations.manage");
+
+        const orgId = await getCallerOrgId(this.userId);
+        if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+        const removed = await ImportRecords.removeAsync({ orgId });
+        return { status: "ok", removed };
+    },
 });

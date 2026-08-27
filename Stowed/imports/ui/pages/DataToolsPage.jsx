@@ -155,6 +155,7 @@ export function DataToolsPage() {
   const [status, setStatus] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [activeImportAction, setActiveImportAction] = useState(null);
 
   const { importRecords } = useTracker(() => {
@@ -293,6 +294,38 @@ export function DataToolsPage() {
     }
   };
 
+  const handleClearImportHistory = async () => {
+    if (importRecords.length === 0) {
+      setStatus("No import history to clear");
+      return;
+    }
+
+    setIsClearingHistory(true);
+    setActiveImportAction("clear-history");
+    setStatus("Clearing import history...");
+
+    try {
+      const result = await new Promise((res, rej) => {
+        Meteor.call("bulk.clearImportHistory", (err, result) => {
+          if (err) rej(err);
+          else res(result);
+        });
+      });
+
+      setStatus(
+        `Import history cleared. Removed ${result?.removed || 0} record${
+          result?.removed === 1 ? "" : "s"
+        }.`,
+      );
+    } catch (err) {
+      console.error(err);
+      setStatus(`Clear history failed: ${err.message || err}`);
+    } finally {
+      setIsClearingHistory(false);
+      setActiveImportAction(null);
+    }
+  };
+
   return (
     <>
       <div className="product-detail-container">
@@ -338,7 +371,7 @@ export function DataToolsPage() {
                   <button
                     className="btn-secondary file-chooser-button"
                     onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                    disabled={isImporting || isUndoing}
+                    disabled={isImporting || isUndoing || isClearingHistory}
                   >
                     Choose JSON
                   </button>
@@ -353,7 +386,7 @@ export function DataToolsPage() {
                     <button
                       className="btn-primary"
                       onClick={handleUpload}
-                      disabled={!combinedFile || isImporting || isUndoing}
+                      disabled={!combinedFile || isImporting || isUndoing || isClearingHistory}
                     >
                       {activeImportAction === "import" ? "Importing..." : "Import"}
                     </button>
@@ -371,13 +404,22 @@ export function DataToolsPage() {
               <div className="panel-card">
                 <div className="import-history-header">
                   <h4>Import History</h4>
-                  <button
-                    className="btn-secondary"
-                    onClick={handleUndoLatestImport}
-                    disabled={!latestCompletedImport || isImporting || isUndoing}
-                  >
-                    {activeImportAction === "undo" ? "Undoing..." : "Undo import"}
-                  </button>
+                  <div className="import-history-actions">
+                    <button
+                      className="btn-secondary"
+                      onClick={handleUndoLatestImport}
+                      disabled={!latestCompletedImport || isImporting || isUndoing || isClearingHistory}
+                    >
+                      {activeImportAction === "undo" ? "Undoing..." : "Undo import"}
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={handleClearImportHistory}
+                      disabled={importRecords.length === 0 || isImporting || isUndoing || isClearingHistory}
+                    >
+                      {activeImportAction === "clear-history" ? "Clearing..." : "Clear history"}
+                    </button>
+                  </div>
                 </div>
                 <div className="import-history-list">
                   {importRecords.length === 0 ? (
