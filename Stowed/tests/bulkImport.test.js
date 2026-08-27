@@ -138,6 +138,7 @@ describe("bulk import", function () {
     assert.deepStrictEqual(result, {
       status: "ok",
       createdProducts: 2,
+      updatedProducts: 0,
       createdLocations: 3,
       skippedDuplicateProducts: 0,
     });
@@ -170,6 +171,202 @@ describe("bulk import", function () {
     assert.strictEqual(importRecord.createdIds.locationIds.length, 3);
   });
 
+  it("reuses an existing site case-insensitively during combined import", async function () {
+    const suffix = Date.now();
+    const existingSiteId = await Sites.insertAsync({
+      orgId: TEST_ORG_ID,
+      name: "Reusable Site",
+      description: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await callMethod("bulk.importCombined", {
+      fileName: "bulk-import-site-reuse-test.json",
+      text: JSON.stringify([
+        {
+          siteName: "reusable site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "SITE-REUSE-A1",
+          name: `Reusable Site Product ${suffix}`,
+          totalQuantity: 1,
+        },
+      ]),
+    });
+
+    const matchingSites = await Sites.find({
+      orgId: TEST_ORG_ID,
+      name: { $regex: /^reusable site$/i },
+    }).fetchAsync();
+    assert.strictEqual(matchingSites.length, 1);
+    assert.strictEqual(matchingSites[0]._id, existingSiteId);
+  });
+
+  it("adds up repeated locations for the same product", async function () {
+    const suffix = Date.now();
+    const productName = `Duplicate Location Product ${suffix}`;
+
+    const result = await callMethod("bulk.importCombined", {
+      fileName: "bulk-import-duplicate-location-test.json",
+      text: JSON.stringify([
+        {
+          siteName: "Duplicate Location Site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "DUP-LOC-A1",
+          name: productName,
+          totalQuantity: 1,
+        },
+        {
+          siteName: "Duplicate Location Site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "DUP-LOC-A1",
+          name: productName,
+          totalQuantity: 2,
+        },
+      ]),
+    });
+
+    const product = await Products.findOneAsync({ orgId: TEST_ORG_ID, name: productName });
+    const records = await ProductRecords.find({ productId: product._id }).fetchAsync();
+
+    assert.strictEqual(result.createdProducts, 1);
+    assert.strictEqual(result.createdLocations, 1);
+    assert.strictEqual(product.totalQuantity, 3);
+    assert.strictEqual(records.length, 1);
+    assert.strictEqual(records[0].quantity, 3);
+  });
+
+  it("allows the same location to be imported for different products", async function () {
+    const suffix = Date.now();
+    const result = await callMethod("bulk.importCombined", {
+      fileName: "bulk-import-shared-location-test.json",
+      text: JSON.stringify([
+        {
+          siteName: "Shared Location Site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "SHARED-LOC-A1",
+          name: `Shared Location Product A ${suffix}`,
+          totalQuantity: 1,
+        },
+        {
+          siteName: "Shared Location Site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "SHARED-LOC-A1",
+          name: `Shared Location Product B ${suffix}`,
+          totalQuantity: 2,
+        },
+      ]),
+    });
+
+    assert.strictEqual(result.createdProducts, 2);
+    assert.strictEqual(result.createdLocations, 1);
+  });
+
+  it("adds import stock to an existing product instead of creating a duplicate", async function () {
+    const suffix = Date.now();
+    const productName = `Existing Import Product ${suffix}`;
+
+    await callMethod("bulk.importCombined", {
+      fileName: "bulk-import-existing-product-original.json",
+      text: JSON.stringify([
+        {
+          siteName: "Existing Product Site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "EXISTING-PRODUCT-A1",
+          name: productName,
+          totalQuantity: 5,
+        },
+      ]),
+    });
+
+    const result = await callMethod("bulk.importCombined", {
+      fileName: "bulk-import-existing-product-restock.json",
+      text: JSON.stringify([
+        {
+          siteName: "existing product site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "EXISTING-PRODUCT-A1",
+          name: productName,
+          totalQuantity: 3,
+        },
+        {
+          siteName: "existing product site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "EXISTING-PRODUCT-A1",
+          name: productName,
+          totalQuantity: 2,
+        },
+      ]),
+    });
+
+    const products = await Products.find({ orgId: TEST_ORG_ID, name: productName }).fetchAsync();
+    const records = await ProductRecords.find({ productId: products[0]._id }).fetchAsync();
+    const latestImport = await ImportRecords.findOneAsync({
+      orgId: TEST_ORG_ID,
+      fileName: "bulk-import-existing-product-restock.json",
+    });
+
+    assert.strictEqual(result.createdProducts, 0);
+    assert.strictEqual(result.updatedProducts, 1);
+    assert.strictEqual(products.length, 1);
+    assert.strictEqual(products[0].totalQuantity, 10);
+    assert.strictEqual(records.length, 1);
+    assert.strictEqual(records[0].quantity, 10);
+    assert.strictEqual(latestImport.counts.updatedProducts, 1);
+    assert.strictEqual(latestImport.createdIds.stockDeltas.length, 1);
+
+    await callMethod("bulk.undoLatestImport");
+
+    const restoredProduct = await Products.findOneAsync({ orgId: TEST_ORG_ID, name: productName });
+    const restoredRecords = await ProductRecords.find({ productId: restoredProduct._id }).fetchAsync();
+    assert.strictEqual(restoredProduct.totalQuantity, 5);
+    assert.strictEqual(restoredRecords.length, 1);
+    assert.strictEqual(restoredRecords[0].quantity, 5);
+  });
+
+  it("clears import history without removing imported data", async function () {
+    const suffix = Date.now();
+    const productName = `Clear History Product ${suffix}`;
+
+    await callMethod("bulk.importCombined", {
+      fileName: "bulk-import-clear-history-test.json",
+      text: JSON.stringify([
+        {
+          siteName: "Clear History Site",
+          floorMapName: "Ground Floor",
+          storageUnitName: "Cabinet A",
+          locationName: "Shelf 1",
+          locationCode: "CLEAR-HISTORY-A1",
+          name: productName,
+          totalQuantity: 5,
+        },
+      ]),
+    });
+
+    const clearResult = await callMethod("bulk.clearImportHistory");
+
+    assert.deepStrictEqual(clearResult, { status: "ok", removed: 1 });
+    assert.strictEqual(await ImportRecords.find({ orgId: TEST_ORG_ID }).countAsync(), 0);
+    assert.ok(await Products.findOneAsync({ orgId: TEST_ORG_ID, name: productName }));
+    assert.ok(await StorageLocations.findOneAsync({ orgId: TEST_ORG_ID, code: "CLEAR-HISTORY-A1" }));
+  });
+
   it("undoes the latest completed combined import", async function () {
     const suffix = Date.now();
     await callMethod("bulk.importCombined", {
@@ -192,6 +389,7 @@ describe("bulk import", function () {
     assert.strictEqual(undoResult.status, "ok");
     assert.deepStrictEqual(undoResult.undone, {
       products: 1,
+      updatedProducts: 0,
       locations: 1,
       storageUnits: 1,
       floorMaps: 1,
