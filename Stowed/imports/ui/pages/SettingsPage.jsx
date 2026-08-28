@@ -246,6 +246,8 @@ export function SettingsPage() {
           result?.createdLocations === 1 ? "" : "s"
         }.${updatedMessage}${skippedMessage}`,
       );
+      setCombinedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       console.error(err);
       setStatus(`Import failed: ${err.message || err}`);
@@ -451,8 +453,10 @@ export function SettingsPage() {
                             {formatImportDate(record.createdAt)} · {record.status}
                           </div>
                           <div className="import-history-meta">
-                            {counts.createdProducts || 0} products · {counts.createdLocations || 0}{" "}
-                            locations
+                            {counts.createdProducts || 0} product
+                            {counts.createdProducts === 1 ? "" : "s"} ·{" "}
+                            {counts.createdLocations || 0} location
+                            {counts.createdLocations === 1 ? "" : "s"}
                           </div>
                         </div>
                       );
