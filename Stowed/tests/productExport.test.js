@@ -302,7 +302,7 @@ describe("export - toCsv", function () {
     assert.strictEqual(csv, "name,sku\r\nWidget,");
   });
 
-    it("blanks unit dimensions when the shape has no points", function () {
+  it("blanks unit dimensions when the shape has no points", function () {
     const rows = buildImportRows({
       ...FIXTURE,
       storageUnits: [{ _id: "unit-1", floorMapId: "floor-1", name: "Cabinet A", type: "cabinet" }],
@@ -329,5 +329,11 @@ describe("export - toCsv", function () {
     const row = rows.find((r) => r.name === "Empty Product");
     assert.strictEqual(row.locationCode, "");
     assert.deepStrictEqual(row.assignments, []);
+  });
+
+  it("exports floor dimensions in metres", function () {
+    const [row] = buildLocationRows(FIXTURE);
+    assert.strictEqual(row.floorWidth, 12);
+    assert.strictEqual(row.floorHeight, 8);
   });
 });
