@@ -10,6 +10,8 @@ import {
   getTransformedBounds,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { normaliseShapePoints } from "./utils/ShapeGeometry";
+import { hasCollisions } from "./utils/Collisions";
 import { COLOURS } from "../../FloorMapStyles";
 
 /**
@@ -421,6 +423,83 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
   }
 
+  async function handleChangeShape(shape) {
+    if (!selectedUnit) return;
+
+    // normalise custom shapes whose points can have huge variation
+    const normalisedPoints = normaliseShapePoints(shape.points);
+
+    const normalisedShape = {
+      ...shape,
+      points: normalisedPoints
+    };
+
+
+    // updates unit details based on new shape
+    const newBounds = getTransformedBounds(normalisedShape, {
+      offset: selectedUnit.offset,
+      rotation: selectedUnit.rotation,
+      scale: selectedUnit.scale,
+    });
+
+    const updatedUnit = {
+      ...selectedUnit,
+      shape: normalisedShape,
+      x: selectedUnit.x,
+      y: selectedUnit.y,
+      width: newBounds.width,
+      height: newBounds.height
+    };
+
+    // block change if it causes a collision
+    if (hasCollisions(updatedUnit, units, selectedUnit._id)) {
+      alert("Cannot change to this shape because it would cause collisions.");
+      return;
+    }
+
+    // updates unsaved map configs 
+    if (!selectedUnit._id) {
+      commitUnits((prev) =>
+        prev.map((u) =>
+          u.id === selectedUnit.id ? updatedUnit : u
+        )
+      );
+      setSelectedUnit(updatedUnit);
+      return;
+    }
+
+    try {
+
+      await callMethod("storageUnits.update", {
+        storageUnitId: selectedUnit._id,
+        floorMapId: floorMap._id,
+        name: selectedUnit.name,
+        type: selectedUnit.type,
+        shape: normalisedShape,
+        offset: selectedUnit.offset,
+        rotation: selectedUnit.rotation,
+        scale: selectedUnit.scale,
+        fill: selectedUnit.fill
+      });
+
+      // update view
+      commitUnits((prev) =>
+        prev.map((u) =>
+          u.id === selectedUnit.id ? updatedUnit : u
+        )
+      );
+
+      setSelectedUnit(updatedUnit);
+
+    } catch (error) {
+      alert(
+        error.reason ||
+        "Ensure that a valid shape has been selected to change to.",
+      );
+    }
+
+  }
+
   async function handleDeleteShape(shape) {
     // validate something is selected
     if (!shape) return;
@@ -484,9 +563,11 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected unit
     handleDeleteSelectedUnit,
+    handleChangeShape,
 
     // Delete selected shape
     handleDeleteShape,
+
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

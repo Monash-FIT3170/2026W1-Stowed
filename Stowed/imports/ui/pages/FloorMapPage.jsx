@@ -57,6 +57,7 @@ function FloorMapPageInner() {
     lowStockByUnitId,
     handleDeleteSelectedUnit,
     handleDeleteShape,
+    handleChangeShape
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -68,6 +69,7 @@ function FloorMapPageInner() {
   const [isStockPanelOpen, setIsStockPanelOpen] = useState(false);
   const [isCreateShapeOpen, setIsCreateShapeOpen] = useState(false);
   const [editingShape, setEditingShape] = useState(null);
+  const [isChangingShape, setIsChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
   // Fetch all sites, floor maps, storage units and shapes
@@ -94,6 +96,7 @@ function FloorMapPageInner() {
     setSelectedUnit(unit);
     setIsStockPanelOpen(!!unitId);
   };
+
 
   const handleCanvasModeToggle = () => {
     const nextEditMode = !isCanvasEditMode;
@@ -452,7 +455,7 @@ function FloorMapPageInner() {
                       }}
                     >
                       <button
-                        onClick={() => handleUnitSelect(null)}
+                        onClick={() => {isChangingShape? setIsChangingShape(false) : handleUnitSelect(null)}}
                         style={{
                           background: "none",
                           border: "none",
@@ -470,7 +473,7 @@ function FloorMapPageInner() {
                         Edit &quot;{selectedUnit.name}&quot;
                       </span>
                       <button
-                        onClick={() => setSidebarOpen(false)}
+                        onClick={ () => setSidebarOpen(false)}
                         style={{
                           ...pageStyles.sidebarToggle,
                           fontSize: "11px",
@@ -545,7 +548,23 @@ function FloorMapPageInner() {
                       boxSizing: "border-box",
                     }}
                   >
-                    {selectedUnit ? (
+                    {selectedUnit && isChangingShape ? (
+                      
+                      //dd
+                      <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+
+                          <CustomShapesPanel
+                            mapShapes={mapShapes}
+                            activeTool={activeTool}
+                            setActiveTool={setActiveTool}
+                            onEditShape={handleEditShape}
+                            onDeleteShape={handleDeleteShape}
+                            isChangingShape={isChangingShape}
+                            onChangeShape={handleChangeShape}
+                          />
+                      </div>
+
+                    ): selectedUnit ? (
                       <>
                         {/* SETTINGS for the selected storage unit */}
                         <div
@@ -565,6 +584,18 @@ function FloorMapPageInner() {
                         </div>
                         <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
                         <div style={{ padding: "12px", boxSizing: "border-box" }}>
+
+                          <button
+                            type="button"
+                            className="btn-primary"
+                            style={{ width: "100%" }}
+                            onClick={() => setIsChangingShape(true)}
+                          >
+                            Change Shape
+                          </button>
+
+                          <div style={{ height: "8px"}} />
+
                           <button
                             type="button"
                             className="btn-danger"

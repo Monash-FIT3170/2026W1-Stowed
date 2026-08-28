@@ -15,11 +15,11 @@ function getUnitPolygon(unit) {
   const localPoints = isCustomShape
     ? unit.shape.points
     : [
-        { x: 0, y: 0 },
-        { x: unit.width, y: 0 },
-        { x: unit.width, y: unit.height },
-        { x: 0, y: unit.height },
-      ];
+      { x: 0, y: 0 },
+      { x: unit.width, y: 0 },
+      { x: unit.width, y: unit.height },
+      { x: 0, y: unit.height },
+    ];
 
   return localPoints.map((p) => ({ x: p.x + unit.x, y: p.y + unit.y }));
 }
