@@ -9,17 +9,17 @@ import "./Global.css";
 import "./Sidebar.css";
 
 const WORKSPACE_LINKS = [
+  { to: "/dashboard", label: "Dashboard", icon: "⌂" },
   { to: "/locations", label: "Locations", icon: "📍" },
   { to: "/floor-map", label: "Floor Map", icon: "🗺" },
   { to: "/inventory", label: "Inventory", icon: "📦" },
-  { to: "/", label: "Inventory Page", icon: "✓" },
   { to: "/lists", label: "Lists", icon: "🛒" },
 ];
 
 const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
   { to: "/forecast", label: "Forecast", icon: "🔮" },
-  { to: "/alerts", label: "Alerts", icon: "⚠️" },
+  { to: "/alerts", label: "Stocktake alerts", icon: "⚠️" },
 ];
 
 function SidebarLink({ to, label, icon, end }) {
@@ -94,16 +94,18 @@ export function Sidebar() {
             <SectionLabel label="Workspace" />
             {WORKSPACE_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
               (link) => (
-                <SidebarLink key={link.to} {...link} end={link.to === "/"} />
+                <SidebarLink key={link.to} {...link} end={link.to === "/dashboard"} />
               ),
             )}
           </section>
 
           <section className="sidebar-section">
             <SectionLabel label="Tools" />
-            {TOOL_LINKS.map((link) => (
-              <SidebarLink key={link.to} {...link} />
-            ))}
+            {TOOL_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)).map(
+              (link) => (
+                <SidebarLink key={link.to} {...link} />
+              ),
+            )}
           </section>
 
           <section className="sidebar-section">

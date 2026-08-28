@@ -5,7 +5,10 @@ import { FilterChips } from "../imports/ui/components/FilterChips";
 import {
   searchProducts,
   filterLowStock,
+  filterOutOfStock,
   filterByStorageUnit,
+  getLowStockProductsByUrgency,
+  getRecentlyUpdatedProducts,
 } from "../imports/api/products/filters";
 import { mockProducts } from "../imports/api/mockProducts";
 
@@ -87,16 +90,102 @@ describe("low stock filter", function () {
     assert.strictEqual(filterLowStock(products).length, 0);
   });
 
+  it("excludes products with nothing left, which are out of stock instead", function () {
+    const products = [{ _id: "a", totalQuantity: 0, reorderAt: 10 }];
+    assert.strictEqual(filterLowStock(products).length, 0);
+  });
+
   it("returns only the matching subset from a mixed list", function () {
     const products = [
       { _id: "a", totalQuantity: 1, reorderAt: 10 },
       { _id: "b", totalQuantity: 100, reorderAt: 10 },
       { _id: "c", totalQuantity: 5, reorderAt: 5 },
       { _id: "d", totalQuantity: 5, reorderAt: null },
+      { _id: "e", totalQuantity: 0, reorderAt: 10 },
     ];
     const result = filterLowStock(products);
     const ids = result.map((p) => p._id).sort();
     assert.deepStrictEqual(ids, ["a", "c"]);
+  });
+
+  it("orders low-stock products by proportional shortage", function () {
+    const products = [
+      { _id: "threshold", name: "At threshold", totalQuantity: 5, reorderAt: 5 },
+      { _id: "half", name: "Half remaining", totalQuantity: 5, reorderAt: 10 },
+      { _id: "out", name: "Out of stock", totalQuantity: 0, reorderAt: 10 },
+      { _id: "healthy", name: "Healthy", totalQuantity: 12, reorderAt: 10 },
+      { _id: "two-fifths", name: "Two remaining", totalQuantity: 2, reorderAt: 5 },
+    ];
+
+    assert.deepStrictEqual(
+      getLowStockProductsByUrgency(products).map((product) => product._id),
+      ["out", "two-fifths", "half", "threshold"],
+    );
+  });
+});
+
+describe("recently updated products", function () {
+  it("returns the newest products first without mutating the source array", function () {
+    const products = [
+      { _id: "middle", updatedAt: new Date("2026-08-12T00:00:00.000Z") },
+      { _id: "oldest", updatedAt: new Date("2026-08-10T00:00:00.000Z") },
+      { _id: "newest", updatedAt: new Date("2026-08-14T00:00:00.000Z") },
+    ];
+
+    assert.deepStrictEqual(
+      getRecentlyUpdatedProducts(products, 2).map((product) => product._id),
+      ["newest", "middle"],
+    );
+    assert.deepStrictEqual(
+      products.map((product) => product._id),
+      ["middle", "oldest", "newest"],
+    );
+  });
+
+  it("places products without a valid update timestamp after dated products", function () {
+    const products = [
+      { _id: "missing" },
+      { _id: "dated", updatedAt: new Date("2026-08-14T00:00:00.000Z") },
+    ];
+
+    assert.deepStrictEqual(
+      getRecentlyUpdatedProducts(products).map((product) => product._id),
+      ["dated", "missing"],
+    );
+  });
+});
+
+describe("out of stock filter", function () {
+  it("includes products with no stock left", function () {
+    const products = [{ _id: "a", totalQuantity: 0, reorderAt: 10 }];
+    assert.strictEqual(filterOutOfStock(products).length, 1);
+  });
+
+  it("includes products with no stock and no reorder threshold", function () {
+    const products = [{ _id: "a", totalQuantity: 0, reorderAt: null }];
+    assert.strictEqual(filterOutOfStock(products).length, 1);
+  });
+
+  it("excludes products with stock remaining, however little", function () {
+    const products = [{ _id: "a", totalQuantity: 1, reorderAt: 10 }];
+    assert.strictEqual(filterOutOfStock(products).length, 0);
+  });
+
+  it("shares no products with the low stock filter", function () {
+    const products = [
+      { _id: "a", totalQuantity: 0, reorderAt: 10 },
+      { _id: "b", totalQuantity: 3, reorderAt: 10 },
+      { _id: "c", totalQuantity: 50, reorderAt: 10 },
+      { _id: "d", totalQuantity: 0, reorderAt: null },
+    ];
+    const low = filterLowStock(products).map((p) => p._id);
+    const out = filterOutOfStock(products).map((p) => p._id);
+    assert.deepStrictEqual(low.sort(), ["b"]);
+    assert.deepStrictEqual(out.sort(), ["a", "d"]);
+    assert.deepStrictEqual(
+      low.filter((id) => out.includes(id)),
+      [],
+    );
   });
 });
 
@@ -154,7 +243,7 @@ describe("filter chips", function () {
   const filters = [
     { id: "all", label: "All", count: 8 },
     { id: "low-stock", label: "Low stock", count: 3 },
-    { id: "tag", label: "Tag" },
+    { id: "out-of-stock", label: "Out of stock", count: 2 },
     { id: "location", label: "Location" },
   ];
 
@@ -195,11 +284,50 @@ describe("filter chips", function () {
     assert.ok(html.includes(">3<"));
   });
 
+  it("carries no hazard icon on any chip", function () {
+    const html = renderToStaticMarkup(
+      React.createElement(FilterChips, {
+        filters,
+        activeFilter: "all",
+        onFilterChange: () => {},
+      }),
+    );
+    assert.ok(!html.includes("⚠"));
+  });
+
+  it("shades every selected chip the same, whatever it filters for", function () {
+    const activeChip = (activeFilter) => {
+      const html = renderToStaticMarkup(
+        React.createElement(FilterChips, { filters, activeFilter, onFilterChange: () => {} }),
+      );
+      const match = html.match(/<button[^>]*style="([^"]*)"[^>]*>(?:(?!<\/button>).)*?<\/button>/g);
+      return (match || []).find((btn) => btn.includes("border:none"));
+    };
+
+    const shades = filters.map((f) => activeChip(f.id));
+    shades.forEach((shade) => {
+      assert.ok(shade, "expected exactly one chip to render as selected");
+      assert.strictEqual(shade.includes("#2C2419"), true);
+    });
+    // No chip carries a status colour of its own any more.
+    filters.forEach((f) => {
+      const html = renderToStaticMarkup(
+        React.createElement(FilterChips, {
+          filters,
+          activeFilter: f.id,
+          onFilterChange: () => {},
+        }),
+      );
+      assert.ok(!html.includes("--status-"));
+      assert.ok(!html.includes("F8DDD2"));
+    });
+  });
+
   it("omits the count span when count is undefined", function () {
     const html = renderToStaticMarkup(
       React.createElement(FilterChips, {
-        filters: [{ id: "tag", label: "Tag" }],
-        activeFilter: "tag",
+        filters: [{ id: "location", label: "Location" }],
+        activeFilter: "location",
         onFilterChange: () => {},
       }),
     );

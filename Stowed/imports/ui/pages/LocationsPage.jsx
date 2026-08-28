@@ -1,1403 +1,813 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
-
 import {
   FloorMaps,
   Sites,
   StorageLocations,
   StorageUnits,
 } from "/imports/api/locations/collections";
+import { ProductRecords } from "/imports/api/products/collections";
+import { isImageFile, uploadImageToServer } from "/imports/api/upload";
+import { useToast } from "../components/Toast";
+import {
+  DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+  getLocationStocktakeStatus,
+  isValidStocktakeInterval,
+  MAX_STOCKTAKE_INTERVAL_DAYS,
+  STOCKTAKE_STATUS,
+} from "../../api/locations/stocktake";
 import "../Global.css";
 import "./LocationsPage.css";
-import { uploadImageToServer, isImageFile } from "/imports/api/upload";
-import { buildRectShape, getTransformedBounds } from "/imports/api/locations/shapeUtils";
 
-const STORAGE_UNIT_TYPES = ["shelf", "cabinet", "rack", "drawer", "fridge", "other"];
-
-// Default form uses meter values to match the floor map editor coordinate system
-const DEFAULT_UNIT_FORM = {
-  name: "",
-  type: "shelf",
-  x: "2",
-  y: "2",
-  width: "2",
-  height: "1",
+const TABS = {
+  LOCATIONS: "locations",
+  FLOOR_MAPS: "floor-maps",
+  SITES: "sites",
 };
 
-const DEFAULT_LOCATION_FORM = {
-  name: "",
-  code: "",
+const EMPTY_FORMS = {
+  location: { storageUnitId: "", name: "", code: "", imageUrl: "" },
+  floorMap: { siteId: "", name: "", imageUrl: "" },
+  site: {
+    name: "",
+    description: "",
+    stocktakeIntervalDays: String(DEFAULT_STOCKTAKE_INTERVAL_DAYS),
+  },
 };
 
-function hasValidUnitPosition(unitForm) {
-  return ["x", "y", "width", "height"].every((key) => {
-    const value = Number(unitForm[key]);
-    return Number.isFinite(value) && value >= 0;
-  });
+function callMethod(methodName, params) {
+  return Meteor.callAsync(methodName, params);
 }
 
-function Panel({ title, subtitle, children }) {
+function formatDate(value) {
+  if (!value) return "Never";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+  return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function Modal({ title, children, onClose }) {
   return (
-    <section className="detail-section">
-      <div className="section-title">
-        {title}
-        {subtitle && (
-          <span
-            style={{
-              marginLeft: "auto",
-              fontWeight: 400,
-              fontSize: "12px",
-              color: "var(--text-muted)",
-            }}
-          >
-            {subtitle}
-          </span>
-        )}
-      </div>
-      <div className="section-content">{children}</div>
-    </section>
+    <div className="locations-modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="locations-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="locations-modal-header">
+          <h2>{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close dialog">
+            ×
+          </button>
+        </div>
+        {children}
+      </section>
+    </div>
   );
 }
 
-function EmptyState({ children }) {
-  return <div className="empty-state">{children}</div>;
-}
-
-function Field({ label, children }) {
+function FormField({ label, children }) {
   return (
-    <div className="form-group">
-      <label>{label}</label>
+    <label className="locations-form-field">
+      <span>{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
-function TextInput({ label, value, onChange, placeholder }) {
-  return (
-    <div className="form-group">
-      <label>{label}</label>
-      <input className="form-input" value={value} onChange={onChange} placeholder={placeholder} />
-    </div>
-  );
-}
-
-function TextArea(props) {
-  return <textarea {...props} className="form-input" />;
-}
-
-function SelectInput({ label, options, ...props }) {
-  return (
-    <Field label={label}>
-      <select {...props} className="form-input">
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </Field>
-  );
-}
-
-function NumberInput({ label, ...props }) {
-  return (
-    <Field label={label}>
-      <input {...props} type="number" min={0} className="form-input" />
-    </Field>
-  );
-}
-
-function submitMeteorMethod(methodName, params) {
-  return new Promise((resolve, reject) => {
-    Meteor.call(methodName, params, (error, result) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(result);
-    });
-  });
+function StatusBadge({ status }) {
+  const label = {
+    [STOCKTAKE_STATUS.OVERDUE]: "Overdue",
+    [STOCKTAKE_STATUS.DUE_SOON]: "Due soon",
+    [STOCKTAKE_STATUS.OK]: "Current",
+  }[status];
+  return <span className={`locations-status-badge ${status}`}>{label}</span>;
 }
 
 export function LocationsPage() {
   const { role } = useAuth();
   const canManage = hasClientPermission(role, "locations.manage");
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const activeTab = Object.values(TABS).includes(requestedTab) ? requestedTab : TABS.LOCATIONS;
 
-  const [selectedSiteId, setSelectedSiteId] = useState("");
-  const [selectedFloorMapId, setSelectedFloorMapId] = useState("");
-  const [selectedStorageUnitId, setSelectedStorageUnitId] = useState("");
-  const [siteForm, setSiteForm] = useState({ name: "", description: "" });
-  const [floorMapForm, setFloorMapForm] = useState({ name: "", imageUrl: "" });
-  const [unitForm, setUnitForm] = useState(DEFAULT_UNIT_FORM);
-  const [locationForm, setLocationForm] = useState(DEFAULT_LOCATION_FORM);
-  const [status, setStatus] = useState({ type: "", message: "" });
+  const [query, setQuery] = useState("");
+  const [siteFilter, setSiteFilter] = useState("");
+  const [stocktakeFilter, setStocktakeFilter] = useState("");
+  const [formMode, setFormMode] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORMS.location);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
 
-  // Edit state for each level
-  const [editingSiteId, setEditingSiteId] = useState(null);
-  const [editSiteForm, setEditSiteForm] = useState({
-    name: "",
-    description: "",
-  });
-  const [editingFloorMapId, setEditingFloorMapId] = useState(null);
-  const [editFloorMapForm, setEditFloorMapForm] = useState({
-    name: "",
-    imageUrl: "",
-  });
-  const [editingStorageUnitId, setEditingStorageUnitId] = useState(null);
-  const [editStorageUnitForm, setEditStorageUnitForm] = useState({
-    name: "",
-    type: "shelf",
-  });
-  const [editingStorageLocationId, setEditingStorageLocationId] = useState(null);
-  const [editStorageLocationForm, setEditStorageLocationForm] = useState({
-    name: "",
-    code: "",
-  });
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id, name }
+  const { loading, sites, floorMaps, storageUnits, storageLocations, productRecords } =
+    useTracker(() => {
+      const locationsHandle = Meteor.subscribe("locations.all");
+      const recordsHandle = Meteor.subscribe("productRecords");
+      return {
+        loading: !locationsHandle.ready() || !recordsHandle.ready(),
+        sites: Sites.find({}, { sort: { name: 1 } }).fetch(),
+        floorMaps: FloorMaps.find({}, { sort: { name: 1 } }).fetch(),
+        storageUnits: StorageUnits.find({}, { sort: { name: 1 } }).fetch(),
+        storageLocations: StorageLocations.find({}, { sort: { name: 1 } }).fetch(),
+        productRecords: ProductRecords.find({}).fetch(),
+      };
+    }, []);
 
-  const { isLoading, sites, floorMaps, storageUnits, storageLocations } = useTracker(() => {
-    const handle = Meteor.subscribe("locations.all");
-    return {
-      isLoading: !handle.ready(),
-      sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
-      floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
-      storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
-      storageLocations: StorageLocations.find({}, { sort: { createdAt: 1 } }).fetch(),
-    };
-  }, []);
-
-  const selectedSite = useMemo(
-    () => sites.find((site) => site._id === selectedSiteId) ?? null,
-    [sites, selectedSiteId],
-  );
-
-  const floorMapsForSite = useMemo(
-    () => floorMaps.filter((floorMap) => floorMap.siteId === selectedSiteId),
-    [floorMaps, selectedSiteId],
-  );
-
-  const selectedFloorMap = useMemo(
-    () => floorMaps.find((floorMap) => floorMap._id === selectedFloorMapId) ?? null,
-    [floorMaps, selectedFloorMapId],
-  );
-
-  const storageUnitsForFloorMap = useMemo(
-    () => storageUnits.filter((unit) => unit.floorMapId === selectedFloorMapId),
-    [storageUnits, selectedFloorMapId],
-  );
-
-  const selectedStorageUnit = useMemo(
-    () => storageUnits.find((unit) => unit._id === selectedStorageUnitId) ?? null,
-    [storageUnits, selectedStorageUnitId],
-  );
-
-  const locationsForStorageUnit = useMemo(
-    () => storageLocations.filter((location) => location.storageUnitId === selectedStorageUnitId),
-    [storageLocations, selectedStorageUnitId],
-  );
-
-  const currentLocation =
-    storageLocations.find((loc) => loc._id === selectedLocation?._id) ?? selectedLocation;
-
-  useEffect(() => {
-    if (!sites.length) {
-      setSelectedSiteId("");
-      return;
+  const indexes = useMemo(() => {
+    const sitesById = new Map(sites.map((site) => [site._id, site]));
+    const floorMapsById = new Map(floorMaps.map((floorMap) => [floorMap._id, floorMap]));
+    const unitsById = new Map(storageUnits.map((unit) => [unit._id, unit]));
+    const itemCountByLocationId = new Map();
+    for (const record of productRecords) {
+      itemCountByLocationId.set(
+        record.locationId,
+        (itemCountByLocationId.get(record.locationId) ?? 0) + 1,
+      );
     }
-    if (!sites.some((site) => site._id === selectedSiteId)) {
-      setSelectedSiteId(sites[0]._id);
-    }
-  }, [selectedSiteId, sites]);
+    return { sitesById, floorMapsById, unitsById, itemCountByLocationId };
+  }, [sites, floorMaps, storageUnits, productRecords]);
 
-  useEffect(() => {
-    if (!floorMapsForSite.length) {
-      setSelectedFloorMapId("");
-      return;
-    }
-    if (!floorMapsForSite.some((floorMap) => floorMap._id === selectedFloorMapId)) {
-      setSelectedFloorMapId(floorMapsForSite[0]._id);
-    }
-  }, [floorMapsForSite, selectedFloorMapId]);
+  const locationRows = useMemo(() => {
+    const now = new Date();
+    return storageLocations.map((location) => {
+      const unit = indexes.unitsById.get(location.storageUnitId);
+      const floorMap = unit ? indexes.floorMapsById.get(unit.floorMapId) : null;
+      const site = floorMap ? indexes.sitesById.get(floorMap.siteId) : null;
+      const intervalDays = site?.stocktakeIntervalDays ?? DEFAULT_STOCKTAKE_INTERVAL_DAYS;
+      return {
+        location,
+        unit,
+        floorMap,
+        site,
+        intervalDays,
+        stocktakeStatus: getLocationStocktakeStatus(location.lastStocktakeAt, intervalDays, now),
+        itemCount: indexes.itemCountByLocationId.get(location._id) ?? 0,
+        path: [site?.name, floorMap?.name, unit?.name].filter(Boolean).join(" › "),
+      };
+    });
+  }, [storageLocations, indexes]);
 
-  useEffect(() => {
-    if (!storageUnitsForFloorMap.length) {
-      setSelectedStorageUnitId("");
-      return;
-    }
-    if (!storageUnitsForFloorMap.some((unit) => unit._id === selectedStorageUnitId)) {
-      setSelectedStorageUnitId(storageUnitsForFloorMap[0]._id);
-    }
-  }, [storageUnitsForFloorMap, selectedStorageUnitId]);
+  const visibleLocations = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return locationRows.filter((row) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        [row.location.name, row.location.code, row.path]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(normalizedQuery));
+      const matchesSite = !siteFilter || row.site?._id === siteFilter;
+      const matchesStocktake = !stocktakeFilter || row.stocktakeStatus === stocktakeFilter;
+      return matchesQuery && matchesSite && matchesStocktake;
+    });
+  }, [locationRows, query, siteFilter, stocktakeFilter]);
 
-  async function runSubmit(action) {
-    setSubmitting(true);
-    setStatus({ type: "", message: "" });
-    try {
-      await action();
-      setStatus({ type: "success", message: "Saved." });
-    } catch (error) {
-      setStatus({
-        type: "error",
-        message: error.reason || error.message || "Something went wrong.",
+  const counts = useMemo(() => {
+    const overdue = locationRows.filter(
+      (row) => row.stocktakeStatus === STOCKTAKE_STATUS.OVERDUE,
+    ).length;
+    const dueSoon = locationRows.filter(
+      (row) => row.stocktakeStatus === STOCKTAKE_STATUS.DUE_SOON,
+    ).length;
+    return { overdue, dueSoon };
+  }, [locationRows]);
+
+  function selectTab(tab) {
+    setSearchParams(tab === TABS.LOCATIONS ? {} : { tab });
+    setQuery("");
+    setSiteFilter("");
+    setStocktakeFilter("");
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setFormMode(activeTab);
+    if (activeTab === TABS.LOCATIONS) {
+      setForm({ ...EMPTY_FORMS.location, storageUnitId: storageUnits[0]?._id ?? "" });
+    } else if (activeTab === TABS.FLOOR_MAPS) {
+      setForm({ ...EMPTY_FORMS.floorMap, siteId: sites[0]?._id ?? "" });
+    } else {
+      setForm(EMPTY_FORMS.site);
+    }
+  }
+
+  function openEdit(type, record) {
+    setEditing(record);
+    setFormMode(type);
+    if (type === TABS.LOCATIONS) {
+      setForm({
+        storageUnitId: record.storageUnitId,
+        name: record.name ?? "",
+        code: record.code ?? "",
+        imageUrl: record.imageUrl ?? "",
       });
+    } else if (type === TABS.FLOOR_MAPS) {
+      setForm({ siteId: record.siteId, name: record.name, imageUrl: record.imageUrl ?? "" });
+    } else {
+      setForm({
+        name: record.name,
+        description: record.description ?? "",
+        stocktakeIntervalDays: String(
+          record.stocktakeIntervalDays ?? DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+        ),
+      });
+    }
+  }
+
+  function closeForm() {
+    if (submitting || uploading) return;
+    setFormMode(null);
+    setEditing(null);
+  }
+
+  async function saveForm(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    try {
+      if (formMode === TABS.LOCATIONS) {
+        const params = {
+          storageUnitId: form.storageUnitId,
+          name: form.name.trim(),
+          code: form.code.trim(),
+          imageUrl: form.imageUrl.trim(),
+        };
+        if (editing) {
+          await callMethod("storageLocations.update", {
+            storageLocationId: editing._id,
+            ...params,
+          });
+        } else {
+          await callMethod("storageLocations.create", params);
+        }
+      } else if (formMode === TABS.FLOOR_MAPS) {
+        if (editing) {
+          await callMethod("floorMaps.update", {
+            floorMapId: editing._id,
+            siteId: form.siteId,
+            name: form.name.trim(),
+            imageUrl: form.imageUrl.trim(),
+            floorSize: editing.floorSize ?? {},
+            settings: editing.settings ?? {},
+          });
+        } else {
+          await callMethod("floorMaps.create", {
+            siteId: form.siteId,
+            name: form.name.trim(),
+            imageUrl: form.imageUrl.trim(),
+          });
+        }
+      } else {
+        const stocktakeIntervalDays = Number(form.stocktakeIntervalDays);
+        if (!isValidStocktakeInterval(stocktakeIntervalDays)) {
+          throw new Error(
+            `Stocktake interval must be a whole number between 1 and ${MAX_STOCKTAKE_INTERVAL_DAYS} days.`,
+          );
+        }
+        if (editing) {
+          await callMethod("sites.update", {
+            siteId: editing._id,
+            name: form.name.trim(),
+            description: form.description.trim(),
+            stocktakeIntervalDays,
+          });
+        } else {
+          await callMethod("sites.create", {
+            name: form.name.trim(),
+            description: form.description.trim(),
+            stocktakeIntervalDays,
+          });
+        }
+      }
+      setFormMode(null);
+      setEditing(null);
+      toast.success(`${editing ? "Changes" : "Record"} saved.`);
+    } catch (error) {
+      toast.error(error.reason || error.message || "Could not save.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleSiteSubmit(event) {
-    event.preventDefault();
-    await runSubmit(async () => {
-      await submitMeteorMethod("sites.create", {
-        name: siteForm.name.trim(),
-        description: siteForm.description.trim(),
-      });
-      setSiteForm({ name: "", description: "" });
-    });
-  }
-
-  async function handleFloorMapSubmit(event) {
-    event.preventDefault();
-    if (!selectedSiteId) {
-      setStatus({ type: "error", message: "Create a site first." });
-      return;
-    }
-    await runSubmit(async () => {
-      await submitMeteorMethod("floorMaps.create", {
-        siteId: selectedSiteId,
-        name: floorMapForm.name.trim(),
-        imageUrl: floorMapForm.imageUrl.trim(),
-      });
-      setFloorMapForm({ name: "", imageUrl: "" });
-    });
-  }
-
-  async function handleUpload(e) {
-    const file = e.target.files[0];
+  async function uploadImage(event) {
+    const file = event.target.files?.[0];
     if (!file) return;
-
     if (!isImageFile(file)) {
-      setStatus({ type: "error", message: "Please select an image file." });
-      setTimeout(() => setStatus({ type: "", message: "" }), 2000);
+      toast.error("Choose a valid image file.");
       return;
     }
-
+    setUploading(true);
     try {
-      const url = await uploadImageToServer(file);
-      await Meteor.callAsync("storageLocations.update", {
-        storageLocationId: selectedLocation._id,
-        storageUnitId: selectedLocation.storageUnitId,
-        name: selectedLocation.name ?? "",
-        code: selectedLocation.code ?? "",
-        imageUrl: url,
-      });
-      setStatus({ type: "success", message: "Image uploaded successfully." });
-    } catch {
-      setStatus({ type: "error", message: "Image failed to upload." });
+      const imageUrl = await uploadImageToServer(file);
+      setForm((current) => ({ ...current, imageUrl }));
+    } catch (error) {
+      toast.error(error.reason || "Image upload failed.");
     } finally {
-      setTimeout(() => setStatus({ type: "", message: "" }), 2000);
+      setUploading(false);
     }
   }
 
-  async function handleCreateStorageUnit(event) {
-    event.preventDefault();
-    if (!selectedFloorMapId) {
-      setStatus({ type: "error", message: "Create a floor map first." });
-      return;
-    }
-    await runSubmit(async () => {
-      if (
-        !hasValidUnitPosition(unitForm) ||
-        Number(unitForm.width) < 1 ||
-        Number(unitForm.height) < 1
-      ) {
-        throw new Error("Position values must be numbers, and width/height must be at least 1.");
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setSubmitting(true);
+    try {
+      if (deleteTarget.type === TABS.LOCATIONS) {
+        await callMethod("storageLocations.delete", { storageLocationId: deleteTarget.record._id });
+      } else if (deleteTarget.type === TABS.FLOOR_MAPS) {
+        await callMethod("floorMaps.delete", { floorMapId: deleteTarget.record._id });
+      } else {
+        await callMethod("sites.delete", { siteId: deleteTarget.record._id });
       }
-      await submitMeteorMethod("storageUnits.create", {
-        floorMapId: selectedFloorMapId,
-        name: unitForm.name.trim(),
-        type: unitForm.type,
-        shape: buildRectShape({
-          width: Number(unitForm.width),
-          height: Number(unitForm.height),
-          name: unitForm.name.trim(),
-        }),
-        offset: {
-          x: Number(unitForm.x),
-          y: Number(unitForm.y),
-        },
-        rotation: Number(0),
-        scale: {
-          x: Number(1),
-          y: Number(1),
-        },
-      });
-      setUnitForm(DEFAULT_UNIT_FORM);
-    });
-  }
-
-  async function handleCreateStorageLocation(event) {
-    event.preventDefault();
-    if (!selectedStorageUnitId) {
-      setStatus({ type: "error", message: "Create a storage unit first." });
-      return;
+      setDeleteTarget(null);
+      toast.success("Deleted.");
+    } catch (error) {
+      toast.error(error.reason || error.message || "Could not delete.");
+    } finally {
+      setSubmitting(false);
     }
-    await runSubmit(async () => {
-      await submitMeteorMethod("storageLocations.create", {
-        storageUnitId: selectedStorageUnitId,
-        name: locationForm.name.trim(),
-        code: locationForm.code.trim(),
-      });
-      setLocationForm(DEFAULT_LOCATION_FORM);
-    });
   }
 
-  function closeModal() {
-    setImageModalOpen(false);
-    setSelectedLocation(null);
-  }
-
-  function startEditSite(site) {
-    setEditingSiteId(site._id);
-    setEditSiteForm({ name: site.name, description: site.description || "" });
-  }
-
-  async function saveEditSite(siteId) {
-    const name = editSiteForm.name.trim();
-    if (!name) return;
-    const duplicate = sites.some(
-      (s) => s._id !== siteId && s.name.toLowerCase() === name.toLowerCase(),
-    );
-    if (duplicate) {
-      setStatus({
-        type: "error",
-        message: "A site with that name already exists.",
-      });
-      return;
-    }
-    await runSubmit(async () => {
-      await submitMeteorMethod("sites.update", {
-        siteId,
-        name,
-        description: editSiteForm.description.trim(),
-      });
-      setEditingSiteId(null);
-    });
-  }
-
-  function startEditFloorMap(fm) {
-    setEditingFloorMapId(fm._id);
-    setEditFloorMapForm({ name: fm.name, imageUrl: fm.imageUrl || "" });
-  }
-
-  async function saveEditFloorMap(floorMapId) {
-    const name = editFloorMapForm.name.trim();
-    if (!name) return;
-    const duplicate = floorMapsForSite.some(
-      (f) => f._id !== floorMapId && f.name.toLowerCase() === name.toLowerCase(),
-    );
-    if (duplicate) {
-      setStatus({
-        type: "error",
-        message: "A floor map with that name already exists in this site.",
-      });
-      return;
-    }
-    const fm = floorMaps.find((f) => f._id === floorMapId);
-    await runSubmit(async () => {
-      await submitMeteorMethod("floorMaps.update", {
-        floorMapId,
-        siteId: fm.siteId,
-        name,
-        imageUrl: editFloorMapForm.imageUrl.trim(),
-        floorSize: fm.floorSize || {},
-        settings: fm.settings || {},
-      });
-      setEditingFloorMapId(null);
-    });
-  }
-
-  function startEditStorageUnit(unit) {
-    setEditingStorageUnitId(unit._id);
-    setEditStorageUnitForm({ name: unit.name, type: unit.type });
-  }
-
-  async function saveEditStorageUnit(unitId) {
-    const name = editStorageUnitForm.name.trim();
-    if (!name) return;
-    const duplicate = storageUnitsForFloorMap.some(
-      (u) => u._id !== unitId && u.name.toLowerCase() === name.toLowerCase(),
-    );
-    if (duplicate) {
-      setStatus({
-        type: "error",
-        message: "A storage unit with that name already exists on this floor map.",
-      });
-      return;
-    }
-    const unit = storageUnits.find((u) => u._id === unitId);
-    await runSubmit(async () => {
-      await submitMeteorMethod("storageUnits.update", {
-        storageUnitId: unitId,
-        floorMapId: unit.floorMapId,
-        name,
-        type: editStorageUnitForm.type,
-        shape: unit.shape,
-        offset: unit.offset,
-        rotation: unit.rotation,
-        scale: unit.scale,
-      });
-      setEditingStorageUnitId(null);
-    });
-  }
-
-  function startEditStorageLocation(loc) {
-    setEditingStorageLocationId(loc._id);
-    setEditStorageLocationForm({ name: loc.name, code: loc.code || "" });
-  }
-
-  async function saveEditStorageLocation(locationId) {
-    const name = editStorageLocationForm.name.trim();
-    const code = editStorageLocationForm.code.trim();
-    if (!name || !code) return;
-    const duplicate = locationsForStorageUnit.some(
-      (l) => l._id !== locationId && l.name.toLowerCase() === name.toLowerCase(),
-    );
-    if (duplicate) {
-      setStatus({
-        type: "error",
-        message: "A location with that name already exists in this storage unit.",
-      });
-      return;
-    }
-    const loc = storageLocations.find((l) => l._id === locationId);
-    await runSubmit(async () => {
-      await submitMeteorMethod("storageLocations.update", {
-        storageLocationId: locationId,
-        storageUnitId: loc.storageUnitId,
-        name,
-        code,
-        imageUrl: loc.imageUrl || "",
-      });
-      setEditingStorageLocationId(null);
-    });
-  }
-
-  async function handleDeleteConfirmed() {
-    if (!deleteConfirm) return;
-    const { type, id } = deleteConfirm;
-    setDeleteConfirm(null);
-    await runSubmit(async () => {
-      if (type === "site") await submitMeteorMethod("sites.delete", { siteId: id });
-      else if (type === "floorMap")
-        await submitMeteorMethod("floorMaps.delete", { floorMapId: id });
-      else if (type === "storageUnit")
-        await submitMeteorMethod("storageUnits.delete", { storageUnitId: id });
-      else if (type === "storageLocation")
-        await submitMeteorMethod("storageLocations.delete", {
-          storageLocationId: id,
-        });
-    });
-  }
-
-  // Scale all units to fit within the preview container
-  function getPreviewLayout(units) {
-    if (!units.length) return { units: [], scale: 1 };
-
-    const PX = 50;
-    const PREVIEW_W = 280;
-    const PREVIEW_H = 300;
-
-    // Convert each unit's transformations from metres to preview pixels.
-    const converted = units.map((unit) => {
-      const bounds = getTransformedBounds(unit.shape, {
-        offset: unit.offset,
-        rotation: unit.rotation,
-        scale: unit.scale,
-      });
-      return {
-        ...unit,
-        px: {
-          left: bounds.minX * PX,
-          top: bounds.minY * PX,
-          width: bounds.width * PX,
-          height: bounds.height * PX,
-        },
-      };
-    });
-
-    // Find bounding box
-    const maxRight = Math.max(...converted.map((u) => u.px.left + u.px.width));
-    const maxBottom = Math.max(...converted.map((u) => u.px.top + u.px.height));
-
-    // Scale to fit with padding
-    const scale = Math.min((PREVIEW_W - 8) / maxRight, (PREVIEW_H - 8) / maxBottom, 1);
-
-    return { units: converted, scale };
-  }
+  const tabConfig = [
+    { id: TABS.LOCATIONS, label: "Storage Locations", count: storageLocations.length },
+    { id: TABS.FLOOR_MAPS, label: "Floor Maps", count: floorMaps.length },
+    { id: TABS.SITES, label: "Sites", count: sites.length },
+  ];
+  const primaryLabel = {
+    [TABS.LOCATIONS]: "Add location",
+    [TABS.FLOOR_MAPS]: "Add floor map",
+    [TABS.SITES]: "Add site",
+  }[activeTab];
 
   return (
-    <div className="product-detail-container">
+    <div className="product-detail-container locations-directory">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Locations</span>
-          <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-current">Add locations</span>
+          <span className="breadcrumb-current">Locations</span>
         </div>
-        <div className="header-top">
-          <h1 className="header-title">
-            Locations <em>Overview</em>
-          </h1>
-          <div className="locations-page-status-indicator">
-            {isLoading ? "Loading location data..." : `${sites.length} sites loaded`}
+        <div className="header-top locations-heading-row">
+          <div>
+            <h1 className="header-title">
+              Location <em>Directory</em>
+            </h1>
+            <p className="locations-page-subtitle">
+              Browse storage locations and manage your organisation’s physical structure.
+            </p>
           </div>
+          {canManage && (
+            <button type="button" className="btn-primary" onClick={openCreate}>
+              + {primaryLabel}
+            </button>
+          )}
         </div>
       </div>
 
-      {status.message && (
-        <div
-          className={`status-message ${status.type === "error" ? "status-message-error" : "status-message-success"}`}
-          style={{ margin: "0 28px 16px" }}
-        >
-          {status.message}
-        </div>
-      )}
-
-      <div className="product-detail-grid">
-        <div className="left-column">
-          <Panel title="Site" subtitle="Create and select the top-level physical area.">
-            {canManage && (
-              <form className="form-grid" onSubmit={handleSiteSubmit}>
-                <Field label="Name">
-                  <TextInput
-                    value={siteForm.name}
-                    onChange={(e) => setSiteForm((cur) => ({ ...cur, name: e.target.value }))}
-                    placeholder="Warehouse"
-                  />
-                </Field>
-                <Field label="Description">
-                  <TextArea
-                    value={siteForm.description}
-                    onChange={(e) =>
-                      setSiteForm((cur) => ({
-                        ...cur,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="Optional note"
-                  />
-                </Field>
-                <button
-                  type="submit"
-                  disabled={submitting || !siteForm.name.trim()}
-                  className="btn-primary"
-                  style={{ width: "100%" }}
-                >
-                  Add Site
-                </button>
-              </form>
-            )}
-            {sites.length ? (
-              <div className="selection-list">
-                {sites.map((site) => (
-                  <div
-                    key={site._id}
-                    className={`selection-item ${site._id === selectedSiteId ? "selection-item-selected" : "selection-item-unselected"}`}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                    }}
-                  >
-                    {editingSiteId === site._id ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "6px",
-                        }}
-                      >
-                        <input
-                          className="form-input"
-                          value={editSiteForm.name}
-                          onChange={(e) =>
-                            setEditSiteForm((f) => ({
-                              ...f,
-                              name: e.target.value,
-                            }))
-                          }
-                          placeholder="Name"
-                        />
-                        <input
-                          className="form-input"
-                          value={editSiteForm.description}
-                          onChange={(e) =>
-                            setEditSiteForm((f) => ({
-                              ...f,
-                              description: e.target.value,
-                            }))
-                          }
-                          placeholder="Description"
-                        />
-                        <div style={{ display: "flex", gap: "6px" }}>
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            style={{ flex: 1 }}
-                            onClick={() => saveEditSite(site._id)}
-                            disabled={submitting || !editSiteForm.name.trim()}
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => setEditingSiteId(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedSiteId(site._id)}
-                          style={{
-                            flex: 1,
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            textAlign: "left",
-                            padding: 0,
-                          }}
-                        >
-                          <div className="selection-item-name">{site.name}</div>
-                          <div className="selection-item-description">
-                            {site.description || "No description"}
-                          </div>
-                        </button>
-                        {canManage && (
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() => startEditSite(site)}
-                          >
-                            Edit
-                          </button>
-                        )}
-                        {canManage && (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() =>
-                              setDeleteConfirm({
-                                type: "site",
-                                id: site._id,
-                                name: site.name,
-                              })
-                            }
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState>No sites yet. Create one to unlock the rest of the chain.</EmptyState>
-            )}
-          </Panel>
-
-          <Panel
-            title="Floor Maps"
-            subtitle={selectedSite ? `Attached to ${selectedSite.name}.` : "Select a site first."}
-          >
-            {canManage && (
-              <form className="form-grid form-grid-cols-2" onSubmit={handleFloorMapSubmit}>
-                <Field label="Name">
-                  <TextInput
-                    value={floorMapForm.name}
-                    onChange={(e) =>
-                      setFloorMapForm((cur) => ({
-                        ...cur,
-                        name: e.target.value,
-                      }))
-                    }
-                    placeholder="Ground Floor"
-                  />
-                </Field>
-                <Field label="Image URL">
-                  <TextInput
-                    value={floorMapForm.imageUrl}
-                    onChange={(e) =>
-                      setFloorMapForm((cur) => ({
-                        ...cur,
-                        imageUrl: e.target.value,
-                      }))
-                    }
-                    placeholder="https://example.com/floor-map.png"
-                  />
-                </Field>
-                <button
-                  type="submit"
-                  disabled={submitting || !selectedSiteId || !floorMapForm.name.trim()}
-                  className="btn-primary"
-                  style={{ width: "100%" }}
-                >
-                  Add Floor Map
-                </button>
-              </form>
-            )}
-            {floorMapsForSite.length ? (
-              <div className="selection-list">
-                {floorMapsForSite.map((floorMap) => (
-                  <div
-                    key={floorMap._id}
-                    className={`selection-item ${floorMap._id === selectedFloorMapId ? "selection-item-selected" : "selection-item-unselected"}`}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                    }}
-                  >
-                    {editingFloorMapId === floorMap._id ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "6px",
-                        }}
-                      >
-                        <input
-                          className="form-input"
-                          value={editFloorMapForm.name}
-                          onChange={(e) =>
-                            setEditFloorMapForm((f) => ({
-                              ...f,
-                              name: e.target.value,
-                            }))
-                          }
-                          placeholder="Name"
-                        />
-                        <input
-                          className="form-input"
-                          value={editFloorMapForm.imageUrl}
-                          onChange={(e) =>
-                            setEditFloorMapForm((f) => ({
-                              ...f,
-                              imageUrl: e.target.value,
-                            }))
-                          }
-                          placeholder="Image URL"
-                        />
-                        <div style={{ display: "flex", gap: "6px" }}>
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            style={{ flex: 1 }}
-                            onClick={() => saveEditFloorMap(floorMap._id)}
-                            disabled={submitting || !editFloorMapForm.name.trim()}
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => setEditingFloorMapId(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedFloorMapId(floorMap._id)}
-                          style={{
-                            flex: 1,
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            textAlign: "left",
-                            padding: 0,
-                          }}
-                        >
-                          <div className="selection-item-name">{floorMap.name}</div>
-                          <div className="selection-item-description">
-                            {floorMap.imageUrl || "No image URL"}
-                          </div>
-                        </button>
-                        {canManage && (
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() => startEditFloorMap(floorMap)}
-                          >
-                            Edit
-                          </button>
-                        )}
-                        {canManage && (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() =>
-                              setDeleteConfirm({
-                                type: "floorMap",
-                                id: floorMap._id,
-                                name: floorMap.name,
-                              })
-                            }
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState>No floor maps for this site yet.</EmptyState>
-            )}
-          </Panel>
-
-          <Panel
-            title="Storage Units"
-            subtitle={
-              selectedFloorMap ? `Placed on ${selectedFloorMap.name}.` : "Select a floor map first."
-            }
-          >
-            {canManage && (
-              <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageUnit}>
-                <TextInput
-                  label="Name"
-                  value={unitForm.name}
-                  onChange={(e) => setUnitForm((cur) => ({ ...cur, name: e.target.value }))}
-                  placeholder="Shelf A"
-                />
-                <SelectInput
-                  label="Type"
-                  value={unitForm.type}
-                  onChange={(e) => setUnitForm((cur) => ({ ...cur, type: e.target.value }))}
-                  options={STORAGE_UNIT_TYPES.map((t) => ({
-                    value: t,
-                    label: t,
-                  }))}
-                />
-                <NumberInput
-                  label="X (meters)"
-                  value={unitForm.x}
-                  onChange={(e) => setUnitForm((cur) => ({ ...cur, x: e.target.value }))}
-                />
-                <NumberInput
-                  label="Y (meters)"
-                  value={unitForm.y}
-                  onChange={(e) => setUnitForm((cur) => ({ ...cur, y: e.target.value }))}
-                />
-                <NumberInput
-                  label="Width (meters)"
-                  value={unitForm.width}
-                  onChange={(e) => setUnitForm((cur) => ({ ...cur, width: e.target.value }))}
-                />
-                <NumberInput
-                  label="Height (meters)"
-                  value={unitForm.height}
-                  onChange={(e) => setUnitForm((cur) => ({ ...cur, height: e.target.value }))}
-                />
-                <button
-                  type="submit"
-                  disabled={
-                    submitting ||
-                    !selectedFloorMapId ||
-                    !unitForm.name.trim() ||
-                    !hasValidUnitPosition(unitForm) ||
-                    Number(unitForm.width) < 1 ||
-                    Number(unitForm.height) < 1
-                  }
-                  className="btn-primary"
-                  style={{ width: "100%" }}
-                >
-                  Add Storage Unit
-                </button>
-              </form>
-            )}
-            {storageUnitsForFloorMap.length ? (
-              <div className="selection-list">
-                {storageUnitsForFloorMap.map((unit) => (
-                  <div
-                    key={unit._id}
-                    className={`selection-item ${unit._id === selectedStorageUnitId ? "selection-item-selected" : "selection-item-unselected"}`}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                    }}
-                  >
-                    {editingStorageUnitId === unit._id ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "6px",
-                        }}
-                      >
-                        <input
-                          className="form-input"
-                          value={editStorageUnitForm.name}
-                          onChange={(e) =>
-                            setEditStorageUnitForm((f) => ({
-                              ...f,
-                              name: e.target.value,
-                            }))
-                          }
-                          placeholder="Name"
-                        />
-                        <select
-                          className="form-input"
-                          value={editStorageUnitForm.type}
-                          onChange={(e) =>
-                            setEditStorageUnitForm((f) => ({
-                              ...f,
-                              type: e.target.value,
-                            }))
-                          }
-                        >
-                          {STORAGE_UNIT_TYPES.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </select>
-                        <div style={{ display: "flex", gap: "6px" }}>
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            style={{ flex: 1 }}
-                            onClick={() => saveEditStorageUnit(unit._id)}
-                            disabled={submitting || !editStorageUnitForm.name.trim()}
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => setEditingStorageUnitId(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedStorageUnitId(unit._id)}
-                          style={{
-                            flex: 1,
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            textAlign: "left",
-                            padding: 0,
-                          }}
-                        >
-                          <div className="unit-list-item-flex">
-                            <span className="selection-item-name">{unit.name}</span>
-                            <span
-                              className={`unit-type-badge ${unit._id === selectedStorageUnitId ? "unit-type-badge-selected" : ""}`}
-                            >
-                              {unit.type}
-                            </span>
-                          </div>
-                          <div className="unit-list-item-meta">
-                            {(() => {
-                              const bounds = getTransformedBounds(unit.shape, {
-                                offset: unit.offset,
-                                rotation: unit.rotation,
-                                scale: unit.scale,
-                              });
-                              return `x:${bounds.minX.toFixed(1)} y:${bounds.minY.toFixed(1)} w:${bounds.width.toFixed(1)} h:${bounds.height.toFixed(1)}`;
-                            })()}
-                          </div>
-                        </button>
-                        {canManage && (
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() => startEditStorageUnit(unit)}
-                          >
-                            Edit
-                          </button>
-                        )}
-                        {canManage && (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            style={{ padding: "3px 8px", fontSize: "11px" }}
-                            onClick={() =>
-                              setDeleteConfirm({
-                                type: "storageUnit",
-                                id: unit._id,
-                                name: unit.name,
-                              })
-                            }
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState>No storage units on this floor map yet.</EmptyState>
-            )}
-          </Panel>
-
-          <Panel
-            badge="lc"
-            title="Storage Locations"
-            subtitle={
-              selectedStorageUnit
-                ? `Attached to ${selectedStorageUnit.name}.`
-                : "Select a storage unit first."
-            }
-          >
-            {canManage && (
-              <form className="form-grid form-grid-cols-2" onSubmit={handleCreateStorageLocation}>
-                <TextInput
-                  label="Name"
-                  value={locationForm.name}
-                  onChange={(e) => setLocationForm((cur) => ({ ...cur, name: e.target.value }))}
-                  placeholder="Top Shelf"
-                />
-                <TextInput
-                  label="Code"
-                  value={locationForm.code}
-                  onChange={(e) => setLocationForm((cur) => ({ ...cur, code: e.target.value }))}
-                  placeholder="SH-A-01"
-                />
-                <button
-                  type="submit"
-                  disabled={
-                    submitting ||
-                    !selectedStorageUnitId ||
-                    !locationForm.name.trim() ||
-                    !locationForm.code.trim()
-                  }
-                  className="btn-primary"
-                  style={{ width: "100%" }}
-                >
-                  Add Storage Location
-                </button>
-              </form>
-            )}
-            {locationsForStorageUnit.length ? (
-              <div className="selection-list">
-                {locationsForStorageUnit.map((location) => (
-                  <div key={location._id} className="location-list-item">
-                    {editingStorageLocationId === location._id ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "6px",
-                          flex: 1,
-                        }}
-                      >
-                        <input
-                          className="form-input"
-                          value={editStorageLocationForm.name}
-                          onChange={(e) =>
-                            setEditStorageLocationForm((f) => ({
-                              ...f,
-                              name: e.target.value,
-                            }))
-                          }
-                          placeholder="Name"
-                        />
-                        <input
-                          className="form-input"
-                          value={editStorageLocationForm.code}
-                          onChange={(e) =>
-                            setEditStorageLocationForm((f) => ({
-                              ...f,
-                              code: e.target.value,
-                            }))
-                          }
-                          placeholder="Code"
-                        />
-                        <div style={{ display: "flex", gap: "6px" }}>
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            style={{ flex: 1 }}
-                            onClick={() => saveEditStorageLocation(location._id)}
-                            disabled={
-                              submitting ||
-                              !editStorageLocationForm.name.trim() ||
-                              !editStorageLocationForm.code.trim()
-                            }
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => setEditingStorageLocationId(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="location-list-details">
-                          <div className="location-list-item-name">{location.name}</div>
-                          <div className="location-list-item-code">{location.code}</div>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "4px",
-                            alignItems: "center",
-                          }}
-                        >
-                          {canManage && (
-                            <button
-                              className="location-list-item-view-image"
-                              onClick={() => {
-                                setSelectedLocation(location);
-                                setImageModalOpen(true);
-                              }}
-                            >
-                              Image
-                            </button>
-                          )}
-                          {canManage && (
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              style={{ padding: "3px 8px", fontSize: "11px" }}
-                              onClick={() => startEditStorageLocation(location)}
-                            >
-                              Edit
-                            </button>
-                          )}
-                          {canManage && (
-                            <button
-                              type="button"
-                              className="btn-danger"
-                              style={{ padding: "3px 8px", fontSize: "11px" }}
-                              onClick={() =>
-                                setDeleteConfirm({
-                                  type: "storageLocation",
-                                  id: location._id,
-                                  name: location.name,
-                                })
-                              }
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState>No storage locations on this unit yet.</EmptyState>
-            )}
-          </Panel>
+      <div className="locations-content">
+        <div className="locations-tabs" role="tablist" aria-label="Location directory views">
+          {tabConfig.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={activeTab === tab.id ? "active" : ""}
+              onClick={() => selectTab(tab.id)}
+            >
+              {tab.label} <span>{tab.count}</span>
+            </button>
+          ))}
         </div>
 
-        <div className="right-column">
-          <Panel
-            badge="qr"
-            title="Relationship Summary"
-            subtitle="Quick sanity check of what is currently selected."
-          >
-            <dl className="relationship-summary-list">
-              <div className="relationship-summary-item">
-                <dt className="relationship-summary-label">Site</dt>
-                <dd className="relationship-summary-value">
-                  {selectedSite?.name || "None selected"}
-                </dd>
+        {activeTab === TABS.LOCATIONS && (
+          <>
+            <div className="locations-summary-grid">
+              <div>
+                <strong>{storageLocations.length}</strong>
+                <span>Total locations</span>
               </div>
-              <div className="relationship-summary-item">
-                <dt className="relationship-summary-label">Floor Map</dt>
-                <dd className="relationship-summary-value">
-                  {selectedFloorMap?.name || "None selected"}
-                </dd>
+              <div>
+                <strong>{counts.overdue}</strong>
+                <span>Overdue</span>
               </div>
-              <div className="relationship-summary-item">
-                <dt className="relationship-summary-label">Storage Unit</dt>
-                <dd className="relationship-summary-value">
-                  {selectedStorageUnit?.name || "None selected"}
-                </dd>
+              <div>
+                <strong>{counts.dueSoon}</strong>
+                <span>Due soon</span>
               </div>
-              <div className="relationship-summary-item">
-                <dt className="relationship-summary-label">Storage Locations</dt>
-                <dd className="relationship-summary-value">{locationsForStorageUnit.length}</dd>
-              </div>
-            </dl>
-          </Panel>
-
-          <Panel
-            badge="lc"
-            title="Floor Map Preview"
-            subtitle="Simple visual check for storage-unit position values."
-          >
-            <div className="floor-map-preview-container">
-              <div
-                className="floor-map-preview-canvas"
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "300px",
-                  overflow: "hidden",
-                }}
-              >
-                {(() => {
-                  const { units: laid, scale } = getPreviewLayout(storageUnitsForFloorMap);
-                  return laid.length ? (
-                    laid.map((unit) => (
-                      <button
-                        key={unit._id}
-                        type="button"
-                        onClick={() => setSelectedStorageUnitId(unit._id)}
-                        className={`floor-map-unit-button ${unit._id === selectedStorageUnitId ? "floor-map-unit-selected" : "floor-map-unit-unselected"}`}
-                        style={{
-                          left: `${unit.px.left * scale}px`,
-                          top: `${unit.px.top * scale}px`,
-                          width: `${unit.px.width * scale}px`,
-                          height: `${unit.px.height * scale}px`,
-                        }}
-                      >
-                        <div
-                          className="floor-map-unit-name"
-                          style={{ fontSize: `${Math.max(8, 11 * scale)}px` }}
-                        >
-                          {unit.name}
-                        </div>
-                        <div
-                          className="floor-map-unit-type"
-                          style={{ fontSize: `${Math.max(7, 10 * scale)}px` }}
-                        >
-                          {unit.type}
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="floor-map-empty-state">
-                      Add a storage unit to see it plotted here.
-                    </div>
-                  );
-                })()}
+              <div>
+                <strong>{sites.length}</strong>
+                <span>Sites</span>
               </div>
             </div>
-          </Panel>
-        </div>
+            <div className="locations-toolbar">
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search name, code, or physical path…"
+                aria-label="Search storage locations"
+              />
+              <select value={siteFilter} onChange={(event) => setSiteFilter(event.target.value)}>
+                <option value="">All sites</option>
+                {sites.map((site) => (
+                  <option key={site._id} value={site._id}>
+                    {site.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={stocktakeFilter}
+                onChange={(event) => setStocktakeFilter(event.target.value)}
+              >
+                <option value="">All stocktake states</option>
+                <option value={STOCKTAKE_STATUS.OVERDUE}>Overdue</option>
+                <option value={STOCKTAKE_STATUS.DUE_SOON}>Due soon</option>
+                <option value={STOCKTAKE_STATUS.OK}>Current</option>
+              </select>
+            </div>
+            <div className="locations-table-shell">
+              {loading ? (
+                <div className="locations-empty">Loading locations…</div>
+              ) : visibleLocations.length === 0 ? (
+                <div className="locations-empty">
+                  No storage locations match the current filters.
+                </div>
+              ) : (
+                <table className="locations-table">
+                  <thead>
+                    <tr>
+                      <th>Location</th>
+                      <th>Physical path</th>
+                      <th>Products</th>
+                      <th>Stocktake</th>
+                      <th>Last counted</th>
+                      <th aria-label="Actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleLocations.map((row) => (
+                      <tr key={row.location._id}>
+                        <td>
+                          <Link
+                            className="locations-name-link"
+                            to={`/locations/${row.location._id}`}
+                          >
+                            <strong>{row.location.name || "Unnamed location"}</strong>
+                          </Link>
+                          <span className="locations-code">{row.location.code || "No code"}</span>
+                        </td>
+                        <td>
+                          <span className="locations-path">{row.path || "Unlinked location"}</span>
+                        </td>
+                        <td>{row.itemCount}</td>
+                        <td>
+                          <StatusBadge status={row.stocktakeStatus} />
+                        </td>
+                        <td>{formatDate(row.location.lastStocktakeAt)}</td>
+                        <td>
+                          <div className="locations-row-actions">
+                            <Link to={`/locations/${row.location._id}`}>View</Link>
+                            {row.floorMap && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/floor-map/${row.floorMap._id}`)}
+                              >
+                                Open map
+                              </button>
+                            )}
+                            {canManage && (
+                              <button
+                                type="button"
+                                onClick={() => openEdit(TABS.LOCATIONS, row.location)}
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {canManage && (
+                              <button
+                                type="button"
+                                className="danger"
+                                onClick={() =>
+                                  setDeleteTarget({ type: TABS.LOCATIONS, record: row.location })
+                                }
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === TABS.FLOOR_MAPS && (
+          <div className="locations-card-grid">
+            {loading ? (
+              <div className="locations-empty">Loading floor maps…</div>
+            ) : floorMaps.length === 0 ? (
+              <div className="locations-empty">No floor maps yet.</div>
+            ) : (
+              floorMaps.map((floorMap) => {
+                const site = indexes.sitesById.get(floorMap.siteId);
+                const units = storageUnits.filter((unit) => unit.floorMapId === floorMap._id);
+                const unitIds = new Set(units.map((unit) => unit._id));
+                const locationCount = storageLocations.filter((location) =>
+                  unitIds.has(location.storageUnitId),
+                ).length;
+                return (
+                  <article className="locations-entity-card" key={floorMap._id}>
+                    <div className="locations-card-eyebrow">{site?.name || "Unlinked site"}</div>
+                    <h2>{floorMap.name}</h2>
+                    <div className="locations-card-metrics">
+                      <span>
+                        <strong>{units.length}</strong> units
+                      </span>
+                      <span>
+                        <strong>{locationCount}</strong> locations
+                      </span>
+                    </div>
+                    <div className="locations-card-actions">
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => navigate(`/floor-map/${floorMap._id}`)}
+                      >
+                        Open map
+                      </button>
+                      {canManage && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => openEdit(TABS.FLOOR_MAPS, floorMap)}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {canManage && (
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() =>
+                            setDeleteTarget({ type: TABS.FLOOR_MAPS, record: floorMap })
+                          }
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {activeTab === TABS.SITES && (
+          <div className="locations-card-grid">
+            {loading ? (
+              <div className="locations-empty">Loading sites…</div>
+            ) : sites.length === 0 ? (
+              <div className="locations-empty">No sites yet.</div>
+            ) : (
+              sites.map((site) => {
+                const maps = floorMaps.filter((floorMap) => floorMap.siteId === site._id);
+                const mapIds = new Set(maps.map((floorMap) => floorMap._id));
+                const units = storageUnits.filter((unit) => mapIds.has(unit.floorMapId));
+                const unitIds = new Set(units.map((unit) => unit._id));
+                const locationCount = storageLocations.filter((location) =>
+                  unitIds.has(location.storageUnitId),
+                ).length;
+                return (
+                  <article className="locations-entity-card" key={site._id}>
+                    <div className="locations-card-eyebrow">Site</div>
+                    <h2>{site.name}</h2>
+                    <p>{site.description || "No description."}</p>
+                    <div className="locations-card-metrics">
+                      <span>
+                        <strong>{maps.length}</strong> floor maps
+                      </span>
+                      <span>
+                        <strong>{locationCount}</strong> locations
+                      </span>
+                    </div>
+                    <div className="locations-schedule">
+                      Stocktake every{" "}
+                      <strong>
+                        {site.stocktakeIntervalDays ?? DEFAULT_STOCKTAKE_INTERVAL_DAYS} days
+                      </strong>
+                    </div>
+                    {canManage && (
+                      <div className="locations-card-actions">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => openEdit(TABS.SITES, site)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => setDeleteTarget({ type: TABS.SITES, record: site })}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
 
-      {deleteConfirm && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3 className="modal-title">Delete &quot;{deleteConfirm.name}&quot;?</h3>
-            <p className="modal-text">
-              This will permanently remove this item. This cannot be undone.
-            </p>
-            <div className="modal-actions">
-              <button
-                className="btn-secondary"
-                onClick={() => setDeleteConfirm(null)}
-                disabled={submitting}
-              >
+      {formMode && (
+        <Modal
+          title={`${editing ? "Edit" : "Add"} ${formMode === TABS.LOCATIONS ? "storage location" : formMode === TABS.FLOOR_MAPS ? "floor map" : "site"}`}
+          onClose={closeForm}
+        >
+          <form className="locations-modal-form" onSubmit={saveForm}>
+            {formMode === TABS.LOCATIONS && (
+              <>
+                <FormField label="Storage unit">
+                  <select
+                    required
+                    value={form.storageUnitId}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, storageUnitId: event.target.value }))
+                    }
+                  >
+                    <option value="">Select a storage unit</option>
+                    {storageUnits.map((unit) => {
+                      const floorMap = indexes.floorMapsById.get(unit.floorMapId);
+                      const site = floorMap ? indexes.sitesById.get(floorMap.siteId) : null;
+                      return (
+                        <option key={unit._id} value={unit._id}>
+                          {[site?.name, floorMap?.name, unit.name].filter(Boolean).join(" › ")}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </FormField>
+                <FormField label="Location name">
+                  <input
+                    required
+                    maxLength="100"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Location code">
+                  <input
+                    required
+                    maxLength="50"
+                    value={form.code}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, code: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Image">
+                  <input type="file" accept="image/*" disabled={uploading} onChange={uploadImage} />
+                  <small>
+                    {uploading ? "Uploading…" : form.imageUrl ? "Image ready to save." : "Optional"}
+                  </small>
+                </FormField>
+              </>
+            )}
+            {formMode === TABS.FLOOR_MAPS && (
+              <>
+                <FormField label="Site">
+                  <select
+                    required
+                    value={form.siteId}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, siteId: event.target.value }))
+                    }
+                  >
+                    <option value="">Select a site</option>
+                    {sites.map((site) => (
+                      <option key={site._id} value={site._id}>
+                        {site.name}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Floor map name">
+                  <input
+                    required
+                    maxLength="100"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Background image URL">
+                  <input
+                    type="url"
+                    value={form.imageUrl}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, imageUrl: event.target.value }))
+                    }
+                    placeholder="Optional"
+                  />
+                </FormField>
+              </>
+            )}
+            {formMode === TABS.SITES && (
+              <>
+                <FormField label="Site name">
+                  <input
+                    required
+                    maxLength="100"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Description">
+                  <textarea
+                    maxLength="500"
+                    rows="3"
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, description: event.target.value }))
+                    }
+                  />
+                </FormField>
+                <FormField label="Stocktake interval (days)">
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    max={MAX_STOCKTAKE_INTERVAL_DAYS}
+                    step="1"
+                    value={form.stocktakeIntervalDays}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        stocktakeIntervalDays: event.target.value,
+                      }))
+                    }
+                  />
+                  <small>
+                    Locations at this site become overdue after this many days without a stocktake.
+                  </small>
+                </FormField>
+              </>
+            )}
+            <div className="locations-modal-actions">
+              <button type="button" className="btn-secondary" onClick={closeForm}>
                 Cancel
               </button>
-              <button className="btn-danger" onClick={handleDeleteConfirmed} disabled={submitting}>
-                {submitting ? "Deleting..." : "Delete"}
+              <button type="submit" className="btn-primary" disabled={submitting || uploading}>
+                {submitting ? "Saving…" : "Save"}
               </button>
             </div>
-          </div>
-        </div>
+          </form>
+        </Modal>
       )}
 
-      {imageModalOpen && currentLocation && (
-        <div className="modal-overlay location-image-modal" onClick={closeModal}>
-          <div className="modal location-image-container" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">
-              {currentLocation.name} ({currentLocation.code})
-            </h2>
-            <div className="location-image-display">
-              <img
-                src={currentLocation.imageUrl}
-                alt={currentLocation.name}
-                className="location-image"
-              />
-            </div>
-            <div className="location-image-footer">
-              {status.message && (
-                <div
-                  className={`status-message ${status.type === "error" ? "status-message-error" : "status-message-success"}`}
-                >
-                  {status.message}
-                </div>
-              )}
-              <div className="location-image-footer-buttons">
-                <button className="btn-secondary" onClick={closeModal}>
-                  Cancel
-                </button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  onChange={handleUpload}
-                />
-                <button className="btn-primary" onClick={() => fileInputRef.current.click()}>
-                  Upload New
-                </button>
-              </div>
-            </div>
+      {deleteTarget && (
+        <Modal
+          title={`Delete ${deleteTarget.record.name || "record"}?`}
+          onClose={() => setDeleteTarget(null)}
+        >
+          <p className="locations-delete-copy">
+            This only succeeds when the record has no dependent floor maps, storage units,
+            locations, or inventory.
+          </p>
+          <div className="locations-modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              disabled={submitting}
+              onClick={confirmDelete}
+            >
+              {submitting ? "Deleting..." : "Delete"}
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

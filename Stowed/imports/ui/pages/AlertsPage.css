@@ -1,0 +1,198 @@
+/* Stocktake alerts list. Colours follow the StatusBadge palette so an overdue
+   alert reads the same as a low stock badge elsewhere in the app. */
+
+.alerts-summary {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.alerts-summary strong {
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-left: 4px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
+}
+
+.alert-card.overdue {
+  border-left-color: #b5532a;
+}
+
+.alert-card.due-soon {
+  border-left-color: #c4882b;
+}
+
+.alert-location-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 10px;
+}
+
+.alert-location-link:hover .alert-title {
+  color: var(--accent-primary);
+}
+
+.alert-location-link:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 4px;
+}
+
+.alert-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.alert-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.alert-code {
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.alert-path {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.alert-badge {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alert-badge.overdue {
+  background: #f8ddd2;
+  color: #b5532a;
+}
+
+.alert-badge.due-soon {
+  background: #faead0;
+  color: #c4882b;
+}
+
+.alert-dates {
+  margin-top: 12px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.alert-dates dt {
+  font-weight: 600;
+  color: var(--text-dark);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.alert-items {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.alert-items-title {
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.alert-item-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.alert-item-chip {
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: var(--text-dark);
+}
+
+.alert-item-chip span {
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.alert-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.alert-actions a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* Placeholder buttons: styled as real actions but deliberately unwired. */
+.alert-placeholder-note {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--input-bg);
+  border: 1px dashed var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.alert-placeholder-note code {
+  color: var(--accent-primary);
+  font-size: 11px;
+}
+
+/* Page-scoped: `.empty-state` is already defined by other page stylesheets and
+   Meteor bundles all CSS into one global sheet. */
+.alerts-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+}

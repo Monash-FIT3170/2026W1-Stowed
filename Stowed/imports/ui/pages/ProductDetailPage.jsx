@@ -5,6 +5,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { Products, ProductRecords } from "../../api/products/collections";
+import { ProductCategories } from "/imports/api/categories/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import "./ProductDetailPage.css";
@@ -132,6 +133,7 @@ export function ProductDetailView({
   }
 
   const unitCost = Number(item.unitCost);
+  const purchaseCost = Number(item.purchaseCost);
   const reorderAt = item.reorderAt ?? null;
   const galleryImages = imageUrls.length > 0 ? imageUrls : item.images || [];
 
@@ -146,6 +148,7 @@ export function ProductDetailView({
   });
   const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
+  const hasPurchaseCost = Number.isFinite(purchaseCost) && item.purchaseCost != null;
   const storageAssignments = records.length
     ? records.map((record) => ({
         key: record._id,
@@ -257,9 +260,21 @@ export function ProductDetailView({
     });
   }
 
-  const isLowStock = item.status && item.status.includes("CRITICAL");
-  const statusLabel = isLowStock ? "Low stock" : "In stock";
-  const statusClass = isLowStock ? "panel-status-badge low" : "panel-status-badge ok";
+  // `status` is an optional free-text field that only ever gets set on mock
+  // data, so this badge read "In stock" for every real product regardless of
+  // its stock. Derive it from the live stock instead.
+  const stockState =
+    currentStock <= 0
+      ? "out-of-stock"
+      : reorderAt != null && currentStock <= reorderAt
+        ? "low-stock"
+        : "in-stock";
+  const statusLabel = {
+    "out-of-stock": "Out of stock",
+    "low-stock": "Low stock",
+    "in-stock": "In stock",
+  }[stockState];
+  const statusClass = `product-status-badge ${stockState}`;
 
   return (
     <>
@@ -267,7 +282,7 @@ export function ProductDetailView({
         <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              <Link to="/inventory/list" className="breadcrumb-link">
+              <Link to="/inventory" className="breadcrumb-link">
                 Inventory
               </Link>
               <span className="breadcrumb-separator">/</span>
@@ -288,7 +303,7 @@ export function ProductDetailView({
                   onClick={handleUpdateClick}
                   disabled={uploadingImage}
                 >
-                  Update
+                  Edit
                 </button>
               )}
               {canDelete && (
@@ -345,12 +360,24 @@ export function ProductDetailView({
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Category</label>
-                    <div className="form-tag">{item.category || "-"}</div>
+                    <label htmlFor="category">Category</label>
+                    <input
+                      id="category"
+                      type="text"
+                      value={item.category != null ? item.category : "No category specified"}
+                      readOnly
+                      className={`form-input ${!item.category ? "empty-field" : ""}`}
+                    />
                   </div>
                   <div className="form-group">
-                    <label>Brand</label>
-                    <div className="form-tag">{item.brand || "-"}</div>
+                    <label htmlFor="brand">Brand</label>
+                    <input
+                      id="brand"
+                      type="text"
+                      value={item.brand != null ? item.brand : "No brand specified"}
+                      readOnly
+                      className={`form-input ${!item.brand ? "empty-field" : ""}`}
+                    />
                   </div>
                 </div>
               </div>
@@ -364,7 +391,7 @@ export function ProductDetailView({
               <div className="section-content">
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="unit-cost">Unit cost</label>
+                    <label htmlFor="unit-cost">Sell price</label>
                     <input
                       id="unit-cost"
                       type="text"
@@ -373,6 +400,18 @@ export function ProductDetailView({
                       className="form-input"
                     />
                   </div>
+                  <div className="form-group">
+                    <label htmlFor="purchase-cost">Purchase price</label>
+                    <input
+                      id="purchase-cost"
+                      type="text"
+                      value={hasPurchaseCost ? `$${purchaseCost.toFixed(2)}` : "-"}
+                      readOnly
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="current-stock">Current stock</label>
                     <input
@@ -383,8 +422,6 @@ export function ProductDetailView({
                       className="form-input"
                     />
                   </div>
-                </div>
-                <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="reorder-at">Reorder at</label>
                     <input
@@ -395,10 +432,6 @@ export function ProductDetailView({
                       className="form-input"
                     />
                   </div>
-                  {/* <div className="form-group">
-                    <label>Location</label>
-                    <div className="form-tag">{item.location || "-"}</div>
-                  </div> */}
                 </div>
               </div>
             </div>
@@ -500,9 +533,13 @@ export function ProductDetailView({
               </h2>
               <div className="section-content qr-section">
                 <div className="qr-container">
-                  <img src={qrCode} alt="QR Code" className="qr-code" />
                   <p className="qr-label">SKU: {item.sku}</p>
                   <p className="qr-label">{item.location}</p>
+                  {qrCode ? (
+                    <img src={qrCode} alt="QR Code" className="qr-code" />
+                  ) : (
+                    <div className="qr-placeholder">No QR code</div>
+                  )}
                 </div>
                 <button className="btn-print">Print label</button>
               </div>
@@ -717,15 +754,21 @@ export function ProductDetailView({
 export function ProductDetailPage() {
   const { productId } = useParams();
 
-  const { item, isLoading, records, sites, floorMaps, storageUnits, storageLocations } =
+  const { item, isLoading, records, categories, sites, floorMaps, storageUnits, storageLocations } =
     useTracker(() => {
       const handleProducts = Meteor.subscribe("products");
       const handleRecords = Meteor.subscribe("productRecords");
+      const handleCategories = Meteor.subscribe("productCategories");
       const handleLocations = Meteor.subscribe("locations.all");
       return {
-        isLoading: !handleProducts.ready() || !handleRecords.ready() || !handleLocations.ready(),
+        isLoading:
+          !handleProducts.ready() ||
+          !handleRecords.ready() ||
+          !handleCategories.ready() ||
+          !handleLocations.ready(),
         item: Products.findOne(productId),
         records: ProductRecords.find({ productId }, { sort: { quantity: -1 } }).fetch(),
+        categories: ProductCategories.find().fetch(),
         sites: Sites.find().fetch(),
         floorMaps: FloorMaps.find().fetch(),
         storageUnits: StorageUnits.find().fetch(),
@@ -742,6 +785,7 @@ export function ProductDetailPage() {
       item={item}
       productId={productId}
       records={records}
+      categories={categories}
       sites={sites}
       floorMaps={floorMaps}
       storageUnits={storageUnits}

@@ -1,16 +1,20 @@
 import { lazy } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { ToastProvider } from "./components/Toast";
 import { Sidebar } from "./Sidebar";
-import { InventoryPage } from "./pages/InventoryPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
+import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { StocktakePage } from "./pages/StocktakePage";
+import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -37,174 +41,238 @@ export function App() {
   const canAccessInventory = isLoggedIn && hasClientPermission(role, "route:/inventory");
 
   return (
-    <BrowserRouter>
-      <div
-        className="flex h-screen overflow-hidden"
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          display: "flex",
-          minHeight: "100vh",
-          overflow: "hidden",
-        }}
-      >
-        {isLoggedIn && <Sidebar />}
-        <main
-          className="flex-1 overflow-y-auto"
+    <ToastProvider>
+      <BrowserRouter>
+        <div
+          className="flex h-screen overflow-hidden"
           style={{
             backgroundColor: "var(--bg-primary)",
-            flex: 1,
-            overflowY: "auto",
-            marginLeft: isLoggedIn ? "200px" : "0",
+            display: "flex",
+            minHeight: "100vh",
+            overflow: "hidden",
           }}
         >
-          <Routes>
-            {/* public routes */}
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <Login />} />
-            <Route
-              path="/"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/inventory") ? (
-                    <InventoryPage />
+          {isLoggedIn && <Sidebar />}
+          <main
+            className="flex-1 overflow-y-auto"
+            style={{
+              backgroundColor: "var(--bg-primary)",
+              flex: 1,
+              overflowY: "auto",
+              marginLeft: isLoggedIn ? "200px" : "0",
+            }}
+          >
+            <Routes>
+              {/* public routes */}
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/login"
+                element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
+              />
+              <Route
+                path="/"
+                element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />}
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/dashboard") ? (
+                      <DashboardPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/inventory/new"
-              element={canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace />}
-            />
-            <Route
-              path="/inventory/:productId/edit"
-              element={canAccessInventory ? <EditProductPage /> : <Navigate to="/" replace />}
-            />
-            <Route
-              path="/inventory/:productId"
-              element={canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace />}
-            />
-            <Route path="/inventory/list" element={<InventoryListPage />} />
-            <Route
-              path="/floor-map"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/floor-map") ? (
-                    <FloorMapPage />
+                }
+              />
+              <Route
+                path="/inventory"
+                element={
+                  canAccessInventory ? (
+                    <InventoryListPage />
+                  ) : isLoggedIn ? (
+                    <Navigate to="/" replace />
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/floor-map/:floorMapId?"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/floor-map") ? (
-                    <FloorMapPage />
+                }
+              />
+              <Route
+                path="/inventory/new"
+                element={canAccessInventory ? <CreateProductPage /> : <Navigate to="/" replace />}
+              />
+              <Route
+                path="/inventory/:productId/edit"
+                element={canAccessInventory ? <EditProductPage /> : <Navigate to="/" replace />}
+              />
+              <Route
+                path="/inventory/:productId"
+                element={canAccessInventory ? <ProductDetailPage /> : <Navigate to="/" replace />}
+              />
+              <Route
+                path="/floor-map"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/floor-map") ? (
+                      <FloorMapPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/locations"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/locations") ? (
-                    <LocationsPage />
+                }
+              />
+              <Route
+                path="/floor-map/:floorMapId?"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/floor-map") ? (
+                      <FloorMapPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/lists"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/lists") ? (
-                    <ListsPage />
+                }
+              />
+              <Route
+                path="/locations"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/locations") ? (
+                      <LocationsPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route path="/stocktake" element={<Navigate to="/" replace />} />
-            <Route
-              path="/qr-codes"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/qr-codes") ? (
-                    <QRCodesPage />
+                }
+              />
+              <Route
+                path="/locations/:locationId"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/locations") ? (
+                      <LocationDetailPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/forecast"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/forecast") ? (
-                    <ForecastPage />
+                }
+              />
+              <Route
+                path="/lists"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/lists") ? (
+                      <ListsPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/alerts"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/alerts") ? (
-                    <AlertsPage />
+                }
+              />
+              <Route
+                path="/lists/:listId"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/lists") ? (
+                      <ShoppingListDetailPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/accounts"
-              element={
-                isLoggedIn ? (
-                  hasClientPermission(role, "route:/accounts") ? (
-                    <ViewAccounts />
+                }
+              />
+              {/* A stocktake is always scoped to one storage location, so the bare
+                path has nothing to show and falls back to the inventory page. */}
+              <Route path="/stocktake" element={<Navigate to="/" replace />} />
+              <Route
+                path="/stocktake/:locationId"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/stocktake") ? (
+                      <StocktakePage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
                   ) : (
-                    <Navigate to="/" replace />
+                    <Navigate to="/login" replace />
                   )
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+                }
+              />
+              <Route
+                path="/qr-codes"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/qr-codes") ? (
+                      <QRCodesPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route
+                path="/forecast"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/forecast") ? (
+                      <ForecastPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route
+                path="/alerts"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/alerts") ? (
+                      <AlertsPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route
+                path="/accounts"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/accounts") ? (
+                      <ViewAccounts />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
