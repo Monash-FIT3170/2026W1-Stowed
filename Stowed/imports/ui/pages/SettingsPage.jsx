@@ -246,6 +246,7 @@ export function SettingsPage() {
           result?.createdLocations === 1 ? "" : "s"
         }.${updatedMessage}${skippedMessage}`,
       );
+
       setCombinedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
@@ -475,19 +476,6 @@ export function SettingsPage() {
             <div className="export-format-list">
               <div className="export-format-row">
                 <div>
-                  <div className="export-format-title">CSV</div>
-                  <p className="export-format-desc">
-                    Two spreadsheets — your inventory and your storage layout — joined by location
-                    code. Opens in Excel.
-                  </p>
-                </div>
-                <button className="btn-primary" onClick={openCsvModal} disabled={!canExport}>
-                  Export as CSV
-                </button>
-              </div>
-
-              <div className="export-format-row">
-                <div>
                   <div className="export-format-title">JSON</div>
                   <p className="export-format-desc">
                     One file in the bulk import format, so it can be loaded straight back into
@@ -500,6 +488,18 @@ export function SettingsPage() {
                   disabled={!canExport || isExportingJson}
                 >
                   {isExportingJson ? "Preparing..." : "Export as JSON"}
+                </button>
+              </div>
+
+              <div className="export-format-row">
+                <div>
+                  <div className="export-format-title">CSV</div>
+                  <p className="export-format-desc">
+                    Two spreadsheets &rarr; your inventory and your storage layout. Opens in Excel.
+                  </p>
+                </div>
+                <button className="btn-primary" onClick={openCsvModal} disabled={!canExport}>
+                  Export as CSV
                 </button>
               </div>
             </div>
