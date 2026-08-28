@@ -334,8 +334,13 @@ export function useCanvasHandlers({
     const finalWPx = Math.max(minPx, snappedWPx);
     const finalHPx = Math.max(minPx, snappedHPx);
 
+    // mandate anchor point not to fall off the top or left edge of the canvas
+    // + anchor point must allow shape dimensions on the page (i.e. width and height)
+    // edge case: if unit width/height exceeds canvas bounds
     const clampedXPx = Math.max(0, Math.min(node.x(), width - finalWPx));
     const clampedYPx = Math.max(0, Math.min(node.y(), height - finalHPx));
+    // confirm shape dimensions are smaller than the canvas
+    const isOutOfBounds = width < finalWPx || height < finalHPx;
 
     node.scaleX(1);
     node.scaleY(1);
@@ -351,9 +356,9 @@ export function useCanvasHandlers({
 
     const scaledPoints = isCustomShape
       ? unit.shape.points.map((point) => ({
-          x: point.x * widthScale,
-          y: point.y * heightScale,
-        }))
+        x: point.x * widthScale,
+        y: point.y * heightScale,
+      }))
       : null;
 
     const proposedUnit = {
@@ -365,7 +370,7 @@ export function useCanvasHandlers({
       shape: isCustomShape ? { ...unit.shape, points: scaledPoints } : unit.shape,
     };
 
-    if (checkCollisions(proposedUnit, unit.id)) {
+    if (isOutOfBounds || checkCollisions(proposedUnit, unit.id)) {
       node.x(unit.x * px);
       node.y(unit.y * px);
       return;
