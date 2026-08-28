@@ -177,6 +177,12 @@
   font-size: 11px;
 }
 
+/* Bottom action bar: hidden by default (desktop keeps the header button
+   only) and turned on inside the tablet/phone media query below. */
+.location-detail-mobile-actions {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .location-detail-grid {
     grid-template-columns: 1fr;
@@ -190,5 +196,96 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
+  }
+
+  /* "Inventory stored here": let the columns shrink to fit instead of
+     forcing a 600px-wide horizontal scroll — everything stays visible
+     without side-scrolling down to phone width, where it switches to a
+     card layout below. */
+  .location-product-table {
+    overflow-x: visible;
+  }
+
+  .location-product-header,
+  .location-product-row {
+    grid-template-columns: minmax(110px, 1.8fr) minmax(60px, 1fr) 60px 60px 34px;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .location-product-row {
+    min-width: 0;
+  }
+
+  /* Primary CTA moves to the bottom of the page; the header copy hides so
+     it isn't shown twice. */
+  .location-detail-desktop-cta {
+    display: none;
+  }
+
+  .location-detail-mobile-actions {
+    display: block;
+    margin: 20px 24px 0;
+  }
+
+  .location-detail-mobile-actions .btn-primary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  /* "Inventory stored here" rows become cards: name + view link on top,
+     SKU underneath, quantity-here/total-stock paired below — same
+     "Details" visual language used elsewhere instead of a cramped grid. */
+  .location-product-header {
+    display: none;
+  }
+
+  .location-product-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "identity view"
+      "sku sku"
+      "qty total";
+    row-gap: 4px;
+    padding: 12px 16px;
+  }
+
+  .location-product-identity {
+    grid-area: identity;
+  }
+
+  .location-product-view {
+    grid-area: view;
+    justify-self: end;
+  }
+
+  .location-product-sku {
+    grid-area: sku;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .location-product-row > strong {
+    grid-area: qty;
+    font-size: 12px;
+  }
+
+  .location-product-row > strong::before {
+    content: "Here: ";
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .location-product-row > span:not(.location-product-sku):not(.location-product-view) {
+    grid-area: total;
+    justify-self: end;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .location-product-row > span:not(.location-product-sku):not(.location-product-view)::before {
+    content: "Total: ";
   }
 }
