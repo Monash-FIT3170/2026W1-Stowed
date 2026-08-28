@@ -649,6 +649,17 @@
   .dashboard-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  /* Location name/path in "Stocktake attention" is clipped with an
+     ellipsis at every size by default — let it wrap here instead so
+     nothing gets cut off. */
+  .dashboard-stocktake-location strong,
+  .dashboard-stocktake-location span {
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
 }
 
 @media (max-width: 480px) {
