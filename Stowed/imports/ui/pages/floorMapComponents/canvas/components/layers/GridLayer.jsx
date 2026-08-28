@@ -31,7 +31,9 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
           strokeScaleEnabled={false}
         />,
       );
-      vLines.push(
+
+      if (meters % 1 == 0) {
+         vLines.push(
         <Text
           key={`vl-${x}`}
           x={x - 23}
@@ -41,6 +43,18 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
           fill={COLOURS.CANVAS_LABEL}
         />,
       );
+      } else {
+      vLines.push(
+        <Text
+          key={`vl-${x}`}
+          x={x - 23}
+          y={4}
+          text={``}
+          fontSize={10}
+          fill={COLOURS.CANVAS_LABEL}
+        />,
+      );
+    }
     }
     for (let y = 0; y <= height; y += gridSizePx) {
       if (y === 0) continue;
@@ -55,7 +69,9 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
           strokeScaleEnabled={false}
         />,
       );
-      hLines.push(
+
+      if (meters % 1 == 0) {
+        hLines.push(
         <Text
           key={`hl-${y}`}
           x={4}
@@ -65,6 +81,19 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
           fill={COLOURS.CANVAS_LABEL}
         />,
       );
+
+      } else {
+      hLines.push(
+        <Text
+          key={`hl-${y}`}
+          x={4}
+          y={y - 12}
+          text={``}
+          fontSize={10}
+          fill={COLOURS.CANVAS_LABEL}
+        />,
+      );
+    }
     }
   }
 

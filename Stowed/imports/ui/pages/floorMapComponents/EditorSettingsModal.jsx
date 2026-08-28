@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { modalStyles } from "./FloorMapStyles";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 
 /**
  * Modal overlay for editing canvas editor preferences (grid display and snapping),
@@ -21,7 +22,14 @@ export function EditorSettingsModal({
   snapToGrid,
   onSave,
   onClose,
+  floorSize
 }) {
+
+  const toMeters = (px) => {
+      const m = Number(px) / CANVAS_CONFIG.PIXELS_PER_METER;
+      return m > 0 && isFinite(m) ? m : 10;
+  };
+
   const [draft, setDraft] = useState({
     gridInterval: gridInterval > 0 ? gridInterval : 1,
     snapInterval: snapInterval > 0 ? snapInterval : 0.1,
@@ -39,7 +47,14 @@ export function EditorSettingsModal({
   }
 
   function handleSave() {
-    if (draft.gridInterval <= 0 || draft.snapInterval <= 0) return;
+
+    const widthMeters = toMeters(floorSize.width);
+    const heightMeters = toMeters(floorSize.height);
+
+    if (draft.gridInterval <= 0 || draft.snapInterval <= 0
+        || draft.gridInterval > widthMeters || draft.gridInterval > heightMeters
+    ) return;
+    
 
     onSave({
       gridInterval: draft.gridInterval,
