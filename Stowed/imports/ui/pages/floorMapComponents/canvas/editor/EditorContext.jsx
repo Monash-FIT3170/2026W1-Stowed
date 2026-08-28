@@ -11,6 +11,7 @@ import {
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
+import { hasCollisions } from "./utils/Collisions";
 
 /**
  * Maps a StorageUnit to a the rectangle model the canvas currently renders.
@@ -390,7 +391,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }
@@ -406,7 +407,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       points: normalisedPoints
     };
 
-  
+
     // updates unit details based on new shape
     const newBounds = getTransformedBounds(normalisedShape, {
       offset: selectedUnit.offset,
@@ -421,11 +422,17 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       y: selectedUnit.y,
       width: newBounds.width,
       height: newBounds.height
+    };
+
+    // block change if it causes a collision
+    if (hasCollisions(updatedUnit, units, selectedUnit._id)) {
+      alert("Cannot change to this shape because it would cause collisions.");
+      return;
     }
 
     // updates unsaved map configs 
     if (!selectedUnit._id) {
-      commitUnits((prev) => 
+      commitUnits((prev) =>
         prev.map((u) =>
           u.id === selectedUnit.id ? updatedUnit : u
         )
@@ -435,7 +442,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
 
     try {
-      
+
       await callMethod("storageUnits.update", {
         storageUnitId: selectedUnit._id,
         floorMapId: floorMap._id,
@@ -449,7 +456,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       });
 
       // update view
-      commitUnits((prev) => 
+      commitUnits((prev) =>
         prev.map((u) =>
           u.id === selectedUnit.id ? updatedUnit : u
         )
@@ -460,7 +467,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Ensure that a valid shape has been selected to change to.",
+        "Ensure that a valid shape has been selected to change to.",
       );
     }
 
