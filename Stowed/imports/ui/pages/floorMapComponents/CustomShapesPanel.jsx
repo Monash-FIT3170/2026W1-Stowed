@@ -1,13 +1,14 @@
-import { buttonStyles, customShapesPanelStyles } from "./FloorMapStyles";
+import { buttonStyles, COLOURS, customShapesPanelStyles } from "./FloorMapStyles";
 import { dragState } from "./canvas/editor/DragState";
 import {
   getShapeBounds,
   normaliseShapePoints,
 } from "./canvas/editor/utils/ShapeGeometry";
+import { useEditor } from "./canvas/editor/EditorContext";
 
 const presetShapes = [
   {
-    shapeId: "-1",
+    shapeId: -1,
     name: "Square",
     points: [
       { x: 0, y: 0 },
@@ -23,7 +24,7 @@ const presetShapes = [
   },
 
   {
-    shapeId: "-2",
+    shapeId: -2,
     name: "Rectangle",
     points: [
       { x: 0, y: 0 },
@@ -39,7 +40,7 @@ const presetShapes = [
   },
 
   {
-    shapeId: "-3",
+    shapeId: -3,
     name: "Triangle",
     points: [
       { x: 0, y: 0 },
@@ -54,7 +55,7 @@ const presetShapes = [
   },
 
   {
-    shapeId: "-4",
+    shapeId: -4,
     name: "L Shape",
     points: [
       { x: 0, y: 0 },
@@ -132,6 +133,10 @@ export function CustomShapesPanel({
   isChangingShape,
   onChangeShape
 }) {
+  const {
+    handleUnitPlaced,
+  } = useEditor();
+
   const getToolName = (shape) => `shape-${shape.shapeId}`;
 
   const getShapeButtonStyle = (toolName) => ({
@@ -162,7 +167,7 @@ export function CustomShapesPanel({
 
       width,
       height,
-      fill: "#7a5230",
+      fill: COLOURS.UNIT_DEFAULT,
 
       rotation: 0,
 
@@ -187,6 +192,7 @@ export function CustomShapesPanel({
   }
 
   function handleDragEnd() {
+    handleUnitPlaced(true); // save the layout to get the new unit in the DB
     dragState.template = null;
   }
 

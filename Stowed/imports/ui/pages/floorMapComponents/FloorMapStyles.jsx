@@ -23,6 +23,12 @@ export const COLOURS = {
   CANVAS_FILL: "#fdf7f2",
   CANVAS_LABEL: "#998874",
   CANVAS_GRID: "#d9cfc0",
+
+  // Storage unit colours
+  UNIT_DEFAULT: "#7a5230",
+  OVER_TRANSPARENT: "rgba(0, 0, 0, 0.08)",
+  OVER_GREEN: "rgba(34, 197, 94, 0.50)",
+  OVER_RED: "rgba(220, 38, 38, 0.60)",
 };
 
 const baseButton = {
@@ -271,7 +277,7 @@ export const customShapesPanelStyles = {
   shapeButtonContent: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     width: "100%",
   },
 
@@ -307,17 +313,18 @@ export const customShapesPanelStyles = {
   shapeRow: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     width: "100%",
   },
 
   editButton: {
-    padding: "8px 10px",
+    minHeight: 40,
+    padding: "6px 6px",
     border: "1px solid #d8d1c8",
     borderRadius: 8,
     backgroundColor: "#ffffff",
     cursor: "pointer",
-    fontSize: 12,
+    fontSize: 16,
     color: "#7a5230",
   },
 
@@ -326,7 +333,7 @@ export const customShapesPanelStyles = {
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    minHeight: 44,
+    minHeight: 40,
     padding: "6px 10px",
     borderRadius: 8,
     fontSize: 11,

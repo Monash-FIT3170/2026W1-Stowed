@@ -55,7 +55,7 @@ export function UnitDetailsPanel({ unit, onRename, onColourChange }) {
           <input
             id="unit-colour"
             type="color"
-            value={unit.fill || "#7a5230"}
+            value={unit.fill || COLOURS.UNIT_DEFAULT}
             onChange={(e) => onColourChange(e.target.value)}
             style={{
               width: 36,
@@ -67,7 +67,7 @@ export function UnitDetailsPanel({ unit, onRename, onColourChange }) {
               background: "none",
             }}
           />
-          <span style={{ fontSize: 11, color: COLOURS.TEXT_MUTED }}>{unit.fill || "#7a5230"}</span>
+          <span style={{ fontSize: 11, color: COLOURS.TEXT_MUTED }}>{unit.fill || COLOURS.UNIT_DEFAULT}</span>
         </div>
       </div>
     </div>
