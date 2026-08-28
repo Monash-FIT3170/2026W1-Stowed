@@ -147,6 +147,7 @@ export function SettingsPage() {
 
   const [showExportModal, setShowExportModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExportingJson, setIsExportingJson] = useState(false);
   const [exportData, setExportData] = useState(null);
   const [error, setError] = useState("");
 
@@ -170,7 +171,11 @@ export function SettingsPage() {
     [importRecords],
   );
 
-  async function openExportModal() {
+  function stamp() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  async function openCsvModal() {
     setShowExportModal(true);
     setIsLoading(true);
     setError("");
@@ -192,10 +197,6 @@ export function SettingsPage() {
     setError("");
   }
 
-  function stamp() {
-    return new Date().toISOString().slice(0, 10);
-  }
-
   function downloadInventory() {
     downloadCsv(`stowed-inventory-${stamp()}.csv`, toCsv(exportData.inventory, INVENTORY_COLUMNS));
   }
@@ -204,8 +205,18 @@ export function SettingsPage() {
     downloadCsv(`stowed-locations-${stamp()}.csv`, toCsv(exportData.locations, LOCATION_COLUMNS));
   }
 
-  function downloadFullImportJson() {
-    downloadJson(`stowed-full-import-${stamp()}.json`, exportData.importRows || []);
+  async function downloadFullImportJson() {
+    setError("");
+    setIsExportingJson(true);
+    try {
+      const result = await callMethod("products.export", {});
+      downloadJson(`stowed-full-import-${stamp()}.json`, result.importRows || []);
+    } catch (err) {
+      console.error("Failed to export JSON:", err);
+      setError(err.reason || err.message || "Could not prepare the export.");
+    } finally {
+      setIsExportingJson(false);
+    }
   }
 
   const importCombinedData = async ({ text, fileName }) => {
@@ -408,14 +419,18 @@ export function SettingsPage() {
                     <button
                       className="btn-secondary"
                       onClick={handleUndoLatestImport}
-                      disabled={!latestCompletedImport || isImporting || isUndoing || isClearingHistory}
+                      disabled={
+                        !latestCompletedImport || isImporting || isUndoing || isClearingHistory
+                      }
                     >
                       {activeImportAction === "undo" ? "Undoing..." : "Undo import"}
                     </button>
                     <button
                       className="btn-secondary"
                       onClick={handleClearImportHistory}
-                      disabled={importRecords.length === 0 || isImporting || isUndoing || isClearingHistory}
+                      disabled={
+                        importRecords.length === 0 || isImporting || isUndoing || isClearingHistory
+                      }
                     >
                       {activeImportAction === "clear-history" ? "Clearing..." : "Clear history"}
                     </button>
@@ -453,21 +468,43 @@ export function SettingsPage() {
               <h2>Bulk Data Export</h2>
             </div>
 
-            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
-              Download your full inventory and storage layout as CSV files, or export one JSON file
-              that can be imported back into Stowed.
-            </p>
+            <div className="export-format-list">
+              <div className="export-format-row">
+                <div>
+                  <div className="export-format-title">CSV</div>
+                  <p className="export-format-desc">
+                    Two spreadsheets — your inventory and your storage layout — joined by location
+                    code. Opens in Excel.
+                  </p>
+                </div>
+                <button className="btn-primary" onClick={openCsvModal} disabled={!canExport}>
+                  Export as CSV
+                </button>
+              </div>
 
-            <div className="templates-row">
-              <button
-                className="btn-primary"
-                onClick={openExportModal}
-                disabled={!canExport}
-                style={{ width: "auto", padding: "0 20px" }}
-              >
-                Bulk export
-              </button>
+              <div className="export-format-row">
+                <div>
+                  <div className="export-format-title">JSON</div>
+                  <p className="export-format-desc">
+                    One file in the bulk import format, so it can be loaded straight back into
+                    Stowed.
+                  </p>
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={downloadFullImportJson}
+                  disabled={!canExport || isExportingJson}
+                >
+                  {isExportingJson ? "Preparing..." : "Export as JSON"}
+                </button>
+              </div>
             </div>
+
+            {error && !showExportModal && (
+              <p className="warning-text" style={{ marginTop: "10px" }}>
+                {error}
+              </p>
+            )}
 
             {!canExport && (
               <p className="warning-text" style={{ marginTop: "10px" }}>
@@ -482,7 +519,7 @@ export function SettingsPage() {
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: "460px", width: "100%" }}>
             <h3 className="modal-title" style={{ marginBottom: "4px" }}>
-              Bulk export
+              Export as CSV
             </h3>
             <p
               style={{
@@ -540,28 +577,6 @@ export function SettingsPage() {
                     </div>
                   </div>
                   <button className="btn-secondary" onClick={downloadLocations}>
-                    Download
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "12px 14px",
-                    borderRadius: "8px",
-                    background: "var(--card-bg-subtle, #f5efe6)",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "14px", fontWeight: 600 }}>Full export (JSON)</div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      {exportData.importRows?.length || 0} row
-                      {(exportData.importRows?.length || 0) !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                  <button className="btn-secondary" onClick={downloadFullImportJson}>
                     Download
                   </button>
                 </div>
