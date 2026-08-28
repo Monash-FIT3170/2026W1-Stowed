@@ -37,9 +37,13 @@ export function StorageLocationPanel({ storageUnitId }) {
   }
 
   async function handleDeleteLocation(storageLocationId) {
-    await Meteor.callAsync("storageLocations.delete", {
-      storageLocationId,
-    });
+    try {
+      await Meteor.callAsync("storageLocations.delete", {
+        storageLocationId,
+      });
+    } catch (error) {
+      alert(error.reason || "Storage location is not empty. Please move stock from this storage location before deleting.");
+    }
 
     loadLocations();
   }
