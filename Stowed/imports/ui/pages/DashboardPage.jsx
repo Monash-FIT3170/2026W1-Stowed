@@ -244,7 +244,9 @@ function RecentActivityWidget({ activities, activitiesLoading, existingProductId
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setVisibleCount((current) => Math.min(current + RECENT_ACTIVITY_BATCH_SIZE, activities.length));
+          setVisibleCount((current) =>
+            Math.min(current + RECENT_ACTIVITY_BATCH_SIZE, activities.length),
+          );
         }
       },
       { rootMargin: "200px" },

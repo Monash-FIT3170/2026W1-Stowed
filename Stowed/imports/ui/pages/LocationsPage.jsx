@@ -512,9 +512,7 @@ export function LocationsPage() {
                             <Link className="locations-name-link" to={`/locations/${rowId}`}>
                               <strong>{row.location.name || "Unnamed location"}</strong>
                             </Link>
-                            <span className="locations-code">
-                              {row.location.code || "No code"}
-                            </span>
+                            <span className="locations-code">{row.location.code || "No code"}</span>
                           </td>
                           <td>
                             <span className="locations-path">

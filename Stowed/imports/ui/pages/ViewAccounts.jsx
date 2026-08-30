@@ -116,10 +116,7 @@ export function ViewAccounts() {
             <div className="empty-state">No accounts found.</div>
           ) : (
             filteredUsers.map((user) => (
-              <div
-                key={user._id}
-                className="table-row"
-              >
+              <div key={user._id} className="table-row">
                 <div className="account-avatar">
                   {(user.profile?.username || "?").charAt(0).toUpperCase()}
                 </div>

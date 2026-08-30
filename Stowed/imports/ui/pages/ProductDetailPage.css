@@ -205,8 +205,8 @@
   }
 }
 
-/* .qr-label/.modal-*/.warning-text/.create-product-footer already live in
-   Global.css — not redefining them here.
+/* .qr-label, the .modal-* rules, .warning-text and .create-product-footer
+   already live in Global.css — not redefining them here.
    Icon stays beside the title/status/meta at every width instead of
    stacking above it — the title wraps and the meta line wraps instead,
    so the icon never ends up sitting above a wide stretch of empty space. */
