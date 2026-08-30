@@ -5,9 +5,7 @@ import { Meteor } from "meteor/meteor";
 import { COLOURS, buttonStyles } from "./FloorMapStyles";
 
 export function CreateShapeModal({ onClose, shape = null }) {
-  const [shapeName, setShapeName] = useState(
-    shape?.name ?? "",
-  );
+  const [shapeName, setShapeName] = useState(shape?.name ?? "");
   const [deletePointMode, setDeletePointMode] = useState(false);
 
   const canvasWidth = 800;
@@ -25,9 +23,9 @@ export function CreateShapeModal({ onClose, shape = null }) {
       currentPoints.map((point, pointIndex) =>
         pointIndex === index
           ? {
-            ...point,
-            [coordinate]: value,
-          }
+              ...point,
+              [coordinate]: value,
+            }
           : point,
       ),
     );
@@ -37,24 +35,14 @@ export function CreateShapeModal({ onClose, shape = null }) {
 
     if (!deletePointMode) return;
 
-    setPoints((currentPoints) =>
-      currentPoints.filter(
-        (_, pointIndex) => pointIndex !== index,
-      ),
-    );
+    setPoints((currentPoints) => currentPoints.filter((_, pointIndex) => pointIndex !== index));
   };
   const handlePointDrag = (index, event) => {
     const node = event.target;
 
-    const pixelX = Math.max(
-      0,
-      Math.min(node.x(), canvasWidth),
-    );
+    const pixelX = Math.max(0, Math.min(node.x(), canvasWidth));
 
-    const pixelY = Math.max(
-      0,
-      Math.min(node.y(), canvasHeight),
-    );
+    const pixelY = Math.max(0, Math.min(node.y(), canvasHeight));
 
     // Keep the Konva node inside the canvas
     node.position({
@@ -62,17 +50,9 @@ export function CreateShapeModal({ onClose, shape = null }) {
       y: pixelY,
     });
 
-    const newX = Number(
-      (
-        pixelX / CANVAS_CONFIG.PIXELS_PER_METER
-      ).toFixed(2),
-    );
+    const newX = Number((pixelX / CANVAS_CONFIG.PIXELS_PER_METER).toFixed(2));
 
-    const newY = Number(
-      (
-        pixelY / CANVAS_CONFIG.PIXELS_PER_METER
-      ).toFixed(2),
-    );
+    const newY = Number((pixelY / CANVAS_CONFIG.PIXELS_PER_METER).toFixed(2));
 
     setPoints((currentPoints) =>
       currentPoints.map((point, pointIndex) => {
@@ -115,11 +95,9 @@ export function CreateShapeModal({ onClose, shape = null }) {
 
     if (!pointer) return;
 
-    const x =
-      pointer.x / CANVAS_CONFIG.PIXELS_PER_METER;
+    const x = pointer.x / CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const y =
-      pointer.y / CANVAS_CONFIG.PIXELS_PER_METER;
+    const y = pointer.y / CANVAS_CONFIG.PIXELS_PER_METER;
 
     setPoints((currentPoints) => [
       ...currentPoints,
@@ -191,7 +169,6 @@ export function CreateShapeModal({ onClose, shape = null }) {
       setPoints([]);
 
       onClose();
-
     } catch (error) {
       console.error("Failed to save shape:", error);
       alert(error.reason || "Failed to save shape.");
@@ -202,9 +179,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
     <div style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.modalHeader}>
-          <h2 style={styles.title}>
-            {shape ? "Edit Shape" : "Shape Editor"}
-          </h2>
+          <h2 style={styles.title}>{shape ? "Edit Shape" : "Shape Editor"}</h2>
 
           <div style={styles.actions}>
             <button
@@ -252,28 +227,16 @@ export function CreateShapeModal({ onClose, shape = null }) {
               <div style={styles.canvasActions}>
                 <button
                   type="button"
-                  onClick={() =>
-                    setDeletePointMode(
-                      (currentMode) => !currentMode,
-                    )
-                  }
+                  onClick={() => setDeletePointMode((currentMode) => !currentMode)}
                   style={{
                     ...styles.deletePointButton,
-                    ...(deletePointMode
-                      ? styles.deletePointButtonActive
-                      : {}),
+                    ...(deletePointMode ? styles.deletePointButtonActive : {}),
                   }}
                 >
-                  {deletePointMode
-                    ? "Done Deleting"
-                    : "Delete Point"}
+                  {deletePointMode ? "Done Deleting" : "Delete Point"}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setPoints([])}
-                  style={styles.clearButton}
-                >
+                <button type="button" onClick={() => setPoints([])} style={styles.clearButton}>
                   Clear Points
                 </button>
               </div>
@@ -287,9 +250,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
               onClick={handleCanvasClick}
               style={{
                 backgroundColor: "#fbfaf8",
-                cursor: deletePointMode
-                  ? "default"
-                  : "crosshair",
+                cursor: deletePointMode ? "default" : "crosshair",
               }}
             >
               <Layer>
@@ -298,8 +259,10 @@ export function CreateShapeModal({ onClose, shape = null }) {
                     (acc, point) => [
                       ...acc,
                       point.x * CANVAS_CONFIG.PIXELS_PER_METER,
-                      point.y * CANVAS_CONFIG.PIXELS_PER_METER
-                    ], [])}
+                      point.y * CANVAS_CONFIG.PIXELS_PER_METER,
+                    ],
+                    [],
+                  )}
                   fill={COLOURS.ACCENT_SOFT}
                   stroke={COLOURS.CANVAS_LABEL}
                   strokeWidth={3}
@@ -327,15 +290,9 @@ export function CreateShapeModal({ onClose, shape = null }) {
                       radius={6}
                       fill="#c45127"
                       draggable={!deletePointMode}
-                      onClick={(event) =>
-                        handlePointClick(index, event)
-                      }
-                      onTap={(event) =>
-                        handlePointClick(index, event)
-                      }
-                      onDragMove={(event) =>
-                        handlePointDrag(index, event)
-                      }
+                      onClick={(event) => handlePointClick(index, event)}
+                      onTap={(event) => handlePointClick(index, event)}
+                      onDragMove={(event) => handlePointDrag(index, event)}
                       onMouseEnter={(event) => {
                         const stage = event.target.getStage();
 
@@ -400,9 +357,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
               {points.map((point, index) => (
                 <div key={index} style={styles.pointSection}>
                   <div style={styles.pointHeader}>
-                    <span style={styles.pointTitle}>
-                      Point {index + 1}
-                    </span>
+                    <span style={styles.pointTitle}>Point {index + 1}</span>
 
                     <button
                       type="button"
@@ -421,13 +376,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
                         type="number"
                         value={point.x}
                         onWheel={(e) => e.target.blur()}
-                        onChange={(event) =>
-                          handlePointChange(
-                            index,
-                            "x",
-                            event.target.value,
-                          )
-                        }
+                        onChange={(event) => handlePointChange(index, "x", event.target.value)}
                         style={styles.coordinateInput}
                       />
                     </label>
@@ -439,13 +388,7 @@ export function CreateShapeModal({ onClose, shape = null }) {
                         type="number"
                         value={point.y}
                         onWheel={(e) => e.target.blur()}
-                        onChange={(event) =>
-                          handlePointChange(
-                            index,
-                            "y",
-                            event.target.value,
-                          )
-                        }
+                        onChange={(event) => handlePointChange(index, "y", event.target.value)}
                         style={styles.coordinateInput}
                       />
                     </label>

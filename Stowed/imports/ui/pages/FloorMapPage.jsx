@@ -60,7 +60,7 @@ function FloorMapPageInner() {
     lowStockByUnitId,
     handleDeleteSelectedUnit,
     handleDeleteShape,
-    handleChangeShape
+    handleChangeShape,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -93,7 +93,6 @@ function FloorMapPageInner() {
     setSelectedUnit(unit);
     setIsStockPanelOpen(!!unitId);
   };
-
 
   const handleCanvasModeToggle = () => {
     const nextEditMode = !isCanvasEditMode;
@@ -387,7 +386,9 @@ function FloorMapPageInner() {
                       }}
                     >
                       <button
-                        onClick={() => {isChangingShape? setIsChangingShape(false) : handleUnitSelect(null)}}
+                        onClick={() => {
+                          isChangingShape ? setIsChangingShape(false) : handleUnitSelect(null);
+                        }}
                         style={{
                           background: "none",
                           border: "none",
@@ -405,7 +406,7 @@ function FloorMapPageInner() {
                         Edit &quot;{selectedUnit.name}&quot;
                       </span>
                       <button
-                        onClick={ () => setSidebarOpen(false)}
+                        onClick={() => setSidebarOpen(false)}
                         style={{
                           ...pageStyles.sidebarToggle,
                           fontSize: "11px",
@@ -414,12 +415,7 @@ function FloorMapPageInner() {
                         }}
                         aria-label="Collapse sidebar"
                       >
-                        <img 
-                          src="/sidebar-collapse.svg"
-                          alt=""
-                          width="18"
-                          height="18"
-                          />
+                        <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
                       </button>
                     </div>
                   ) : (
@@ -470,12 +466,7 @@ function FloorMapPageInner() {
                         }}
                         aria-label="Collapse sidebar"
                       >
-                        <img 
-                          src="/sidebar-collapse.svg"
-                          alt=""
-                          width="18"
-                          height="18"
-                          />
+                        <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
                       </button>
                     </div>
                   )}
@@ -491,22 +482,19 @@ function FloorMapPageInner() {
                     }}
                   >
                     {selectedUnit && isChangingShape ? (
-                      
                       //dd
                       <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
-
-                          <CustomShapesPanel
-                            mapShapes={mapShapes}
-                            activeTool={activeTool}
-                            setActiveTool={setActiveTool}
-                            onEditShape={handleEditShape}
-                            onDeleteShape={handleDeleteShape}
-                            isChangingShape={isChangingShape}
-                            onChangeShape={handleChangeShape}
-                          />
+                        <CustomShapesPanel
+                          mapShapes={mapShapes}
+                          activeTool={activeTool}
+                          setActiveTool={setActiveTool}
+                          onEditShape={handleEditShape}
+                          onDeleteShape={handleDeleteShape}
+                          isChangingShape={isChangingShape}
+                          onChangeShape={handleChangeShape}
+                        />
                       </div>
-
-                    ): selectedUnit ? (
+                    ) : selectedUnit ? (
                       <>
                         {/* SETTINGS for the selected storage unit */}
                         <div
@@ -526,7 +514,6 @@ function FloorMapPageInner() {
                         </div>
                         <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
                         <div style={{ padding: "12px", boxSizing: "border-box" }}>
-
                           <button
                             type="button"
                             className="btn-primary"
@@ -536,7 +523,7 @@ function FloorMapPageInner() {
                             Change Shape
                           </button>
 
-                          <div style={{ height: "8px"}} />
+                          <div style={{ height: "8px" }} />
 
                           <button
                             type="button"
@@ -645,12 +632,7 @@ function FloorMapPageInner() {
                     }}
                     aria-label="Expand sidebar"
                   >
-                    <img 
-                      src="/sidebar-expand.svg"
-                      alt=""
-                      width="18"
-                      height="18"
-                    />
+                    <img src="/sidebar-expand.svg" alt="" width="18" height="18" />
                   </button>
                 </div>
               )}
@@ -758,7 +740,6 @@ function FloorMapPageInner() {
           gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
-
         />
       )}
 

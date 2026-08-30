@@ -42,7 +42,10 @@ export function StorageLocationPanel({ storageUnitId }) {
         storageLocationId,
       });
     } catch (error) {
-      alert(error.reason || "Storage location is not empty. Please move stock from this storage location before deleting.");
+      alert(
+        error.reason ||
+          "Storage location is not empty. Please move stock from this storage location before deleting.",
+      );
     }
 
     loadLocations();

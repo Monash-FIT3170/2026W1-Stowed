@@ -22,12 +22,11 @@ export function EditorSettingsModal({
   snapToGrid,
   onSave,
   onClose,
-  floorSize
+  floorSize,
 }) {
-
   const toMeters = (px) => {
-      const m = Number(px) / CANVAS_CONFIG.PIXELS_PER_METER;
-      return m > 0 && isFinite(m) ? m : 10;
+    const m = Number(px) / CANVAS_CONFIG.PIXELS_PER_METER;
+    return m > 0 && isFinite(m) ? m : 10;
   };
 
   const [draft, setDraft] = useState({
@@ -47,14 +46,16 @@ export function EditorSettingsModal({
   }
 
   function handleSave() {
-
     const widthMeters = toMeters(floorSize.width);
     const heightMeters = toMeters(floorSize.height);
 
-    if (draft.gridInterval <= 0 || draft.snapInterval <= 0
-        || draft.gridInterval > widthMeters || draft.gridInterval > heightMeters
-    ) return;
-    
+    if (
+      draft.gridInterval <= 0 ||
+      draft.snapInterval <= 0 ||
+      draft.gridInterval > widthMeters ||
+      draft.gridInterval > heightMeters
+    )
+      return;
 
     onSave({
       gridInterval: draft.gridInterval,

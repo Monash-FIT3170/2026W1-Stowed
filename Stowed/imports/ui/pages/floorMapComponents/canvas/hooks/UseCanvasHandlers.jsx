@@ -356,9 +356,9 @@ export function useCanvasHandlers({
 
     const scaledPoints = isCustomShape
       ? unit.shape.points.map((point) => ({
-        x: point.x * widthScale,
-        y: point.y * heightScale,
-      }))
+          x: point.x * widthScale,
+          y: point.y * heightScale,
+        }))
       : null;
 
     const proposedUnit = {

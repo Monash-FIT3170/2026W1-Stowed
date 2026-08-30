@@ -256,34 +256,32 @@ const normaliseVector = (vector) => {
 
 /**
  *  Computes the cross product between two connected edges given three points that form the two edghes
- * 
+ *
  * @param {*} p1 point 1
  * @param {*} p2 point 2 (shared between the two edges)
- * @param {*} p3 point 3 
- * @returns 
+ * @param {*} p3 point 3
+ * @returns
  */
 const crossProd = (p1, p2, p3) => (p2.x - p1.x) * (p3.y - p2.y) - (p2.y - p1.y) * (p3.x - p2.x);
 
-
 /**
  * Checks if a shape is convex based on points
- * 
- * @param {*} points 
+ *
+ * @param {*} points
  * @returns boolean
  */
 const isConvex = (points) => {
-  
   const n = points.length;
 
-  const state = { sign: 0};
+  const state = { sign: 0 };
 
   return points.every((p0, i) => {
-    const p1 = points[(i+1) % n];
-    const p2 = points[(i+2) % n];
+    const p1 = points[(i + 1) % n];
+    const p2 = points[(i + 2) % n];
 
     const crossProdRes = crossProd(p0, p1, p2);
 
-    // close to collinear, skip 
+    // close to collinear, skip
     if (Math.abs(crossProdRes) < 1e-9) return true;
 
     // gets turn direction of two edges
@@ -297,5 +295,5 @@ const isConvex = (points) => {
 
     // checks if turn direction consistent, if not, stops early and shape is concave
     return turnDir === state.sign;
-  })
-}
+  });
+};

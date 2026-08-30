@@ -67,7 +67,9 @@ export function UnitDetailsPanel({ unit, onRename, onColourChange }) {
               background: "none",
             }}
           />
-          <span style={{ fontSize: 11, color: COLOURS.TEXT_MUTED }}>{unit.fill || COLOURS.UNIT_DEFAULT}</span>
+          <span style={{ fontSize: 11, color: COLOURS.TEXT_MUTED }}>
+            {unit.fill || COLOURS.UNIT_DEFAULT}
+          </span>
         </div>
       </div>
     </div>

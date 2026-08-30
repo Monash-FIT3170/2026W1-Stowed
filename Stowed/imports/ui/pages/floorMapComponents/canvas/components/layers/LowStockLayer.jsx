@@ -88,7 +88,7 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
           );
         } else {
           return (
-            < Rect
+            <Rect
               key={unit._id || unit.id}
               x={unit.x * px}
               y={unit.y * px}

@@ -337,7 +337,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     try {
       for (const unit of units) {
-        if (!unit._id) { // only interested in adding the unit that doesn't already exist
+        if (!unit._id) {
+          // only interested in adding the unit that doesn't already exist
           const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
           const shape = hasCustomShape
             ? unit.shape
@@ -419,7 +420,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }
@@ -432,9 +433,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     const normalisedShape = {
       ...shape,
-      points: normalisedPoints
+      points: normalisedPoints,
     };
-
 
     // updates unit details based on new shape
     const newBounds = getTransformedBounds(normalisedShape, {
@@ -449,7 +449,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       x: selectedUnit.x,
       y: selectedUnit.y,
       width: newBounds.width,
-      height: newBounds.height
+      height: newBounds.height,
     };
 
     // block change if it causes a collision
@@ -458,19 +458,14 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       return;
     }
 
-    // updates unsaved map configs 
+    // updates unsaved map configs
     if (!selectedUnit._id) {
-      commitUnits((prev) =>
-        prev.map((u) =>
-          u.id === selectedUnit.id ? updatedUnit : u
-        )
-      );
+      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
       setSelectedUnit(updatedUnit);
       return;
     }
 
     try {
-
       await callMethod("storageUnits.update", {
         storageUnitId: selectedUnit._id,
         floorMapId: floorMap._id,
@@ -480,25 +475,16 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         offset: selectedUnit.offset,
         rotation: selectedUnit.rotation,
         scale: selectedUnit.scale,
-        fill: selectedUnit.fill
+        fill: selectedUnit.fill,
       });
 
       // update view
-      commitUnits((prev) =>
-        prev.map((u) =>
-          u.id === selectedUnit.id ? updatedUnit : u
-        )
-      );
+      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
 
       setSelectedUnit(updatedUnit);
-
     } catch (error) {
-      alert(
-        error.reason ||
-        "Ensure that a valid shape has been selected to change to.",
-      );
+      alert(error.reason || "Ensure that a valid shape has been selected to change to.");
     }
-
   }
 
   async function handleDeleteShape(shape) {
@@ -508,9 +494,12 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     try {
       await callMethod("mapShapes.delete", { shape });
     } catch (error) {
-      alert(error.reason || "Cannot delete this shape. Make sure it is not used for any storage units first.");
+      alert(
+        error.reason ||
+          "Cannot delete this shape. Make sure it is not used for any storage units first.",
+      );
     }
-  };
+  }
 
   const value = {
     // Tool
@@ -568,7 +557,6 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected shape
     handleDeleteShape,
-
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

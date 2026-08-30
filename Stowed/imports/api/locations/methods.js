@@ -284,7 +284,6 @@ Meteor.methods({
     scale,
     fill,
   }) {
-    
     check(storageUnitId, String);
     check(floorMapId, String);
     check(name, String);
@@ -321,7 +320,6 @@ Meteor.methods({
     const orgId = await getCallerOrgId(this.userId);
 
     await StorageUnits.updateAsync(storageUnitId, {
-
       $set: {
         floorMapId,
         name,
@@ -560,18 +558,24 @@ Meteor.methods({
 
     if (dependentUnits.length !== 0) {
       const orgId = await getCallerOrgId(this.userId);
-      const orgMaps = await FloorMaps.find({ "orgId": orgId }).fetchAsync();
-      const dependentPlaces = dependentUnits.map((u) => {
-        const [floorMap] = orgMaps.filter(f => f._id === u.floorMapId);
-        return { ...u, floorName: floorMap.name }
-      }).reduce((acc, u) => `${acc}- in the '${u.floorName}' map, for the unit '${u.name}' (located at x=${u.offset.x}, y=${u.offset.y})\n`, "");
+      const orgMaps = await FloorMaps.find({ orgId: orgId }).fetchAsync();
+      const dependentPlaces = dependentUnits
+        .map((u) => {
+          const [floorMap] = orgMaps.filter((f) => f._id === u.floorMapId);
+          return { ...u, floorName: floorMap.name };
+        })
+        .reduce(
+          (acc, u) =>
+            `${acc}- in the '${u.floorName}' map, for the unit '${u.name}' (located at x=${u.offset.x}, y=${u.offset.y})\n`,
+          "",
+        );
       throw new Meteor.Error(
         "shape-is-used",
         `This shape is used in the following places:\n${dependentPlaces}\nPlease change the shape used by these storage units and try again.`,
       );
     }
 
-    await MapShapes.removeAsync({ "shapeId": shape.shapeId });
+    await MapShapes.removeAsync({ shapeId: shape.shapeId });
   },
 
   /**

@@ -99,5 +99,7 @@ export function flattenPoints(unit) {
 
 // helper function to determine backwards compatability requirement
 export function isDrawnShape(unit) {
-  return unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+  return (
+    unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3
+  );
 }

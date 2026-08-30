@@ -30,7 +30,6 @@ export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose
   function handleSave() {
     if (draft.widthMeters <= 0 || draft.widthMeters < gridInterval) return;
     if (draft.heightMeters <= 0 || draft.heightMeters < gridInterval) return;
-    
 
     const saved = onSave({
       floorSize: {
