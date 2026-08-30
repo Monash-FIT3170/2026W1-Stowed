@@ -301,4 +301,39 @@ describe("export - toCsv", function () {
     const csv = toCsv([{ name: "Widget" }], ["name", "sku"]);
     assert.strictEqual(csv, "name,sku\r\nWidget,");
   });
+
+  it("blanks unit dimensions when the shape has no points", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      storageUnits: [{ _id: "unit-1", floorMapId: "floor-1", name: "Cabinet A", type: "cabinet" }],
+    });
+    assert.strictEqual(rows[0].storageUnitWidth, "");
+    assert.strictEqual(rows[0].storageUnitHeight, "");
+  });
+
+  it("includes units that have no locations", function () {
+    const rows = buildImportRows({ ...FIXTURE, storageLocations: [], productRecords: [] });
+    const unitRow = rows.find((row) => row.storageUnitName === "Cabinet A");
+    assert.ok(unitRow);
+    assert.strictEqual(unitRow.locationCode, "");
+  });
+
+  it("does not invent a location for a product with no stock", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      products: [{ _id: "prod-2", name: "Empty Product", totalQuantity: 0 }],
+      productRecords: [],
+      storageLocations: [],
+      storageUnits: [],
+    });
+    const row = rows.find((r) => r.name === "Empty Product");
+    assert.strictEqual(row.locationCode, "");
+    assert.deepStrictEqual(row.assignments, []);
+  });
+
+  it("exports floor dimensions in metres", function () {
+    const [row] = buildLocationRows(FIXTURE);
+    assert.strictEqual(row.floorWidth, 12);
+    assert.strictEqual(row.floorHeight, 8);
+  });
 });
