@@ -35,6 +35,7 @@ const PERMISSIONS = {
   "route:/floor-map": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,
   "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
+  "route:/scan": ROLES.STANDARD, // camera scanner nav entry — all staff (page itself lives on another branch)
   "route:/qr-codes": ROLES.ADMIN,
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,

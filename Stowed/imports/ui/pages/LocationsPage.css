@@ -202,6 +202,49 @@
 
 .locations-path {
   color: var(--text-muted);
+  white-space: normal;
+}
+
+/* Stocktake status on its own row, last-counted + product count together
+   on the next — folded into the Details column instead of their own
+   separate columns. */
+.locations-details-status-row {
+  margin-top: 5px;
+}
+
+.locations-details-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 4px;
+}
+
+.locations-last-counted {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Shown only on phone, where the Products column is hidden — see the
+   media query below. */
+.locations-product-count-inline,
+.locations-meta-separator {
+  display: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .locations-products-cell {
+    display: none;
+  }
+
+  .locations-product-count-inline,
+  .locations-meta-separator {
+    display: inline;
+  }
 }
 
 .locations-status-badge {
@@ -213,19 +256,22 @@
   white-space: nowrap;
 }
 
+/* Use the app's own stat-card tints (Global.css) instead of generic
+   red/yellow/green — keeps the badge in the same warm palette as the
+   rest of the page instead of clashing with it. */
 .locations-status-badge.overdue {
-  background: #ffebe8;
-  color: #a23629;
+  background: var(--bg-orange);
+  color: var(--accent-orange);
 }
 
 .locations-status-badge.due-soon {
-  background: #fff3d8;
-  color: #8a5a00;
+  background: var(--bg-yellow);
+  color: var(--accent-yellow);
 }
 
 .locations-status-badge.ok {
-  background: #e7f7ef;
-  color: #176548;
+  background: var(--bg-green);
+  color: var(--accent-green);
 }
 
 .locations-row-actions,
@@ -255,6 +301,88 @@
 }
 
 .locations-row-actions button.danger {
+  color: var(--danger);
+}
+
+/* -- Row actions cell: always a "⋮" popup instead of spelled-out text
+   links — keeps the actions column narrow at every width, table stays a
+   real table (horizontal scroll on a narrow screen, see
+   .locations-table-shell) rather than reflowing into cards. -- */
+
+.locations-actions-cell {
+  position: relative;
+}
+
+.locations-row-actions {
+  display: none;
+}
+
+.locations-row-menu-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.locations-row-menu-trigger:hover,
+.locations-row-menu-trigger[aria-expanded="true"] {
+  background: var(--input-bg);
+  color: var(--text-dark);
+}
+
+.locations-row-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 150px;
+  width: max-content;
+  max-width: calc(100vw - 48px);
+  padding: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: 0 10px 30px rgba(26, 26, 26, 0.14);
+  z-index: 50;
+}
+
+.locations-row-menu span {
+  display: block;
+}
+
+.locations-row-menu button,
+.locations-row-menu a {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dark);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.locations-row-menu button:hover,
+.locations-row-menu a:hover {
+  background: var(--input-bg);
+}
+
+.locations-row-menu button.danger {
   color: var(--danger);
 }
 
@@ -476,8 +604,15 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .locations-toolbar input,
-  .locations-toolbar select {
+  /* Search stays full-width above; the two selects always stay side by
+     side below it — never stacked — and shrink/wrap their label text
+     instead of forcing a third row. */
+  .locations-toolbar input {
     grid-column: 1 / -1;
+  }
+
+  .locations-toolbar select {
+    min-width: 0;
+    white-space: normal;
   }
 }

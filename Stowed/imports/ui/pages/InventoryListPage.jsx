@@ -395,6 +395,12 @@ export function InventoryListPage() {
                   <Link to={`/inventory/${item._id}`} className="item-view-more">
                     View more
                   </Link>
+                  {/* Phone card only — combines the quantity and location
+                      columns into one "x N at ..." line instead of two;
+                      desktop/tablet keep those as separate columns above. */}
+                  <span className="item-location-quantity-mobile">
+                    x {item.totalQuantity} at {getLocationLabel(item._id)}
+                  </span>
                   <label className="row-select">
                     <input
                       type="checkbox"

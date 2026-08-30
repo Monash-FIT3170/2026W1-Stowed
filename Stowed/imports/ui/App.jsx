@@ -53,15 +53,9 @@ export function App() {
           }}
         >
           {isLoggedIn && <Sidebar />}
-          <main
-            className="flex-1 overflow-y-auto"
-            style={{
-              backgroundColor: "var(--bg-primary)",
-              flex: 1,
-              overflowY: "auto",
-              marginLeft: isLoggedIn ? "200px" : "0",
-            }}
-          >
+          {/* Layout is in Sidebar.css, not inline: a media query cannot override
+              an inline style, so the dock could never reclaim this margin. */}
+          <main className={`app-main${isLoggedIn ? " with-sidebar" : ""}`}>
             <Routes>
               {/* public routes */}
               <Route path="/register" element={<Register />} />

@@ -4,8 +4,10 @@
 
 /* -- Tokens -- */
 
+/* The ONLY :root token block — do not redefine these in page CSS files */
 :root {
   --bg-primary: #f5efe6;
+  --bg-light: #f5efe6;
   --text-dark: #1a1a1a;
   --text-muted: #998874;
   --accent-primary: #b5532a;
@@ -28,6 +30,17 @@
   --status-out-of-stock-text: #991b1b;
   --dark: #2b1f1a;
   --cream: #fff6ef;
+  /* stat-card tints (dashboard, role badges) */
+  --accent-green: #4a8c78;
+  --accent-orange: #b5532a;
+  --accent-yellow: #997a2a;
+  --bg-green: #d6efe8;
+  --bg-orange: #fae0d6;
+  --bg-yellow: #fdf3d6;
+}
+
+body {
+  font-family: Inter, sans-serif;
 }
 
 body {
@@ -60,15 +73,30 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap; /* status pill drops below the title instead of touching it */
+}
+
+/* When the header holds an action button, keep it pinned top-right next to
+   the title instead of wrapping below (the title text wraps instead) */
+.header-top:has(.btn-primary) {
+  flex-wrap: nowrap;
+}
+
+.header-top .btn-primary {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* -- Page title -- */
 
 .header-title {
-  font-size: 28px;
+  font-size: clamp(20px, 6vw, 28px); /* 28px on laptop, ~22px on phones */
+  font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
   color: var(--text-dark);
   margin: 4px 0 8px 0;
+  min-width: 0; /* let the flex item shrink so long titles wrap instead of overflowing */
+  overflow-wrap: break-word;
 }
 
 .header-title em {
@@ -102,6 +130,87 @@ body {
 .breadcrumb-current {
   color: var(--text-muted);
   font-weight: 600;
+}
+
+/* -- Shared two-column form/detail layout (ProductDetail, CreateProduct) -- */
+
+.product-detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  padding: 18px 28px 48px 28px;
+}
+
+.left-column,
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* Without this, a grid item won't shrink below its content's natural
+     width — a wide table inside (with its own overflow-x: auto) would
+     force the whole page wider instead of scrolling internally. */
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .product-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+}
+
+/* -- Shared card list header (dashboard, inventory list, accounts) -- */
+
+.recent-items-title {
+  font-family: Georgia, serif;
+  font-weight: 500;
+  font-size: 20px;
+}
+
+.recent-items-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* -- Shared search bar -- */
+
+.search-bar-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  flex: 1;
+  background: var(--bg-primary);
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: 12px;
+  border: none;
+  outline: none;
+}
+
+/* -- Shared list/table bits -- */
+
+.item-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.item-name-link:hover {
+  text-decoration: underline;
+}
+
+.item-location {
+  color: var(--text-muted);
+}
+
+.empty-state {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 /* -- Cards -- */
@@ -498,6 +607,20 @@ select.form-input.selected {
   font-size: 10px;
   font-weight: 500;
   display: inline-block;
+}
+
+/* -- Phone: tighter page gutters so headers align with page content -- */
+
+@media (max-width: 768px) {
+  .product-detail-header {
+    padding: 16px 16px 4px;
+  }
+
+  /* compact action button so it fits beside the title on phones */
+  .header-top .btn-primary {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
 }
 
 /* -- sr-only utility -- */

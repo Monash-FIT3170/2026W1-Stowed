@@ -224,14 +224,16 @@ export function AlertsPage() {
 
                       <div className="alert-actions">
                         <a className="btn-secondary" href={`/stocktake/${alert.location._id}`}>
-                          Update stock
+                          <span className="alert-action-label-full">Update stock</span>
+                          <span className="alert-action-label-short">Update</span>
                         </a>
                         <button
                           type="button"
                           className="btn-primary"
                           onClick={() => handleMarkComplete(alert)}
                         >
-                          Mark complete
+                          <span className="alert-action-label-full">Mark complete</span>
+                          <span className="alert-action-label-short">Complete</span>
                         </button>
                       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
@@ -234,7 +234,26 @@ function RecentActivityWidget({ activities, activitiesLoading, existingProductId
   const [visibleCount, setVisibleCount] = useState(RECENT_ACTIVITY_BATCH_SIZE);
   const visibleActivities = activities.slice(0, visibleCount);
   const remainingCount = Math.max(activities.length - visibleActivities.length, 0);
-  const nextBatchCount = Math.min(RECENT_ACTIVITY_BATCH_SIZE, remainingCount);
+  const sentinelRef = useRef(null);
+
+  // Load the next batch as the sentinel at the bottom of the list scrolls
+  // into view — a lazily-growing column instead of a "Show N more" click.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (remainingCount === 0 || !sentinel) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount((current) =>
+            Math.min(current + RECENT_ACTIVITY_BATCH_SIZE, activities.length),
+          );
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [remainingCount, activities.length]);
 
   return (
     <DashboardWidget
@@ -313,24 +332,11 @@ function RecentActivityWidget({ activities, activitiesLoading, existingProductId
               </div>
             );
           })}
+          {remainingCount > 0 && (
+            <div ref={sentinelRef} className="dashboard-recent-sentinel" aria-hidden="true" />
+          )}
         </div>
       </div>
-      {remainingCount > 0 && (
-        <div className="dashboard-recent-footer">
-          <button
-            type="button"
-            className="dashboard-show-more-button"
-            onClick={() =>
-              setVisibleCount((current) =>
-                Math.min(current + RECENT_ACTIVITY_BATCH_SIZE, activities.length),
-              )
-            }
-          >
-            Show {nextBatchCount} more
-          </button>
-          <span>{remainingCount.toLocaleString()} remaining</span>
-        </div>
-      )}
     </DashboardWidget>
   );
 }
