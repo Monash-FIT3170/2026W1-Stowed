@@ -48,9 +48,11 @@ export const Canvas = forwardRef(function Canvas(
   const height = floorSize.height;
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
+  const snapInterval = canvasSettings?.snapInterval ?? CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL;
   const showGrid = isCanvasEditMode ? (canvasSettings?.showGrid ?? true) : false;
   const snapEnabled = canvasSettings?.snapToGrid ?? true;
   const gridSizePx = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
+  const snapSizePx = snapInterval * CANVAS_CONFIG.PIXELS_PER_METER;
 
   const stageRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -87,14 +89,20 @@ export const Canvas = forwardRef(function Canvas(
     stageRef,
     groupRefs,
     snapEnabled,
-    gridSizePx,
-    gridInterval,
+    snapSizePx,
+    snapInterval,
     width,
     height,
     wrapperRef,
     clipboard,
     isCanvasEditMode,
   });
+
+  useEffect(() => {
+    if (!isCanvasEditMode) {
+      dispatch({ type: CANVAS_ACTIONS.DESELECT_ALL });
+    }
+  }, [isCanvasEditMode]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -208,7 +216,7 @@ export const Canvas = forwardRef(function Canvas(
               selectedIds={selectedIds}
               units={units}
               snapEnabled={snapEnabled}
-              gridSizePx={gridSizePx}
+              snapSizePx={snapSizePx}
             />
 
             <LowStockLayer

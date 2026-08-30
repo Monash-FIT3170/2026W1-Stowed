@@ -17,8 +17,8 @@ import { CANVAS_CONFIG } from "../CanvasConfig";
  * @param {React.Ref}   stageRef
  * @param {React.Ref}   groupRefs       - Mutable map of unit id -> Konva Group ref
  * @param {boolean}     snapEnabled
- * @param {number}      gridSizePx
- * @param {number}      gridInterval    - Snap interval in metres
+ * @param {number}      snapSizePx      - Snap interval in pixels
+ * @param {number}      snapInterval    - Snap interval in metres
  * @param {number}      width           - Floor width in pixels
  * @param {number}      height          - Floor height in pixel.
  * @param {React.Ref}   wrapperRef
@@ -36,8 +36,8 @@ export function useCanvasHandlers({
   stageRef,
   groupRefs,
   snapEnabled,
-  gridSizePx,
-  gridInterval,
+  snapSizePx,
+  snapInterval,
   width,
   height,
   wrapperRef,
@@ -81,8 +81,8 @@ export function useCanvasHandlers({
     const wPixels = template.width * CANVAS_CONFIG.PIXELS_PER_METER;
     const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : x - wPixels / 2;
-    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : y - hPixels / 2;
+    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, snapSizePx) : x - wPixels / 2;
+    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, snapSizePx) : y - hPixels / 2;
 
     const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
     if (!pointInGrid) return null;
@@ -149,8 +149,8 @@ export function useCanvasHandlers({
     const wPixels = template.width * CANVAS_CONFIG.PIXELS_PER_METER;
     const hPixels = template.height * CANVAS_CONFIG.PIXELS_PER_METER;
 
-    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, gridSizePx) : x - wPixels / 2;
-    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, gridSizePx) : y - hPixels / 2;
+    const snappedX = snapEnabled ? snapToGrid(x - wPixels / 2, snapSizePx) : x - wPixels / 2;
+    const snappedY = snapEnabled ? snapToGrid(y - hPixels / 2, snapSizePx) : y - hPixels / 2;
 
     const pointInGrid = x >= 0 && y >= 0 && x <= width && y <= height;
     if (!pointInGrid) return;
@@ -220,10 +220,10 @@ export function useCanvasHandlers({
   }
 
   function handleDragMove(e, unitId) {
-    if (selectedIds.size <= 1 || !selectedIds.has(unitId)) return;
-
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
     const draggedUnit = units.find((u) => u.id === unitId);
+    if (!draggedUnit) return;
+
     const deltaX = e.target.x() / px - draggedUnit.x;
     const deltaY = e.target.y() / px - draggedUnit.y;
 
@@ -231,6 +231,8 @@ export function useCanvasHandlers({
       type: CANVAS_ACTIONS.SET_DRAG_OFFSETS,
       payload: { deltaX, deltaY, unitId },
     });
+
+    if (selectedIds.size <= 1 || !selectedIds.has(unitId)) return;
 
     // Do not use dispatch for ref.current for performance
     [...selectedIds].forEach((id) => {
@@ -247,8 +249,8 @@ export function useCanvasHandlers({
     const px = CANVAS_CONFIG.PIXELS_PER_METER;
     const rawXm = e.target.x() / px;
     const rawYm = e.target.y() / px;
-    const snappedXm = snapEnabled ? snapToGrid(rawXm, gridInterval) : rawXm;
-    const snappedYm = snapEnabled ? snapToGrid(rawYm, gridInterval) : rawYm;
+    const snappedXm = snapEnabled ? snapToGrid(rawXm, snapInterval) : rawXm;
+    const snappedYm = snapEnabled ? snapToGrid(rawYm, snapInterval) : rawYm;
 
     dispatch({ type: CANVAS_ACTIONS.CLEAR_DRAG_OFFSETS });
 
@@ -325,15 +327,20 @@ export function useCanvasHandlers({
 
     const rawWPx = unit.width * px * scaleX;
     const rawHPx = unit.height * px * scaleY;
-    const snappedWPx = snapEnabled ? snapToGrid(rawWPx, gridSizePx) : rawWPx;
-    const snappedHPx = snapEnabled ? snapToGrid(rawHPx, gridSizePx) : rawHPx;
+    const snappedWPx = snapEnabled ? snapToGrid(rawWPx, snapSizePx) : rawWPx;
+    const snappedHPx = snapEnabled ? snapToGrid(rawHPx, snapSizePx) : rawHPx;
 
     const minPx = 0.5 * px;
     const finalWPx = Math.max(minPx, snappedWPx);
     const finalHPx = Math.max(minPx, snappedHPx);
 
+    // mandate anchor point not to fall off the top or left edge of the canvas
+    // + anchor point must allow shape dimensions on the page (i.e. width and height)
+    // edge case: if unit width/height exceeds canvas bounds
     const clampedXPx = Math.max(0, Math.min(node.x(), width - finalWPx));
     const clampedYPx = Math.max(0, Math.min(node.y(), height - finalHPx));
+    // confirm shape dimensions are smaller than the canvas
+    const isOutOfBounds = width < finalWPx || height < finalHPx;
 
     node.scaleX(1);
     node.scaleY(1);
@@ -363,7 +370,7 @@ export function useCanvasHandlers({
       shape: isCustomShape ? { ...unit.shape, points: scaledPoints } : unit.shape,
     };
 
-    if (checkCollisions(proposedUnit, unit.id)) {
+    if (isOutOfBounds || checkCollisions(proposedUnit, unit.id)) {
       node.x(unit.x * px);
       node.y(unit.y * px);
       return;

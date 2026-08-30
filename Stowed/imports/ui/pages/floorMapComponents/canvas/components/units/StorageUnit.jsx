@@ -29,12 +29,7 @@ export function StorageUnit({
   const canMove = isCanvasEditMode;
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
-  const isCustomShape =
-    unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
-
-  const polygonPoints = isCustomShape
-    ? unit.shape.points.flatMap((point) => [point.x * px, point.y * px])
-    : [];
+  const isCustomShape = isDrawnShape(unit);
 
   return (
     <Group
@@ -51,7 +46,7 @@ export function StorageUnit({
       {/* MAIN BODY */}
       {isCustomShape ? (
         <Line
-          points={polygonPoints}
+          points={flattenPoints(unit)}
           closed
           fill={unit.fill}
           stroke={isSelected ? COLOURS.ACCENT : "transparent"}
@@ -65,7 +60,7 @@ export function StorageUnit({
           fill={unit.fill}
           stroke={isSelected ? COLOURS.ACCENT : "transparent"}
           strokeWidth={2}
-          cornerRadius={4}
+          cornerRadius={0}
           opacity={0.85}
         />
       )}
@@ -93,5 +88,18 @@ export function StorageUnit({
         listening={false}
       />
     </Group>
+  );
+}
+
+// helper function to convert DB points into konva format (flat)
+export function flattenPoints(unit) {
+  const px = CANVAS_CONFIG.PIXELS_PER_METER;
+  return unit.shape.points.flatMap((point) => [point.x * px, point.y * px]);
+}
+
+// helper function to determine backwards compatability requirement
+export function isDrawnShape(unit) {
+  return (
+    unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3
   );
 }
