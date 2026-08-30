@@ -76,7 +76,7 @@ function FloorMapPageInner() {
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
   // Fetch all sites, floor maps, storage units and shapes
-  const { sites, floorMaps, storageUnits, mapShapes, locationsReady } = useTracker(() => {
+  const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
