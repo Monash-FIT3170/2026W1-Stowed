@@ -1,0 +1,814 @@
+/* ListsPage.css - shopping lists page */
+
+.lists-header,
+.lists-body {
+  width: 100%;
+  min-width: 860px;
+}
+
+/* Tablet/phone: the 860px floor above forces the whole page to
+   horizontal-scroll on any screen narrower than that, regardless of how
+   the table itself is laid out — drop it so the page actually fits.
+   Desktop/laptop keeps the 860px floor untouched. */
+@media (max-width: 1024px) {
+  .lists-header,
+  .lists-body {
+    min-width: 0;
+  }
+}
+
+.lists-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.lists-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.lists-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.lists-body {
+  padding: 20px 28px 48px 28px;
+}
+
+/* -- Editable list name -- */
+
+.lists-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.lists-name-edit .form-input {
+  max-width: 360px;
+}
+
+.lists-name-edit-btn {
+  margin-left: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  vertical-align: middle;
+  opacity: 0.6;
+}
+
+.lists-name-edit-btn:hover {
+  opacity: 1;
+}
+
+/* -- Overview table (all active lists) -- */
+
+.lists-overview-header,
+.lists-overview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 1fr 0.6fr 1fr 0.8fr 0.8fr 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+}
+
+.lists-allocation-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lists-overview-header {
+  border-bottom: 1px dashed var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lists-overview-row {
+  border-bottom: 1px dotted var(--border-subtle);
+  font-size: 13px;
+  color: var(--text-dark);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+
+.lists-overview-row:last-child {
+  border-bottom: none;
+}
+
+.lists-overview-row:hover {
+  background: var(--tag-bg);
+}
+
+.lists-overview-site {
+  color: var(--text-muted);
+}
+
+/* Phone only: same "Details" idea as the Locations table — name and
+   status sharing the top line, then muted meta lines ("·" separated)
+   underneath — instead of 7 columns squeezed onto a narrow screen.
+   Rows stay plain list rows (same divider style as the desktop table),
+   not their own nested cards. Tablet/laptop keeps the original columns
+   above, untouched. */
+@media (max-width: 640px) {
+  .lists-overview-header {
+    display: none;
+  }
+
+  /* .section-content's own 20px padding stacks with each row's padding
+     below, insetting the list much further than the Inventory list (which
+     isn't wrapped in .section-content) — drop it here so the row padding
+     alone controls the inset, scoped to just this wrapper so nothing else
+     using .section-content elsewhere is affected. */
+  .section-content:has(.lists-overview-row) {
+    padding: 0;
+  }
+
+  .lists-overview-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name status"
+      "items site"
+      "purchased received"
+      "allocated allocated";
+    row-gap: 6px;
+    column-gap: 10px;
+    padding: 14px 16px;
+    align-items: center;
+  }
+
+  .lists-overview-row > span:nth-child(1) {
+    grid-area: name;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .lists-overview-row > span:nth-child(2) {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .lists-overview-row > span:nth-child(3) {
+    grid-area: items;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(3)::after {
+    content: " items";
+  }
+
+  .lists-overview-site {
+    grid-area: site;
+    justify-self: end;
+    font-size: 12px;
+  }
+
+  .lists-overview-site::before {
+    content: "· ";
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(5) {
+    grid-area: purchased;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(5)::before {
+    content: "Purchased ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+
+  .lists-overview-row > span:nth-child(6) {
+    grid-area: received;
+    justify-self: end;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(6)::before {
+    content: "· Received ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+
+  .lists-allocation-cell {
+    grid-area: allocated;
+    justify-self: start;
+    margin-top: 2px;
+    padding: 6px 10px;
+    background: var(--input-bg);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-allocation-cell::before {
+    content: "Allocated ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+}
+
+/* -- Empty state -- */
+
+.lists-empty-card {
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.lists-empty-icon {
+  display: block;
+  font-size: 34px;
+  margin-bottom: 16px;
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.lists-empty-card .header-title {
+  font-size: 24px;
+  margin: 0 0 8px 0;
+}
+
+.lists-empty-card .section-empty {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.lists-empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lists-empty-warning {
+  border: 1px solid #e5b4b4;
+  border-left: 4px solid #c0392b;
+  border-radius: 6px;
+  background: #fdf3f2;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.lists-empty-warning-text {
+  color: #c0392b;
+  margin: 0 0 12px;
+}
+
+/* -- Stat tiles -- */
+
+.lists-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.lists-stat {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+.lists-stat-items {
+  background: #f9e2da;
+}
+.lists-stat-units {
+  background: #fbf3d1;
+}
+.lists-stat-cost {
+  background: #d9ebe2;
+}
+
+.lists-stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.lists-stat-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--tag-text);
+}
+
+/* -- Layout -- */
+
+.lists-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  align-items: start;
+  gap: 20px;
+}
+
+.lists-card {
+  font-variant-numeric: tabular-nums;
+}
+
+.lists-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.lists-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 20px;
+}
+
+/* -- List card header -- */
+
+/* -- Filter pills -- */
+
+.lists-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lists-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.lists-filter.is-active {
+  background: var(--tag-bg);
+  border-color: var(--accent-secondary);
+  color: var(--accent-primary);
+}
+
+.lists-filter-count {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.lists-filter.is-active .lists-filter-count {
+  color: var(--accent-primary);
+}
+
+/* -- Toolbar -- */
+
+.lists-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.lists-no-match {
+  display: block;
+  padding: 28px 0;
+  text-align: center;
+}
+
+/* -- Table -- */
+
+.lists-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lists-table th {
+  padding: 0 10px 10px 10px;
+  border-bottom: 1px dashed var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.lists-table td {
+  padding: 11px 10px;
+  border-bottom: 1px dotted var(--border-subtle);
+  font-size: 13px;
+  color: var(--text-dark);
+  vertical-align: middle;
+}
+
+.lists-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lists-table th.lists-col-num,
+.lists-table td.lists-col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lists-table th:first-child,
+.lists-table td:first-child {
+  min-width: 340px;
+}
+
+.saved-list-card .lists-table th:first-child,
+.saved-list-card .lists-table td:first-child {
+  min-width: 300px;
+}
+
+.lists-product-name {
+  display: block;
+  font-weight: 600;
+}
+
+.lists-product-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.lists-row-purchased td:not(.lists-col-check):not(.lists-col-remove) {
+  position: relative;
+  color: var(--text-muted);
+}
+
+.lists-row-purchased td:not(.lists-col-check):not(.lists-col-remove)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--text-muted);
+  pointer-events: none;
+}
+
+.lists-table th.lists-col-check,
+.lists-table td.lists-col-check {
+  text-align: center;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.lists-col-check input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  appearance: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.lists-col-check input[type="checkbox"]:checked {
+  background-color: var(--accent-primary);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 8l3.5 3.5L13 5' stroke='%23ffffff' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 13px 13px;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(181, 83, 42, 0.12);
+}
+
+.lists-col-check input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.lists-progress {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.lists-saved-qty {
+  display: inline-flex;
+  min-width: 56px;
+  justify-content: center;
+}
+
+.lists-col-check input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+input.lists-qty-input {
+  width: 64px;
+  text-align: right;
+  padding: 5px 7px;
+}
+
+input.lists-qty-input:disabled {
+  background: var(--tag-bg, #f2f2f2);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* -- Remove -- */
+
+.lists-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.lists-table th.lists-col-remove,
+.lists-table td.lists-col-remove {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lists-remove-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.lists-remove-btn:hover:not(:disabled) {
+  background: var(--tag-bg);
+  border-color: var(--border-subtle);
+  color: var(--accent-primary);
+}
+
+.lists-remove-btn:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.lists-remove-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.lists-remove-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lists-remove-yes,
+.lists-remove-no {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lists-remove-yes {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.lists-remove-no {
+  background: #ffffff;
+  color: var(--text-muted);
+}
+
+/* -- Add manually -- */
+
+.lists-add-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.lists-add-product {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.lists-add-qty {
+  width: 96px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.lists-add-btn {
+  flex-shrink: 0;
+}
+
+.lists-divider td {
+  border-bottom: none;
+  border-top: 1px dashed var(--border-subtle);
+  padding: 16px 10px 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* -- Sidebar -- */
+
+.lists-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lists-schedule-note {
+  margin: 14px 0 0 0;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.lists-warning-note {
+  margin: 12px 0 0 0;
+  padding: 10px 12px;
+  border: 1px solid #ead3a8;
+  border-radius: 10px;
+  background: #fff4dc;
+  color: #8a6a34;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.lists-table + .lists-warning-note,
+.lists-warning-note + .lists-table {
+  margin-top: 14px;
+}
+
+.lists-allocation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lists-allocation-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.2fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--border-subtle);
+}
+
+.lists-allocation-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.lists-allocation-product {
+  min-width: 0;
+}
+
+.lists-allocation-select {
+  min-width: 0;
+}
+
+.lists-allocation-btn {
+  min-width: 88px;
+}
+
+.lists-full-btn {
+  width: 100%;
+}
+
+.lists-archive-btn {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  font-size: 14px;
+  box-shadow: 0 10px 22px rgba(181, 83, 42, 0.16);
+}
+
+/* -- Narrow screens -- */
+
+@media (max-width: 1340px) {
+  .lists-header,
+  .lists-body {
+    width: auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .lists-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lists-sidebar {
+    position: static;
+  }
+
+  .lists-stats {
+    flex-wrap: wrap;
+  }
+
+  .lists-allocation-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 620px) {
+  .lists-toolbar,
+  .lists-add-row {
+    flex-wrap: wrap;
+  }
+
+  .lists-add-qty {
+    width: 100%;
+  }
+
+  .lists-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+.lists-budget-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.lists-budget-row .form-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.lists-budget-row .form-group > label {
+  display: block;
+  margin: 0 0 6px;
+  line-height: 1.2;
+  min-height: 1.2em;
+}
+
+.lists-budget-row .form-input {
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.lists-budget-amount {
+  flex: 0 0 160px;
+}
+
+.lists-budget-strategy {
+  flex: 1 1 280px;
+  max-width: 380px;
+}
+
+.lists-preview {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.lists-preview-skipped {
+  margin-top: 4px;
+}

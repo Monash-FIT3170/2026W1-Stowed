@@ -7,58 +7,67 @@ describe("statusBadge (boundary-safe)", function () {
   const render = (quantity, threshold) =>
     renderToStaticMarkup(React.createElement(StatusBadge, { quantity, threshold }));
 
+  const label = (quantity, threshold) => {
+    const match = render(quantity, threshold).match(/>([^<]+)<\/span>/);
+    return match ? match[1] : null;
+  };
+
   describe("NULL threshold", function () {
     it("renders In stock when threshold is null", function () {
-      const html = render(10, null);
-      assert.ok(html.includes("In stock"));
+      assert.strictEqual(label(10, null), "In stock");
+    });
+
+    it("still renders Out of stock at zero when threshold is null", function () {
+      assert.strictEqual(label(0, null), "Out of stock");
     });
   });
 
   describe("LOW boundary (≤ threshold)", function () {
-    it("Low! at exactly threshold", function () {
-      const html = render(20, 20);
-      assert.ok(html.includes("Low!"));
+    it("Low stock at exactly threshold", function () {
+      assert.strictEqual(label(20, 20), "Low stock");
     });
 
-    it("Low! just below threshold", function () {
-      const html = render(19, 20);
-      assert.ok(html.includes("Low!"));
-    });
-  });
-
-  describe("GETTING LOW boundary (threshold < q ≤ 1.5×threshold)", function () {
-    it("Getting low just above threshold", function () {
-      const html = render(21, 20);
-      assert.ok(html.includes("Getting low"));
+    it("Low stock just below threshold", function () {
+      assert.strictEqual(label(19, 20), "Low stock");
     });
 
-    it("Getting low at 1.5x threshold", function () {
-      const html = render(30, 20);
-      assert.ok(html.includes("Getting low"));
-    });
-
-    it("Getting low just below 1.5x threshold", function () {
-      const html = render(29, 20);
-      assert.ok(html.includes("Getting low"));
+    it("Low stock at one unit remaining", function () {
+      assert.strictEqual(label(1, 20), "Low stock");
     });
   });
 
-  describe("IN STOCK boundary (> 1.5× threshold)", function () {
-    it("In stock just above 1.5x threshold", function () {
-      const html = render(31, 20);
-      assert.ok(html.includes("In stock"));
+  describe("IN STOCK boundary (> threshold)", function () {
+    it("In stock just above threshold", function () {
+      assert.strictEqual(label(21, 20), "In stock");
     });
 
     it("In stock far above threshold", function () {
-      const html = render(100, 20);
-      assert.ok(html.includes("In stock"));
+      assert.strictEqual(label(100, 20), "In stock");
     });
   });
 
   describe("ZERO edge case", function () {
-    it("Low! when quantity is 0", function () {
-      const html = render(0, 20);
-      assert.ok(html.includes("Low!"));
+    it("Out of stock when quantity is 0, even below a threshold", function () {
+      assert.strictEqual(label(0, 20), "Out of stock");
+    });
+
+    it("Out of stock when threshold is 0", function () {
+      assert.strictEqual(label(0, 0), "Out of stock");
+    });
+  });
+
+  describe("presentation", function () {
+    it("carries no hazard icon or exclamation mark in any state", function () {
+      [render(0, 20), render(5, 20), render(50, 20)].forEach((html) => {
+        assert.ok(!html.includes("⚠"));
+        assert.ok(!html.includes("!"));
+      });
+    });
+
+    it("uses the shared status colour tokens", function () {
+      assert.ok(render(50, 20).includes("var(--status-in-stock-bg)"));
+      assert.ok(render(5, 20).includes("var(--status-low-stock-bg)"));
+      assert.ok(render(0, 20).includes("var(--status-out-of-stock-bg)"));
     });
   });
 });

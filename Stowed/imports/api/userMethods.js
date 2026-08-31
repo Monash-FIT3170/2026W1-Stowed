@@ -18,21 +18,27 @@ const PERMISSIONS = {
   "products.create": ROLES.ADMIN, // create new products + assign locations
   "products.update": ROLES.ADMIN, // edit product details / reassign locations
   "products.delete": ROLES.ADMIN, // Allow Admin
-  "products.restock": ROLES.STANDARD, // add stock - all staff can do this
+  "products.restock": ROLES.STANDARD, // add stock — all staff can do this
+  "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
   "products.findByCode": ROLES.STANDARD, // resolve a scanned barcode to a product
   "products.adjustStock": ROLES.STANDARD, // scan-driven +/- and set-count stock updates
   "products.bulkGenerateCodes": ROLES.ADMIN,
+  "productCategories.manage": ROLES.ADMIN, // create new categories for products
+  "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
   "locations.bulkGenerateCodes": ROLES.ADMIN,
+  "settings.manage": ROLES.ADMIN,
 
   // Routes
+  "route:/dashboard": ROLES.STANDARD,
   "route:/inventory": ROLES.STANDARD,
   "route:/locations": ROLES.STANDARD,
   "route:/floor-map": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,
+  "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
   "route:/scan": ROLES.STANDARD, // camera scanner — all staff
   "route:/qr-codes": ROLES.STANDARD, // codes hub — workers print/scan labels too
   "route:/forecast": ROLES.ADMIN,
@@ -41,6 +47,19 @@ const PERMISSIONS = {
   "route:/edit-product": ROLES.ADMIN,
   "route:/product-detail": ROLES.STANDARD,
   "route:/accounts": ROLES.OWNER,
+
+  // Shopping Lists
+  "shoppingLists.create": ROLES.STANDARD,
+  "shoppingLists.update": ROLES.STANDARD,
+  "shoppingLists.rename": ROLES.STANDARD,
+  "shoppingLists.delete": ROLES.STANDARD,
+  "shoppingLists.share": ROLES.STANDARD,
+
+  // Schedules
+  "schedules.create": ROLES.STANDARD,
+  "schedules.update": ROLES.STANDARD,
+  "schedules.setActive": ROLES.STANDARD,
+  "schedules.delete": ROLES.STANDARD,
 };
 
 // returns the role of the user
@@ -228,6 +247,28 @@ Meteor.methods({
       }
       throw err;
     }
+  },
+
+  // returns org members as candidate recipients for sharing a shopping list by email
+  "shoppingLists.listRecipients": async function () {
+    await requirePermission(this.userId, "shoppingLists.share");
+
+    const orgId = await getCallerOrgId(this.userId);
+    if (!orgId) {
+      throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+    }
+
+    const members = await Meteor.users
+      .find({ "profile.organisationId": orgId }, { fields: { "profile.username": 1, emails: 1 } })
+      .fetchAsync();
+
+    return members
+      .filter((member) => member.emails?.[0]?.address)
+      .map((member) => ({
+        _id: member._id,
+        username: member.profile?.username ?? "",
+        email: member.emails[0].address,
+      }));
   },
 
   // delete accounts method for owner

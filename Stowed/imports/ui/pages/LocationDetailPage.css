@@ -1,0 +1,291 @@
+.location-detail-page .location-detail-hero {
+  margin-top: 16px;
+}
+
+.location-detail-icon {
+  font-size: 40px;
+  color: var(--accent-primary);
+}
+
+.location-detail-status {
+  display: inline-flex;
+  margin-bottom: 7px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.location-detail-status.overdue {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.location-detail-status.due-soon {
+  background: #fff3d8;
+  color: #8a5a00;
+}
+
+.location-detail-status.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.location-detail-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+}
+
+.location-detail-section-count {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.location-product-table {
+  overflow-x: auto;
+}
+
+.location-product-header,
+.location-product-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(80px, 1fr) 90px 80px 44px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 18px;
+}
+
+.location-product-header {
+  border-bottom: 1px solid var(--border-light);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+}
+
+.location-product-row {
+  min-width: 600px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+}
+
+.location-product-row:last-child {
+  border-bottom: 0;
+}
+
+.location-product-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.location-product-identity a,
+.location-product-view {
+  color: var(--text-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.location-product-identity a:hover,
+.location-product-view:hover {
+  text-decoration: underline;
+}
+
+.location-product-sku {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-product-view {
+  color: var(--accent-primary);
+  font-size: 11px;
+}
+
+.location-detail-empty,
+.location-detail-message {
+  padding: 38px 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.location-detail-list {
+  margin: 0;
+}
+
+.location-detail-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.location-detail-list > div:first-child {
+  padding-top: 0;
+}
+
+.location-detail-list > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.location-detail-list dt {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.location-detail-list dd {
+  margin: 0;
+  color: var(--text-dark);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  text-transform: capitalize;
+}
+
+.location-detail-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.location-detail-summary > div {
+  padding: 13px;
+  border-radius: 9px;
+  background: var(--input-bg);
+}
+
+.location-detail-summary strong,
+.location-detail-summary span {
+  display: block;
+}
+
+.location-detail-summary strong {
+  margin-bottom: 3px;
+  font-size: 22px;
+}
+
+.location-detail-summary span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Bottom action bar: hidden by default (desktop keeps the header button
+   only) and turned on inside the tablet/phone media query below. */
+.location-detail-mobile-actions {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .location-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Location details / Stocktake schedule / Stock summary: side by side
+     under the inventory table instead of one long stacked column — up
+     to 3 across, dropping to fewer automatically as space gets tighter
+     (down to 1 on a phone). */
+  .location-detail-grid .right-column {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+
+  /* "Inventory stored here": let the columns shrink to fit instead of
+     forcing a 600px-wide horizontal scroll — everything stays visible
+     without side-scrolling down to phone width, where it switches to a
+     card layout below. */
+  .location-product-table {
+    overflow-x: visible;
+  }
+
+  .location-product-header,
+  .location-product-row {
+    grid-template-columns: minmax(110px, 1.8fr) minmax(60px, 1fr) 60px 60px 34px;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .location-product-row {
+    min-width: 0;
+  }
+
+  /* Primary CTA moves to the bottom of the page; the header copy hides so
+     it isn't shown twice. */
+  .location-detail-desktop-cta {
+    display: none;
+  }
+
+  .location-detail-mobile-actions {
+    display: block;
+    margin: 20px 24px 0;
+  }
+
+  .location-detail-mobile-actions .btn-primary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  /* "Inventory stored here" rows become cards: name + view link on top,
+     SKU underneath, quantity-here/total-stock paired below — same
+     "Details" visual language used elsewhere instead of a cramped grid. */
+  .location-product-header {
+    display: none;
+  }
+
+  .location-product-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "identity view"
+      "sku sku"
+      "qty total";
+    row-gap: 4px;
+    padding: 12px 16px;
+  }
+
+  .location-product-identity {
+    grid-area: identity;
+  }
+
+  .location-product-view {
+    grid-area: view;
+    justify-self: end;
+  }
+
+  .location-product-sku {
+    grid-area: sku;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .location-product-row > strong {
+    grid-area: qty;
+    font-size: 12px;
+  }
+
+  .location-product-row > strong::before {
+    content: "Here: ";
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .location-product-row > span:not(.location-product-sku):not(.location-product-view) {
+    grid-area: total;
+    justify-self: end;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .location-product-row > span:not(.location-product-sku):not(.location-product-view)::before {
+    content: "Total: ";
+  }
+}

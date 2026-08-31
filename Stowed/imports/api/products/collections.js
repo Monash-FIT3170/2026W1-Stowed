@@ -1,6 +1,6 @@
 import { Mongo } from "meteor/mongo";
 import "meteor/aldeed:collection2/static";
-import { ProductSchema, ProductRecordSchema } from "./schemas";
+import { ProductActivitySchema, ProductSchema, ProductRecordSchema } from "./schemas";
 
 /**
  * A Product represents a type of inventory item tracked in the system.
@@ -20,5 +20,13 @@ export const Products = new Mongo.Collection("products");
  */
 export const ProductRecords = new Mongo.Collection("productRecords");
 
+/**
+ * Immutable, organisation-scoped events used for inventory history and the
+ * dashboard activity feed. Product/user/location names are stored as snapshots
+ * so an event remains meaningful if the source document later changes.
+ */
+export const ProductActivities = new Mongo.Collection("productActivities");
+
 ProductRecords.attachSchema(ProductRecordSchema);
 Products.attachSchema(ProductSchema);
+ProductActivities.attachSchema(ProductActivitySchema);

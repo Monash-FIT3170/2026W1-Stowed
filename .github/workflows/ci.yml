@@ -65,3 +65,35 @@ jobs:
         run: npm test
         env:
           MOCHA_REPORTER: spec
+
+  deploy:
+    name: Deploy to Galaxy (free tier)
+    runs-on: ubuntu-latest
+    needs: [lint, test] # only deploy if lint AND test pass
+    # Only on a direct push to main - never on PRs or on develop.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    concurrency: # never run two deploys at once
+      group: galaxy-deploy
+      cancel-in-progress: false
+    environment: production # optional: add approval rules in repo settings
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Meteor 3.4.1
+        run: curl https://install.meteor.com/?release=3.4.1 | sh
+
+      - name: Add Meteor to PATH
+        run: echo "$HOME/.meteor" >> $GITHUB_PATH
+
+      - name: Install npm dependencies
+        working-directory: Stowed
+        run: npm ci
+
+      - name: Restore Meteor session
+        run: echo "${{ secrets.METEOR_SESSION }}" | base64 --decode > ~/.meteorsession
+
+      - name: Deploy to Galaxy
+        working-directory: Stowed
+        run: meteor deploy "${{ vars.GALAXY_APP_URL }}" --free

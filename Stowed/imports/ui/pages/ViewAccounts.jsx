@@ -4,6 +4,7 @@ import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
 import "../Global.css";
 import "./InventoryListPage.css";
+import "./ViewAccounts.css";
 import { ROLES } from "/imports/api/roles";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
@@ -67,11 +68,9 @@ export function ViewAccounts() {
   };
 
   return (
-    <div className="inventory-list-container">
+    <div className="view-accounts-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Account management</span>
-          <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">All accounts</span>
         </div>
         <div className="header-top">
@@ -86,7 +85,7 @@ export function ViewAccounts() {
         </div>
       </div>
 
-      <div style={{ padding: "0 28px 48px" }}>
+      <div className="inventory-list-body">
         <div className="search-bar-container">
           <input
             type="text"
@@ -105,7 +104,8 @@ export function ViewAccounts() {
               {filteredUsers.length} of {users.length} accounts shown
             </div>
           </div>
-          <div className="table-header" style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}>
+          <div className="table-header">
+            <span></span>
             <span>Username</span>
             <span>Email</span>
             <span>Role</span>
@@ -116,15 +116,18 @@ export function ViewAccounts() {
             <div className="empty-state">No accounts found.</div>
           ) : (
             filteredUsers.map((user) => (
-              <div
-                key={user._id}
-                className="table-row"
-                style={{ gridTemplateColumns: "1fr 2fr 1fr 100px" }}
-              >
-                <span style={{ fontWeight: 500 }}>{user.profile?.username}</span>
-                <span style={{ color: "var(--text-muted)" }}>{getEmail(user)}</span>
-                <span>{roleLabel(user.profile?.role)}</span>
-                <span>
+              <div key={user._id} className="table-row">
+                <div className="account-avatar">
+                  {(user.profile?.username || "?").charAt(0).toUpperCase()}
+                </div>
+                <span className="cell-username">{user.profile?.username}</span>
+                <span className="cell-email">{getEmail(user)}</span>
+                <span
+                  className={`cell-role role-${roleLabel(user.profile?.role).toLowerCase() || "none"}`}
+                >
+                  {roleLabel(user.profile?.role)}
+                </span>
+                <span className="cell-actions">
                   {canDeleteUsers && user._id !== currentUser?._id && (
                     <button
                       onClick={() => openDeleteModal(user._id)}

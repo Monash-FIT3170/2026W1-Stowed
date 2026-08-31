@@ -1,33 +1,58 @@
-import { useRef, useEffect, useReducer } from "react";
+import { useRef, useEffect, useReducer, forwardRef, useImperativeHandle } from "react";
 import { Stage } from "react-konva";
 import Konva from "konva";
+import { useTracker } from "meteor/react-meteor-data";
+import { Meteor } from "meteor/meteor";
 
 import { useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import {
+  StorageLocations,
+  StorageUnits,
+  FloorMaps,
+  Sites,
+} from "/imports/api/locations/collections";
 
 import { GridLayer } from "./layers/GridLayer";
 import { UnitLayer } from "./layers/UnitLayer";
 import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
+import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
 
 if (typeof window !== "undefined") {
   Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
 }
 
-export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip }) {
+export const Canvas = forwardRef(function Canvas(
+  { style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip },
+  ref,
+) {
   const { units, commitUnits, floorSize, canvasSettings } = useEditor();
+
+  const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
+    Meteor.subscribe("locations.all");
+
+    return {
+      storageLocations: StorageLocations.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      floorMaps: FloorMaps.find().fetch(),
+      sites: Sites.find().fetch(),
+    };
+  });
 
   const width = floorSize.width;
   const height = floorSize.height;
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
+  const snapInterval = canvasSettings?.snapInterval ?? CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL;
   const showGrid = isCanvasEditMode ? (canvasSettings?.showGrid ?? true) : false;
   const snapEnabled = canvasSettings?.snapToGrid ?? true;
   const gridSizePx = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
+  const snapSizePx = snapInterval * CANVAS_CONFIG.PIXELS_PER_METER;
 
   const stageRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -64,14 +89,20 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
     stageRef,
     groupRefs,
     snapEnabled,
-    gridSizePx,
-    gridInterval,
+    snapSizePx,
+    snapInterval,
     width,
     height,
     wrapperRef,
     clipboard,
     isCanvasEditMode,
   });
+
+  useEffect(() => {
+    if (!isCanvasEditMode) {
+      dispatch({ type: CANVAS_ACTIONS.DESELECT_ALL });
+    }
+  }, [isCanvasEditMode]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -120,6 +151,21 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleCopy, handlePaste, handleDuplicate, handleDelete]);
+
+  useImperativeHandle(ref, () => ({
+    exportPng() {
+      const stage = stageRef.current;
+      if (!stage) return;
+      stage.batchDraw();
+      requestAnimationFrame(() => {
+        const dataUrl = stage.toDataURL({ pixelRatio: 2 });
+        const link = document.createElement("a");
+        link.download = "floor-map.png";
+        link.href = dataUrl;
+        link.click();
+      });
+    },
+  }));
 
   return (
     <div
@@ -170,7 +216,7 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
               selectedIds={selectedIds}
               units={units}
               snapEnabled={snapEnabled}
-              gridSizePx={gridSizePx}
+              snapSizePx={snapSizePx}
             />
 
             <LowStockLayer
@@ -178,6 +224,16 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
               isCanvasEditMode={isCanvasEditMode}
               onHover={(data) => setTooltip?.(data)}
               onHoverEnd={() => setTooltip?.(null)}
+              onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+            />
+
+            <StocktakeAlertLayer
+              units={units}
+              storageLocations={storageLocations}
+              storageUnits={storageUnits}
+              floorMaps={floorMaps}
+              sites={sites}
+              isCanvasEditMode={isCanvasEditMode}
               onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
             />
           </Stage>
@@ -244,7 +300,7 @@ export function Canvas({ style, isCanvasEditMode, setSelectedStorageUnitId, setT
       </div>
     </div>
   );
-}
+});
 
 const zoomButtonStyle = {
   width: 26,

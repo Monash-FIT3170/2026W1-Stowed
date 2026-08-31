@@ -1,8 +1,9 @@
+export { getRecentlyUpdatedProducts } from "./products/filters";
+
 export const mockProducts = [
   {
     _id: "1",
     name: "AAA Battery Pack",
-    tag: "electrical",
     description: "Alkaline rechargeable AAA battery pack (4-pack).",
     photoUrl:
       "https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png",
@@ -14,9 +15,10 @@ export const mockProducts = [
     location: "Aisle 4 - Section 1",
     status: "OK",
     sku: "BAT-AAA-4",
-    category: "electrical",
+    category: "Electrical",
     brand: "Duracell",
     unitCost: 4.5,
+    purchaseCost: 2.9,
     images: [
       "https://www.duracell.com.au/upload/sites/26/2023/04/Web-PI-Rechargeable_PACKSHOTS_AU_RPP_AAA_4_BL_5000394047754_5006409_FOP.png",
     ],
@@ -25,7 +27,6 @@ export const mockProducts = [
   {
     _id: "2",
     name: "Safety Helmet",
-    tag: "safety",
     description: "Industrial safety helmet with adjustable strap.",
     photoUrl:
       "https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1",
@@ -37,9 +38,10 @@ export const mockProducts = [
     location: "Aisle 3 - Section 2",
     status: "CRITICAL",
     sku: "SAFE-HELM-01",
-    category: "safety",
+    category: "Safety",
     brand: "SafeGear",
     unitCost: 22.0,
+    purchaseCost: 14.0,
     images: [
       "https://media.rs-online.com/image/upload/bo_1.5px_solid_white,b_auto,c_pad,dpr_2,f_auto,h_399,q_auto,w_710/c_pad,h_399,w_710/F1618136-01?pgw=1",
     ],
@@ -48,7 +50,6 @@ export const mockProducts = [
   {
     _id: "3",
     name: "Hard Hat Liner",
-    tag: "safety",
     description: "Replacement liner for hard hats.",
     photoUrl: "https://www.example.com/images/liner.png",
     updatedAt: new Date("2026-04-25"),
@@ -59,16 +60,16 @@ export const mockProducts = [
     location: "Aisle 3 - Section 3",
     status: "CRITICAL",
     sku: "LINER-001",
-    category: "safety",
+    category: "Safety",
     brand: "SafeGear",
     unitCost: 3.5,
+    purchaseCost: 2.1,
     images: ["https://www.example.com/images/liner.png"],
     qrCode: "",
   },
   {
     _id: "4",
     name: "Work Gloves",
-    tag: "safety",
     description: "General purpose work gloves.",
     photoUrl: "https://www.example.com/images/gloves.png",
     updatedAt: new Date("2026-04-24"),
@@ -79,16 +80,16 @@ export const mockProducts = [
     location: "Aisle 2 - Section 1",
     status: "OK",
     sku: "GLOVES-01",
-    category: "safety",
+    category: "Safety",
     brand: "Handy",
     unitCost: 6.0,
+    purchaseCost: 3.8,
     images: ["https://www.example.com/images/gloves.png"],
     qrCode: "",
   },
   {
     _id: "5",
     name: "Steel Toe Boots",
-    tag: "safety",
     description: "Durable steel-toe work boots.",
     photoUrl: "/boots.png",
     updatedAt: new Date("2026-04-22"),
@@ -99,16 +100,16 @@ export const mockProducts = [
     location: "Aisle 1 - Section 4",
     status: "OK",
     sku: "BOOTS-STEEL-01",
-    category: "safety",
+    category: "Safety",
     brand: "BootWorks",
     unitCost: 85.0,
+    purchaseCost: 52.0,
     images: ["/boots.png"],
     qrCode: "",
   },
   {
     _id: "6",
     name: "Hex bolts M8",
-    tag: "fasteners",
     description: "M8 hex bolts, stainless steel.",
     photoUrl: "https://www.example.com/images/bolts.png",
     updatedAt: new Date("2026-04-20"),
@@ -119,16 +120,16 @@ export const mockProducts = [
     location: "Cabinet 2",
     status: "CRITICAL",
     sku: "BOLT-M8-SS",
-    category: "fasteners",
+    category: "Fasteners",
     brand: "FastenRight",
     unitCost: 0.12,
+    purchaseCost: 0.07,
     images: ["https://www.example.com/images/bolts.png"],
     qrCode: "",
   },
   {
     _id: "7",
     name: "Wood screws",
-    tag: "fasteners",
     description: "Assorted wood screws.",
     photoUrl: "https://www.example.com/images/screws.png",
     updatedAt: new Date("2026-04-18"),
@@ -139,16 +140,16 @@ export const mockProducts = [
     location: "Drawer 3",
     status: "CRITICAL",
     sku: "SCREW-WOOD-ASSORT",
-    category: "fasteners",
+    category: "Fasteners",
     brand: "FastenRight",
     unitCost: 0.05,
+    purchaseCost: 0.03,
     images: ["https://www.example.com/images/screws.png"],
     qrCode: "",
   },
   {
     _id: "8",
     name: "Cable ties 200mm",
-    tag: "misc",
     description: "200mm nylon cable ties, pack of 100.",
     photoUrl: "https://www.example.com/images/ties.png",
     updatedAt: new Date("2026-04-15"),
@@ -159,9 +160,10 @@ export const mockProducts = [
     location: "Bin 2",
     status: "CRITICAL",
     sku: "TIE-200-100",
-    category: "misc",
+    category: "Misc",
     brand: "TiePro",
     unitCost: 2.5,
+    purchaseCost: 1.6,
     images: ["https://www.example.com/images/ties.png"],
     qrCode: "",
   },
@@ -184,10 +186,4 @@ export function getTotalValue(products) {
   return products.reduce((total, product) => {
     return total + (product.unitCost * product.quantity || 0);
   }, 0);
-}
-
-export function getRecentlyUpdatedProducts(products, limit = 5) {
-  return [...products]
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-    .slice(0, limit);
 }

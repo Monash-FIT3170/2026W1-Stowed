@@ -1,11 +1,22 @@
 // imports/api/mockLocations.js
 import { buildRectShape } from "./locations/shapeUtils";
 
+/**
+ * Returns a date `months` before now, used to spread mock stocktake dates
+ * across the last 12 months.
+ */
+function monthsAgo(months) {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date;
+}
+
 export const mockSites = [
   {
     _id: "site-1",
     name: "Mornington Hardware",
     description: "Main hardware shop floor.",
+    stocktakeIntervalDays: 180,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -132,6 +143,7 @@ export const mockStorageLocations = [
         status: "CRITICAL",
       },
     ],
+    lastStocktakeAt: monthsAgo(1),
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -156,6 +168,7 @@ export const mockStorageLocations = [
         status: "OK",
       },
     ],
+    lastStocktakeAt: monthsAgo(6),
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -165,6 +178,7 @@ export const mockStorageLocations = [
     name: "Drawer",
     code: "3",
     storedItems: [],
+    lastStocktakeAt: monthsAgo(12),
     createdAt: new Date(),
     updatedAt: new Date(),
   },

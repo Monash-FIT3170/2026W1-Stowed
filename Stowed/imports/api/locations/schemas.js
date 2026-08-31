@@ -21,6 +21,14 @@ export const SiteSchema = new SimpleSchema({
     max: 500,
   },
 
+  // How many days may pass before a storage location in this site is due for
+  // its next stocktake. Defaults to roughly six months.
+  stocktakeIntervalDays: {
+    type: SimpleSchema.Integer,
+    min: 1,
+    defaultValue: 180,
+  },
+
   createdAt: {
     type: Date,
   },
@@ -71,6 +79,11 @@ export const FloorMapSchema = new SimpleSchema({
   },
 
   "settings.gridInterval": {
+    type: Number,
+    optional: true,
+  },
+
+  "settings.snapInterval": {
     type: Number,
     optional: true,
   },
@@ -267,6 +280,11 @@ export const StorageLocationSchema = new SimpleSchema({
   fill: {
     type: String,
     optional: true,
+  },
+
+  // Seeded with the creation date, then stamped each time the location is stocktaken.
+  lastStocktakeAt: {
+    type: Date,
   },
 
   createdAt: {

@@ -142,7 +142,15 @@
 
 .storage-hero h1 {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial;
   font-size: 28px;
   font-weight: 700;
   line-height: 1.15;
@@ -384,7 +392,8 @@
   padding: 12px 14px;
 }
 
-.storage-location-list {
+/* scoped: Global.css has a flex .storage-location-list used by ProductDetailPage */
+.storage-detail-page .storage-location-list {
   display: grid;
 }
 
