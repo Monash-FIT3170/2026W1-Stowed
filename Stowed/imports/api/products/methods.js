@@ -3,6 +3,7 @@ import { check, Match } from "meteor/check";
 import { ProductActivities, Products, ProductRecords } from "./collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+import { generateSku } from "./codes";
 
 async function getProductUpdateMetadata(userId) {
   if (!userId) return { updatedByUsername: "System" };
@@ -770,5 +771,185 @@ Meteor.methods({
       updateMetadata,
       createdAt: now,
     });
+  },
+
+  async "products.bulkGenerateCodes"({ productIds }) {
+    check(productIds, [String]);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+    await requirePermission(this.userId, "products.bulkGenerateCodes");
+    const orgId = await getCallerOrgId(this.userId);
+
+    const now = new Date();
+    let updated = 0;
+    const results = [];
+    for (const productId of productIds) {
+      const product = await Products.findOneAsync({ _id: productId, orgId });
+      if (!product) {
+        continue;
+      }
+      if (product.sku && product.sku.trim()) {
+        results.push({ productId, sku: product.sku, skipped: true });
+        continue;
+      }
+
+      let sku = generateSku();
+      let clash = await Products.findOneAsync({ orgId, sku });
+      while (clash) {
+        sku = generateSku();
+        clash = await Products.findOneAsync({ orgId, sku });
+      }
+
+      await Products.updateAsync(productId, { $set: { sku, updatedAt: now } });
+      updated = updated + 1;
+      results.push({ productId, sku, skipped: false });
+    }
+
+    return { updated, results };
+  },
+});
+
+Meteor.methods({
+  /**
+   * Resolve a scanned barcode value value in caller's org.
+   * SKUs are not unique (barcodes for SKU-less products encode the _id).
+   * falls back to a direct _id lookup
+   */
+  async "products.findByCode"({ code }) {
+    check(code, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+    await requirePermission(this.userId, "products.findByCode");
+    const orgId = await getCallerOrgId(this.userId);
+
+    const trimmed = code.trim();
+    if (!trimmed) return { matches: [] };
+
+    const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const bySku = await Products.find(
+      { orgId, sku: { $regex: `^${escaped}$`, $options: "i" } },
+      { fields: { name: 1, sku: 1 }, limit: 10 },
+    ).fetchAsync();
+    if (bySku.length > 0) {
+      return { matches: bySku.map(({ _id, name, sku }) => ({ _id, name, sku })) };
+    }
+
+    const byId = await Products.findOneAsync(
+      { _id: trimmed, orgId },
+      { fields: { name: 1, sku: 1 } },
+    );
+    return { matches: byId ? [{ _id: byId._id, name: byId.name, sku: byId.sku }] : [] };
+  },
+});
+
+/**
+ * Recomputes a product's totalQuantity from the sum of its ProductRecords.
+ * Used by the scan-driven stock methods so the "sum of records === total"
+ */
+async function syncProductTotal(productId, now) {
+  const records = await ProductRecords.find(
+    { productId },
+    { fields: { quantity: 1 } },
+  ).fetchAsync();
+  const total = records.reduce((sum, r) => sum + (r.quantity || 0), 0);
+  await Products.updateAsync(productId, { $set: { totalQuantity: total, updatedAt: now } });
+  return total;
+}
+
+Meteor.methods({
+  /**
+   * Adds or removes stock for one product at one storage location.
+   * Designed for the scan flow: scan a code, tap +/-
+   */
+  async "products.adjustStock"({ productId, locationId, delta }) {
+    check(productId, String);
+    check(locationId, String);
+    check(delta, Match.Integer);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+    if (delta === 0) {
+      throw new Meteor.Error("invalid-quantity", "Delta must not be zero.");
+    }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await assertLocationOrgAccess(locationId, this.userId);
+    await requirePermission(this.userId, "products.adjustStock");
+
+    const now = new Date();
+    const record = await ProductRecords.findOneAsync({ productId, locationId });
+
+    if (!record) {
+      if (delta < 0) {
+        throw new Meteor.Error(
+          "no-stock-at-location",
+          "This product has no stock at that location.",
+        );
+      }
+      await ProductRecords.insertAsync({
+        productId,
+        locationId,
+        quantity: delta,
+        createdAt: now,
+        updatedAt: now,
+      });
+      const newTotal = await syncProductTotal(productId, now);
+      return { effectiveDelta: delta, newQuantity: delta, newTotal };
+    }
+
+    const newQuantity = Math.max(0, record.quantity + delta);
+    const effectiveDelta = newQuantity - record.quantity;
+
+    await ProductRecords.updateAsync(record._id, {
+      $set: { quantity: newQuantity, updatedAt: now },
+    });
+    const newTotal = await syncProductTotal(productId, now);
+    return { effectiveDelta, newQuantity, newTotal };
+  },
+
+  /**
+   * Sets the exact counted quantity for one product at one storage location.
+   * The stocktake case: "I counted 47 on this shelf".
+   */
+  async "products.setStock"({ productId, locationId, quantity }) {
+    check(productId, String);
+    check(locationId, String);
+    check(quantity, Match.Integer);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+    if (quantity < 0) {
+      throw new Meteor.Error("invalid-quantity", "Quantity cannot be negative.");
+    }
+
+    await assertOrgAccess(Products, productId, this.userId);
+    await assertLocationOrgAccess(locationId, this.userId);
+    await requirePermission(this.userId, "products.adjustStock");
+
+    const now = new Date();
+    const record = await ProductRecords.findOneAsync({ productId, locationId });
+
+    if (record) {
+      await ProductRecords.updateAsync(record._id, {
+        $set: { quantity, updatedAt: now },
+      });
+    } else {
+      await ProductRecords.insertAsync({
+        productId,
+        locationId,
+        quantity,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    const newTotal = await syncProductTotal(productId, now);
+    return { newQuantity: quantity, newTotal };
   },
 });
