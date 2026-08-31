@@ -21,11 +21,15 @@ const PERMISSIONS = {
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
   "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "products.findByCode": ROLES.STANDARD, // resolve a scanned barcode to a product
+  "products.adjustStock": ROLES.STANDARD, // scan-driven +/- and set-count stock updates
+  "products.bulkGenerateCodes": ROLES.ADMIN,
   "productCategories.manage": ROLES.ADMIN, // create new categories for products
   "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
+  "locations.bulkGenerateCodes": ROLES.ADMIN,
   "settings.manage": ROLES.ADMIN,
 
   // Routes
@@ -35,8 +39,8 @@ const PERMISSIONS = {
   "route:/floor-map": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,
   "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
-  "route:/scan": ROLES.STANDARD, // camera scanner nav entry — all staff (page itself lives on another branch)
-  "route:/qr-codes": ROLES.ADMIN,
+  "route:/scan": ROLES.STANDARD, // camera scanner — all staff
+  "route:/qr-codes": ROLES.STANDARD, // codes hub — workers print/scan labels too
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
   "route:/create-product": ROLES.ADMIN,

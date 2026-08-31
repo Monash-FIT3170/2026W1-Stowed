@@ -53,6 +53,7 @@ export function CreateProductPage() {
   const [description] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [brand, setBrand] = useState("");
+  const [sku, setSku] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [purchaseCost, setPurchaseCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
@@ -152,6 +153,7 @@ export function CreateProductPage() {
         description,
         categoryId,
         brand,
+        sku: sku.trim(),
         unitCost: unitCost ? parseFloat(unitCost) : undefined,
         purchaseCost: purchaseCost ? parseFloat(purchaseCost) : undefined,
         totalQuantity: parsedTotal,
@@ -252,6 +254,16 @@ export function CreateProductPage() {
                       onChange={(e) => setBrand(e.target.value)}
                       className="form-input"
                       placeholder="e.g. Duracell"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>SKU / barcode value</label>
+                    <input
+                      type="text"
+                      value={sku}
+                      onChange={(e) => setSku(e.target.value)}
+                      className="form-input"
+                      placeholder="e.g. LAB-GOG-01 (used for the printed barcode)"
                     />
                   </div>
                 </div>

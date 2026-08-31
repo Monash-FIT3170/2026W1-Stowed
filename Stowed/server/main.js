@@ -10,9 +10,19 @@ import "/imports/api/publications";
 import "/imports/api/userMethods";
 import { ROLES } from "/imports/api/roles";
 import "/imports/api/upload.js";
-import { Sites } from "/imports/api/locations/collections";
+import { Sites, StorageUnits } from "/imports/api/locations/collections";
 import { ProductActivities, Products } from "/imports/api/products/collections";
 import { seedDatabase, resetDatabase } from "./seed";
+
+// Mark every pre-existing storage unit as already having its QR code generated,
+// so units created before the bulk-code feature don't all show as "pending".
+async function backfillUnitCodes() {
+  await StorageUnits.updateAsync(
+    { qrGenerated: { $ne: true } },
+    { $set: { qrGenerated: true } },
+    { multi: true },
+  );
+}
 
 Meteor.startup(async () => {
   await Sites.rawCollection().createIndex({ orgId: 1 });
@@ -20,6 +30,7 @@ Meteor.startup(async () => {
   await ProductActivities.rawCollection().createIndex({ orgId: 1, createdAt: -1 });
 
   await seedDatabase();
+  await backfillUnitCodes();
 });
 
 // Constant-time string comparison so token checks don't leak via timing.

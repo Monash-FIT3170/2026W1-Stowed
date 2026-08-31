@@ -87,7 +87,7 @@ describe("page rendering", function () {
       const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
       const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
       const lists = renderWithRouter(React.createElement(ListsPage));
-      const qrCodes = renderToStaticMarkup(React.createElement(QRCodesPage));
+      const qrCodes = renderWithRouter(React.createElement(QRCodesPage));
 
       assert.ok(alerts.includes("Stock"));
       assert.ok(alerts.includes("Alerts"));
@@ -230,7 +230,7 @@ describe("page rendering", function () {
         const html = renderWithRouter(React.createElement(DashboardPage));
 
         assert.ok(html.includes("Dashboard"));
-        assert.ok(html.includes("Hello, Alex"));
+        assert.ok(html.includes("Hello, <em>Alex</em>"));
         assert.ok(html.includes("Customise"));
         assert.ok(!html.includes("Browse inventory"));
         assert.ok(!html.includes("Find a location"));

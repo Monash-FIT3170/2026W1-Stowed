@@ -13,6 +13,10 @@ import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
+import { ScanPage } from "./pages/ScanPage";
+import { ScanSettingsPage } from "./pages/ScanSettingsPage";
+import { ScanUpdatePage } from "./pages/ScanUpdatePage";
 import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
@@ -153,6 +157,64 @@ export function App() {
                   isLoggedIn ? (
                     hasClientPermission(role, "route:/locations") ? (
                       <LocationDetailPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route
+                path="/locations/unit/:unitId"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/locations") ? (
+                      <StorageUnitDetailPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route
+                path="/scan"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/scan") ? (
+                      <ScanPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              {/* Target of the printed storage-unit QR codes */}
+              <Route
+                path="/scan/settings"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/scan") ? (
+                      <ScanSettingsPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              {/* Quick stock update after scanning a product barcode */}
+              <Route
+                path="/scan/product/:productId"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/scan") ? (
+                      <ScanUpdatePage />
                     ) : (
                       <Navigate to="/" replace />
                     )
