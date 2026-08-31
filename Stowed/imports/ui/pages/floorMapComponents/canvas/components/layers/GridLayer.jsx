@@ -13,10 +13,46 @@ import { CANVAS_CONFIG } from "../../CanvasConfig";
  * @returns {JSX.Element} A Konva <Layer> containing a grid or no grid
  */
 export function GridLayer({ width, height, gridSizePx, showGrid }) {
+  const { vLines, hLines } = getGridLines({ width, height, gridSizePx, showGrid });
+
+  return (
+    <Layer imageSmoothingEnabled={false} listening={false}>
+      {/* BACKGROUND */}
+      <Rect
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        fill={COLOURS.CANVAS_FILL}
+        shadowColor="black"
+        shadowBlur={16}
+        shadowOpacity={0.18}
+        shadowOffset={{ x: 0, y: 0 }}
+      />
+
+      {/* GRID LINES */}
+      {vLines}
+      {hLines}
+    </Layer>
+  );
+}
+
+let cachedKey = null;
+let cachedLines = null;
+
+function getGridLines({ width, height, gridSizePx, showGrid }) {
+  const key = `${width}|${height}|${gridSizePx}|${showGrid}`;
+  if (key === cachedKey) return cachedLines;
+
+  cachedKey = key;
+  cachedLines = buildGridLines({ width, height, gridSizePx, showGrid });
+  return cachedLines;
+}
+
+function buildGridLines({ width, height, gridSizePx, showGrid }) {
   const vLines = [];
   const hLines = [];
 
-  // build grid
   if (showGrid) {
     for (let x = 0; x <= width; x += gridSizePx) {
       if (x === 0) continue;
@@ -96,24 +132,5 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
     }
   }
 
-  return (
-    <Layer imageSmoothingEnabled={false}>
-      {/* BACKGROUND */}
-      <Rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill={COLOURS.CANVAS_FILL}
-        shadowColor="black"
-        shadowBlur={16}
-        shadowOpacity={0.18}
-        shadowOffset={{ x: 0, y: 0 }}
-      />
-
-      {/* GRID LINES */}
-      {vLines}
-      {hLines}
-    </Layer>
-  );
+  return { vLines, hLines };
 }
