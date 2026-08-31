@@ -230,7 +230,7 @@ describe("page rendering", function () {
         const html = renderWithRouter(React.createElement(DashboardPage));
 
         assert.ok(html.includes("Dashboard"));
-        assert.ok(html.includes("Hello, Alex"));
+        assert.ok(html.includes("Hello, <em>Alex</em>"));
         assert.ok(html.includes("Customise"));
         assert.ok(!html.includes("Browse inventory"));
         assert.ok(!html.includes("Find a location"));
