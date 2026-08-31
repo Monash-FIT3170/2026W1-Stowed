@@ -89,7 +89,21 @@ describe("Stock adjust methods (scan-driven stocktake)", function () {
         floorMapId,
         name: "Unit",
         type: "shelf",
-        position: { x: 0, y: 0, width: 1, height: 1 },
+        shape: {
+          orgId,
+          shapeId: 0,
+          name: "dummy-shape-stock-adjust",
+          points: [
+            { x: 0, y: 0 },
+            { x: 0, y: 1 },
+            { x: 1, y: 1 },
+            { x: 1, y: 0 },
+          ],
+          gridReference: { x: 0, y: 0 },
+        },
+        offset: { x: 0, y: 0 },
+        rotation: 0,
+        scale: { x: 1, y: 1 },
         createdAt: now,
         updatedAt: now,
       });
@@ -100,6 +114,7 @@ describe("Stock adjust methods (scan-driven stocktake)", function () {
           storageUnitId: unitId,
           name: locationId,
           storedItems: [],
+          lastStocktakeAt: now,
           createdAt: now,
           updatedAt: now,
         });
