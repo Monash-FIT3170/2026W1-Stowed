@@ -19,7 +19,7 @@ const WORKSPACE_LINKS = [
 
 const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
-  { to: "/forecast", label: "Forecast", icon: "🔮" },
+//  { to: "/forecast", label: "Forecast", icon: "🔮" },
   { to: "/alerts", label: "Stocktake", icon: "⚠️" },
 ];
 
