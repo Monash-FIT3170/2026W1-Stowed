@@ -26,6 +26,11 @@ const DASHBOARD_PREFERENCES_KEY_PREFIX = "stowed.dashboard.v1";
 const RECENT_ACTIVITY_BATCH_SIZE = 10;
 const RECENT_ACTIVITY_HISTORY_LIMIT = 100;
 
+// Widgets that always take the full grid width instead of a single column:
+// the snapshot reads as a summary band across the top, and recent activity
+// is a wide log that would be cramped in half a row.
+const FULL_WIDTH_DASHBOARD_WIDGETS = new Set(["snapshot", "recent"]);
+
 function getDashboardPreferencesKey(userId) {
   return `${DASHBOARD_PREFERENCES_KEY_PREFIX}.${userId || "anonymous"}`;
 }
@@ -104,7 +109,7 @@ function InventorySnapshotWidget({ snapshotMetrics, snapshotLoading, snapshotEmp
   return (
     <DashboardWidget
       title="Inventory snapshot"
-      subtitle={snapshotLoading ? undefined : "Current inventory footprint"}
+      className="dashboard-snapshot-widget"
       isLoading={snapshotLoading}
       loadingLabel="Loading inventory snapshot…"
       isEmpty={snapshotEmpty}
@@ -115,16 +120,18 @@ function InventorySnapshotWidget({ snapshotMetrics, snapshotLoading, snapshotEmp
         </div>
       }
     >
-      <div className="dashboard-snapshot-grid">
+      <div className="dashboard-snapshot-strip">
         {snapshotMetrics.map((metric) => (
           <Link
             key={metric.label}
             to={metric.to}
-            className={`dashboard-snapshot-metric dashboard-snapshot-metric-${metric.tone}`}
+            className="dashboard-snapshot-cell"
             aria-label={`${metric.label}: ${metric.value.toLocaleString()}`}
           >
-            <strong>{metric.value.toLocaleString()}</strong>
-            <span>{metric.label}</span>
+            <span className="dashboard-snapshot-cell-label">{metric.label}</span>
+            <strong className="dashboard-snapshot-cell-value">
+              {metric.value.toLocaleString()}
+            </strong>
           </Link>
         ))}
       </div>
@@ -170,7 +177,7 @@ function StocktakeAttentionWidget({
           <Link
             key={alert.location._id}
             to={`/locations/${alert.location._id}`}
-            className="dashboard-stocktake-row"
+            className="dashboard-stocktake-row dashboard-attn-row dashboard-attn-row-critical"
           >
             <span className="dashboard-stocktake-location">
               <strong>{alert.location.name || "Unnamed location"}</strong>
@@ -214,7 +221,15 @@ function LowStockWidget({ lowStockCount, lowStockPreview, productsLoading }) {
     >
       <div className="dashboard-low-stock-list">
         {lowStockPreview.map((item) => (
-          <Link key={item._id} to={`/inventory/${item._id}`} className="dashboard-low-stock-row">
+          <Link
+            key={item._id}
+            to={`/inventory/${item._id}`}
+            className={`dashboard-low-stock-row dashboard-attn-row ${
+              item.totalQuantity === 0
+                ? "dashboard-attn-row-critical"
+                : "dashboard-attn-row-warning"
+            }`}
+          >
             <span className="dashboard-low-stock-product">
               <strong>{item.name}</strong>
               {item.sku && <span>{item.sku}</span>}
@@ -413,30 +428,10 @@ export function DashboardPage() {
     inventorySnapshot.storageLocationCount === 0 &&
     inventorySnapshot.storageUnitCount === 0;
   const snapshotMetrics = [
-    {
-      label: "Units on hand",
-      value: inventorySnapshot.unitsOnHand,
-      to: "/inventory",
-      tone: "neutral",
-    },
-    {
-      label: "Products",
-      value: inventorySnapshot.productCount,
-      to: "/inventory",
-      tone: "neutral",
-    },
-    {
-      label: "Storage locations",
-      value: inventorySnapshot.storageLocationCount,
-      to: "/locations",
-      tone: "neutral",
-    },
-    {
-      label: "Storage units",
-      value: inventorySnapshot.storageUnitCount,
-      to: "/floor-map",
-      tone: "neutral",
-    },
+    { label: "Units on hand", value: inventorySnapshot.unitsOnHand, to: "/inventory" },
+    { label: "Products", value: inventorySnapshot.productCount, to: "/inventory" },
+    { label: "Storage locations", value: inventorySnapshot.storageLocationCount, to: "/locations" },
+    { label: "Storage units", value: inventorySnapshot.storageUnitCount, to: "/floor-map" },
   ];
 
   const visibleWidgetIds = preferences.order.filter(
@@ -537,7 +532,9 @@ export function DashboardPage() {
       </div>
       <div className="dashboard-page-hero">
         <div>
-          <h1 className="dashboard-page-heading">Hello, {username || "User"}</h1>
+          <h1 className="header-title">
+            Hello, <em>{username || "User"}</em>
+          </h1>
           <p className="dashboard-page-subheading">Here&apos;s what&apos;s stocked.</p>
         </div>
         <div className="dashboard-page-actions" role="group" aria-label="Dashboard actions">
@@ -617,7 +614,7 @@ export function DashboardPage() {
           {visibleWidgetIds.map((widgetId, index) => (
             <div
               key={widgetId}
-              className={`dashboard-widget-shell${draggedWidgetId === widgetId ? " is-dragging" : ""}${dropTargetId === widgetId && draggedWidgetId !== widgetId ? " is-drop-target" : ""}`}
+              className={`dashboard-widget-shell${FULL_WIDTH_DASHBOARD_WIDGETS.has(widgetId) ? " is-wide" : ""}${draggedWidgetId === widgetId ? " is-dragging" : ""}${dropTargetId === widgetId && draggedWidgetId !== widgetId ? " is-drop-target" : ""}`}
               onDragEnter={() => {
                 if (draggedWidgetId && draggedWidgetId !== widgetId) setDropTargetId(widgetId);
               }}
