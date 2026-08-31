@@ -35,6 +35,7 @@ export function ProductDetailView({
   item,
   productId,
   records = [],
+  categories = [],
   sites = [],
   floorMaps = [],
   storageUnits = [],
@@ -131,6 +132,9 @@ export function ProductDetailView({
       setIsRestocking(false);
     }
   }
+
+  const categoryName =
+    categories.find((c) => c._id === item.categoryId)?.name || item.category || "";
 
   const unitCost = Number(item.unitCost);
   const purchaseCost = Number(item.purchaseCost);
@@ -342,9 +346,9 @@ export function ProductDetailView({
                     <input
                       id="category"
                       type="text"
-                      value={item.category != null ? item.category : "No category specified"}
+                      value={categoryName || "No category specified"}
                       readOnly
-                      className={`form-input ${!item.category ? "empty-field" : ""}`}
+                      className={`form-input ${!categoryName ? "empty-field" : ""}`}
                     />
                   </div>
                   <div className="form-group">
