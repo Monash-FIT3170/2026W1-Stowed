@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
@@ -172,9 +173,9 @@ export function AlertsPage() {
 
                   return (
                     <article key={alert.location._id} className={`alert-card ${alert.status}`}>
-                      <a
+                      <Link
                         className="alert-location-link"
-                        href={`/locations/${alert.location._id}`}
+                        to={`/locations/${alert.location._id}`}
                         aria-label={`View details for ${alert.location.name || "unnamed location"}`}
                       >
                         <div className="alert-card-top">
@@ -228,13 +229,13 @@ export function AlertsPage() {
                             </div>
                           )}
                         </div>
-                      </a>
+                      </Link>
 
                       <div className="alert-actions">
-                        <a className="btn-secondary" href={`/stocktake/${alert.location._id}`}>
+                        <Link className="btn-secondary" to={`/stocktake/${alert.location._id}`}>
                           <span className="alert-action-label-full">Update stock</span>
                           <span className="alert-action-label-short">Update</span>
-                        </a>
+                        </Link>
                         <button
                           type="button"
                           className="btn-primary"

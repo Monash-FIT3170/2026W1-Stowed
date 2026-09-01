@@ -84,7 +84,7 @@ describe("page rendering", function () {
     ];
 
     try {
-      const alerts = renderToStaticMarkup(React.createElement(AlertsPage));
+      const alerts = renderWithRouter(React.createElement(AlertsPage));
       const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
       const lists = renderWithRouter(React.createElement(ListsPage));
       const qrCodes = renderWithRouter(React.createElement(QRCodesPage));
