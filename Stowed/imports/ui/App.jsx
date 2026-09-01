@@ -32,12 +32,16 @@ const LocationsPage = lazy(() =>
 );
 
 export function App() {
-  const { user } = useTracker(() => {
+  const { user, loggingIn } = useTracker(() => {
     return {
       user: Meteor.user(),
       loggingIn: Meteor.loggingIn(),
     };
   });
+
+  if (loggingIn) {
+    return <div>Loading...</div>;
+  }
 
   const isLoggedIn = !!user;
 
