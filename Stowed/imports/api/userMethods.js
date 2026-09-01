@@ -40,7 +40,6 @@ const PERMISSIONS = {
   "route:/floor-map": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,
   "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
-  "route:/qr-codes": ROLES.ADMIN,
   "route:/settings": ROLES.ADMIN,
   "route:/scan": ROLES.STANDARD, // camera scanner — all staff
   "route:/qr-codes": ROLES.STANDARD, // codes hub — workers print/scan labels too

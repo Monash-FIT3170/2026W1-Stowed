@@ -13,15 +13,9 @@ import "/imports/api/upload.js";
 import "/imports/api/bulkImport";
 import {
   Sites,
-  FloorMaps,
   StorageUnits,
-  StorageLocations,
 } from "/imports/api/locations/collections";
-import { backfillProductActivities } from "/imports/api/products/activityBackfill";
-import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
-import { buildRectShape } from "/imports/api/locations/shapeUtils";
-import { ProductCategories } from "/imports/api/categories/collections";
-import { Organisations } from "/imports/api/organisations";
+import { ProductActivities, Products } from "/imports/api/products/collections";
 import { seedDatabase, resetDatabase } from "./seed";
 
 // Mark every pre-existing storage unit as already having its QR code generated,
