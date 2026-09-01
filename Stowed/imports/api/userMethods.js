@@ -26,6 +26,7 @@ const PERMISSIONS = {
   "products.bulkGenerateCodes": ROLES.ADMIN,
   "productCategories.manage": ROLES.ADMIN, // create new categories for products
   "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
+  "products.export": ROLES.ADMIN, // download the full inventory + storage layout
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
@@ -39,6 +40,7 @@ const PERMISSIONS = {
   "route:/floor-map": ROLES.STANDARD,
   "route:/lists": ROLES.STANDARD,
   "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
+  "route:/settings": ROLES.ADMIN,
   "route:/scan": ROLES.STANDARD, // camera scanner — all staff
   "route:/qr-codes": ROLES.STANDARD, // codes hub — workers print/scan labels too
   "route:/forecast": ROLES.ADMIN,

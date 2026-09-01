@@ -155,8 +155,11 @@ export function Sidebar() {
   if (role >= ROLES.OWNER) {
     ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }
+  ALL_ACCOUNT_LINKS.push({ to: "/settings", label: "Settings" });
   const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
-    link.to === "/register" ? hasClientPermission(role, "create-users") : true,
+    link.to === "/register"
+      ? hasClientPermission(role, "create-users")
+      : hasClientPermission(role, `route:${link.to}`),
   );
 
   const sections = [
