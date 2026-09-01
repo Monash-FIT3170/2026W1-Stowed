@@ -151,9 +151,7 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  const ALL_ACCOUNT_LINKS = [
-    { to: "/register", label: "Create Account" },
-  ];
+  const ALL_ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
   if (role >= ROLES.OWNER) {
     ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
   }

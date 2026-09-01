@@ -143,8 +143,14 @@ describe("bulk import", function () {
       skippedDuplicateProducts: 0,
     });
 
-    const goggles = await Products.findOneAsync({ orgId: TEST_ORG_ID, name: `Bulk Safety Goggles ${suffix}` });
-    const batteries = await Products.findOneAsync({ orgId: TEST_ORG_ID, name: `Bulk Batteries ${suffix}` });
+    const goggles = await Products.findOneAsync({
+      orgId: TEST_ORG_ID,
+      name: `Bulk Safety Goggles ${suffix}`,
+    });
+    const batteries = await Products.findOneAsync({
+      orgId: TEST_ORG_ID,
+      name: `Bulk Batteries ${suffix}`,
+    });
     assert.strictEqual(goggles.totalQuantity, 7);
     assert.strictEqual(goggles.reorderAt, 2);
     assert.strictEqual(batteries.totalQuantity, 2);
@@ -163,7 +169,10 @@ describe("bulk import", function () {
     assert.strictEqual(cabinet.type, "cabinet");
     assert.deepStrictEqual(cabinet.offset, { x: 1, y: 2 });
 
-    const importRecord = await ImportRecords.findOneAsync({ orgId: TEST_ORG_ID, fileName: "bulk-import-test.json" });
+    const importRecord = await ImportRecords.findOneAsync({
+      orgId: TEST_ORG_ID,
+      fileName: "bulk-import-test.json",
+    });
     assert.strictEqual(importRecord.status, "completed");
     assert.strictEqual(importRecord.counts.createdProducts, 2);
     assert.strictEqual(importRecord.counts.createdLocations, 3);
@@ -334,7 +343,9 @@ describe("bulk import", function () {
     await callMethod("bulk.undoLatestImport");
 
     const restoredProduct = await Products.findOneAsync({ orgId: TEST_ORG_ID, name: productName });
-    const restoredRecords = await ProductRecords.find({ productId: restoredProduct._id }).fetchAsync();
+    const restoredRecords = await ProductRecords.find({
+      productId: restoredProduct._id,
+    }).fetchAsync();
     assert.strictEqual(restoredProduct.totalQuantity, 5);
     assert.strictEqual(restoredRecords.length, 1);
     assert.strictEqual(restoredRecords[0].quantity, 5);
@@ -364,7 +375,9 @@ describe("bulk import", function () {
     assert.deepStrictEqual(clearResult, { status: "ok", removed: 1 });
     assert.strictEqual(await ImportRecords.find({ orgId: TEST_ORG_ID }).countAsync(), 0);
     assert.ok(await Products.findOneAsync({ orgId: TEST_ORG_ID, name: productName }));
-    assert.ok(await StorageLocations.findOneAsync({ orgId: TEST_ORG_ID, code: "CLEAR-HISTORY-A1" }));
+    assert.ok(
+      await StorageLocations.findOneAsync({ orgId: TEST_ORG_ID, code: "CLEAR-HISTORY-A1" }),
+    );
   });
 
   it("undoes the latest completed combined import", async function () {
@@ -396,10 +409,19 @@ describe("bulk import", function () {
       sites: 1,
     });
 
-    assert.strictEqual(await Products.findOneAsync({ orgId: TEST_ORG_ID, name: `Undo Imported Product ${suffix}` }), undefined);
-    assert.strictEqual(await StorageLocations.findOneAsync({ orgId: TEST_ORG_ID, code: "BULK-UNDO-A1" }), undefined);
+    assert.strictEqual(
+      await Products.findOneAsync({ orgId: TEST_ORG_ID, name: `Undo Imported Product ${suffix}` }),
+      undefined,
+    );
+    assert.strictEqual(
+      await StorageLocations.findOneAsync({ orgId: TEST_ORG_ID, code: "BULK-UNDO-A1" }),
+      undefined,
+    );
 
-    const importRecord = await ImportRecords.findOneAsync({ orgId: TEST_ORG_ID, fileName: "bulk-import-undo-test.json" });
+    const importRecord = await ImportRecords.findOneAsync({
+      orgId: TEST_ORG_ID,
+      fileName: "bulk-import-undo-test.json",
+    });
     assert.strictEqual(importRecord.status, "undone");
     assert.strictEqual(importRecord.undoneByUserId, TEST_USER_ID);
   });
