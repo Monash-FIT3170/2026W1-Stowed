@@ -40,7 +40,7 @@ export function App() {
   });
 
   if (loggingIn) {
-    return <div>Loading...</div>;
+    return null;
   }
 
   const isLoggedIn = !!user;
