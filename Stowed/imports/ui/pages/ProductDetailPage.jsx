@@ -8,6 +8,8 @@ import { Products, ProductRecords } from "../../api/products/collections";
 import { ProductCategories } from "/imports/api/categories/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
+import { getBarcodeValue } from "/imports/api/products/codes";
+import { ProductBarcode } from "../components/ProductBarcode";
 import "./ProductDetailPage.css";
 import "../Global.css";
 
@@ -133,27 +135,29 @@ export function ProductDetailView({
     }
   }
 
+  const categoryName =
+    categories.find((c) => c._id === item.categoryId)?.name || item.category || "";
+
   const unitCost = Number(item.unitCost);
   const purchaseCost = Number(item.purchaseCost);
-  const categoryName = categories.find((c) => c._id === item.categoryId)?.name || "-";
   const reorderAt = item.reorderAt ?? null;
   const galleryImages = imageUrls.length > 0 ? imageUrls : item.images || [];
 
-  // For each gallery image, determine whether it originates from the
-  // uploaded images (so it can be removed). We treat `imageUrls` (current
-  // edited/uploaded images) and `item.images` (persisted uploads) as
-  // removable sources. Fallback `photoUrl` or `catalogImages` are not removable.
+  // For each image, determine whether it originates from the uploaded images
+  // `imageUrls` (current edited/uploaded images)
+  // `item.images` (persisted uploads) as removable sources.
+  // Fallback `photoUrl` or `catalogImages` are not removable.
   const removableFlags = galleryImages.map((img) => {
     if (imageUrls.length > 0) return imageUrls.includes(img);
     if (Array.isArray(item.images) && item.images.length) return item.images.includes(img);
     return false;
   });
-  const qrCode = item.qrCode || "";
   const hasUnitCost = Number.isFinite(unitCost);
   const hasPurchaseCost = Number.isFinite(purchaseCost) && item.purchaseCost != null;
   const storageAssignments = records.length
     ? records.map((record) => ({
         key: record._id,
+        locationId: record.locationId,
         label: buildLocationLabel(
           record.locationId,
           storageLocations,
@@ -262,9 +266,21 @@ export function ProductDetailView({
     });
   }
 
-  const isLowStock = item.status && item.status.includes("CRITICAL");
-  const statusLabel = isLowStock ? "Low stock" : "In stock";
-  const statusClass = isLowStock ? "panel-status-badge low" : "panel-status-badge ok";
+  // `status` is an optional free-text field that only ever gets set on mock
+  // data, so this badge read "In stock" for every real product regardless of
+  // its stock. Derive it from the live stock instead.
+  const stockState =
+    currentStock <= 0
+      ? "out-of-stock"
+      : reorderAt != null && currentStock <= reorderAt
+        ? "low-stock"
+        : "in-stock";
+  const statusLabel = {
+    "out-of-stock": "Out of stock",
+    "low-stock": "Low stock",
+    "in-stock": "In stock",
+  }[stockState];
+  const statusClass = `product-status-badge ${stockState}`;
 
   return (
     <>
@@ -272,36 +288,14 @@ export function ProductDetailView({
         <div className="product-detail-header">
           <div className="header-top">
             <div className="breadcrumb">
-              <Link to="/inventory/list" className="breadcrumb-link">
+              <Link to="/inventory" className="breadcrumb-link">
                 Inventory
               </Link>
               <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-current">Product</span>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button className="btn-secondary" onClick={() => navigate(-1)}>
-                Back
-              </button>
-              {canRestock && (
-                <button className="btn-secondary" onClick={openRestockModal}>
-                  Restock
-                </button>
-              )}
-              {canUpdate && (
-                <button
-                  className="btn-primary"
-                  onClick={handleUpdateClick}
-                  disabled={uploadingImage}
-                >
-                  Update
-                </button>
-              )}
-              {canDelete && (
-                <button className="btn-danger" onClick={() => setShowDeleteModal(true)}>
-                  Delete
-                </button>
-              )}
-            </div>
+            {/* Back/Restock/Update/Delete moved to a footer action bar below
+                the form — see .product-detail-actions further down. */}
           </div>
 
           <h1 className="header-title">
@@ -350,12 +344,24 @@ export function ProductDetailView({
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Category</label>
-                    <div className="form-tag">{categoryName}</div>
+                    <label htmlFor="category">Category</label>
+                    <input
+                      id="category"
+                      type="text"
+                      value={categoryName || "No category specified"}
+                      readOnly
+                      className={`form-input ${!categoryName ? "empty-field" : ""}`}
+                    />
                   </div>
                   <div className="form-group">
-                    <label>Brand</label>
-                    <div className="form-tag">{item.brand || "-"}</div>
+                    <label htmlFor="brand">Brand</label>
+                    <input
+                      id="brand"
+                      type="text"
+                      value={item.brand != null ? item.brand : "No brand specified"}
+                      readOnly
+                      className={`form-input ${!item.brand ? "empty-field" : ""}`}
+                    />
                   </div>
                 </div>
               </div>
@@ -507,18 +513,41 @@ export function ProductDetailView({
             <div className="detail-section">
               <h2 className="section-title">
                 <span className="section-badge qr">QR</span>
-                QR & label
+                Barcode & label
               </h2>
               <div className="section-content qr-section">
                 <div className="qr-container">
-                  <img src={qrCode} alt="QR Code" className="qr-code" />
-                  <p className="qr-label">SKU: {item.sku}</p>
+                  <ProductBarcode value={getBarcodeValue(item)} className="qr-code" />
+                  <p className="qr-label">{item.sku ? `SKU: ${item.sku}` : `ID: ${item._id}`}</p>
                   <p className="qr-label">{item.location}</p>
                 </div>
-                <button className="btn-print">Print label</button>
+                <button className="btn-print" onClick={() => window.print()}>
+                  Print label
+                </button>
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="product-detail-actions">
+          <button className="btn-secondary" onClick={() => navigate(-1)}>
+            Back
+          </button>
+          {canRestock && (
+            <button className="btn-secondary" onClick={openRestockModal}>
+              Restock
+            </button>
+          )}
+          {canUpdate && (
+            <button className="btn-primary" onClick={handleUpdateClick} disabled={uploadingImage}>
+              Update
+            </button>
+          )}
+          {canDelete && (
+            <button className="btn-danger" onClick={() => setShowDeleteModal(true)}>
+              Delete
+            </button>
+          )}
         </div>
       </div>
 

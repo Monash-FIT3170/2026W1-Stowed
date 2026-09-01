@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useAuth } from "/imports/api/useAuth";
+import { hasClientPermission } from "/imports/api/userMethods";
 import {
   FloorMaps,
   Sites,
   StorageLocations,
   StorageUnits,
 } from "/imports/api/locations/collections";
+import { Products, ProductRecords } from "/imports/api/products/collections";
 import { getMockStorageLocationsByUnitId, getMockStorageUnitById } from "../../api/mockLocations";
 import { getTransformedBounds } from "/imports/api/locations/shapeUtils";
+import { LocationQRCode } from "../components/LocationQRCode";
+import { StockAdjuster } from "../components/StockAdjuster";
 import "./StorageUnitDetailPage.css";
 
 const STORAGE_UNIT_PHOTOS_KEY = "stowed.storageUnitPhotos";
@@ -36,21 +41,47 @@ export function StorageUnitDetailPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const { loading, liveUnit, liveLocations, floorMap, site } = useTracker(() => {
+  const { role } = useAuth();
+  const canAdjustStock = hasClientPermission(role, "products.adjustStock");
+  const [stockError, setStockError] = useState("");
+
+  const { loading, liveUnit, liveLocations, floorMap, site, recordsByLocation } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
+    const productsHandle = Meteor.subscribe("products");
+    const recordsHandle = Meteor.subscribe("productRecords");
     const liveUnit = StorageUnits.findOne(unitId);
     const floorMap = liveUnit ? FloorMaps.findOne(liveUnit.floorMapId) : null;
     const site = floorMap ? Sites.findOne(floorMap.siteId) : null;
+    const liveLocations = StorageLocations.find(
+      { storageUnitId: unitId },
+      { sort: { createdAt: 1 } },
+    ).fetch();
+
+    // Live stock: ProductRecords joined to Products, grouped by location.
+    const locationIds = liveLocations.map((loc) => loc._id);
+    const recordsByLocation = {};
+    if (locationIds.length) {
+      const records = ProductRecords.find({ locationId: { $in: locationIds } }).fetch();
+      for (const record of records) {
+        const product = Products.findOne(record.productId);
+        if (!product) continue;
+        (recordsByLocation[record.locationId] ||= []).push({
+          recordId: record._id,
+          productId: product._id,
+          name: product.name,
+          sku: product.sku,
+          quantity: record.quantity,
+        });
+      }
+    }
 
     return {
-      loading: !handle.ready(),
+      loading: !handle.ready() || !productsHandle.ready() || !recordsHandle.ready(),
       liveUnit,
-      liveLocations: StorageLocations.find(
-        { storageUnitId: unitId },
-        { sort: { createdAt: 1 } },
-      ).fetch(),
+      liveLocations,
       floorMap,
       site,
+      recordsByLocation,
     };
   }, [unitId]);
 
@@ -74,10 +105,9 @@ export function StorageUnitDetailPage() {
 
   const unitCode = unit.name.toUpperCase();
   const locationCount = locations.length;
-  const storedItemCount = locations.reduce(
-    (total, location) => total + (location.storedItems?.length || 0),
-    0,
-  );
+  const storedItemCount = liveUnit
+    ? Object.values(recordsByLocation).reduce((total, items) => total + items.length, 0)
+    : locations.reduce((total, location) => total + (location.storedItems?.length || 0), 0);
   const unitBounds = getTransformedBounds(unit.shape, {
     offset: unit.offset,
     rotation: unit.rotation,
@@ -227,11 +257,13 @@ export function StorageUnitDetailPage() {
           </div>
           <div className="storage-section-body storage-label-body">
             <div className="storage-qr">
-              <div className="storage-qr-grid" aria-hidden="true" />
-              <p>SKU: {unitCode}</p>
-              <p>Ground Floor</p>
+              <LocationQRCode unitId={unit._id} size={160} alt={`QR code for ${unit.name}`} />
+              <p>Unit: {unitCode}</p>
+              <p>{[site?.name, floorMap?.name].filter(Boolean).join(" · ") || "Unassigned"}</p>
             </div>
-            <button className="storage-print-btn">Print label</button>
+            <button className="storage-print-btn" onClick={() => window.print()}>
+              Print label
+            </button>
           </div>
         </section>
 
@@ -240,34 +272,67 @@ export function StorageUnitDetailPage() {
             <span className="storage-section-icon">SL</span>
             What is stored in this unit
           </div>
+          {stockError && <p className="storage-stock-error">{stockError}</p>}
           <div className="storage-location-list">
             {locations.length > 0 ? (
-              locations.map((location) => (
-                <div className="storage-location-row" key={location._id}>
-                  <div className="storage-location-heading">
-                    <strong>{location.name}</strong>
-                    <span>{location.code}</span>
+              locations.map((location) => {
+                // Live data from ProductRecords; seed storedItems only for mock units.
+                const liveItems = liveUnit ? recordsByLocation[location._id] || [] : null;
+                const items = liveItems ?? location.storedItems ?? [];
+                return (
+                  <div className="storage-location-row" key={location._id}>
+                    <div className="storage-location-heading">
+                      <strong>{location.name}</strong>
+                      <span>{location.code}</span>
+                    </div>
+                    <div className="storage-stored-items">
+                      {items.length ? (
+                        items.map((item) =>
+                          liveItems ? (
+                            <div className="storage-stored-item" key={item.recordId}>
+                              <span>
+                                <Link
+                                  to={`/inventory/${item.productId}`}
+                                  className="storage-item-link"
+                                >
+                                  {item.name}
+                                </Link>
+                                <small>
+                                  {item.sku ? `SKU ${item.sku}` : `ID ${item.productId}`}
+                                </small>
+                              </span>
+                              {canAdjustStock ? (
+                                <StockAdjuster
+                                  productId={item.productId}
+                                  locationId={location._id}
+                                  quantity={item.quantity}
+                                  compact
+                                  onError={setStockError}
+                                />
+                              ) : (
+                                <strong>qty {item.quantity}</strong>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="storage-stored-item" key={item.itemId || item.sku}>
+                              <span>
+                                {item.name}
+                                <small>
+                                  _id: {item.itemId || "n/a"}
+                                  {item.status ? ` · ${item.status}` : ""}
+                                </small>
+                              </span>
+                              <strong>qty {item.quantity}</strong>
+                            </div>
+                          ),
+                        )
+                      ) : (
+                        <span className="storage-no-items">Empty/available space</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="storage-stored-items">
-                    {location.storedItems?.length ? (
-                      location.storedItems.map((item) => (
-                        <div className="storage-stored-item" key={item.itemId || item.sku}>
-                          <span>
-                            {item.name}
-                            <small>
-                              _id: {item.itemId || "n/a"}
-                              {item.status ? ` · ${item.status}` : ""}
-                            </small>
-                          </span>
-                          <strong>qty {item.quantity}</strong>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="storage-no-items">Empty/available space</span>
-                    )}
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="storage-location-empty">
                 No storage locations inside this unit yet.

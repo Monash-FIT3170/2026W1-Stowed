@@ -19,20 +19,11 @@ export function FilterChips({ filters, activeFilter, onFilterChange }) {
     >
       {filters.map((filter) => {
         const isActive = filter.id === activeFilter;
-        const isLowStock = filter.id === "low-stock";
 
-        let style;
-        if (isActive && isLowStock) {
-          style = { background: "#F8DDD2", color: "#B5532A", border: "none" };
-        } else if (isActive) {
-          style = { background: "#2C2419", color: "#FAF6F1", border: "none" };
-        } else {
-          style = {
-            background: "#FFFFFF",
-            color: "#5C4F3F",
-            border: "0.5px solid #D9CFC0",
-          };
-        }
+        // Every chip shades the same when selected, whatever it filters for.
+        const style = isActive
+          ? { background: "#2C2419", color: "#FAF6F1", border: "none" }
+          : { background: "#FFFFFF", color: "#5C4F3F", border: "0.5px solid #D9CFC0" };
 
         return (
           <button

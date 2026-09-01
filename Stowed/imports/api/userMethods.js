@@ -21,12 +21,16 @@ const PERMISSIONS = {
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
   "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "products.findByCode": ROLES.STANDARD, // resolve a scanned barcode to a product
+  "products.adjustStock": ROLES.STANDARD, // scan-driven +/- and set-count stock updates
+  "products.bulkGenerateCodes": ROLES.ADMIN,
   "productCategories.manage": ROLES.ADMIN, // create new categories for products
   "stocktake.save": ROLES.STANDARD, // counting a location, including removing lines
   "products.export": ROLES.ADMIN, // download the full inventory + storage layout
 
   // Location structure management (all CRUD across the hierarchy)
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
+  "locations.bulkGenerateCodes": ROLES.ADMIN,
   "settings.manage": ROLES.ADMIN,
 
   // Routes
@@ -38,6 +42,8 @@ const PERMISSIONS = {
   "route:/stocktake": ROLES.STANDARD, // counting stock is a floor-staff task
   "route:/qr-codes": ROLES.ADMIN,
   "route:/settings": ROLES.ADMIN,
+  "route:/scan": ROLES.STANDARD, // camera scanner — all staff
+  "route:/qr-codes": ROLES.STANDARD, // codes hub — workers print/scan labels too
   "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
   "route:/create-product": ROLES.ADMIN,
@@ -50,6 +56,7 @@ const PERMISSIONS = {
   "shoppingLists.update": ROLES.STANDARD,
   "shoppingLists.rename": ROLES.STANDARD,
   "shoppingLists.delete": ROLES.STANDARD,
+  "shoppingLists.share": ROLES.STANDARD,
 
   // Schedules
   "schedules.create": ROLES.STANDARD,
@@ -243,6 +250,28 @@ Meteor.methods({
       }
       throw err;
     }
+  },
+
+  // returns org members as candidate recipients for sharing a shopping list by email
+  "shoppingLists.listRecipients": async function () {
+    await requirePermission(this.userId, "shoppingLists.share");
+
+    const orgId = await getCallerOrgId(this.userId);
+    if (!orgId) {
+      throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+    }
+
+    const members = await Meteor.users
+      .find({ "profile.organisationId": orgId }, { fields: { "profile.username": 1, emails: 1 } })
+      .fetchAsync();
+
+    return members
+      .filter((member) => member.emails?.[0]?.address)
+      .map((member) => ({
+        _id: member._id,
+        username: member.profile?.username ?? "",
+        email: member.emails[0].address,
+      }));
   },
 
   // delete accounts method for owner

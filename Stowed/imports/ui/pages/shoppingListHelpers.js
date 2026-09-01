@@ -1,9 +1,17 @@
 export const currency = (value) =>
   value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
-export function sortByCategory(items) {
+export const CATEGORY_FALLBACK = "Uncategorized";
+
+export function categoryNameOf(item, categoryNameById) {
+  return categoryNameById?.get(item.categoryId) || CATEGORY_FALLBACK;
+}
+
+export function sortByCategory(items, categoryNameById) {
   return [...items].sort((a, b) => {
-    const catCompare = (a.category || "Uncategorized").localeCompare(b.category || "Uncategorized");
+    const catCompare = categoryNameOf(a, categoryNameById).localeCompare(
+      categoryNameOf(b, categoryNameById),
+    );
     if (catCompare !== 0) return catCompare;
     return a.productName.localeCompare(b.productName);
   });

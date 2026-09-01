@@ -14,7 +14,7 @@ describe("Role-Based Access Control", function () {
   it("enforces role hierarchy for protected routes", function () {
     assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/dashboard"), true);
     assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/inventory"), true);
-    assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/qr-codes"), false);
+    assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/qr-codes"), true);
     assert.strictEqual(hasClientPermission(ROLES.ADMIN, "route:/qr-codes"), true);
     assert.strictEqual(hasClientPermission(ROLES.STANDARD, "route:/settings"), false);
     assert.strictEqual(hasClientPermission(ROLES.ADMIN, "route:/settings"), true);

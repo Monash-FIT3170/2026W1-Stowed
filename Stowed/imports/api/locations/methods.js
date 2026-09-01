@@ -370,6 +370,36 @@ Meteor.methods({
     await StorageUnits.removeAsync(storageUnitId);
   },
 
+  async "storageUnits.bulkGenerateCodes"({ unitIds }) {
+    check(unitIds, [String]);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+    await requirePermission(this.userId, "locations.bulkGenerateCodes");
+    const orgId = await getCallerOrgId(this.userId);
+
+    const now = new Date();
+    let updated = 0;
+    const results = [];
+    for (const unitId of unitIds) {
+      const unit = await StorageUnits.findOneAsync({ _id: unitId, orgId });
+      if (!unit) {
+        continue;
+      }
+      if (unit.qrGenerated) {
+        results.push({ unitId, skipped: true });
+        continue;
+      }
+
+      await StorageUnits.updateAsync(unitId, { $set: { qrGenerated: true, updatedAt: now } });
+      updated = updated + 1;
+      results.push({ unitId, skipped: false });
+    }
+
+    return { updated, results };
+  },
+
   /**
    * Creates a new shape object
    */
@@ -538,8 +568,8 @@ Meteor.methods({
   /**
    * Deletes a shape from the database
    */
-  async "mapShapes.delete"({ shapeId }) {
-    check(shapeId, Number);
+  async "mapShapes.delete"({ shape }) {
+    check(shape.shapeId, Number);
 
     // check user permissions
     if (!this.userId) {
@@ -548,12 +578,34 @@ Meteor.methods({
       await requirePermission(this.userId, "locations.manage");
     }
 
-    const shape = await MapShapes.findOneAsync({ shapeId: shapeId });
+    // find matching shape
     if (!shape) {
       throw new Meteor.Error("shape-not-found", "No shape found with that name.");
     }
 
-    await MapShapes.removeAsync({ shapeId: shapeId });
+    // check shape isn't used for any units
+    const dependentUnits = await StorageUnits.find({ "shape.shapeId": shape.shapeId }).fetchAsync();
+
+    if (dependentUnits.length !== 0) {
+      const orgId = await getCallerOrgId(this.userId);
+      const orgMaps = await FloorMaps.find({ orgId: orgId }).fetchAsync();
+      const dependentPlaces = dependentUnits
+        .map((u) => {
+          const [floorMap] = orgMaps.filter((f) => f._id === u.floorMapId);
+          return { ...u, floorName: floorMap.name };
+        })
+        .reduce(
+          (acc, u) =>
+            `${acc}- in the '${u.floorName}' map, for the unit '${u.name}' (located at x=${u.offset.x}, y=${u.offset.y})\n`,
+          "",
+        );
+      throw new Meteor.Error(
+        "shape-is-used",
+        `This shape is used in the following places:\n${dependentPlaces}\nPlease change the shape used by these storage units and try again.`,
+      );
+    }
+
+    await MapShapes.removeAsync({ shapeId: shape.shapeId });
   },
 
   /**

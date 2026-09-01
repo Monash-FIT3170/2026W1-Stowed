@@ -1,8 +1,9 @@
 import assert from "assert";
+import { describeServer } from "./serverOnly";
 import { backfillProductActivities } from "../imports/api/products/activityBackfill";
 import { ProductActivities, Products } from "../imports/api/products/collections";
 
-describe("product activity backfill", function () {
+describeServer("product activity backfill", function () {
   const productId = "legacy-product-without-org";
   const defaultOrgId = "legacy-default-org";
 

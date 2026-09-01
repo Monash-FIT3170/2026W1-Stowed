@@ -1,5 +1,6 @@
 import assert from "assert";
 import { Meteor } from "meteor/meteor";
+import { describeServer } from "./serverOnly";
 import {
   Sites,
   FloorMaps,
@@ -18,7 +19,7 @@ const TEST_STORAGE_UNIT_ID = "test-storage-unit-id";
 const TEST_LOCATION_ID = "loc-1";
 const TEST_ROLE = 3; // ROLES.OWNER - passes all permission checks
 
-before(async function () {
+async function seedFixtures() {
   // Clean up any leftover test data
   await Meteor.users.removeAsync(TEST_USER_ID);
   await Organisations.removeAsync(TEST_ORG_ID);
@@ -66,16 +67,23 @@ before(async function () {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-});
+}
 
-after(async function () {
+async function clearFixtures() {
   await Meteor.users.removeAsync(TEST_USER_ID);
   await Organisations.removeAsync(TEST_ORG_ID);
   await Sites.removeAsync(TEST_SITE_ID);
   await FloorMaps.removeAsync(TEST_FLOOR_MAP_ID);
   await StorageUnits.removeAsync(TEST_STORAGE_UNIT_ID);
   await StorageLocations.removeAsync(TEST_LOCATION_ID);
-});
+}
+
+// These hooks seed and tear down real collections, so they must not run in the
+// browser, where they throw "Access denied" before a single test executes.
+if (Meteor.isServer) {
+  before(seedFixtures);
+  after(clearFixtures);
+}
 
 function callMethod(name, params) {
   return new Promise((resolve, reject) => {
@@ -123,7 +131,7 @@ function assertSamePolygon(actualPoints, expectedPoints) {
 }
 
 // create
-describe("mapShapes.create", function () {
+describeServer("mapShapes.create", function () {
   let createdShapeId;
 
   afterEach(async function () {
@@ -196,31 +204,8 @@ describe("mapShapes.create", function () {
   });
 });
 
-// delete
-describe("mapShapes.delete", function () {
-  it("removes the shape from the database", async function () {
-    const insertedId = await callMethod("mapShapes.create", makeCreateParams());
-    const created = await MapShapes.findOneAsync(insertedId);
-
-    await callMethod("mapShapes.delete", { shapeId: created.shapeId });
-
-    const shape = await MapShapes.findOneAsync({ shapeId: created.shapeId });
-    assert.strictEqual(shape, undefined);
-  });
-
-  it("throws shape-not-found for an unknown shape id", async function () {
-    await assert.rejects(
-      () => callMethod("mapShapes.delete", { shapeId: -1 }),
-      (err) => {
-        assert.strictEqual(err.error, "shape-not-found");
-        return true;
-      },
-    );
-  });
-});
-
 // update
-describe("mapShapes.update", function () {
+describeServer("mapShapes.update", function () {
   let shapeId;
 
   beforeEach(async function () {

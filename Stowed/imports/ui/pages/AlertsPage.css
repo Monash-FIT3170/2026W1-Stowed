@@ -1,5 +1,5 @@
 /* Stocktake alerts list. Colours follow the StatusBadge palette so an overdue
-   alert reads the same as a "Low!" badge elsewhere in the app. */
+   alert reads the same as a low stock badge elsewhere in the app. */
 
 .alerts-summary {
   display: flex;
@@ -167,6 +167,35 @@
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+}
+
+/* Short button labels only ever show on tablet/phone — see the media
+   query below. Desktop keeps the full "Update stock" / "Mark complete". */
+.alert-action-label-short {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .alert-action-label-full {
+    display: none;
+  }
+
+  .alert-action-label-short {
+    display: inline;
+  }
+
+  .alert-actions {
+    justify-content: flex-end;
+  }
+
+  /* Location name, code and path can otherwise run past the card edge on
+     a narrow screen instead of wrapping. */
+  .alert-title,
+  .alert-path,
+  .alert-item-chip {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
 }
 
 /* Placeholder buttons: styled as real actions but deliberately unwired. */

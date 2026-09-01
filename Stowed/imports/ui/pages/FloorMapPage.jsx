@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
@@ -9,9 +9,10 @@ import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
+import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites, MapShapes } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, StorageUnits, MapShapes } from "/imports/api/locations/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -35,6 +36,8 @@ const statusBarButtonStyle = {
 function FloorMapPageInner() {
   const { role } = useAuth();
   const canManage = hasClientPermission(role, "locations.manage");
+  const canStocktake = hasClientPermission(role, "stocktake.save");
+  const canvasRef = useRef(null);
 
   const {
     activeTool,
@@ -56,6 +59,8 @@ function FloorMapPageInner() {
     setSelectedUnit,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
+    handleDeleteShape,
+    handleChangeShape,
   } = useEditor();
 
   const { floorMapId } = useParams();
@@ -66,30 +71,44 @@ function FloorMapPageInner() {
   const [tooltip, setTooltip] = useState(null);
   const [isStockPanelOpen, setIsStockPanelOpen] = useState(false);
   const [isCreateShapeOpen, setIsCreateShapeOpen] = useState(false);
+  const [editingShape, setEditingShape] = useState(null);
+  const [isChangingShape, setIsChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
-  // Fetch all sites and floor maps
+  // Fetch all sites, floor maps, storage units and shapes
   const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageUnits: StorageUnits.find({}, { sort: { createdAt: 1 } }).fetch(),
       mapShapes: MapShapes.find({}, { sort: { name: 1 } }).fetch(),
       locationsReady: handle.ready(),
     };
   }, []);
-
-  const items = selectedUnit?.mockItems ?? lowStockByUnitId?.[selectedUnit?._id] ?? [];
-  const lowItems = items.filter((i) => i.isLow);
-  const okItems = items.filter((i) => !i.isLow);
-  const isEmpty = items.length === 0;
-  const hasLow = lowItems.length > 0;
 
   const handleUnitSelect = (unitId) => {
     setSelectedStorageUnitId(unitId);
     const unit = units.find((u) => u._id === unitId || u.id === unitId) ?? null;
     setSelectedUnit(unit);
     setIsStockPanelOpen(!!unitId);
+  };
+
+  const handleCanvasModeToggle = () => {
+    const nextEditMode = !isCanvasEditMode;
+
+    if (!nextEditMode) {
+      setSelectedStorageUnitId(null);
+      setSelectedUnit(null);
+      setIsStockPanelOpen(false);
+      setTooltip(null);
+    }
+
+    setCanvasEditMode(nextEditMode);
+  };
+  const handleEditShape = (shape) => {
+    setEditingShape(shape);
+    setIsCreateShapeOpen(true);
   };
 
   const updateSelectedUnit = (patch) => {
@@ -240,6 +259,13 @@ function FloorMapPageInner() {
             <>
               <button
                 type="button"
+                onClick={() => canvasRef.current?.exportPng()}
+                style={statusBarButtonStyle}
+              >
+                Export as PNG
+              </button>
+              <button
+                type="button"
                 onClick={() => setFloorMapSettingsOpen(true)}
                 style={statusBarButtonStyle}
               >
@@ -257,7 +283,7 @@ function FloorMapPageInner() {
 
           <button
             type="button"
-            onClick={() => canManage && setCanvasEditMode(!isCanvasEditMode)}
+            onClick={() => canManage && handleCanvasModeToggle()}
             disabled={!canManage}
             style={{
               fontSize: "10px",
@@ -301,6 +327,7 @@ function FloorMapPageInner() {
         >
           {locationsReady && (
             <Canvas
+              ref={canvasRef}
               key={floorMapId ?? "default"}
               style={{ display: "block", width: "100%", height: "100%" }}
               isCanvasEditMode={isCanvasEditMode}
@@ -322,86 +349,13 @@ function FloorMapPageInner() {
             borderLeft: `1px solid ${COLOURS.CARD_BORDER}`,
           }}
         >
-          {/* STOCK SLIDE-OUT PANEL - view mode only */}
+          {/* STOCKTAKE SLIDE-OUT PANEL - view mode only */}
           {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
-            <div className="low-stock-panel" style={{ borderLeft: "none", flex: "0 0 auto" }}>
-              <div
-                className={`panel-header ${isEmpty ? "no-items" : hasLow ? "has-low" : "all-ok"}`}
-              >
-                <div>
-                  <div className="panel-header-label">{selectedUnit.name}</div>
-                  <div className="panel-header-title">
-                    {isEmpty ? "No products" : hasLow ? "Low stock" : "All stocked"}
-                  </div>
-                  <div
-                    className={`panel-status-badge ${isEmpty ? "empty" : hasLow ? "low" : "ok"}`}
-                  >
-                    {isEmpty
-                      ? "Empty"
-                      : hasLow
-                        ? `${lowItems.length} need attention`
-                        : `${okItems.length} products OK`}
-                  </div>
-                </div>
-                <button
-                  className="panel-close-btn"
-                  onClick={() => setIsStockPanelOpen(false)}
-                  aria-label="Close panel"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="panel-content">
-                {isEmpty ? (
-                  <div className="panel-empty">No products assigned to this unit.</div>
-                ) : (
-                  <>
-                    {lowItems.length > 0 && (
-                      <div className="panel-section">
-                        <div className="panel-section-title low">Low stock</div>
-                        {lowItems.map((item, i) => (
-                          <div key={i} className="panel-item low">
-                            <div>
-                              <div className="panel-item-name">
-                                {item.product?.name ?? item.name}
-                              </div>
-                              <div className="panel-item-location">{item.locationName}</div>
-                            </div>
-                            <div>
-                              <div className="panel-item-qty low">{item.quantity}</div>
-                              {item.reorderAt > 0 && (
-                                <div className="panel-item-threshold">min {item.reorderAt}</div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {okItems.length > 0 && (
-                      <div className="panel-section">
-                        <div className="panel-section-title ok">In stock</div>
-                        {okItems.map((item, i) => (
-                          <div key={i} className="panel-item ok">
-                            <div>
-                              <div className="panel-item-name">
-                                {item.product?.name ?? item.name}
-                              </div>
-                              <div className="panel-item-location">{item.locationName}</div>
-                            </div>
-                            <div>
-                              <div className="panel-item-qty ok">{item.quantity}</div>
-                              {item.reorderAt > 0 && (
-                                <div className="panel-item-threshold">min {item.reorderAt}</div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
+            <UnitStocktakePanel
+              unit={selectedUnit}
+              canStocktake={canStocktake}
+              onClose={() => setIsStockPanelOpen(false)}
+            />
           )}
 
           {/* EDIT MODE SIDEBAR - only accessible to admins/owners */}
@@ -432,7 +386,9 @@ function FloorMapPageInner() {
                       }}
                     >
                       <button
-                        onClick={() => handleUnitSelect(null)}
+                        onClick={() => {
+                          isChangingShape ? setIsChangingShape(false) : handleUnitSelect(null);
+                        }}
                         style={{
                           background: "none",
                           border: "none",
@@ -459,7 +415,7 @@ function FloorMapPageInner() {
                         }}
                         aria-label="Collapse sidebar"
                       >
-                        →
+                        <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
                       </button>
                     </div>
                   ) : (
@@ -510,7 +466,7 @@ function FloorMapPageInner() {
                         }}
                         aria-label="Collapse sidebar"
                       >
-                        →
+                        <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
                       </button>
                     </div>
                   )}
@@ -525,7 +481,20 @@ function FloorMapPageInner() {
                       boxSizing: "border-box",
                     }}
                   >
-                    {selectedUnit ? (
+                    {selectedUnit && isChangingShape ? (
+                      //dd
+                      <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
+                        <CustomShapesPanel
+                          mapShapes={mapShapes}
+                          activeTool={activeTool}
+                          setActiveTool={setActiveTool}
+                          onEditShape={handleEditShape}
+                          onDeleteShape={handleDeleteShape}
+                          isChangingShape={isChangingShape}
+                          onChangeShape={handleChangeShape}
+                        />
+                      </div>
+                    ) : selectedUnit ? (
                       <>
                         {/* SETTINGS for the selected storage unit */}
                         <div
@@ -545,6 +514,17 @@ function FloorMapPageInner() {
                         </div>
                         <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
                         <div style={{ padding: "12px", boxSizing: "border-box" }}>
+                          <button
+                            type="button"
+                            className="btn-primary"
+                            style={{ width: "100%" }}
+                            onClick={() => setIsChangingShape(true)}
+                          >
+                            Change Shape
+                          </button>
+
+                          <div style={{ height: "8px" }} />
+
                           <button
                             type="button"
                             className="btn-danger"
@@ -600,12 +580,17 @@ function FloorMapPageInner() {
                             mapShapes={mapShapes}
                             activeTool={activeTool}
                             setActiveTool={setActiveTool}
+                            onEditShape={handleEditShape}
+                            onDeleteShape={handleDeleteShape}
                           />
                         </div>
                         <div style={{ padding: "0 12px 12px", boxSizing: "border-box" }}>
                           <button
                             type="button"
-                            onClick={() => setIsCreateShapeOpen(true)}
+                            onClick={() => {
+                              setEditingShape(null);
+                              setIsCreateShapeOpen(true);
+                            }}
                             style={{
                               ...buttonStyles.base,
                               ...buttonStyles.secondary,
@@ -647,7 +632,7 @@ function FloorMapPageInner() {
                     }}
                     aria-label="Expand sidebar"
                   >
-                    ←
+                    <img src="/sidebar-expand.svg" alt="" width="18" height="18" />
                   </button>
                 </div>
               )}
@@ -752,6 +737,7 @@ function FloorMapPageInner() {
       {isFloorMapSettingsOpen && (
         <FloorMapSettingsModal
           floorSize={floorSize}
+          gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
         />
@@ -761,15 +747,25 @@ function FloorMapPageInner() {
       {isEditorSettingsOpen && (
         <EditorSettingsModal
           gridInterval={canvasSettings.gridInterval}
+          snapInterval={canvasSettings.snapInterval}
           showGrid={canvasSettings.showGrid}
           snapToGrid={canvasSettings.snapToGrid}
           onSave={handleEditorSettingsSave}
           onClose={() => setEditorSettingsOpen(false)}
+          floorSize={floorSize}
         />
       )}
 
-      {/* CREATE SHAPE MODAL */}
-      {isCreateShapeOpen && <CreateShapeModal onClose={() => setIsCreateShapeOpen(false)} />}
+      {/* CREATE / EDIT SHAPE MODAL */}
+      {isCreateShapeOpen && (
+        <CreateShapeModal
+          shape={editingShape}
+          onClose={() => {
+            setIsCreateShapeOpen(false);
+            setEditingShape(null);
+          }}
+        />
+      )}
     </div>
   );
 }

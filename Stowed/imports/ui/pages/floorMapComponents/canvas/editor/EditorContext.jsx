@@ -10,6 +10,9 @@ import {
   getTransformedBounds,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { normaliseShapePoints } from "./utils/ShapeGeometry";
+import { hasCollisions } from "./utils/Collisions";
+import { COLOURS } from "../../FloorMapStyles";
 
 function hasUsableShape(shape) {
   return Array.isArray(shape?.points) && shape.points.length >= 3;
@@ -65,8 +68,8 @@ function mapStorageUnitToCanvasUnit(unit) {
     shape,
     offset,
     rotation: unit.rotation ?? 0,
-    scale,
-    fill: unit.fill || "#7a5230",
+    scale: unit.scale,
+    fill: unit.fill || COLOURS.UNIT_DEFAULT,
   };
 }
 
@@ -79,6 +82,7 @@ export const TOOLS = {
 // --- DEFAULT CANVAS SETTINGS ---
 export const DEFAULT_CANVAS_SETTINGS = {
   gridInterval: CANVAS_CONFIG.METERS_PER_CELL,
+  snapInterval: CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL,
   showGrid: true,
   snapToGrid: true,
 };
@@ -187,6 +191,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         reorderAt: threshold,
         isLow,
         locationName: location.name,
+        locationId: record.locationId,
       });
     });
 
@@ -286,7 +291,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             offset: newOffset,
             rotation: unit.rotation ?? 0,
             scale: newScale,
-            fill: unit.fill || "#7a5230",
+            fill: unit.fill || COLOURS.UNIT_DEFAULT,
           });
 
           savedCanvasUnits.push({ ...unit, shape, offset: newOffset, scale: newScale });
@@ -301,8 +306,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             shape,
             offset: newOffset,
             rotation: 0,
-            scale: newScale,
-            fill: unit.fill || "#7a5230",
+            scale,
+            fill: unit.fill || COLOURS.UNIT_DEFAULT,
           });
 
           savedCanvasUnits.push({
@@ -351,14 +356,41 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   // --- PLACEMENT ---
-  function handlePlaceUnit(template) {
-    setPendingUnit(template);
-    setActiveTool(TOOLS.ADD);
-  }
+  async function handleUnitPlaced() {
+    if (!floorMap) {
+      alert("No floor map exists in database.");
+      return;
+    }
 
-  function handleUnitPlaced() {
-    setPendingUnit(null);
-    setActiveTool(TOOLS.SELECT);
+    const activeFloorMapId = floorMap._id;
+
+    try {
+      for (const unit of units) {
+        if (!unit._id) {
+          // only interested in adding the unit that doesn't already exist
+          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
+          const shape = hasCustomShape
+            ? unit.shape
+            : buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
+          const offset = { x: Number(unit.x), y: Number(unit.y) };
+          const scale = { x: 1, y: 1 };
+
+          await callMethod("storageUnits.create", {
+            floorMapId: activeFloorMapId,
+            name: unit.name,
+            type: unit.type || "other",
+            shape,
+            offset,
+            rotation: 0,
+            scale,
+            fill: unit.fill || "#7a5230",
+          });
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert(error.reason || "Failed to create unit.");
+    }
   }
 
   // --- FLOOR MAP SETTINGS ---
@@ -391,8 +423,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   // --- EDITOR SETTINGS ---
-  function handleEditorSettingsSave({ gridInterval, showGrid, snapToGrid }) {
-    setCanvasSettings({ gridInterval, showGrid, snapToGrid });
+  function handleEditorSettingsSave({ gridInterval, snapInterval, showGrid, snapToGrid }) {
+    setCanvasSettings({ gridInterval, snapInterval, showGrid, snapToGrid });
     return true;
   }
 
@@ -418,6 +450,82 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       alert(
         error.reason ||
           "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+      );
+    }
+  }
+
+  async function handleChangeShape(shape) {
+    if (!selectedUnit) return;
+
+    // normalise custom shapes whose points can have huge variation
+    const normalisedPoints = normaliseShapePoints(shape.points);
+
+    const normalisedShape = {
+      ...shape,
+      points: normalisedPoints,
+    };
+
+    // updates unit details based on new shape
+    const newBounds = getTransformedBounds(normalisedShape, {
+      offset: selectedUnit.offset,
+      rotation: selectedUnit.rotation,
+      scale: selectedUnit.scale,
+    });
+
+    const updatedUnit = {
+      ...selectedUnit,
+      shape: normalisedShape,
+      x: selectedUnit.x,
+      y: selectedUnit.y,
+      width: newBounds.width,
+      height: newBounds.height,
+    };
+
+    // block change if it causes a collision
+    if (hasCollisions(updatedUnit, units, selectedUnit._id)) {
+      alert("Cannot change to this shape because it would cause collisions.");
+      return;
+    }
+
+    // updates unsaved map configs
+    if (!selectedUnit._id) {
+      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
+      setSelectedUnit(updatedUnit);
+      return;
+    }
+
+    try {
+      await callMethod("storageUnits.update", {
+        storageUnitId: selectedUnit._id,
+        floorMapId: floorMap._id,
+        name: selectedUnit.name,
+        type: selectedUnit.type,
+        shape: normalisedShape,
+        offset: selectedUnit.offset,
+        rotation: selectedUnit.rotation,
+        scale: selectedUnit.scale,
+        fill: selectedUnit.fill,
+      });
+
+      // update view
+      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
+
+      setSelectedUnit(updatedUnit);
+    } catch (error) {
+      alert(error.reason || "Ensure that a valid shape has been selected to change to.");
+    }
+  }
+
+  async function handleDeleteShape(shape) {
+    // validate something is selected
+    if (!shape) return;
+
+    try {
+      await callMethod("mapShapes.delete", { shape });
+    } catch (error) {
+      alert(
+        error.reason ||
+          "Cannot delete this shape. Make sure it is not used for any storage units first.",
       );
     }
   }
@@ -461,7 +569,6 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     handleLoadLayout,
 
     // Placement helpers
-    handlePlaceUnit,
     handleUnitPlaced,
 
     // Low stock
@@ -475,6 +582,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected unit
     handleDeleteSelectedUnit,
+    handleChangeShape,
+
+    // Delete selected shape
+    handleDeleteShape,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

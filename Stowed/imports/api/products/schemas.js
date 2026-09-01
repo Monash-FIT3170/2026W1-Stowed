@@ -17,17 +17,7 @@ export const ProductSchema = new SimpleSchema({
     max: 500,
   },
 
-  tag: {
-    type: String,
-    optional: true,
-  },
-
   categoryId: {
-    type: String,
-    optional: true,
-  },
-
-  category: {
     type: String,
     optional: true,
   },
@@ -54,6 +44,9 @@ export const ProductSchema = new SimpleSchema({
     min: 0,
   },
 
+  // DEPRECATED — codes are derived at render time (barcode = sku || _id,
+  // unit QR = page URL; see imports/api/products/codes.js). Kept for
+  // back-compat, never read or written by current code.
   qrCode: {
     type: String,
     optional: true,

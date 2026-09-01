@@ -11,7 +11,7 @@ import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
  *
  * @returns {JSX.Element} Modal UI
  */
-export function FloorMapSettingsModal({ floorSize, onSave, onClose }) {
+export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose }) {
   const toMeters = (px) => {
     const m = Number(px) / CANVAS_CONFIG.PIXELS_PER_METER;
     return m > 0 && isFinite(m) ? m : 10;
@@ -28,8 +28,8 @@ export function FloorMapSettingsModal({ floorSize, onSave, onClose }) {
   }
 
   function handleSave() {
-    if (draft.widthMeters <= 0) return;
-    if (draft.heightMeters <= 0) return;
+    if (draft.widthMeters <= 0 || draft.widthMeters < gridInterval) return;
+    if (draft.heightMeters <= 0 || draft.heightMeters < gridInterval) return;
 
     const saved = onSave({
       floorSize: {
