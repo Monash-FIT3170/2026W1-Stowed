@@ -167,8 +167,7 @@ export function AlertsPage() {
                   const isOverdue = alert.status === STOCKTAKE_STATUS.OVERDUE;
                   const shownItems = alert.items.slice(0, MAX_ITEM_CHIPS);
                   const hiddenItemCount = alert.items.length - shownItems.length;
-                  const cardNotice =
-                    notice?.locationId === alert.location._id ? notice : null;
+                  const cardNotice = notice?.locationId === alert.location._id ? notice : null;
                   const isMarking = pendingLocationId === alert.location._id;
 
                   return (
