@@ -758,19 +758,35 @@ Meteor.methods({
     return StorageLocations.find({ storageUnitId }, { sort: { code: 1 } }).fetchAsync();
   },
 
-  /**
-   *
-   * Updates StorageLocation attributes when a stocktake has been completed for an item in a specific location
-   *
-   * This method sets the completion timestamp.
-   *
-   */
   async "storageLocations.stocktakeComplete"({ locationId }) {
     check(locationId, String);
 
+    const storageLocation = await StorageLocations.findOneAsync(locationId);
+    if (!storageLocation) {
+      throw new Meteor.Error(
+        "storage-location-not-found",
+        "No storage location found with that ID.",
+      );
+    }
+
+    const storageUnit = await StorageUnits.findOneAsync(storageLocation.storageUnitId);
+    if (!storageUnit) {
+      throw new Meteor.Error("invalid-storage-unit", "Storage unit does not exist.");
+    }
+
+    const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "stocktake.save");
+
+    const now = new Date();
     await StorageLocations.updateAsync(locationId, {
       $set: {
-        lastStocktakeAt: new Date(),
+        lastStocktakeAt: now,
+        updatedAt: now,
       },
     });
   },
