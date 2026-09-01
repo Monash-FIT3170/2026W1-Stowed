@@ -1,0 +1,339 @@
+import assert from "assert";
+import {
+  buildLocationRows,
+  buildInventoryRows,
+  buildImportRows,
+  buildExport,
+  toCsv,
+  INVENTORY_COLUMNS,
+  LOCATION_COLUMNS,
+} from "../imports/api/products/export";
+
+const SITES = [{ _id: "site-1", name: "Clayton Campus" }];
+
+const FLOOR_MAPS = [
+  { _id: "floor-1", siteId: "site-1", name: "Building 18", floorSize: { width: 600, height: 400 } },
+];
+
+const STORAGE_UNITS = [
+  {
+    _id: "unit-1",
+    floorMapId: "floor-1",
+    name: "Cabinet A",
+    type: "cabinet",
+    offset: { x: 1, y: 2 },
+    shape: {
+      points: [
+        { x: 0, y: 0 },
+        { x: 2, y: 0 },
+        { x: 2, y: 1 },
+        { x: 0, y: 1 },
+      ],
+    },
+  },
+];
+
+const STORAGE_LOCATIONS = [
+  {
+    _id: "loc-1",
+    storageUnitId: "unit-1",
+    name: "Shelf 1",
+    code: "SC-A1",
+    lastStocktakeAt: new Date("2026-08-23T00:00:00.000Z"),
+  },
+  { _id: "loc-2", storageUnitId: "unit-1", name: "Shelf 2", code: "SC-A2" },
+];
+
+const CATEGORIES = [{ _id: "cat-1", name: "Lab Safety" }];
+
+const PRODUCTS = [
+  {
+    _id: "prod-1",
+    name: "Lab Safety Goggles",
+    sku: "PPE-GOG-001",
+    brand: "3M",
+    categoryId: "cat-1",
+    description: "Splash goggles",
+    totalQuantity: 60,
+    reorderAt: 15,
+    unitCost: 12.5,
+    purchaseCost: 7.2,
+  },
+];
+
+const PRODUCT_RECORDS = [
+  { productId: "prod-1", locationId: "loc-1", quantity: 35 },
+  { productId: "prod-1", locationId: "loc-2", quantity: 25 },
+];
+
+const FIXTURE = {
+  products: PRODUCTS,
+  productRecords: PRODUCT_RECORDS,
+  storageLocations: STORAGE_LOCATIONS,
+  storageUnits: STORAGE_UNITS,
+  floorMaps: FLOOR_MAPS,
+  sites: SITES,
+  categories: CATEGORIES,
+};
+
+describe("export - buildLocationRows", function () {
+  it("returns one row per storage location", function () {
+    const rows = buildLocationRows(FIXTURE);
+    assert.strictEqual(rows.length, 2);
+  });
+
+  it("resolves the full hierarchy onto each row", function () {
+    const [row] = buildLocationRows(FIXTURE);
+    assert.strictEqual(row.locationCode, "SC-A1");
+    assert.strictEqual(row.site, "Clayton Campus");
+    assert.strictEqual(row.floorMap, "Building 18");
+    assert.strictEqual(row.storageUnit, "Cabinet A");
+    assert.strictEqual(row.storageUnitType, "cabinet");
+    assert.strictEqual(row.storageLocation, "Shelf 1");
+  });
+
+  it("blanks hierarchy fields when a parent is missing", function () {
+    const rows = buildLocationRows({
+      ...FIXTURE,
+      storageUnits: [],
+      floorMaps: [],
+      sites: [],
+    });
+    assert.strictEqual(rows[0].site, "");
+    assert.strictEqual(rows[0].storageUnit, "");
+    assert.strictEqual(rows[0].locationCode, "SC-A1");
+  });
+
+  it("returns an empty array when there are no locations", function () {
+    assert.deepStrictEqual(buildLocationRows({}), []);
+  });
+
+  it("emits a blank-location row for a unit with no locations", function () {
+    const rows = buildLocationRows({ ...FIXTURE, storageLocations: [] });
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].storageUnit, "Cabinet A");
+    assert.strictEqual(rows[0].locationCode, "");
+  });
+
+  it("includes unit geometry columns", function () {
+    const rows = buildLocationRows({
+      ...FIXTURE,
+      storageUnits: [
+        { ...STORAGE_UNITS[0], offset: { x: 1, y: 2 }, rotation: 0, scale: { x: 1, y: 1 } },
+      ],
+    });
+    assert.strictEqual(rows[0].unitOffsetX, 1);
+    assert.strictEqual(rows[0].unitOffsetY, 2);
+  });
+});
+
+describe("export - buildInventoryRows", function () {
+  it("returns one row per product-location pair", function () {
+    const rows = buildInventoryRows(FIXTURE);
+    assert.strictEqual(rows.length, 2);
+    assert.deepStrictEqual(
+      rows.map((r) => r.locationCode),
+      ["SC-A1", "SC-A2"],
+    );
+    assert.deepStrictEqual(
+      rows.map((r) => r.quantityAtLocation),
+      [35, 25],
+    );
+  });
+
+  it("repeats product details across each of its rows", function () {
+    const rows = buildInventoryRows(FIXTURE);
+    for (const row of rows) {
+      assert.strictEqual(row.name, "Lab Safety Goggles");
+      assert.strictEqual(row.sku, "PPE-GOG-001");
+      assert.strictEqual(row.totalQuantity, 60);
+    }
+  });
+
+  it("resolves the category name from categoryId", function () {
+    const [row] = buildInventoryRows(FIXTURE);
+    assert.strictEqual(row.category, "Lab Safety");
+  });
+
+  it("blanks the category when the id does not resolve", function () {
+    const rows = buildInventoryRows({ ...FIXTURE, categories: [] });
+    assert.strictEqual(rows[0].category, "");
+  });
+
+  it("emits one blank-location row for a product with no records", function () {
+    const rows = buildInventoryRows({ ...FIXTURE, productRecords: [] });
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].locationCode, "");
+    assert.strictEqual(rows[0].quantityAtLocation, 0);
+    assert.strictEqual(rows[0].name, "Lab Safety Goggles");
+  });
+
+  it("blanks optional numeric fields rather than emitting null", function () {
+    const rows = buildInventoryRows({
+      ...FIXTURE,
+      products: [{ _id: "prod-2", name: "Bare Product", totalQuantity: 0 }],
+      productRecords: [],
+    });
+    assert.strictEqual(rows[0].reorderAt, "");
+    assert.strictEqual(rows[0].unitCost, "");
+    assert.strictEqual(rows[0].purchaseCost, "");
+  });
+
+  it("never emits undefined for any column", function () {
+    const rows = buildInventoryRows({
+      ...FIXTURE,
+      products: [{ _id: "prod-2", name: "Bare Product", totalQuantity: 0 }],
+      productRecords: [],
+    });
+    for (const column of INVENTORY_COLUMNS) {
+      assert.notStrictEqual(rows[0][column], undefined, `${column} must not be undefined`);
+    }
+  });
+
+  it("returns an empty array when there are no products", function () {
+    assert.deepStrictEqual(buildInventoryRows({}), []);
+  });
+});
+
+describe("export - buildExport", function () {
+  it("returns both tables", function () {
+    const result = buildExport(FIXTURE);
+    assert.strictEqual(result.locations.length, 2);
+    assert.strictEqual(result.inventory.length, 2);
+    assert.strictEqual(result.importRows.length, 2);
+  });
+
+  it("only references location codes present in the locations table", function () {
+    const { locations, inventory } = buildExport(FIXTURE);
+    const known = new Set(locations.map((l) => l.locationCode));
+    for (const row of inventory) {
+      if (row.locationCode === "") continue;
+      assert.ok(known.has(row.locationCode), `unknown code ${row.locationCode}`);
+    }
+  });
+});
+
+describe("export - buildImportRows", function () {
+  it("returns JSON rows matching the bulk import template", function () {
+    const [row] = buildImportRows(FIXTURE);
+    assert.strictEqual(row.siteName, "Clayton Campus");
+    assert.strictEqual(row.floorMapName, "Building 18");
+    assert.strictEqual(row.floorMapWidth, 12);
+    assert.strictEqual(row.floorMapHeight, 8);
+    assert.strictEqual(row.storageUnitName, "Cabinet A");
+    assert.strictEqual(row.storageUnitType, "cabinet");
+    assert.strictEqual(row.storageUnitOffsetX, 1);
+    assert.strictEqual(row.storageUnitOffsetY, 2);
+    assert.strictEqual(row.storageUnitWidth, 2);
+    assert.strictEqual(row.storageUnitHeight, 1);
+    assert.strictEqual(row.locationName, "Shelf 1");
+    assert.strictEqual(row.locationCode, "SC-A1");
+    assert.strictEqual(row.lastStocktakeAt, "2026-08-23T00:00:00.000Z");
+    assert.strictEqual(row.name, "Lab Safety Goggles");
+    assert.strictEqual(row.category, "Lab Safety");
+    assert.deepStrictEqual(row.assignments, [{ locationCode: "SC-A1", quantity: 35 }]);
+  });
+
+  it("exports per-location quantities so re-importing rebuilds the product total", function () {
+    const rows = buildImportRows(FIXTURE);
+    assert.deepStrictEqual(
+      rows.map((row) => row.totalQuantity),
+      [35, 25],
+    );
+  });
+
+  it("includes locations that do not currently hold products", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      productRecords: [PRODUCT_RECORDS[0]],
+    });
+    const emptyLocationRow = rows.find((row) => row.locationCode === "SC-A2");
+    assert.ok(emptyLocationRow);
+    assert.strictEqual(emptyLocationRow.name, "");
+    assert.deepStrictEqual(emptyLocationRow.assignments, []);
+  });
+
+  it("includes products with no location assignments", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      productRecords: [],
+      storageLocations: [],
+    });
+    assert.strictEqual(rows.length, 2);
+    const productRow = rows.find((row) => row.name === "Lab Safety Goggles");
+    assert.ok(productRow);
+    assert.strictEqual(productRow.siteName, "Unassigned Stock");
+    assert.strictEqual(productRow.locationCode, "UNASSIGNED-prod-1");
+    assert.strictEqual(productRow.totalQuantity, 60);
+    assert.deepStrictEqual(productRow.assignments, [
+      { locationCode: "UNASSIGNED-prod-1", quantity: 60 },
+    ]);
+  });
+});
+
+describe("export - toCsv", function () {
+  it("writes a header row from the given columns", function () {
+    const csv = toCsv([], LOCATION_COLUMNS);
+    assert.strictEqual(csv, LOCATION_COLUMNS.join(","));
+  });
+
+  it("writes one line per row, CRLF separated", function () {
+    const csv = toCsv(buildLocationRows(FIXTURE), LOCATION_COLUMNS);
+    assert.strictEqual(csv.split("\r\n").length, 3);
+  });
+
+  it("quotes values containing a comma", function () {
+    const csv = toCsv([{ name: "Widget, large" }], ["name"]);
+    assert.ok(csv.includes('"Widget, large"'));
+  });
+
+  it("escapes embedded double quotes by doubling them", function () {
+    const csv = toCsv([{ name: 'The "Big" One' }], ["name"]);
+    assert.ok(csv.includes('"The ""Big"" One"'));
+  });
+
+  it("quotes values containing a line break", function () {
+    const csv = toCsv([{ name: "line one\nline two" }], ["name"]);
+    assert.ok(csv.includes('"line one\nline two"'));
+  });
+
+  it("writes an empty cell for a missing column", function () {
+    const csv = toCsv([{ name: "Widget" }], ["name", "sku"]);
+    assert.strictEqual(csv, "name,sku\r\nWidget,");
+  });
+
+  it("blanks unit dimensions when the shape has no points", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      storageUnits: [{ _id: "unit-1", floorMapId: "floor-1", name: "Cabinet A", type: "cabinet" }],
+    });
+    assert.strictEqual(rows[0].storageUnitWidth, "");
+    assert.strictEqual(rows[0].storageUnitHeight, "");
+  });
+
+  it("includes units that have no locations", function () {
+    const rows = buildImportRows({ ...FIXTURE, storageLocations: [], productRecords: [] });
+    const unitRow = rows.find((row) => row.storageUnitName === "Cabinet A");
+    assert.ok(unitRow);
+    assert.strictEqual(unitRow.locationCode, "");
+  });
+
+  it("does not invent a location for a product with no stock", function () {
+    const rows = buildImportRows({
+      ...FIXTURE,
+      products: [{ _id: "prod-2", name: "Empty Product", totalQuantity: 0 }],
+      productRecords: [],
+      storageLocations: [],
+      storageUnits: [],
+    });
+    const row = rows.find((r) => r.name === "Empty Product");
+    assert.strictEqual(row.locationCode, "");
+    assert.deepStrictEqual(row.assignments, []);
+  });
+
+  it("exports floor dimensions in metres", function () {
+    const [row] = buildLocationRows(FIXTURE);
+    assert.strictEqual(row.floorWidth, 12);
+    assert.strictEqual(row.floorHeight, 8);
+  });
+});

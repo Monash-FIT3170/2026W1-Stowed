@@ -14,6 +14,34 @@ import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
 import { COLOURS } from "../../FloorMapStyles";
 
+function hasUsableShape(shape) {
+  return Array.isArray(shape?.points) && shape.points.length >= 3;
+}
+
+function getFallbackShape(unit) {
+  const width = Number(unit.width) > 0 ? Number(unit.width) : 1;
+  const height = Number(unit.height) > 0 ? Number(unit.height) : 1;
+  return buildRectShape({ width, height, name: unit.name || "Storage unit" });
+}
+
+function getDrawableShape(unit) {
+  return hasUsableShape(unit.shape) ? unit.shape : getFallbackShape(unit);
+}
+
+function normalizeFloorSize(floorSize) {
+  const width = Number(floorSize?.width);
+  const height = Number(floorSize?.height);
+  if (!(width > 0 && height > 0)) return null;
+
+  const looksLikeMeters = width <= 100 && height <= 100;
+  return looksLikeMeters
+    ? {
+        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
+        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
+      }
+    : { width, height };
+}
+
 /**
  * Maps a StorageUnit to a the rectangle model the canvas currently renders.
  * The units real geometry is in its shape.points which is then transformed
@@ -23,8 +51,11 @@ import { COLOURS } from "../../FloorMapStyles";
  * as a stand in until the canvas can render different polygons
  */
 function mapStorageUnitToCanvasUnit(unit) {
-  const transform = { offset: unit.offset, rotation: unit.rotation, scale: unit.scale };
-  const bounds = getTransformedBounds(unit.shape, transform);
+  const shape = getDrawableShape(unit);
+  const offset = unit.offset ?? { x: 0, y: 0 };
+  const scale = unit.scale ?? { x: 1, y: 1 };
+  const transform = { offset, rotation: unit.rotation, scale };
+  const bounds = getTransformedBounds(shape, transform);
   return {
     id: unit._id,
     _id: unit._id,
@@ -34,8 +65,8 @@ function mapStorageUnitToCanvasUnit(unit) {
     y: bounds.minY,
     width: bounds.width,
     height: bounds.height,
-    shape: unit.shape,
-    offset: unit.offset,
+    shape,
+    offset,
     rotation: unit.rotation ?? 0,
     scale: unit.scale,
     fill: unit.fill || COLOURS.UNIT_DEFAULT,
@@ -155,7 +186,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       map[unitId].push({
         product,
-        quantity: product.totalQuantity,
+        quantity: record.quantity,
         threshold,
         reorderAt: threshold,
         isLow,
@@ -170,10 +201,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
-    const fw = Number(floorMap.floorSize?.width);
-    const fh = Number(floorMap.floorSize?.height);
-    if (fw > 0 && fh > 0) {
-      setFloorSize({ width: fw, height: fh });
+    const nextFloorSize = normalizeFloorSize(floorMap.floorSize);
+    if (nextFloorSize) {
+      setFloorSize(nextFloorSize);
     }
 
     if (floorMap.settings) {
@@ -230,22 +260,26 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       const savedCanvasUnits = [];
 
       for (const unit of units) {
+        const shape = getDrawableShape(unit);
+        const offset = unit.offset ?? { x: 0, y: 0 };
+        const scale = unit.scale ?? { x: 1, y: 1 };
+
         if (unit._id) {
           // Recalculate all new transformations and update accordingly
-          const loadedBounds = getTransformedBounds(unit.shape, {
-            offset: unit.offset,
+          const loadedBounds = getTransformedBounds(shape, {
+            offset,
             rotation: unit.rotation,
-            scale: unit.scale,
+            scale,
           });
           const newOffset = {
-            x: unit.offset.x + (unit.x - loadedBounds.minX),
-            y: unit.offset.y + (unit.y - loadedBounds.minY),
+            x: offset.x + (unit.x - loadedBounds.minX),
+            y: offset.y + (unit.y - loadedBounds.minY),
           };
 
-          const rawBounds = getBoundingBox(unit.shape.points);
+          const rawBounds = getBoundingBox(shape.points);
           const newScale = {
-            x: rawBounds.width > 0 ? unit.width / rawBounds.width : (unit.scale?.x ?? 1),
-            y: rawBounds.height > 0 ? unit.height / rawBounds.height : (unit.scale?.y ?? 1),
+            x: rawBounds.width > 0 ? unit.width / rawBounds.width : scale.x,
+            y: rawBounds.height > 0 ? unit.height / rawBounds.height : scale.y,
           };
 
           await callMethod("storageUnits.update", {
@@ -253,28 +287,24 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             floorMapId: activeFloorMapId,
             name: unit.name,
             type: unit.type || "other",
-            shape: unit.shape,
+            shape,
             offset: newOffset,
             rotation: unit.rotation ?? 0,
             scale: newScale,
             fill: unit.fill || COLOURS.UNIT_DEFAULT,
           });
 
-          savedCanvasUnits.push({ ...unit, offset: newOffset, scale: newScale });
+          savedCanvasUnits.push({ ...unit, shape, offset: newOffset, scale: newScale });
         } else {
-          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
-          const shape = hasCustomShape
-            ? unit.shape
-            : buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
-          const offset = { x: Number(unit.x), y: Number(unit.y) };
-          const scale = { x: 1, y: 1 };
+          const newOffset = { x: Number(unit.x), y: Number(unit.y) };
+          const newScale = { x: 1, y: 1 };
 
           const newId = await callMethod("storageUnits.create", {
             floorMapId: activeFloorMapId,
             name: unit.name,
             type: unit.type || "other",
             shape,
-            offset,
+            offset: newOffset,
             rotation: 0,
             scale,
             fill: unit.fill || COLOURS.UNIT_DEFAULT,
@@ -285,9 +315,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
             _id: newId,
             id: newId,
             shape,
-            offset,
+            offset: newOffset,
             rotation: 0,
-            scale,
+            scale: newScale,
           });
         }
       }
@@ -307,10 +337,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       return;
     }
 
-    const lfw = Number(floorMap.floorSize?.width);
-    const lfh = Number(floorMap.floorSize?.height);
-    if (lfw > 0 && lfh > 0) {
-      setFloorSize({ width: lfw, height: lfh });
+    const nextFloorSize = normalizeFloorSize(floorMap.floorSize);
+    if (nextFloorSize) {
+      setFloorSize(nextFloorSize);
     }
 
     if (floorMap.settings) {

@@ -3,6 +3,8 @@ import { check, Match } from "meteor/check";
 import { ProductActivities, Products, ProductRecords } from "./collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
+import { ProductCategories } from "../categories/collections";
+import { buildExport } from "./export";
 import { generateSku } from "./codes";
 
 async function getProductUpdateMetadata(userId) {
@@ -407,6 +409,42 @@ Meteor.methods({
       createdAt: now,
       quantityBefore: product.totalQuantity,
       quantityAfter: newTotal,
+    });
+  },
+
+  /**
+   * Returns the organisation's full inventory and storage layout
+   */
+  async "products.export"() {
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    const orgId = await getCallerOrgId(this.userId);
+    if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+    await requirePermission(this.userId, "products.export");
+
+    const sites = await Sites.find({ orgId }).fetchAsync();
+    const floorMaps = await FloorMaps.find({ orgId }).fetchAsync();
+    const storageUnits = await StorageUnits.find({ orgId }).fetchAsync();
+    const storageLocations = await StorageLocations.find({ orgId }).fetchAsync();
+    const products = await Products.find({ orgId }).fetchAsync();
+    const categories = await ProductCategories.find({ orgId }).fetchAsync();
+
+    const productIds = products.map((product) => product._id);
+    const productRecords = await ProductRecords.find({
+      productId: { $in: productIds },
+    }).fetchAsync();
+
+    return buildExport({
+      products,
+      productRecords,
+      storageLocations,
+      storageUnits,
+      floorMaps,
+      sites,
+      categories,
     });
   },
 

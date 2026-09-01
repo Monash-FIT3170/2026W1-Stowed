@@ -9,6 +9,7 @@ import {
 } from "./locations/collections";
 import { ProductActivities, Products, ProductRecords } from "./products/collections";
 import { ProductCategories } from "./categories/collections.js";
+import { ImportRecords } from "./importRecords/collections";
 import { getCallerOrgId } from "./userMethods";
 import { Organisations } from "/imports/api/organisations";
 import { ShoppingLists } from "./shoppingLists/collections";
@@ -62,6 +63,14 @@ Meteor.publish("productActivities", async function () {
   if (!orgId) return this.ready();
 
   return ProductActivities.find({ orgId }, { sort: { createdAt: -1 }, limit: 100 });
+});
+
+Meteor.publish("importRecords", async function () {
+  if (!this.userId) return this.ready();
+  const orgId = await getCallerOrgId(this.userId);
+  if (!orgId) return this.ready();
+
+  return ImportRecords.find({ orgId }, { sort: { createdAt: -1 }, limit: 10 });
 });
 
 Meteor.publish("currentOrganisation", async function () {

@@ -10,6 +10,7 @@ import "/imports/api/publications";
 import "/imports/api/userMethods";
 import { ROLES } from "/imports/api/roles";
 import "/imports/api/upload.js";
+import "/imports/api/bulkImport";
 import { Sites, StorageUnits } from "/imports/api/locations/collections";
 import { ProductActivities, Products } from "/imports/api/products/collections";
 import { seedDatabase, resetDatabase } from "./seed";
