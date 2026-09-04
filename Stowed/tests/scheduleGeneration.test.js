@@ -11,7 +11,6 @@ import {
   LIST_FREQUENCIES,
 } from "../imports/api/shoppingLists/constants";
 
-
 describe("quantityFor", function () {
   it("scales the shortfall by the number of weeks the frequency covers", function () {
     const product = { totalQuantity: 2, reorderAt: 10, lowStockThreshold: 0 };
@@ -140,7 +139,6 @@ describe("allocateWithinBudget", function () {
   });
 
   it("SPREAD seeds one unit of each affordable product before topping up", function () {
-
     const result = allocateWithinBudget(
       [cheap, mid, dear],
       opts({

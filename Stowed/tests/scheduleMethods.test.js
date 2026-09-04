@@ -63,7 +63,7 @@ const TEST_USER_ID = "test-user-id-schedules";
 const TEST_ORG_ID = "test-org-id-schedules";
 const OTHER_ORG_ID = "test-other-org-schedules";
 const OTHER_ORG_USER_ID = "test-other-user-schedules";
-const TEST_ROLE = 1; 
+const TEST_ROLE = 1;
 
 function callMethod(name, params) {
   return new Promise((resolve, reject) => {

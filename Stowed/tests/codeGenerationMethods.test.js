@@ -13,7 +13,7 @@ const TEST_ORG_ID = "test-org-id-codegen";
 const OTHER_ORG_ID = "test-other-org-codegen";
 const TEST_SITE_ID = "test-site-id-codegen";
 const TEST_FLOOR_MAP_ID = "test-floor-map-id-codegen";
-const TEST_ROLE = 2; 
+const TEST_ROLE = 2;
 
 const UNIT_SHAPE = {
   orgId: TEST_ORG_ID,
