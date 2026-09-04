@@ -1,5 +1,10 @@
 import assert from "assert";
-import { getBarcodeValue, buildUnitQrUrl, parseScannedUrl } from "../imports/api/products/codes";
+import {
+  getBarcodeValue,
+  buildUnitQrUrl,
+  parseScannedUrl,
+  generateSku,
+} from "../imports/api/products/codes";
 
 describe("barcode/QR helpers", function () {
   describe("getBarcodeValue", function () {
@@ -69,6 +74,25 @@ describe("barcode/QR helpers", function () {
     it("rejects non-string input", function () {
       assert.strictEqual(parseScannedUrl(null, origin), null);
       assert.strictEqual(parseScannedUrl(42, origin), null);
+    });
+  });
+
+  describe("generateSku", function () {
+    it("produces an upper-case SKU- prefixed code", function () {
+      const sku = generateSku();
+      assert.ok(/^SKU-[0-9A-Z]{1,6}$/.test(sku), `unexpected sku shape: ${sku}`);
+      assert.strictEqual(sku, sku.toUpperCase());
+    });
+
+    it("is a valid Code-128 value (barcode = sku when set)", function () {
+      const product = { _id: "abc123", sku: generateSku() };
+      assert.strictEqual(getBarcodeValue(product), product.sku);
+    });
+
+    it("practically never collides across many draws", function () {
+      const seen = new Set();
+      for (let i = 0; i < 2000; i += 1) seen.add(generateSku());
+      assert.ok(seen.size > 1990, `only ${seen.size} unique of 2000`);
     });
   });
 });

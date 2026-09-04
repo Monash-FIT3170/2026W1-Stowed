@@ -25,3 +25,6 @@ import "./productExport.test.js";
 import "./bulkImport.test.js";
 import "./barcodeHelpers.test.js";
 import "./stockAdjust.test.js";
+import "./scheduleMethods.test.js";
+import "./scheduleGeneration.test.js";
+import "./codeGenerationMethods.test.js";
