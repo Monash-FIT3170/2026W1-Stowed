@@ -1,0 +1,38 @@
+/* CustomerNav.css */
+
+/* A horizontal bar rather than the staff rail: a customer is browsing, not
+   working through a tool list, and the wordmark reads the same as the one in
+   the sidebar so the two areas still look like one product. */
+
+.customer-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.customer-nav-logo {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text-dark);
+  font-style: italic;
+  line-height: 1.1;
+}
+
+.customer-nav-logo-dot {
+  color: var(--accent-primary);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .customer-nav {
+    padding: 12px 16px;
+  }
+
+  .customer-nav-logo {
+    font-size: 22px;
+  }
+}

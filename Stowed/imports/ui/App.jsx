@@ -21,6 +21,8 @@ import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
+import { OrgGatewayPage } from "./pages/OrgGatewayPage";
+import { CustomerPage } from "./pages/CustomerPage";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
@@ -61,13 +63,23 @@ export function App() {
             overflow: "hidden",
           }}
         >
-          {isLoggedIn && <Sidebar />}
-          {/* Layout is in Sidebar.css, not inline: a media query cannot override
-              an inline style, so the dock could never reclaim this margin. */}
-          <main className={`app-main${isLoggedIn ? " with-sidebar" : ""}`}>
+          {/* Chrome is routed too: the customer area brings its own nav, so the
+              staff rail must not follow a logged-in owner into /customer or the
+              /org gateway. Layout is in Sidebar.css, not inline: a media query
+              cannot override an inline style, so the dock could never reclaim
+              the margin the rail takes. */}
+          <Routes>
+            <Route path="/org/:orgCode" element={null} />
+            <Route path="/customer" element={null} />
+            <Route path="*" element={isLoggedIn ? <Sidebar /> : null} />
+          </Routes>
+          <main className="app-main">
             <Routes>
               {/* public routes */}
               <Route path="/register" element={<Register />} />
+              {/* Customer entry point: stores the org, then redirects to /customer */}
+              <Route path="/org/:orgCode" element={<OrgGatewayPage />} />
+              <Route path="/customer" element={<CustomerPage />} />
               <Route
                 path="/login"
                 element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
