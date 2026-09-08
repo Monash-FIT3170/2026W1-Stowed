@@ -22,7 +22,11 @@ import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
 import { OrgGatewayPage } from "./pages/OrgGatewayPage";
+import { CustomerLayout } from "./components/CustomerLayout";
 import { CustomerPage } from "./pages/CustomerPage";
+import { CustomerProductSearchPage } from "./pages/CustomerProductSearchPage";
+import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
+import { CustomerFloorMapPage } from "./pages/CustomerFloorMapPage";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
@@ -70,7 +74,7 @@ export function App() {
               the margin the rail takes. */}
           <Routes>
             <Route path="/org/:orgCode" element={null} />
-            <Route path="/customer" element={null} />
+            <Route path="/customer/*" element={null} />
             <Route path="*" element={isLoggedIn ? <Sidebar /> : null} />
           </Routes>
           <main className="app-main">
@@ -79,7 +83,15 @@ export function App() {
               <Route path="/register" element={<Register />} />
               {/* Customer entry point: stores the org, then redirects to /customer */}
               <Route path="/org/:orgCode" element={<OrgGatewayPage />} />
-              <Route path="/customer" element={<CustomerPage />} />
+              {/* One layout for the whole customer area: the nav is mounted by
+                  CustomerLayout and the pages swap through its Outlet, so it
+                  survives every click within /customer. */}
+              <Route path="/customer" element={<CustomerLayout />}>
+                <Route index element={<CustomerPage />} />
+                <Route path="search" element={<CustomerProductSearchPage />} />
+                <Route path="lists" element={<CustomerShoppingListPage />} />
+                <Route path="floor-map" element={<CustomerFloorMapPage />} />
+              </Route>
               <Route
                 path="/login"
                 element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}

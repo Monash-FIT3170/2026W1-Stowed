@@ -1,0 +1,40 @@
+/* CustomerLayout.css */
+
+/* A column: the nav pins to the top and the routed page grows into the rest. */
+
+.customer-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.customer-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Shared by every customer page, so each page file carries only its own
+   content and not a copy of the same padding and heading rules. */
+
+.customer-page {
+  padding: 28px 24px;
+}
+
+.customer-page-title {
+  font-size: 30px;
+  font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .customer-page {
+    padding: 20px 16px;
+  }
+
+  .customer-page-title {
+    font-size: 24px;
+  }
+}

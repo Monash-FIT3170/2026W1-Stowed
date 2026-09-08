@@ -7,10 +7,13 @@
 .customer-nav {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 28px;
   padding: 14px 24px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .customer-nav-logo {
@@ -20,6 +23,8 @@
   color: var(--text-dark);
   font-style: italic;
   line-height: 1.1;
+  text-decoration: none;
+  flex-shrink: 0;
 }
 
 .customer-nav-logo-dot {
@@ -27,12 +32,57 @@
   font-style: italic;
 }
 
+/* -- Links -- */
+
+.customer-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* The row scrolls rather than wrapping, so the bar keeps its height and the
+     logo stays put on a narrow phone. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.customer-nav-links::-webkit-scrollbar {
+  display: none;
+}
+
+.customer-nav-link {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.customer-nav-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-dark);
+}
+
+.customer-nav-link.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .customer-nav {
+    gap: 14px;
     padding: 12px 16px;
   }
 
   .customer-nav-logo {
     font-size: 22px;
+  }
+
+  .customer-nav-link {
+    padding: 7px 11px;
+    font-size: 13px;
   }
 }
