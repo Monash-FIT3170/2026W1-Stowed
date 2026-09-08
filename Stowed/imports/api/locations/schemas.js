@@ -51,6 +51,12 @@ export const FloorMapSchema = new SimpleSchema({
     max: 100,
   },
 
+  // is floormap viewable by the public, or private
+  isPrivate: {
+    type: Boolean,
+    defaultValue: false,
+  },
+
   imageUrl: {
     type: String,
     optional: true,

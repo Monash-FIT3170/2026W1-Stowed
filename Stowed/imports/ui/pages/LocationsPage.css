@@ -616,3 +616,44 @@
     white-space: normal;
   }
 }
+
+.locations-toggle-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.locations-toggle-field > span {
+  color: var(--text-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.locations-toggle {
+  width: 44px;
+  height: 24px;
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--input-bg);
+  cursor: pointer;
+}
+
+.locations-toggle-knob {
+  display: block;
+  width: 16px;
+  height: 17px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  background: var(--card-bg);
+  transition: transform 150ms ease;
+}
+
+.locations-toggle.active {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+}
+
+.locations-toggle.active .locations-toggle-knob {
+  transform: translateX(20px);
+}
