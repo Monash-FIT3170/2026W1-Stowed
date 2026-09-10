@@ -1,0 +1,70 @@
+/* accessibility.css - the Accessibility block above Logout and its pop-up panel */
+
+.a11y-widget {
+  position: relative;
+  margin-top: 8px;
+}
+
+@media (max-width: 1024px) {
+  /* The sidebar collapses to a horizontal dock here; the block returns once its
+     small-screen placement is designed. */
+  .a11y-widget {
+    display: none;
+  }
+}
+
+.a11y-block {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: rgba(181, 83, 42, 0.08);
+  border: 1px solid rgba(181, 83, 42, 0.24);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.a11y-block:hover {
+  background: var(--dark);
+  color: var(--card-bg);
+}
+
+.a11y-block:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.a11y-panel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 12px 34px rgba(26, 26, 26, 0.18);
+}
+
+.a11y-panel-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.a11y-panel-empty {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
