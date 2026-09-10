@@ -1,6 +1,17 @@
 import { useEffect, useId, useRef, useState } from "react";
 import "./accessibility.css";
 
+const CONTRAST_STORAGE_KEY = "stowed.a11y.highContrast";
+
+function readContrastPreference() {
+  if (typeof window === "undefined" || !window.localStorage) return false;
+  try {
+    return window.localStorage.getItem(CONTRAST_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 function AccessibilityIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -15,8 +26,22 @@ function AccessibilityIcon() {
 
 export function AccessibilityWidget() {
   const [open, setOpen] = useState(false);
+  const [highContrast, setHighContrast] = useState(readContrastPreference);
   const panelId = useId();
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("a11y-contrast", highContrast);
+    }
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem(CONTRAST_STORAGE_KEY, String(highContrast));
+      } catch {
+        // storage unavailable (private mode / quota) — the setting still applies this session
+      }
+    }
+  }, [highContrast]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -44,7 +69,17 @@ export function AccessibilityWidget() {
       {open && (
         <div className="a11y-panel" id={panelId} role="dialog" aria-label="Accessibility">
           <h2 className="a11y-panel-title">Accessibility</h2>
-          <p className="a11y-panel-empty">Options coming soon.</p>
+          <label className="a11y-option">
+            <input
+              type="checkbox"
+              checked={highContrast}
+              onChange={() => setHighContrast((current) => !current)}
+            />
+            <span className="a11y-option-text">
+              <span className="a11y-option-label">High contrast</span>
+              <span className="a11y-option-desc">Stronger colours and borders</span>
+            </span>
+          </label>
         </div>
       )}
 

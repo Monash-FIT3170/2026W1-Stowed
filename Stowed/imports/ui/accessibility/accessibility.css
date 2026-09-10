@@ -1,4 +1,5 @@
-/* accessibility.css - the Accessibility block above Logout and its pop-up panel */
+/* accessibility.css - the Accessibility block above Logout, its pop-up panel,
+   and the high-contrast theme the panel toggles */
 
 .a11y-widget {
   position: relative;
@@ -63,8 +64,62 @@
   color: var(--text-dark);
 }
 
-.a11y-panel-empty {
-  margin: 6px 0 0;
-  font-size: 12px;
+.a11y-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.a11y-option input {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: var(--accent-primary);
+}
+
+.a11y-option-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.a11y-option-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.a11y-option-desc {
+  font-size: 11px;
   color: var(--text-muted);
+}
+
+/* -- High contrast, toggled by the panel checkbox (a11y-contrast on <html>) -- */
+
+html.a11y-contrast {
+  --bg-primary: #ffffff;
+  --bg-light: #ffffff;
+  --text-dark: #000000;
+  --text-muted: #1a1a1a;
+  --accent-primary: #8a2b00;
+  --accent-secondary: #8a2b00;
+  --border-light: #000000;
+  --border-subtle: #000000;
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --tag-bg: #ffffff;
+  --tag-text: #000000;
+  --danger: #a10000;
+  --dark: #000000;
+}
+
+html.a11y-contrast a {
+  text-decoration: underline;
+}
+
+html.a11y-contrast *:focus-visible {
+  outline: 3px solid #8a2b00;
+  outline-offset: 2px;
 }
