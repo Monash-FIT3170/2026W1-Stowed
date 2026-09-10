@@ -159,10 +159,20 @@ export function AccessibilityWidget() {
     <div className="a11y-widget" ref={containerRef}>
       {open && (
         <div className="a11y-panel" id={panelId} role="dialog" aria-label="Accessibility">
-          <h2 className="a11y-panel-title">Accessibility</h2>
+          <div className="a11y-panel-head">
+            <h2 className="a11y-panel-title">Accessibility</h2>
+            <button
+              type="button"
+              className="a11y-panel-close"
+              aria-label="Close"
+              onClick={() => setOpen(false)}
+            >
+              ×
+            </button>
+          </div>
 
-          <div className="a11y-group">
-            <span className="a11y-group-label" id={textSizeLabelId}>
+          <div className="a11y-row">
+            <span className="a11y-row-label" id={textSizeLabelId}>
               Text size
             </span>
             <div className="a11y-segmented" role="group" aria-labelledby={textSizeLabelId}>
@@ -183,8 +193,8 @@ export function AccessibilityWidget() {
             </div>
           </div>
 
-          <div className="a11y-group">
-            <span className="a11y-group-label" id={zoomLabelId}>
+          <div className="a11y-row">
+            <span className="a11y-row-label" id={zoomLabelId}>
               Zoom
             </span>
             <div className="a11y-stepper" role="group" aria-labelledby={zoomLabelId}>
@@ -210,22 +220,32 @@ export function AccessibilityWidget() {
             </div>
           </div>
 
-          <label className="a11y-option">
-            <input
-              type="checkbox"
-              checked={highContrast}
-              onChange={() => setHighContrast((current) => !current)}
-            />
-            <span className="a11y-option-label">High contrast</span>
+          <div className="a11y-divider" />
+
+          <label className="a11y-toggle">
+            <span className="a11y-toggle-label">High contrast</span>
+            <span className="a11y-switch">
+              <input
+                type="checkbox"
+                checked={highContrast}
+                onChange={() => setHighContrast((current) => !current)}
+              />
+              <span className="a11y-switch-track" aria-hidden="true" />
+              <span className="a11y-switch-thumb" aria-hidden="true" />
+            </span>
           </label>
 
-          <label className="a11y-option">
-            <input
-              type="checkbox"
-              checked={largeCursor}
-              onChange={() => setLargeCursor((current) => !current)}
-            />
-            <span className="a11y-option-label">Large cursor</span>
+          <label className="a11y-toggle">
+            <span className="a11y-toggle-label">Large cursor</span>
+            <span className="a11y-switch">
+              <input
+                type="checkbox"
+                checked={largeCursor}
+                onChange={() => setLargeCursor((current) => !current)}
+              />
+              <span className="a11y-switch-track" aria-hidden="true" />
+              <span className="a11y-switch-thumb" aria-hidden="true" />
+            </span>
           </label>
         </div>
       )}
