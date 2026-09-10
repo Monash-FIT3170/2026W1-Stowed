@@ -11,6 +11,14 @@
   zoom: var(--a11y-font-scale, 1);
 }
 
+/* zoom also scales .app-main's own margin, which would shove the content right
+   of the fixed 200px sidebar; divide it back out so it stays flush. */
+@media (min-width: 1025px) {
+  main.app-main.with-sidebar {
+    margin-left: calc(200px / var(--a11y-font-scale, 1));
+  }
+}
+
 .a11y-widget {
   position: relative;
   margin-top: 8px;
@@ -56,49 +64,49 @@
 
 .a11y-panel {
   position: absolute;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 8px);
   left: 0;
   right: 0;
   z-index: 20;
   background: var(--card-bg);
   border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: 10px;
+  padding: 10px;
   box-shadow: 0 12px 34px rgba(26, 26, 26, 0.18);
 }
 
 .a11y-panel-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-dark);
 }
 
 .a11y-group {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .a11y-group-label {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .a11y-segmented {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .a11y-segment {
   flex: 1;
-  padding: 7px 4px;
-  border-radius: 8px;
+  padding: 4px 2px;
+  border-radius: 6px;
   border: 1px solid var(--border-subtle);
   background: var(--input-bg);
   color: var(--text-dark);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -111,34 +119,23 @@
 
 .a11y-option {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 12px;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
   cursor: pointer;
 }
 
 .a11y-option input {
-  margin-top: 2px;
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
   accent-color: var(--accent-primary);
 }
 
-.a11y-option-text {
-  display: flex;
-  flex-direction: column;
-}
-
 .a11y-option-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-dark);
-}
-
-.a11y-option-desc {
-  font-size: 11px;
-  color: var(--text-muted);
 }
 
 /* -- High contrast, toggled by the panel checkbox (a11y-contrast on <html>) -- */

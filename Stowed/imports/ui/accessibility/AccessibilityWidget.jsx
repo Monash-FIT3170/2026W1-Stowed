@@ -155,10 +155,7 @@ export function AccessibilityWidget() {
               checked={highContrast}
               onChange={() => setHighContrast((current) => !current)}
             />
-            <span className="a11y-option-text">
-              <span className="a11y-option-label">High contrast</span>
-              <span className="a11y-option-desc">Stronger colours and borders</span>
-            </span>
+            <span className="a11y-option-label">High contrast</span>
           </label>
 
           <label className="a11y-option">
@@ -167,10 +164,7 @@ export function AccessibilityWidget() {
               checked={largeCursor}
               onChange={() => setLargeCursor((current) => !current)}
             />
-            <span className="a11y-option-text">
-              <span className="a11y-option-label">Large cursor</span>
-              <span className="a11y-option-desc">Show a bigger mouse pointer</span>
-            </span>
+            <span className="a11y-option-label">Large cursor</span>
           </label>
         </div>
       )}
