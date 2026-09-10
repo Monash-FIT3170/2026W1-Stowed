@@ -3,6 +3,7 @@ import "./accessibility.css";
 
 const CONTRAST_STORAGE_KEY = "stowed.a11y.highContrast";
 const TEXT_SIZE_STORAGE_KEY = "stowed.a11y.textSize";
+const LARGE_CURSOR_STORAGE_KEY = "stowed.a11y.largeCursor";
 
 const TEXT_SIZE_OPTIONS = [
   { id: "default", label: "Default", scale: 1 },
@@ -29,6 +30,15 @@ function readTextSizePreference() {
   }
 }
 
+function readLargeCursorPreference() {
+  if (typeof window === "undefined" || !window.localStorage) return false;
+  try {
+    return window.localStorage.getItem(LARGE_CURSOR_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 function AccessibilityIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -45,6 +55,7 @@ export function AccessibilityWidget() {
   const [open, setOpen] = useState(false);
   const [highContrast, setHighContrast] = useState(readContrastPreference);
   const [textSize, setTextSize] = useState(readTextSizePreference);
+  const [largeCursor, setLargeCursor] = useState(readLargeCursorPreference);
   const panelId = useId();
   const textSizeLabelId = `${panelId}-text-size`;
   const containerRef = useRef(null);
@@ -75,6 +86,19 @@ export function AccessibilityWidget() {
       }
     }
   }, [textSize]);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("a11y-large-cursor", largeCursor);
+    }
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem(LARGE_CURSOR_STORAGE_KEY, String(largeCursor));
+      } catch {
+        // storage unavailable (private mode / quota) — the setting still applies this session
+      }
+    }
+  }, [largeCursor]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -134,6 +158,18 @@ export function AccessibilityWidget() {
             <span className="a11y-option-text">
               <span className="a11y-option-label">High contrast</span>
               <span className="a11y-option-desc">Stronger colours and borders</span>
+            </span>
+          </label>
+
+          <label className="a11y-option">
+            <input
+              type="checkbox"
+              checked={largeCursor}
+              onChange={() => setLargeCursor((current) => !current)}
+            />
+            <span className="a11y-option-text">
+              <span className="a11y-option-label">Large cursor</span>
+              <span className="a11y-option-desc">Show a bigger mouse pointer</span>
             </span>
           </label>
         </div>
