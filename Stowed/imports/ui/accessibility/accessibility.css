@@ -3,19 +3,21 @@
 
 :root {
   --a11y-font-scale: 1;
+  --a11y-zoom: 1;
 }
 
-/* The app sizes most text in px, so scale the content area itself rather than
-   the root font-size. The sidebar and this widget stay at their normal size. */
+/* Both text size and zoom scale the content area only (the app sizes most text
+   in px, so scaling the area is more reliable than the root font-size). The
+   fixed sidebar and this widget sit outside .app-main and stay unchanged. */
 .app-main {
-  zoom: var(--a11y-font-scale, 1);
+  zoom: calc(var(--a11y-font-scale, 1) * var(--a11y-zoom, 1));
 }
 
 /* zoom also scales .app-main's own margin, which would shove the content right
    of the fixed 200px sidebar; divide it back out so it stays flush. */
 @media (min-width: 1025px) {
   main.app-main.with-sidebar {
-    margin-left: calc(200px / var(--a11y-font-scale, 1));
+    margin-left: calc(200px / var(--a11y-font-scale, 1) / var(--a11y-zoom, 1));
   }
 }
 
@@ -115,6 +117,40 @@
   background: var(--accent-primary);
   border-color: var(--accent-primary);
   color: var(--card-bg);
+}
+
+.a11y-stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.a11y-stepper-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.a11y-stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.a11y-stepper-value {
+  min-width: 40px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dark);
 }
 
 .a11y-option {

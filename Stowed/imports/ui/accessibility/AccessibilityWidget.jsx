@@ -4,12 +4,22 @@ import "./accessibility.css";
 const CONTRAST_STORAGE_KEY = "stowed.a11y.highContrast";
 const TEXT_SIZE_STORAGE_KEY = "stowed.a11y.textSize";
 const LARGE_CURSOR_STORAGE_KEY = "stowed.a11y.largeCursor";
+const ZOOM_STORAGE_KEY = "stowed.a11y.zoom";
 
 const TEXT_SIZE_OPTIONS = [
   { id: "default", label: "Default", scale: 1 },
   { id: "large", label: "Large", scale: 1.15 },
   { id: "larger", label: "Larger", scale: 1.3 },
 ];
+
+const ZOOM_MIN = 0.8;
+const ZOOM_MAX = 1.5;
+const ZOOM_STEP = 0.1;
+
+function clampZoom(value) {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100));
+}
 
 function readContrastPreference() {
   if (typeof window === "undefined" || !window.localStorage) return false;
@@ -39,6 +49,15 @@ function readLargeCursorPreference() {
   }
 }
 
+function readZoomPreference() {
+  if (typeof window === "undefined" || !window.localStorage) return 1;
+  try {
+    return clampZoom(parseFloat(window.localStorage.getItem(ZOOM_STORAGE_KEY)));
+  } catch {
+    return 1;
+  }
+}
+
 function AccessibilityIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -56,8 +75,10 @@ export function AccessibilityWidget() {
   const [highContrast, setHighContrast] = useState(readContrastPreference);
   const [textSize, setTextSize] = useState(readTextSizePreference);
   const [largeCursor, setLargeCursor] = useState(readLargeCursorPreference);
+  const [zoom, setZoom] = useState(readZoomPreference);
   const panelId = useId();
   const textSizeLabelId = `${panelId}-text-size`;
+  const zoomLabelId = `${panelId}-zoom`;
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -99,6 +120,19 @@ export function AccessibilityWidget() {
       }
     }
   }, [largeCursor]);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--a11y-zoom", String(zoom));
+    }
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem(ZOOM_STORAGE_KEY, String(zoom));
+      } catch {
+        // storage unavailable (private mode / quota) — the setting still applies this session
+      }
+    }
+  }, [zoom]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -146,6 +180,33 @@ export function AccessibilityWidget() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          <div className="a11y-group">
+            <span className="a11y-group-label" id={zoomLabelId}>
+              Zoom
+            </span>
+            <div className="a11y-stepper" role="group" aria-labelledby={zoomLabelId}>
+              <button
+                type="button"
+                className="a11y-stepper-btn"
+                aria-label="Zoom out"
+                disabled={zoom <= ZOOM_MIN}
+                onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
+              >
+                −
+              </button>
+              <span className="a11y-stepper-value">{Math.round(zoom * 100)}%</span>
+              <button
+                type="button"
+                className="a11y-stepper-btn"
+                aria-label="Zoom in"
+                disabled={zoom >= ZOOM_MAX}
+                onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
+              >
+                +
+              </button>
             </div>
           </div>
 
