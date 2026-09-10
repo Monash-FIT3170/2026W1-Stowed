@@ -222,7 +222,13 @@ export function LocationsPage() {
         imageUrl: record.imageUrl ?? "",
       });
     } else if (type === TABS.FLOOR_MAPS) {
-      setForm({ siteId: record.siteId, name: record.name, imageUrl: record.imageUrl ?? "", isPrivate: record.isPrivate ?? false,});    } else {
+      setForm({
+        siteId: record.siteId,
+        name: record.name,
+        imageUrl: record.imageUrl ?? "",
+        isPrivate: record.isPrivate ?? false,
+      });
+    } else {
       setForm({
         name: record.name,
         description: record.description ?? "",
@@ -792,7 +798,6 @@ export function LocationsPage() {
                 {/* toggle to make floor map private/public */}
                 <FormField label="Make floor map private">
                   <div className="locations-toggle-field">
-
                     <button
                       type="button"
                       role="switch"

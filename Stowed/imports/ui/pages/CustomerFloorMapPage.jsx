@@ -36,22 +36,16 @@ export function CustomerFloorMapPage() {
   }, []);
 
   // Filter out private floor maps
-  const publicFloorMaps = floorMaps.filter(
-    (floorMap) => floorMap.isPrivate !== true
-  );
+  const publicFloorMaps = floorMaps.filter((floorMap) => floorMap.isPrivate !== true);
 
   // Filter out sites that have no public floor maps
-  const publicSites = sites.filter(
-    (site) => publicFloorMaps.some(
-      (floorMap) => floorMap.siteId === site._id
-    )
+  const publicSites = sites.filter((site) =>
+    publicFloorMaps.some((floorMap) => floorMap.siteId === site._id),
   );
 
   // Find the current floor map or default to the first public floor map
   const currentFloorMap =
-    publicFloorMaps.find(
-      (floorMap) => floorMap._id === selectedFloorMapId
-    ) ??
+    publicFloorMaps.find((floorMap) => floorMap._id === selectedFloorMapId) ??
     publicFloorMaps[0] ??
     null;
 
@@ -66,17 +60,12 @@ export function CustomerFloorMapPage() {
   }
 
   // Find the current site based on the current floor map's siteId
-  const currentSite = publicSites.find(
-    (site) => site._id === currentFloorMap?.siteId
-  );
+  const currentSite = publicSites.find((site) => site._id === currentFloorMap?.siteId);
 
   // Filter the public floor maps to only include those that belong to the current site
   const siteFloorMaps = currentSite
-    ? publicFloorMaps.filter(
-      (floorMap) => floorMap.siteId === currentSite._id
-    )
+    ? publicFloorMaps.filter((floorMap) => floorMap.siteId === currentSite._id)
     : [];
-
 
   return (
     <div className="customer-page">
@@ -118,7 +107,7 @@ export function CustomerFloorMapPage() {
                     const targetSiteId = e.target.value;
 
                     const targetMap = publicFloorMaps.find(
-                      (floorMap) => floorMap.siteId === targetSiteId
+                      (floorMap) => floorMap.siteId === targetSiteId,
                     );
 
                     if (targetMap) {
@@ -217,7 +206,7 @@ export function CustomerFloorMapPage() {
               key={currentFloorMap._id}
               floorMapId={currentFloorMap._id}
               isCanvasEditMode={false}
-              setCanvasEditMode={() => { }}
+              setCanvasEditMode={() => {}}
             >
               <Canvas
                 style={{
@@ -227,8 +216,8 @@ export function CustomerFloorMapPage() {
                 }}
                 isCanvasEditMode={false}
                 selectedStorageUnitId={null}
-                setSelectedStorageUnitId={() => { }}
-                setTooltip={() => { }}
+                setSelectedStorageUnitId={() => {}}
+                setTooltip={() => {}}
                 lowStockByUnitId={{}}
               />
             </EditorProvider>
