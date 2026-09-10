@@ -2,6 +2,13 @@ import { useEffect, useId, useRef, useState } from "react";
 import "./accessibility.css";
 
 const CONTRAST_STORAGE_KEY = "stowed.a11y.highContrast";
+const TEXT_SIZE_STORAGE_KEY = "stowed.a11y.textSize";
+
+const TEXT_SIZE_OPTIONS = [
+  { id: "default", label: "Default", scale: 1 },
+  { id: "large", label: "Large", scale: 1.15 },
+  { id: "larger", label: "Larger", scale: 1.3 },
+];
 
 function readContrastPreference() {
   if (typeof window === "undefined" || !window.localStorage) return false;
@@ -9,6 +16,16 @@ function readContrastPreference() {
     return window.localStorage.getItem(CONTRAST_STORAGE_KEY) === "true";
   } catch {
     return false;
+  }
+}
+
+function readTextSizePreference() {
+  if (typeof window === "undefined" || !window.localStorage) return "default";
+  try {
+    const stored = window.localStorage.getItem(TEXT_SIZE_STORAGE_KEY);
+    return TEXT_SIZE_OPTIONS.some((option) => option.id === stored) ? stored : "default";
+  } catch {
+    return "default";
   }
 }
 
@@ -27,7 +44,9 @@ function AccessibilityIcon() {
 export function AccessibilityWidget() {
   const [open, setOpen] = useState(false);
   const [highContrast, setHighContrast] = useState(readContrastPreference);
+  const [textSize, setTextSize] = useState(readTextSizePreference);
   const panelId = useId();
+  const textSizeLabelId = `${panelId}-text-size`;
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +61,20 @@ export function AccessibilityWidget() {
       }
     }
   }, [highContrast]);
+
+  useEffect(() => {
+    const scale = TEXT_SIZE_OPTIONS.find((option) => option.id === textSize)?.scale ?? 1;
+    if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--a11y-font-scale", String(scale));
+    }
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem(TEXT_SIZE_STORAGE_KEY, textSize);
+      } catch {
+        // storage unavailable (private mode / quota) — the setting still applies this session
+      }
+    }
+  }, [textSize]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -69,6 +102,29 @@ export function AccessibilityWidget() {
       {open && (
         <div className="a11y-panel" id={panelId} role="dialog" aria-label="Accessibility">
           <h2 className="a11y-panel-title">Accessibility</h2>
+
+          <div className="a11y-group">
+            <span className="a11y-group-label" id={textSizeLabelId}>
+              Text size
+            </span>
+            <div className="a11y-segmented" role="group" aria-labelledby={textSizeLabelId}>
+              {TEXT_SIZE_OPTIONS.map((option) => {
+                const active = textSize === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`a11y-segment${active ? " is-active" : ""}`}
+                    aria-pressed={active}
+                    onClick={() => setTextSize(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <label className="a11y-option">
             <input
               type="checkbox"
