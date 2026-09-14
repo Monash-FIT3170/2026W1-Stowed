@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.23.5",
+    "@google/genai": "^2.22.0",
     "@react-email/render": "^2.1.0",
     "@swc/helpers": "^0.5.17",
     "@tailwindcss/postcss": "^4.2.2",
