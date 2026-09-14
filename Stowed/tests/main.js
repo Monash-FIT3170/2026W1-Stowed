@@ -5,6 +5,7 @@ import "./productDetail.test.js";
 import "./unitCollisions.test.js";
 import "./login.test.js";
 import "./registration.test.js";
+import "./userIndexMigration.test.js";
 import "./rbac.test.js";
 import "./statusBadge.test.js";
 import "./formValidation.test.js";
