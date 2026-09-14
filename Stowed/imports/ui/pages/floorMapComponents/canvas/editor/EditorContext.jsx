@@ -458,65 +458,80 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
   }
 
+
   async function handleChangeShape(shape) {
     if (!selectedUnit) return;
 
-    // normalise custom shapes whose points can have huge variation
-    const normalisedPoints = normaliseShapePoints(shape.points);
+    // Read the unit's latest position from the canvas.
+    const currentUnit = units.find((unit) => unit.id === selectedUnit.id);
+    if (!currentUnit) return;
 
     const normalisedShape = {
       ...shape,
-      points: normalisedPoints,
+      points: normaliseShapePoints(shape.points),
     };
 
-    // updates unit details based on new shape
+    const rotation = currentUnit.rotation ?? 0;
+    const scale = {
+      x: currentUnit.scale?.x ?? 1,
+      y: currentUnit.scale?.y ?? 1,
+    };
+
+    // Calculate the replacement shape's bounds without a position offset.
     const newBounds = getTransformedBounds(normalisedShape, {
-      offset: selectedUnit.offset,
-      rotation: selectedUnit.rotation,
-      scale: selectedUnit.scale,
+      rotation,
+      scale,
     });
 
+    // Keep the replacement anchored at the current canvas position.
+    const offset = {
+      x: currentUnit.x - newBounds.minX,
+      y: currentUnit.y - newBounds.minY,
+    };
+
     const updatedUnit = {
-      ...selectedUnit,
+      ...currentUnit,
       shape: normalisedShape,
-      x: selectedUnit.x,
-      y: selectedUnit.y,
+      offset,
+      rotation,
+      scale,
       width: newBounds.width,
       height: newBounds.height,
     };
 
-    // block change if it causes a collision
-    if (hasCollisions(updatedUnit, units, selectedUnit._id)) {
+    // Exclude this unit using its canvas ID, including unsaved units.
+    if (hasCollisions(updatedUnit, units, currentUnit.id)) {
       alert("Cannot change to this shape because it would cause collisions.");
       return;
     }
 
-    // updates unsaved map configs
-    if (!selectedUnit._id) {
-      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
-      setSelectedUnit(updatedUnit);
-      return;
-    }
-
     try {
-      await callMethod("storageUnits.update", {
-        storageUnitId: selectedUnit._id,
-        floorMapId: floorMap._id,
-        name: selectedUnit.name,
-        type: selectedUnit.type,
-        shape: normalisedShape,
-        offset: selectedUnit.offset,
-        rotation: selectedUnit.rotation,
-        scale: selectedUnit.scale,
-        fill: selectedUnit.fill,
-      });
+      if (currentUnit._id) {
+        await callMethod("storageUnits.update", {
+          storageUnitId: currentUnit._id,
+          floorMapId: floorMap._id,
+          name: currentUnit.name,
+          type: currentUnit.type,
+          shape: normalisedShape,
+          offset,
+          rotation,
+          scale,
+          fill: currentUnit.fill,
+        });
+      }
 
-      // update view
-      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
+      commitUnits((prev) =>
+        prev.map((unit) =>
+          unit.id === currentUnit.id ? updatedUnit : unit,
+        ),
+      );
 
       setSelectedUnit(updatedUnit);
     } catch (error) {
-      alert(error.reason || "Ensure that a valid shape has been selected to change to.");
+      alert(
+        error.reason ||
+        "Ensure that a valid shape has been selected to change to.",
+      );
     }
   }
 
