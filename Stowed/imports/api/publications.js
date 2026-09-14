@@ -1,4 +1,5 @@
 import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
 
 import {
   Sites,
@@ -26,6 +27,46 @@ Meteor.publish("locations.all", async function () {
     StorageUnits.find({ orgId }),
     StorageLocations.find({ orgId }),
     MapShapes.find({ orgId }),
+  ];
+});
+
+// Anonymous visitors arrive through /org/:orgCode. Publish only the geometry
+// needed to draw that organisation's public maps; locations and stock never
+// leave the server through this subscription.
+Meteor.publish("locations.publicFloorMaps", async function (orgCode) {
+  check(orgCode, String);
+  const code = orgCode.trim().toLowerCase();
+  if (!code) return this.ready();
+  const org = await Organisations.findOneAsync({ code }, { fields: { _id: 1 } });
+  if (!org) return this.ready();
+
+  const maps = await FloorMaps.find(
+    { orgId: org._id, isPrivate: { $ne: true } },
+    { fields: { siteId: 1, name: 1, floorSize: 1, isPrivate: 1, createdAt: 1 } },
+  ).fetchAsync();
+  const mapIds = maps.map((map) => map._id);
+  const siteIds = [...new Set(maps.map((map) => map.siteId))];
+  return [
+    Sites.find({ _id: { $in: siteIds }, orgId: org._id }, { fields: { name: 1, createdAt: 1 } }),
+    FloorMaps.find(
+      { _id: { $in: mapIds }, orgId: org._id, isPrivate: { $ne: true } },
+      { fields: { siteId: 1, name: 1, floorSize: 1, isPrivate: 1, createdAt: 1 } },
+    ),
+    StorageUnits.find(
+      { orgId: org._id, floorMapId: { $in: mapIds } },
+      {
+        fields: {
+          floorMapId: 1,
+          name: 1,
+          type: 1,
+          "shape.points": 1,
+          offset: 1,
+          rotation: 1,
+          scale: 1,
+          fill: 1,
+        },
+      },
+    ),
   ];
 });
 

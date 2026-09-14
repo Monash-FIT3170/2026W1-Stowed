@@ -96,7 +96,13 @@ const EditorContext = createContext(null);
  *
  * @param {{ children: React.ReactNode, floorMapId: string, isCanvasEditMode: boolean, setCanvasEditMode: (v: boolean) => void }} props
  */
-export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanvasEditMode }) {
+export function EditorProvider({
+  children,
+  floorMapId,
+  isCanvasEditMode,
+  setCanvasEditMode,
+  publicOrgCode,
+}) {
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
@@ -143,7 +149,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
   // --- FLOOR MAP + UNITS FROM MONGODB ---
   const { isLoading, floorMap, savedUnits } = useTracker(() => {
-    const handle = Meteor.subscribe("locations.all");
+    const handle =
+      publicOrgCode !== undefined
+        ? Meteor.subscribe("locations.publicFloorMaps", publicOrgCode ?? "")
+        : Meteor.subscribe("locations.all");
 
     const activeFloorMap = floorMapId ? FloorMaps.findOne(floorMapId) : FloorMaps.findOne();
 
@@ -156,10 +165,11 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         ? StorageUnits.find({ floorMapId: activeFloorMapId }).fetch()
         : [],
     };
-  }, [floorMapId]);
+  }, [floorMapId, publicOrgCode]);
 
   // --- LOW STOCK DATA ---
   const { lowStockByUnitId } = useTracker(() => {
+    if (publicOrgCode !== undefined) return { lowStockByUnitId: {} };
     Meteor.subscribe("products");
     Meteor.subscribe("productRecords");
     Meteor.subscribe("locations.all");
@@ -196,7 +206,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     });
 
     return { lowStockByUnitId: map };
-  }, []);
+  }, [publicOrgCode]);
 
   useEffect(() => {
     if (isLoading || !floorMap) return;
