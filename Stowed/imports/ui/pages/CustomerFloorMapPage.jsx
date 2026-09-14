@@ -1,229 +1,92 @@
+import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { useParams } from "react-router-dom";
-import { useState } from "react";
-
 import { FloorMaps, Sites } from "/imports/api/locations/collections";
+import { getCustomerOrgCode } from "../customerSession";
 import { EditorProvider } from "./floorMapComponents/canvas/editor/EditorContext";
-import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
-
-import "../Global.css";
+import { MapSelectors, MapState } from "./floorMapComponents/MapControls";
+import { firstMapForSite, publicMaps, selectAvailableMap } from "./floorMapComponents/mapSelection";
 import "./FloorMapPage.css";
 
-/**
- * FLOOR MAP
- * Read-only floor map, so a customer can find where an item is shelved.
- *
- * TODO for team:
- *  - Highlight the location of a product arrived at from search
- */
+const STORAGE_KEY = "customerFloorMapId";
 
 export function CustomerFloorMapPage() {
-  const { floorMapId } = useParams();
-  const [selectedFloorMapId, setSelectedFloorMapId] = useState(() => {
-    return localStorage.getItem("customerFloorMapId") ?? floorMapId ?? null;
-  });
+  const orgCode = getCustomerOrgCode();
+  const [selectedFloorMapId, setSelectedFloorMapId] = useState(() =>
+    window.localStorage.getItem(STORAGE_KEY),
+  );
 
-  // Fetch all sites, floor maps
   const { sites, floorMaps, locationsReady } = useTracker(() => {
-    const handle = Meteor.subscribe("locations.all");
+    const handle = Meteor.subscribe("locations.publicFloorMaps", orgCode ?? "");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
       locationsReady: handle.ready(),
     };
-  }, []);
+  }, [orgCode]);
 
-  // Filter out private floor maps
-  const publicFloorMaps = floorMaps.filter((floorMap) => floorMap.isPrivate !== true);
+  const visibleMaps = orgCode ? publicMaps(floorMaps) : [];
+  const visibleSites = sites.filter((site) => visibleMaps.some((map) => map.siteId === site._id));
+  const currentFloorMap = selectAvailableMap(visibleMaps, selectedFloorMapId);
+  const currentSite = visibleSites.find((site) => site._id === currentFloorMap?.siteId);
 
-  // Filter out sites that have no public floor maps
-  const publicSites = sites.filter((site) =>
-    publicFloorMaps.some((floorMap) => floorMap.siteId === site._id),
-  );
+  useEffect(() => {
+    if (locationsReady && currentFloorMap && currentFloorMap._id !== selectedFloorMapId) {
+      window.localStorage.setItem(STORAGE_KEY, currentFloorMap._id);
+    }
+  }, [locationsReady, currentFloorMap, selectedFloorMapId]);
 
-  // Find the current floor map or default to the first public floor map
-  const currentFloorMap =
-    publicFloorMaps.find((floorMap) => floorMap._id === selectedFloorMapId) ??
-    publicFloorMaps[0] ??
-    null;
-
-  // If there are no public floor maps available, display a message to the user
-  if (locationsReady && !currentFloorMap) {
-    return (
-      <div className="customer-page">
-        <h1 className="customer-page-title">Floor Map</h1>
-        <p>There are currently no floor maps available to view.</p>
-      </div>
-    );
+  function chooseMap(mapId) {
+    if (!visibleMaps.some((map) => map._id === mapId)) return;
+    setSelectedFloorMapId(mapId);
+    window.localStorage.setItem(STORAGE_KEY, mapId);
   }
 
-  // Find the current site based on the current floor map's siteId
-  const currentSite = publicSites.find((site) => site._id === currentFloorMap?.siteId);
-
-  // Filter the public floor maps to only include those that belong to the current site
-  const siteFloorMaps = currentSite
-    ? publicFloorMaps.filter((floorMap) => floorMap.siteId === currentSite._id)
-    : [];
-
   return (
-    <div className="customer-page">
-      <h1 className="customer-page-title">Floor Map</h1>
-
-      {locationsReady && currentFloorMap && (
-        <>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              gap: "10px",
+    <section className="customer-page customer-floor-map-page" aria-labelledby="customer-map-title">
+      <header className="customer-floor-map-heading">
+        <div>
+          <h1 id="customer-map-title" className="customer-page-title">
+            Floor Map
+          </h1>
+          <p>Find where products are located.</p>
+        </div>
+        {locationsReady && currentFloorMap && (
+          <MapSelectors
+            context="public"
+            sites={visibleSites}
+            floorMaps={visibleMaps}
+            currentSite={currentSite}
+            currentFloorMap={currentFloorMap}
+            onSiteChange={(siteId) => {
+              const map = firstMapForSite(visibleMaps, siteId);
+              if (map) chooseMap(map._id);
             }}
+            onFloorMapChange={chooseMap}
+          />
+        )}
+      </header>
+      <div className="floor-map-viewport customer-floor-map-viewport">
+        {!locationsReady ? (
+          <MapState loading title="Loading floor maps…" />
+        ) : !currentFloorMap ? (
+          <MapState
+            title="No public floor maps yet"
+            description="There is no map available for this location right now."
+          />
+        ) : (
+          <EditorProvider
+            key={currentFloorMap._id}
+            floorMapId={currentFloorMap._id}
+            publicOrgCode={orgCode}
+            isCanvasEditMode={false}
+            setCanvasEditMode={() => {}}
           >
-            {/* SITE SELECT DROPDOWN */}
-            {publicSites.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "2px",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "9px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: COLOURS.TEXT_MUTED,
-                  }}
-                >
-                  Site
-                </span>
-
-                <select
-                  value={currentSite?._id ?? ""}
-                  onChange={(e) => {
-                    const targetSiteId = e.target.value;
-
-                    const targetMap = publicFloorMaps.find(
-                      (floorMap) => floorMap.siteId === targetSiteId,
-                    );
-
-                    if (targetMap) {
-                      setSelectedFloorMapId(targetMap._id);
-                      localStorage.setItem("customerFloorMapId", targetMap._id);
-                    }
-                  }}
-                  aria-label="Select site"
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: COLOURS.TEXT_PRIMARY,
-                    background: COLOURS.CARD_BG,
-                    border: `1px solid ${COLOURS.CARD_BORDER}`,
-                    borderRadius: "8px",
-                    padding: "6px 10px",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {publicSites.map((site) => (
-                    <option key={site._id} value={site._id}>
-                      {site.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* FLOOR MAP SELECT DROPDOWN */}
-            {siteFloorMaps.length > 1 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "2px",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "9px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: COLOURS.TEXT_MUTED,
-                  }}
-                >
-                  Floor Map
-                </span>
-
-                <select
-                  value={currentFloorMap._id}
-                  onChange={(e) => {
-                    const newFloorMapId = e.target.value;
-
-                    setSelectedFloorMapId(newFloorMapId);
-                    localStorage.setItem("customerFloorMapId", newFloorMapId);
-                  }}
-                  aria-label="Select floor map"
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: COLOURS.TEXT_MUTED,
-                    background: COLOURS.CARD_BG,
-                    border: `1px solid ${COLOURS.CARD_BORDER}`,
-                    borderRadius: "8px",
-                    padding: "6px 10px",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {siteFloorMaps.map((floorMap) => (
-                    <option key={floorMap._id} value={floorMap._id}>
-                      {floorMap.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-
-          {/* READ-ONLY FLOOR MAP DISPLAY */}
-          <div
-            style={{
-              ...pageStyles.canvasArea,
-              height: "600px",
-              width: "100%",
-              minHeight: 0,
-              minWidth: 0,
-              overflow: "hidden",
-              position: "relative",
-              background: "var(--bg-primary)",
-            }}
-          >
-            <EditorProvider
-              key={currentFloorMap._id}
-              floorMapId={currentFloorMap._id}
-              isCanvasEditMode={false}
-              setCanvasEditMode={() => {}}
-            >
-              <Canvas
-                style={{
-                  display: "block",
-                  width: "100%",
-                  height: "100%",
-                }}
-                isCanvasEditMode={false}
-                selectedStorageUnitId={null}
-                setSelectedStorageUnitId={() => {}}
-                setTooltip={() => {}}
-                lowStockByUnitId={{}}
-              />
-            </EditorProvider>
-          </div>
-        </>
-      )}
-    </div>
+            <Canvas isCanvasEditMode={false} publicView />
+          </EditorProvider>
+        )}
+      </div>
+    </section>
   );
 }

@@ -4,7 +4,14 @@ import { CANVAS_CONFIG } from "../../CanvasConfig";
 import { COLOURS } from "../../../FloorMapStyles";
 import { flattenPoints, isDrawnShape } from "../units/StorageUnit";
 
-export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanvasEditMode }) {
+export function LowStockLayer({
+  units,
+  onHover,
+  onHoverEnd,
+  onUnitClick,
+  isCanvasEditMode,
+  selectedStorageUnitId,
+}) {
   const { lowStockByUnitId, setSelectedUnit, setIsPanelOpen } = useEditor();
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
@@ -29,6 +36,7 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
             : hasLowStock
               ? COLOURS.OVER_RED
               : COLOURS.OVER_GREEN;
+        const selected = selectedStorageUnitId === (unit._id || unit.id);
 
         const isDrawn = isDrawnShape(unit);
 
@@ -78,6 +86,8 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
               points={flattenPoints(unit)}
               closed
               fill={fill}
+              stroke={selected ? COLOURS.ACCENT : undefined}
+              strokeWidth={selected ? 3 : 0}
               cornerRadius={4}
               listening={true}
               onMouseEnter={mouseOnAction}
@@ -95,6 +105,8 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
               width={unit.width * px}
               height={unit.height * px}
               fill={fill}
+              stroke={selected ? COLOURS.ACCENT : undefined}
+              strokeWidth={selected ? 3 : 0}
               cornerRadius={4}
               listening={true}
               onMouseEnter={mouseOnAction}

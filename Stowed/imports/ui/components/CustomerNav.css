@@ -37,6 +37,7 @@
 .customer-nav-links {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 4px;
   /* The row scrolls rather than wrapping, so the bar keeps its height and the
      logo stays put on a narrow phone. */

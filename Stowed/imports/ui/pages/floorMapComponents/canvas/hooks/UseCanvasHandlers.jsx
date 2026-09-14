@@ -441,6 +441,7 @@ export function useCanvasHandlers({
       x: mouse.x - mouseLoc.x * newScale,
       y: mouse.y - mouseLoc.y * newScale,
     });
+    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: stage.position() });
   }
 
   // Zooms toward the centre of the visible canvas (as opposed to handleWheel,
