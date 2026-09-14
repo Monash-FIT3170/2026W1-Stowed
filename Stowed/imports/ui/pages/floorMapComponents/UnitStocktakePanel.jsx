@@ -14,6 +14,7 @@ import {
   getLocationStocktakeStatus,
   STOCKTAKE_STATUS,
 } from "/imports/api/locations/stocktake";
+import { FloorMapIcon } from "./FloorMapIcon";
 
 /** Overdue locations are the point of the panel, so they sort to the top. */
 const STATUS_ORDER = {
@@ -134,8 +135,14 @@ export function UnitStocktakePanelView({ unitName, rows = [], canStocktake = fal
           <div className="panel-header-title">{title}</div>
           <div className={`panel-status-badge ${tone}`}>{summary}</div>
         </div>
-        <button className="panel-close-btn" onClick={onClose} aria-label="Close panel">
-          ✕
+        <button
+          type="button"
+          className="panel-close-btn"
+          onClick={onClose}
+          aria-label="Close panel"
+          title="Close panel"
+        >
+          <FloorMapIcon name="close" />
         </button>
       </div>
 

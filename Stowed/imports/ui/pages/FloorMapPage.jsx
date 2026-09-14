@@ -17,6 +17,7 @@ import { UnitCard } from "./floorMapComponents/UnitCard";
 import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { EditorTabs, MapSelectors, MapState } from "./floorMapComponents/MapControls";
 import { MapActions } from "./floorMapComponents/MapActions";
+import { FloorMapIcon } from "./floorMapComponents/FloorMapIcon";
 import { firstMapForSite, selectAvailableMap } from "./floorMapComponents/mapSelection";
 import "./FloorMapPage.css";
 
@@ -56,7 +57,6 @@ function MapTooltip({ tooltip }) {
 
 function EditorPanel({
   selectedUnit,
-  onClearSelection,
   onBack,
   isChangingShape,
   units,
@@ -80,19 +80,39 @@ function EditorPanel({
   expanded,
   onToggleExpand,
   panelRef,
+  onShapeAdded,
 }) {
   return (
     <div
       className="floor-map-editor"
       ref={panelRef}
       role={mobile ? "dialog" : "complementary"}
-      aria-modal={mobile ? "true" : undefined}
-      aria-label="Map editor panel"
+      aria-modal={mobile && expanded ? "true" : undefined}
+      aria-labelledby="floor-map-editor-title"
     >
       <div className="floor-map-panel-heading">
-        <div>
-          <span className="floor-map-eyebrow">Layout editor</span>
-          <h2>{selectedUnit ? `Edit ${selectedUnit.name}` : "Map tools"}</h2>
+        <div className="floor-map-panel-heading-main">
+          {selectedUnit && (
+            <button
+              type="button"
+              className="floor-map-icon-button"
+              onClick={onBack}
+              aria-label={isChangingShape ? "Back to unit details" : "Back to storage units"}
+              title={isChangingShape ? "Back to unit details" : "Back to storage units"}
+            >
+              <FloorMapIcon name="arrow-left" />
+            </button>
+          )}
+          <div>
+            <span className="floor-map-eyebrow">Layout editor</span>
+            <h2 id="floor-map-editor-title">
+              {isChangingShape
+                ? `Change ${selectedUnit.name} shape`
+                : selectedUnit
+                  ? `Edit ${selectedUnit.name}`
+                  : "Map tools"}
+            </h2>
+          </div>
         </div>
         <div className="floor-map-panel-heading-actions">
           {mobile && (
@@ -100,20 +120,11 @@ function EditorPanel({
               type="button"
               className="floor-map-icon-button"
               onClick={onToggleExpand}
-              aria-label={expanded ? "Collapse editor panel" : "Expand editor panel"}
+              aria-label={expanded ? "Use compact editor panel" : "Expand editor panel"}
               aria-expanded={expanded}
+              title={expanded ? "Use compact panel" : "Expand panel"}
             >
-              {expanded ? "⌄" : "⌃"}
-            </button>
-          )}
-          {selectedUnit && (
-            <button
-              type="button"
-              className="floor-map-icon-button"
-              onClick={onBack}
-              aria-label="Back to storage units"
-            >
-              ←
+              <FloorMapIcon name={expanded ? "collapse" : "expand"} />
             </button>
           )}
           <button
@@ -121,8 +132,9 @@ function EditorPanel({
             className="floor-map-icon-button"
             onClick={onClose}
             aria-label={mobile ? "Close editor panel" : "Collapse editor panel"}
+            title={mobile ? "Close editor panel" : "Collapse editor panel"}
           >
-            ×
+            <FloorMapIcon name={mobile ? "close" : "panel-close"} />
           </button>
         </div>
       </div>
@@ -139,14 +151,12 @@ function EditorPanel({
                 onDeleteShape={onDeleteShape}
                 isChangingShape
                 onChangeShape={onChangeShape}
+                mobile={mobile}
               />
             </div>
           ) : (
             <>
               <div className="floor-map-panel-section">
-                <button type="button" className="floor-map-clear" onClick={onClearSelection}>
-                  Clear selection
-                </button>
                 <UnitDetailsPanel
                   unit={selectedUnit}
                   onRename={onRename}
@@ -154,14 +164,22 @@ function EditorPanel({
                 />
               </div>
               <div className="floor-map-panel-section">
-                <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
+                {selectedUnit._id ? (
+                  <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
+                ) : (
+                  <p className="floor-map-panel-empty">
+                    Save the layout before adding storage locations to this unit.
+                  </p>
+                )}
               </div>
               <div className="floor-map-panel-section floor-map-panel-actions">
                 <button type="button" className="btn-primary" onClick={onChangeShapeClick}>
-                  Change Shape
+                  <FloorMapIcon name="templates" />
+                  <span>Change shape</span>
                 </button>
                 <button type="button" className="btn-danger" onClick={onDeleteUnit}>
-                  Delete &quot;{selectedUnit.name}&quot;
+                  <FloorMapIcon name="trash" />
+                  <span>Delete &quot;{selectedUnit.name}&quot;</span>
                 </button>
               </div>
             </>
@@ -198,13 +216,16 @@ function EditorPanel({
               setActiveTool={setActiveTool}
               onEditShape={onEditShape}
               onDeleteShape={onDeleteShape}
+              mobile={mobile}
+              onShapeAdded={onShapeAdded}
             />
             <button
               type="button"
               className="floor-map-button floor-map-panel-new"
               onClick={onNewShape}
             >
-              + New Shape
+              <FloorMapIcon name="plus" />
+              <span>New shape</span>
             </button>
           </div>
         )}
@@ -299,6 +320,23 @@ function FloorMapPageInner() {
 
   useEffect(() => {
     function onKeyDown(event) {
+      if (event.key === "Tab" && mobilePanelOpen && mobileExpanded) {
+        const controls = [
+          ...(panelRef.current?.querySelectorAll(
+            'button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]',
+          ) ?? []),
+        ];
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+        return;
+      }
       if (event.key !== "Escape") return;
       if (createShapeOpen) {
         setCreateShapeOpen(false);
@@ -352,6 +390,9 @@ function FloorMapPageInner() {
       selectUnit(null);
       setMobilePanelOpen(false);
       setTooltip(null);
+    } else if (isMobile) {
+      setMobileExpanded(false);
+      setMobilePanelOpen(true);
     }
     setCanvasEditMode(!isCanvasEditMode);
   }
@@ -467,13 +508,13 @@ function FloorMapPageInner() {
                 className="floor-map-expand"
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Expand editor panel"
+                title="Expand editor panel"
               >
-                ›
+                <FloorMapIcon name="panel" />
               </button>
             ) : (
               <EditorPanel
                 selectedUnit={selectedUnit}
-                onClearSelection={() => selectUnit(null)}
                 onBack={() => (changingShape ? setChangingShape(false) : selectUnit(null))}
                 isChangingShape={changingShape}
                 units={units}
@@ -503,12 +544,17 @@ function FloorMapPageInner() {
                 expanded={mobileExpanded}
                 onToggleExpand={() => setMobileExpanded(!mobileExpanded)}
                 panelRef={panelRef}
+                onShapeAdded={(unit) => {
+                  setSelectedStorageUnitId(unit.id);
+                  setSelectedUnit(unit);
+                  setMobileExpanded(false);
+                }}
               />
             )}
           </div>
         )}
       </div>
-      {isMobile && editorVisible && mobilePanelOpen && (
+      {isMobile && editorVisible && mobilePanelOpen && mobileExpanded && (
         <button
           type="button"
           className="floor-map-sheet-scrim"

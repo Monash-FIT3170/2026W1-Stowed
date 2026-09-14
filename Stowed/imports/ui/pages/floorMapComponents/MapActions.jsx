@@ -1,3 +1,5 @@
+import { FloorMapIcon } from "./FloorMapIcon";
+
 export function MapActions({
   canManage,
   editing,
@@ -16,34 +18,48 @@ export function MapActions({
   onEditorSettings,
 }) {
   return (
-    <div className="floor-map-toolbar-actions">
-      <span className={`floor-map-mode${editing ? " is-editing" : ""}`}>
-        {editing ? "Editing layout" : "Viewing map"}
+    <div
+      className={`floor-map-toolbar-actions${editing ? " floor-map-toolbar-actions--editing" : ""}`}
+    >
+      <span className={`floor-map-mode${editing ? " is-editing" : ""}`} role="status">
+        <FloorMapIcon name={editing ? "edit" : "eye"} size={15} />
+        {editing ? "Edit mode" : "View mode"}
       </span>
       {editing && canManage && (
-        <button type="button" className="btn-primary floor-map-save" onClick={onSave}>
-          Save layout
-        </button>
-      )}
-      {canManage && (
-        <button type="button" className="floor-map-button" onClick={onToggleMode}>
-          {editing ? "Done editing" : "Edit layout"}
+        <button
+          type="button"
+          className="btn-primary floor-map-save floor-map-action-save"
+          onClick={onSave}
+        >
+          <FloorMapIcon name="save" />
+          <span>{isMobile ? "Save" : "Save layout"}</span>
         </button>
       )}
       {editing && canManage && (
         <button
           ref={panelTriggerRef}
           type="button"
-          className="floor-map-button floor-map-editor-trigger"
+          className="floor-map-button floor-map-editor-trigger floor-map-action-tools"
           onClick={onTogglePanel}
           aria-expanded={panelOpen}
           aria-controls="floor-map-editor-wrap"
         >
-          {isMobile ? "Editor tools" : panelOpen ? "Hide panel" : "Show panel"}
+          <FloorMapIcon name="panel" />
+          <span>{isMobile ? "Tools" : panelOpen ? "Hide panel" : "Show panel"}</span>
+        </button>
+      )}
+      {canManage && (
+        <button
+          type="button"
+          className="floor-map-button floor-map-action-mode"
+          onClick={onToggleMode}
+        >
+          <FloorMapIcon name={editing ? "check" : "edit"} />
+          <span>{editing ? (isMobile ? "Done" : "Done editing") : "Edit layout"}</span>
         </button>
       )}
       {editing && canManage && (
-        <div className="floor-map-more" ref={menuRef}>
+        <div className="floor-map-more floor-map-action-more" ref={menuRef}>
           <button
             ref={menuTriggerRef}
             type="button"
@@ -51,8 +67,10 @@ export function MapActions({
             onClick={onToggleMore}
             aria-expanded={moreOpen}
             aria-controls="floor-map-more-menu"
+            aria-haspopup="menu"
           >
-            More <span aria-hidden="true">⌄</span>
+            <FloorMapIcon name="more" />
+            <span>More</span>
           </button>
           {moreOpen && (
             <div
@@ -79,13 +97,16 @@ export function MapActions({
               }}
             >
               <button type="button" role="menuitem" onClick={onExport}>
-                Export PNG
+                <FloorMapIcon name="download" />
+                <span>Export PNG</span>
               </button>
               <button type="button" role="menuitem" onClick={onFloorSettings}>
-                Floor Map Settings
+                <FloorMapIcon name="map" />
+                <span>Floor Map Settings</span>
               </button>
               <button type="button" role="menuitem" onClick={onEditorSettings}>
-                Editor Settings
+                <FloorMapIcon name="sliders" />
+                <span>Editor Settings</span>
               </button>
             </div>
           )}

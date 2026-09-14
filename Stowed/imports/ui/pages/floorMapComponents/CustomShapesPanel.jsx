@@ -4,6 +4,7 @@ import { getShapeBounds, normaliseShapePoints } from "./canvas/editor/utils/Shap
 import { useEditor } from "./canvas/editor/EditorContext";
 import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { hasCollisions } from "./canvas/editor/utils/Collisions";
+import { FloorMapIcon } from "./FloorMapIcon";
 
 const presetShapes = [
   {
@@ -72,6 +73,10 @@ const presetShapes = [
   },
 ];
 
+function createDraftUnitId() {
+  return `unit-${Date.now()}-${Math.random()}`;
+}
+
 function ShapePreview({ points = [] }) {
   if (!points.length) return null;
 
@@ -125,6 +130,8 @@ export function CustomShapesPanel({
   onDeleteShape,
   isChangingShape,
   onChangeShape,
+  mobile = false,
+  onShapeAdded,
 }) {
   const { handleUnitPlaced, units, commitUnits, floorSize } = useEditor();
 
@@ -190,10 +197,11 @@ export function CustomShapesPanel({
     const maxY = floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER - template.height;
     for (let y = 0; y <= maxY; y += 0.5) {
       for (let x = 0; x <= maxX; x += 0.5) {
-        const candidate = { ...template, id: `unit-${Date.now()}-${Math.random()}`, x, y };
+        const candidate = { ...template, id: createDraftUnitId(), x, y };
         if (!hasCollisions(candidate, units)) {
           commitUnits((current) => [...current, candidate]);
           setActiveTool(getToolName(shape));
+          onShapeAdded?.(candidate);
           return;
         }
       }
@@ -203,6 +211,9 @@ export function CustomShapesPanel({
 
   return (
     <div style={customShapesPanelStyles.container}>
+      {mobile && !isChangingShape && (
+        <p className="floor-map-panel-hint">Tap a shape to place it on the map.</p>
+      )}
       {/* PRESET SHAPES */}
       <p style={customShapesPanelStyles.title}>Preset Shapes</p>
 
@@ -214,32 +225,37 @@ export function CustomShapesPanel({
             <div className="floor-map-template-row" key={shape.shapeId}>
               <button
                 type="button"
-                draggable={!isChangingShape}
+                draggable={!isChangingShape && !mobile}
                 onDragStart={(event) => handleDragStart(event, shape)}
                 onDragEnd={handleDragEnd}
                 onClick={() => {
-                  isChangingShape ? onChangeShape(shape) : setActiveTool(toolName);
+                  if (isChangingShape) onChangeShape(shape);
+                  else if (mobile) handleAddShape(shape);
+                  else setActiveTool(toolName);
                 }}
                 style={{
                   ...getShapeButtonStyle(toolName),
-                  cursor: "grab",
+                  cursor: mobile ? "pointer" : "grab",
                 }}
-                aria-pressed={activeTool === toolName}
+                aria-pressed={mobile ? undefined : activeTool === toolName}
+                aria-label={mobile && !isChangingShape ? `Add ${shape.name} to map` : undefined}
               >
                 <div style={customShapesPanelStyles.shapeButtonContent}>
                   <ShapePreview points={shape.points} />
 
                   <span style={customShapesPanelStyles.shapeName}>{shape.name}</span>
+                  {mobile && !isChangingShape && <FloorMapIcon name="plus" size={17} />}
                 </div>
               </button>
-              {!isChangingShape && (
+              {!isChangingShape && !mobile && (
                 <button
                   type="button"
                   className="floor-map-template-add"
                   onClick={() => handleAddShape(shape)}
                   aria-label={`Add ${shape.name} to map`}
                 >
-                  Add
+                  <FloorMapIcon name="plus" size={16} />
+                  <span>Add</span>
                 </button>
               )}
             </div>
@@ -267,34 +283,39 @@ export function CustomShapesPanel({
               >
                 <button
                   type="button"
-                  draggable={!isChangingShape}
+                  draggable={!isChangingShape && !mobile}
                   onDragStart={(event) => handleDragStart(event, shape)}
                   onDragEnd={handleDragEnd}
                   onClick={() => {
-                    isChangingShape ? onChangeShape(shape) : setActiveTool(toolName);
+                    if (isChangingShape) onChangeShape(shape);
+                    else if (mobile) handleAddShape(shape);
+                    else setActiveTool(toolName);
                   }}
                   style={{
                     ...getShapeButtonStyle(toolName),
-                    cursor: "grab",
+                    cursor: mobile ? "pointer" : "grab",
                     flex: 1,
                   }}
-                  aria-pressed={activeTool === toolName}
+                  aria-pressed={mobile ? undefined : activeTool === toolName}
+                  aria-label={mobile && !isChangingShape ? `Add ${shape.name} to map` : undefined}
                 >
                   <div style={customShapesPanelStyles.shapeButtonContent}>
                     <ShapePreview points={shape.points} />
 
                     <span style={customShapesPanelStyles.shapeName}>{shape.name}</span>
+                    {mobile && !isChangingShape && <FloorMapIcon name="plus" size={17} />}
                   </div>
                 </button>
 
-                {!isChangingShape && (
+                {!isChangingShape && !mobile && (
                   <button
                     type="button"
                     className="floor-map-template-add"
                     onClick={() => handleAddShape(shape)}
                     aria-label={`Add ${shape.name} to map`}
                   >
-                    Add
+                    <FloorMapIcon name="plus" size={16} />
+                    <span>Add</span>
                   </button>
                 )}
 
@@ -306,17 +327,7 @@ export function CustomShapesPanel({
                       aria-label={`Edit ${shape.name} template`}
                       style={customShapesPanelStyles.editButton}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          fill="currentColor"
-                          d="m14.06 9.02l.92.92L5.92 19H5v-.92zM17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83l3.75 3.75l1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29m-3.6 3.19L3 17.25V21h3.75L17.81 9.94z"
-                        />
-                      </svg>
+                      <FloorMapIcon name="edit" />
                     </button>
 
                     <button
@@ -325,17 +336,7 @@ export function CustomShapesPanel({
                       aria-label={`Delete ${shape.name} template`}
                       style={customShapesPanelStyles.editButton}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        viewBox="0 0 12 12"
-                      >
-                        <path
-                          fill="currentColor"
-                          d="M5 3h2a1 1 0 0 0-2 0M4 3a2 2 0 1 1 4 0h2.5a.5.5 0 0 1 0 1h-.441l-.443 5.17A2 2 0 0 1 7.623 11H4.377a2 2 0 0 1-1.993-1.83L1.941 4H1.5a.5.5 0 0 1 0-1zm3.5 3a.5.5 0 0 0-1 0v2a.5.5 0 0 0 1 0zM5 5.5a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5M3.38 9.085a1 1 0 0 0 .997.915h3.246a1 1 0 0 0 .996-.915L9.055 4h-6.11z"
-                        />
-                      </svg>
+                      <FloorMapIcon name="trash" />
                     </button>
                   </>
                 )}

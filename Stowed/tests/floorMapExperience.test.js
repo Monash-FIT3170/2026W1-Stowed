@@ -97,7 +97,6 @@ describe("Floor map experience", function () {
         <MapActions
           canManage={hasClientPermission(role, "locations.manage")}
           editing={editing}
-          isMobile
           panelOpen={false}
           moreOpen={moreOpen}
         />,
@@ -118,7 +117,13 @@ describe("Floor map experience", function () {
     assert.ok(markup.includes('aria-controls="floor-map-editor-wrap"'));
     assert.ok(markup.includes('aria-controls="floor-map-more-menu"'));
     assert.ok(markup.includes('aria-expanded="true"'));
+    assert.ok(markup.includes('aria-haspopup="menu"'));
     assert.ok(markup.includes('role="menuitem"'));
+    assert.ok(markup.includes('class="floor-map-icon"'));
+    assert.ok(markup.includes('aria-hidden="true"'));
+    assert.ok(markup.includes("Tools"));
+    assert.ok(markup.includes("Save"));
+    assert.ok(markup.includes("Done"));
 
     let panelOpened = false;
     let menuToggled = false;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { locationPanelStyles } from "./FloorMapStyles";
+import { FloorMapIcon } from "./FloorMapIcon";
 
 export function StorageLocationPanel({ storageUnitId }) {
   const [locations, setLocations] = useState([]);
@@ -67,6 +68,7 @@ export function StorageLocationPanel({ storageUnitId }) {
       <div style={locationPanelStyles.form}>
         <input
           placeholder="Location name"
+          aria-label="Location name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={locationPanelStyles.input}
@@ -74,13 +76,15 @@ export function StorageLocationPanel({ storageUnitId }) {
 
         <input
           placeholder="Code"
+          aria-label="Location code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           style={locationPanelStyles.input}
         />
 
-        <button onClick={handleAddLocation} style={locationPanelStyles.addButton}>
-          + Add Location
+        <button type="button" onClick={handleAddLocation} style={locationPanelStyles.addButton}>
+          <FloorMapIcon name="plus" size={16} />
+          <span>Add location</span>
         </button>
       </div>
 
@@ -93,10 +97,12 @@ export function StorageLocationPanel({ storageUnitId }) {
             </div>
 
             <button
+              type="button"
               onClick={() => handleDeleteLocation(location._id)}
               style={locationPanelStyles.deleteButton}
             >
-              Delete
+              <FloorMapIcon name="trash" size={16} />
+              <span>Delete</span>
             </button>
           </div>
         ))}

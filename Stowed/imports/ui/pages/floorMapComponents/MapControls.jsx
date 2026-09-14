@@ -1,3 +1,5 @@
+import { FloorMapIcon } from "./FloorMapIcon";
+
 export function MapSelectors({
   sites,
   floorMaps,
@@ -58,8 +60,8 @@ export function EditorTabs({ activeTab, onChange }) {
   return (
     <div className="floor-map-tabs" role="tablist" aria-label="Editor tools">
       {[
-        { id: "units", label: "Storage Units" },
-        { id: "templates", label: "Templates" },
+        { id: "units", label: "Storage Units", icon: "units" },
+        { id: "templates", label: "Templates", icon: "templates" },
       ].map((tab) => (
         <button
           key={tab.id}
@@ -79,6 +81,7 @@ export function EditorTabs({ activeTab, onChange }) {
             }
           }}
         >
+          <FloorMapIcon name={tab.icon} size={17} />
           {tab.label}
         </button>
       ))}

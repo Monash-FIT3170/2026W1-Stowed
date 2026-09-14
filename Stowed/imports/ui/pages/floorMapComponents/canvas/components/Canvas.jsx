@@ -22,6 +22,7 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
+import { FloorMapIcon } from "../../FloorMapIcon";
 
 if (typeof window !== "undefined") Konva.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -69,6 +70,11 @@ export const Canvas = forwardRef(function Canvas(
 
   const [state, dispatch] = useReducer(canvasReducer, initialCanvasState);
   const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize, clipboard } = state;
+  const visibleSelectedIds = isCanvasEditMode
+    ? selectedStorageUnitId && !selectedIds.has(selectedStorageUnitId)
+      ? new Set([selectedStorageUnitId])
+      : selectedIds
+    : new Set(selectedStorageUnitId ? [selectedStorageUnitId] : []);
 
   const {
     getGroupRef,
@@ -179,6 +185,13 @@ export const Canvas = forwardRef(function Canvas(
     stageRef.current?.draggable(true);
   }
 
+  function handleStageActivate(event) {
+    handleStageClick(event);
+    if (isCanvasEditMode && event.target === event.target.getStage()) {
+      setSelectedStorageUnitId?.(null);
+    }
+  }
+
   useEffect(() => {
     function onKeyDown(e) {
       const target = e.target;
@@ -247,24 +260,24 @@ export const Canvas = forwardRef(function Canvas(
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
-            onClick={handleStageClick}
+            onClick={handleStageActivate}
+            onTap={handleStageActivate}
           >
             <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
             <UnitLayer
               units={units}
-              selectedIds={
-                isCanvasEditMode
-                  ? selectedIds
-                  : new Set(selectedStorageUnitId ? [selectedStorageUnitId] : [])
-              }
+              selectedIds={visibleSelectedIds}
               isCanvasEditMode={isCanvasEditMode}
               getGroupRef={getGroupRef}
               onUnitClick={
                 publicView
                   ? () => {}
                   : (unit, e) => {
-                      setSelectedStorageUnitId?.(unit._id || unit.id);
+                      const unitId = unit._id || unit.id;
+                      const isOnlySelectedUnit =
+                        isCanvasEditMode && selectedIds.size === 1 && selectedIds.has(unitId);
+                      setSelectedStorageUnitId?.(isOnlySelectedUnit ? null : unitId);
                       handleUnitClick(unit, e);
                     }
               }
@@ -319,7 +332,7 @@ export const Canvas = forwardRef(function Canvas(
           title="Zoom out"
           className="floor-map-zoom-button"
         >
-          −
+          <FloorMapIcon name="minus" />
         </button>
         <span className="floor-map-zoom-value" aria-live="polite">
           {Math.round(scale * 100)}%
@@ -331,7 +344,7 @@ export const Canvas = forwardRef(function Canvas(
           title="Zoom in"
           className="floor-map-zoom-button"
         >
-          +
+          <FloorMapIcon name="plus" />
         </button>
         <span className="floor-map-zoom-divider" aria-hidden="true" />
         <button
@@ -341,7 +354,8 @@ export const Canvas = forwardRef(function Canvas(
           title="Fit to screen"
           className="floor-map-zoom-button floor-map-zoom-fit"
         >
-          Fit
+          <FloorMapIcon name="fit" />
+          <span>Fit</span>
         </button>
       </div>
     </div>
