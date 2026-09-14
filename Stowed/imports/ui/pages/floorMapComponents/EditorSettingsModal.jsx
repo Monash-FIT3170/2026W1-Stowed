@@ -71,13 +71,25 @@ export function EditorSettingsModal({
     // BACKDROP
     <div onClick={onClose} style={modalStyles.overlay}>
       {/* MODAL */}
-      <div onClick={(e) => e.stopPropagation()} style={modalStyles.modal}>
-        <h3 style={modalStyles.title}>Editor Settings</h3>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={modalStyles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="editor-settings-title"
+      >
+        <h3 id="editor-settings-title" style={modalStyles.title}>
+          Editor Settings
+        </h3>
 
         {/* GRID INTERVAL */}
         <div style={modalStyles.field}>
-          <label style={modalStyles.label}>Grid Interval (m)</label>
+          <label htmlFor="editor-grid-interval" style={modalStyles.label}>
+            Grid Interval (m)
+          </label>
           <input
+            id="editor-grid-interval"
+            autoFocus
             style={modalStyles.input}
             type="number"
             name="gridInterval"
@@ -90,8 +102,11 @@ export function EditorSettingsModal({
 
         {/* SNAP INTERVAL */}
         <div style={modalStyles.field}>
-          <label style={modalStyles.label}>Snap Interval (m)</label>
+          <label htmlFor="editor-snap-interval" style={modalStyles.label}>
+            Snap Interval (m)
+          </label>
           <input
+            id="editor-snap-interval"
             style={modalStyles.input}
             type="number"
             name="snapInterval"

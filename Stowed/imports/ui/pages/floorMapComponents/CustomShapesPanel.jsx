@@ -2,6 +2,8 @@ import { buttonStyles, COLOURS, customShapesPanelStyles } from "./FloorMapStyles
 import { dragState } from "./canvas/editor/DragState";
 import { getShapeBounds, normaliseShapePoints } from "./canvas/editor/utils/ShapeGeometry";
 import { useEditor } from "./canvas/editor/EditorContext";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
+import { hasCollisions } from "./canvas/editor/utils/Collisions";
 
 const presetShapes = [
   {
@@ -124,7 +126,7 @@ export function CustomShapesPanel({
   isChangingShape,
   onChangeShape,
 }) {
-  const { handleUnitPlaced } = useEditor();
+  const { handleUnitPlaced, units, commitUnits, floorSize } = useEditor();
 
   const getToolName = (shape) => `shape-${shape.shapeId}`;
 
@@ -182,6 +184,23 @@ export function CustomShapesPanel({
     dragState.template = null;
   }
 
+  function handleAddShape(shape) {
+    const template = buildShapeTemplate(shape);
+    const maxX = floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER - template.width;
+    const maxY = floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER - template.height;
+    for (let y = 0; y <= maxY; y += 0.5) {
+      for (let x = 0; x <= maxX; x += 0.5) {
+        const candidate = { ...template, id: `unit-${Date.now()}-${Math.random()}`, x, y };
+        if (!hasCollisions(candidate, units)) {
+          commitUnits((current) => [...current, candidate]);
+          setActiveTool(getToolName(shape));
+          return;
+        }
+      }
+    }
+    window.alert("There is no room for this shape on the floor map.");
+  }
+
   return (
     <div style={customShapesPanelStyles.container}>
       {/* PRESET SHAPES */}
@@ -192,27 +211,38 @@ export function CustomShapesPanel({
           const toolName = getToolName(shape);
 
           return (
-            <button
-              key={shape.shapeId}
-              type="button"
-              draggable={!isChangingShape}
-              onDragStart={(event) => handleDragStart(event, shape)}
-              onDragEnd={handleDragEnd}
-              onClick={() => {
-                isChangingShape ? onChangeShape(shape) : setActiveTool(toolName);
-              }}
-              style={{
-                ...getShapeButtonStyle(toolName),
-                cursor: "grab",
-              }}
-              aria-pressed={activeTool === toolName}
-            >
-              <div style={customShapesPanelStyles.shapeButtonContent}>
-                <ShapePreview points={shape.points} />
+            <div className="floor-map-template-row" key={shape.shapeId}>
+              <button
+                type="button"
+                draggable={!isChangingShape}
+                onDragStart={(event) => handleDragStart(event, shape)}
+                onDragEnd={handleDragEnd}
+                onClick={() => {
+                  isChangingShape ? onChangeShape(shape) : setActiveTool(toolName);
+                }}
+                style={{
+                  ...getShapeButtonStyle(toolName),
+                  cursor: "grab",
+                }}
+                aria-pressed={activeTool === toolName}
+              >
+                <div style={customShapesPanelStyles.shapeButtonContent}>
+                  <ShapePreview points={shape.points} />
 
-                <span style={customShapesPanelStyles.shapeName}>{shape.name}</span>
-              </div>
-            </button>
+                  <span style={customShapesPanelStyles.shapeName}>{shape.name}</span>
+                </div>
+              </button>
+              {!isChangingShape && (
+                <button
+                  type="button"
+                  className="floor-map-template-add"
+                  onClick={() => handleAddShape(shape)}
+                  aria-label={`Add ${shape.name} to map`}
+                >
+                  Add
+                </button>
+              )}
+            </div>
           );
         })}
       </div>
@@ -230,7 +260,11 @@ export function CustomShapesPanel({
             const toolName = getToolName(shape);
 
             return (
-              <div key={shape._id} style={customShapesPanelStyles.shapeRow}>
+              <div
+                key={shape._id}
+                className="floor-map-template-row"
+                style={customShapesPanelStyles.shapeRow}
+              >
                 <button
                   type="button"
                   draggable={!isChangingShape}
@@ -254,10 +288,22 @@ export function CustomShapesPanel({
                 </button>
 
                 {!isChangingShape && (
+                  <button
+                    type="button"
+                    className="floor-map-template-add"
+                    onClick={() => handleAddShape(shape)}
+                    aria-label={`Add ${shape.name} to map`}
+                  >
+                    Add
+                  </button>
+                )}
+
+                {!isChangingShape && (
                   <>
                     <button
                       type="button"
                       onClick={() => onEditShape(shape)}
+                      aria-label={`Edit ${shape.name} template`}
                       style={customShapesPanelStyles.editButton}
                     >
                       <svg
@@ -276,6 +322,7 @@ export function CustomShapesPanel({
                     <button
                       type="button"
                       onClick={() => onDeleteShape(shape)}
+                      aria-label={`Delete ${shape.name} template`}
                       style={customShapesPanelStyles.editButton}
                     >
                       <svg

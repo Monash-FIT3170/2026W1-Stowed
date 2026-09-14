@@ -45,13 +45,25 @@ export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose
     // BACKDROP
     <div onClick={onClose} style={modalStyles.overlay}>
       {/* MODAL */}
-      <div onClick={(e) => e.stopPropagation()} style={modalStyles.modal}>
-        <h3 style={modalStyles.title}>Floor Map Settings</h3>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={modalStyles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="floor-map-settings-title"
+      >
+        <h3 id="floor-map-settings-title" style={modalStyles.title}>
+          Floor Map Settings
+        </h3>
 
         {/* FLOOR DIMENSIONS */}
         <div style={modalStyles.field}>
-          <label style={modalStyles.label}>Floor Width (m)</label>
+          <label htmlFor="floor-map-width" style={modalStyles.label}>
+            Floor Width (m)
+          </label>
           <input
+            id="floor-map-width"
+            autoFocus
             style={modalStyles.input}
             type="number"
             name="widthMeters"
@@ -62,8 +74,11 @@ export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose
         </div>
 
         <div style={modalStyles.field}>
-          <label style={modalStyles.label}>Floor Height (m)</label>
+          <label htmlFor="floor-map-height" style={modalStyles.label}>
+            Floor Height (m)
+          </label>
           <input
+            id="floor-map-height"
             style={modalStyles.input}
             type="number"
             name="heightMeters"
