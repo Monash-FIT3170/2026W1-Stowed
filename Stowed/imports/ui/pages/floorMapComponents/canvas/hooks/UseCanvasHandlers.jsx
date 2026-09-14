@@ -356,9 +356,9 @@ export function useCanvasHandlers({
 
     const scaledPoints = isCustomShape
       ? unit.shape.points.map((point) => ({
-          x: point.x * widthScale,
-          y: point.y * heightScale,
-        }))
+        x: point.x * widthScale,
+        y: point.y * heightScale,
+      }))
       : null;
 
     const proposedUnit = {
@@ -514,12 +514,17 @@ export function useCanvasHandlers({
         const collides = hasCollisions(proposedUnit, [...units, ...placedUnits]);
 
         if (!collides) {
-          placedUnits.push({
+          const copiedUnit = {
             ...unit,
             id: `unit-${Date.now()}-${Math.random()}`,
             x: testX,
             y: testY,
-          });
+          };
+
+          // A copied unit must get its own database record when saved.
+          delete copiedUnit._id;
+
+          placedUnits.push(copiedUnit);
           break;
         }
       }

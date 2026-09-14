@@ -6,7 +6,6 @@ import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/location
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import {
   buildRectShape,
-  getBoundingBox,
   getTransformedBounds,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
@@ -36,9 +35,9 @@ function normalizeFloorSize(floorSize) {
   const looksLikeMeters = width <= 100 && height <= 100;
   return looksLikeMeters
     ? {
-        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-      }
+      width: width * CANVAS_CONFIG.PIXELS_PER_METER,
+      height: height * CANVAS_CONFIG.PIXELS_PER_METER,
+    }
     : { width, height };
 }
 
@@ -261,65 +260,70 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       for (const unit of units) {
         const shape = getDrawableShape(unit);
-        const offset = unit.offset ?? { x: 0, y: 0 };
-        const scale = unit.scale ?? { x: 1, y: 1 };
+        const rotation = unit.rotation ?? 0;
+        const scale = {
+          x: unit.scale?.x ?? 1,
+          y: unit.scale?.y ?? 1,
+        };
 
-        if (unit._id) {
-          // Recalculate all new transformations and update accordingly
-          const loadedBounds = getTransformedBounds(shape, {
-            offset,
-            rotation: unit.rotation,
-            scale,
-          });
-          const newOffset = {
-            x: offset.x + (unit.x - loadedBounds.minX),
-            y: offset.y + (unit.y - loadedBounds.minY),
-          };
+        // Calculate placement consistently for existing and copied units.
+        const loadedBounds = getTransformedBounds(shape, {
+          rotation,
+          scale,
+        });
 
-          const rawBounds = getBoundingBox(shape.points);
-          const newScale = {
-            x: rawBounds.width > 0 ? unit.width / rawBounds.width : scale.x,
-            y: rawBounds.height > 0 ? unit.height / rawBounds.height : scale.y,
-          };
+        const newScale = {
+          x:
+            loadedBounds.width > 0
+              ? scale.x * (unit.width / loadedBounds.width)
+              : scale.x,
+          y:
+            loadedBounds.height > 0
+              ? scale.y * (unit.height / loadedBounds.height)
+              : scale.y,
+        };
 
+        const placedBounds = getTransformedBounds(shape, {
+          rotation,
+          scale: newScale,
+        });
+
+        const newOffset = {
+          x: Number(unit.x) - placedBounds.minX,
+          y: Number(unit.y) - placedBounds.minY,
+        };
+
+        const params = {
+          floorMapId: activeFloorMapId,
+          name: unit.name,
+          type: unit.type || "other",
+          shape,
+          offset: newOffset,
+          rotation,
+          scale: newScale,
+          fill: unit.fill || COLOURS.UNIT_DEFAULT,
+        };
+
+        let savedId = unit._id;
+
+        if (savedId) {
           await callMethod("storageUnits.update", {
-            storageUnitId: unit._id,
-            floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
-            shape,
-            offset: newOffset,
-            rotation: unit.rotation ?? 0,
-            scale: newScale,
-            fill: unit.fill || COLOURS.UNIT_DEFAULT,
+            storageUnitId: savedId,
+            ...params,
           });
-
-          savedCanvasUnits.push({ ...unit, shape, offset: newOffset, scale: newScale });
         } else {
-          const newOffset = { x: Number(unit.x), y: Number(unit.y) };
-          const newScale = { x: 1, y: 1 };
-
-          const newId = await callMethod("storageUnits.create", {
-            floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
-            shape,
-            offset: newOffset,
-            rotation: 0,
-            scale,
-            fill: unit.fill || COLOURS.UNIT_DEFAULT,
-          });
-
-          savedCanvasUnits.push({
-            ...unit,
-            _id: newId,
-            id: newId,
-            shape,
-            offset: newOffset,
-            rotation: 0,
-            scale: newScale,
-          });
+          savedId = await callMethod("storageUnits.create", params);
         }
+
+        savedCanvasUnits.push({
+          ...unit,
+          _id: savedId,
+          id: savedId,
+          shape,
+          offset: newOffset,
+          rotation,
+          scale: newScale,
+        });
       }
 
       setUnits(savedCanvasUnits);
@@ -449,7 +453,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }
@@ -525,7 +529,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this shape. Make sure it is not used for any storage units first.",
+        "Cannot delete this shape. Make sure it is not used for any storage units first.",
       );
     }
   }
