@@ -7,16 +7,18 @@ import "./Register.css";
 /**
  * Login Page
  *
- * Two stages inside the one card, without leaving /login:
+ * Two stages inside the one card and the one form, without leaving /login:
  *
  *  1. ORG - the organisation code, then a choice: continue as a guest
  *     (the customer area) or log in to a staff account.
- *  2. CREDENTIALS - email/username and password for the code entered above.
+ *  2. CREDENTIALS - email/username and password appear beneath the code, and
+ *     the guest button gives way to a back button.
  *
  * Both choices need the code first, so the buttons stay disabled until one is
  * typed. "Continue as guest" hands the code to the /org gateway, which checks
- * it exists before opening the customer area. "Log in" is not wired yet, and
- * the credentials stage is kept below ready for it.
+ * it exists before opening the customer area. "Log in" is the form's submit in
+ * both stages: it advances to the credentials in stage 1 and logs in from
+ * stage 2, so Enter does the right thing in either.
  */
 
 const STAGE = {
@@ -25,7 +27,7 @@ const STAGE = {
 };
 
 export const Login = () => {
-  const [stage] = useState(STAGE.ORG);
+  const [stage, setStage] = useState(STAGE.ORG);
   const [orgCode, setOrgCode] = useState(""); // organisation code
   const [login, setLogin] = useState(""); // email or username
   const [password, setPassword] = useState("");
@@ -34,6 +36,7 @@ export const Login = () => {
   const navigate = useNavigate();
 
   const hasOrgCode = orgCode.trim().length > 0;
+  const onCredentials = stage === STAGE.CREDENTIALS;
 
   // The gateway owns the check: it confirms the code exists, ends any staff
   // session, stores the code and opens the customer area - or shows its own
@@ -43,8 +46,12 @@ export const Login = () => {
     navigate(`/org/${encodeURIComponent(orgCode.trim().toLowerCase())}`);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleBack = () => {
+    setError("");
+    setStage(STAGE.ORG);
+  };
+
+  const handleLogin = async () => {
     setError("");
 
     // 1. Organisation required first
@@ -98,6 +105,23 @@ export const Login = () => {
     }
   };
 
+  // One submit handler for both stages, so a click on "Log in" and an Enter in
+  // any field take the same path.
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!onCredentials) {
+      if (hasOrgCode) setStage(STAGE.CREDENTIALS);
+      return;
+    }
+    handleLogin();
+  };
+
+  const hint = !hasOrgCode
+    ? "Enter your organisation code to continue."
+    : onCredentials
+      ? "Enter the account details for this organisation."
+      : "Browse as a guest, or log in to your account.";
+
   return (
     <div className="auth-page">
       <section className="auth-shell" aria-label="Login">
@@ -115,66 +139,27 @@ export const Login = () => {
         </div>
 
         <div className="auth-card">
-          {stage === STAGE.ORG && (
-            <>
-              <p className="auth-kicker">Account access</p>
-              <h2>Your organisation</h2>
+          <p className="auth-kicker">Account access</p>
+          <h2>{onCredentials ? "Log in" : "Your organisation"}</h2>
 
-              {/* Enter is swallowed for now so the page cannot reload out from
-                  under the card; it will map to "Log in" once that is wired. */}
-              <form onSubmit={(e) => e.preventDefault()} className="auth-form">
-                <label className="auth-field" htmlFor="orgCode">
-                  <span>Organisation Code</span>
-                  <input
-                    id="orgCode"
-                    type="text"
-                    value={orgCode}
-                    onChange={(e) => setOrgCode(e.target.value)}
-                    required
-                    autoComplete="organization"
-                    className="auth-input"
-                  />
-                </label>
+          {error && <p className="auth-status auth-status-error">{error}</p>}
 
-                <div className="auth-choice">
-                  {/* The hint changes with the field so an empty code explains
-                      the disabled buttons, and a filled one explains the choice. */}
-                  <p className="auth-choice-hint">
-                    {hasOrgCode
-                      ? "Browse as a guest, or log in to your account."
-                      : "Enter your organisation code to continue."}
-                  </p>
-                  <div className="auth-button-row">
-                    <button
-                      type="button"
-                      className="auth-secondary-button"
-                      disabled={!hasOrgCode}
-                      onClick={handleContinueAsGuest}
-                    >
-                      Continue as guest
-                    </button>
-                    {/* Not wired yet. */}
-                    <button type="button" className="auth-primary-button" disabled={!hasOrgCode}>
-                      Log in
-                    </button>
-                  </div>
-                </div>
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label className="auth-field" htmlFor="orgCode">
+              <span>Organisation Code</span>
+              <input
+                id="orgCode"
+                type="text"
+                value={orgCode}
+                onChange={(e) => setOrgCode(e.target.value)}
+                required
+                autoComplete="organization"
+                className="auth-input"
+              />
+            </label>
 
-                <p className="auth-switch">
-                  New to Stowed? <Link to="/register">Set up your organisation</Link>
-                </p>
-              </form>
-            </>
-          )}
-
-          {stage === STAGE.CREDENTIALS && (
-            <>
-              <p className="auth-kicker">Account access</p>
-              <h2>Log in</h2>
-
-              {error && <p className="auth-status auth-status-error">{error}</p>}
-
-              <form onSubmit={handleSubmit} className="auth-form">
+            {onCredentials && (
+              <>
                 <label className="auth-field" htmlFor="login">
                   <span>Email or Username</span>
                   <input
@@ -183,6 +168,7 @@ export const Login = () => {
                     value={login}
                     onChange={(e) => setLogin(e.target.value)}
                     required
+                    autoFocus
                     autoComplete="username"
                     className="auth-input"
                   />
@@ -200,13 +186,48 @@ export const Login = () => {
                     className="auth-input"
                   />
                 </label>
+              </>
+            )}
 
-                <button type="submit" disabled={loading} className="auth-primary-button">
-                  {loading ? "Logging in..." : "Log In"}
+            <div className="auth-choice">
+              {/* The hint changes with the field and the stage, so an empty code
+                  explains the disabled buttons and a filled one explains the
+                  choice in front of the visitor. */}
+              <p className="auth-choice-hint">{hint}</p>
+              <div className="auth-button-row">
+                {onCredentials ? (
+                  <button
+                    type="button"
+                    className="auth-secondary-button"
+                    disabled={loading}
+                    onClick={handleBack}
+                  >
+                    Back
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="auth-secondary-button"
+                    disabled={!hasOrgCode}
+                    onClick={handleContinueAsGuest}
+                  >
+                    Continue as guest
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="auth-primary-button"
+                  disabled={!hasOrgCode || loading}
+                >
+                  {loading ? "Logging in..." : "Log in"}
                 </button>
-              </form>
-            </>
-          )}
+              </div>
+            </div>
+
+            <p className="auth-switch">
+              New to Stowed? <Link to="/register">Set up your organisation</Link>
+            </p>
+          </form>
         </div>
       </section>
     </div>
