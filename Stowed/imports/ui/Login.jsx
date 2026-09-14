@@ -13,8 +13,10 @@ import "./Register.css";
  *     (the customer area) or log in to a staff account.
  *  2. CREDENTIALS - email/username and password for the code entered above.
  *
- * Only stage 1 is reachable so far; neither button does anything yet, and the
- * credentials stage is kept below ready to be wired up next.
+ * Both choices need the code first, so the buttons stay disabled until one is
+ * typed. "Continue as guest" hands the code to the /org gateway, which checks
+ * it exists before opening the customer area. "Log in" is not wired yet, and
+ * the credentials stage is kept below ready for it.
  */
 
 const STAGE = {
@@ -30,6 +32,16 @@ export const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const hasOrgCode = orgCode.trim().length > 0;
+
+  // The gateway owns the check: it confirms the code exists, ends any staff
+  // session, stores the code and opens the customer area - or shows its own
+  // not-found error. Nothing here needs to know which.
+  const handleContinueAsGuest = () => {
+    if (!hasOrgCode) return;
+    navigate(`/org/${encodeURIComponent(orgCode.trim().toLowerCase())}`);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -124,13 +136,29 @@ export const Login = () => {
                   />
                 </label>
 
-                {/* Neither button has an action yet. */}
-                <button type="button" className="auth-primary-button">
-                  Log in
-                </button>
-                <button type="button" className="auth-secondary-button">
-                  Continue as guest
-                </button>
+                <div className="auth-choice">
+                  {/* The hint changes with the field so an empty code explains
+                      the disabled buttons, and a filled one explains the choice. */}
+                  <p className="auth-choice-hint">
+                    {hasOrgCode
+                      ? "Browse as a guest, or log in to your account."
+                      : "Enter your organisation code to continue."}
+                  </p>
+                  <div className="auth-button-row">
+                    <button
+                      type="button"
+                      className="auth-secondary-button"
+                      disabled={!hasOrgCode}
+                      onClick={handleContinueAsGuest}
+                    >
+                      Continue as guest
+                    </button>
+                    {/* Not wired yet. */}
+                    <button type="button" className="auth-primary-button" disabled={!hasOrgCode}>
+                      Log in
+                    </button>
+                  </div>
+                </div>
 
                 <p className="auth-switch">
                   New to Stowed? <Link to="/register">Set up your organisation</Link>
