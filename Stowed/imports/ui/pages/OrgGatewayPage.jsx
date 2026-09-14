@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { Navigate, useParams } from "react-router-dom";
-import { setCustomerOrgCode, clearCustomerOrgCode } from "../customerSession";
+import { setCustomerOrgCode, clearCustomerOrgCode, endStaffSession } from "../customerSession";
 import "../Register.css";
 
 /**
@@ -21,16 +21,6 @@ const STATUS = {
   ERROR: "error",
 };
 
-/**
- * Ends the Meteor session so a customer never browses carrying staff
- * credentials. Resolves either way - a logout that fails on the server should
- * not strand the visitor on a blank gateway.
- */
-function logoutIfSignedIn() {
-  if (!Meteor.userId()) return Promise.resolve();
-  return new Promise((resolve) => Meteor.logout(() => resolve()));
-}
-
 export function OrgGatewayPage() {
   const { orgCode } = useParams();
 
@@ -42,16 +32,18 @@ export function OrgGatewayPage() {
   useEffect(() => {
     let active = true;
 
+    // Landing here restarts the customer session from scratch: whatever
+    // organisation a previous visit left behind is dropped before the new code
+    // is even looked up, so a revisit can never fall back to the old one.
+    clearCustomerOrgCode();
+
     // Logging out before the lookup, not after, so an unknown code still
     // leaves the staff session closed rather than half-abandoned.
-    logoutIfSignedIn()
+    endStaffSession()
       .then(() => Meteor.callAsync("organisations.exists", { orgCode: orgCode ?? "" }))
       .then((exists) => {
         if (!active) return;
         if (!exists) {
-          // Drop any organisation from an earlier visit, so a bad link cannot
-          // leave the customer browsing the previous one.
-          clearCustomerOrgCode();
           setChecked({ code: orgCode, status: STATUS.NOT_FOUND });
           return;
         }
