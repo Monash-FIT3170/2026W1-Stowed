@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/Toast";
+import { Chatbot } from "./components/Chatbot";
 import { Sidebar } from "./Sidebar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
@@ -346,6 +347,7 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          {isLoggedIn && hasClientPermission(role, "chatbot.chat") && <Chatbot />}
         </div>
       </BrowserRouter>
     </ToastProvider>
