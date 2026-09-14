@@ -138,7 +138,9 @@ Meteor apps read secrets either from `process.env` or from a `Stowed/settings.js
 | `RESEND_FROM` | The "from" address used for sent emails | Optional - defaults to `myapp@resend.dev`. |
 | `RESET_SEED_TOKEN` | Protects the `/admin/reset-seed` HTTP endpoint (`server/main.js`) that wipes and reseeds the database | Optional - the route returns 404 (as if it doesn't exist) if unset. |
 | `GEMINI_API_KEY` | Enables the in-app AI Assistant via the Google Gen AI SDK | Required only for the AI Assistant. |
-| `GEMINI_MODEL` | Overrides the Gemini model used by the AI Assistant | Optional - defaults to `gemini-3.8-flash`. |
+| `GEMINI_MODEL` | Overrides the Gemini model used by the chatbot | Optional - defaults to `gemini-3.5-flash-lite`. |
+| `GEMINI_MAX_OUTPUT_TOKENS` | Caps chatbot response length to reduce token/rate pressure | Optional - defaults to `256`. |
+| `GEMINI_TEMPERATURE` | Controls chatbot randomness | Optional - defaults to `0.2`. |
 
 In production (Galaxy), these are set as Galaxy environment variables, and `METEOR_SESSION` / `GALAXY_APP_URL` / `RESET_SEED_TOKEN` are configured as GitHub Actions secrets/variables for the deploy and reset-seed workflows (see below).
 
