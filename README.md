@@ -137,6 +137,8 @@ Meteor apps read secrets either from `process.env` or from a `Stowed/settings.js
 | `RESEND_API_KEY` | Sending shopping-list share emails via [Resend](https://resend.com/) (`server/email/resend.js`) | Only if you need outgoing email to actually send. Without it, email attempts throw a `resend-not-configured` error. |
 | `RESEND_FROM` | The "from" address used for sent emails | Optional - defaults to `myapp@resend.dev`. |
 | `RESET_SEED_TOKEN` | Protects the `/admin/reset-seed` HTTP endpoint (`server/main.js`) that wipes and reseeds the database | Optional - the route returns 404 (as if it doesn't exist) if unset. |
+| `GEMINI_API_KEY` | Enables the in-app AI Assistant via the Google Gen AI SDK | Required only for the AI Assistant. |
+| `GEMINI_MODEL` | Overrides the Gemini model used by the AI Assistant | Optional - defaults to `gemini-3.8-flash`. |
 
 In production (Galaxy), these are set as Galaxy environment variables, and `METEOR_SESSION` / `GALAXY_APP_URL` / `RESET_SEED_TOKEN` are configured as GitHub Actions secrets/variables for the deploy and reset-seed workflows (see below).
 
