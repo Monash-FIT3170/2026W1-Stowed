@@ -7,6 +7,7 @@ const SUGGESTED_PROMPTS = [
   "Help me name storage locations.",
   "Make a low-stock checklist.",
 ];
+const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
 
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,6 +20,7 @@ export function Chatbot() {
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
+  const [previousInteractionId, setPreviousInteractionId] = useState(null);
   const inputRef = useRef(null);
 
   const canSend = draft.trim().length > 0 && !isSending;
@@ -43,22 +45,30 @@ export function Chatbot() {
     setError("");
     setIsSending(true);
 
-    Meteor.call("chatbot.chat", { messages: nextMessages }, (callError, result) => {
-      setIsSending(false);
+    Meteor.call(
+      "chatbot.chat",
+      { messages: nextMessages, previousInteractionId },
+      (callError, result) => {
+        setIsSending(false);
 
-      if (callError) {
-        setError(callError.reason || callError.message || "The chatbot could not respond.");
-        return;
-      }
+        if (callError) {
+          setError(DEFAULT_ERROR_MESSAGE);
+          return;
+        }
 
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content: result?.text || "I could not generate a response this time.",
-        },
-      ]);
-    });
+        if (result?.interactionId) {
+          setPreviousInteractionId(result.interactionId);
+        }
+
+        setMessages((current) => [
+          ...current,
+          {
+            role: "assistant",
+            content: result?.text || "I could not generate a response this time.",
+          },
+        ]);
+      },
+    );
   }
 
   function handleSubmit(event) {
@@ -78,7 +88,6 @@ export function Chatbot() {
           <header className="chatbot-header">
             <div>
               <h2>Chatbot</h2>
-              <span>Inventory help</span>
             </div>
             <button
               type="button"
@@ -92,7 +101,10 @@ export function Chatbot() {
 
           <div className="chatbot-messages">
             {visibleMessages.map((message, index) => (
-              <article key={`${message.role}-${index}`} className={`chatbot-message ${message.role}`}>
+              <article
+                key={`${message.role}-${index}`}
+                className={`chatbot-message ${message.role}`}
+              >
                 <div className="chatbot-label">
                   {message.role === "assistant" ? "Chatbot" : "You"}
                 </div>
