@@ -3,6 +3,7 @@ import React from "react";
 
 import { StorageUnit } from "../imports/ui/pages/floorMapComponents/canvas/components/units/StorageUnit";
 import { UnitLayer } from "../imports/ui/pages/floorMapComponents/canvas/components/layers/UnitLayer";
+import { buildLowStockOverlay } from "../imports/ui/pages/floorMapComponents/canvas/components/layers/LowStockLayer";
 import { GhostLayer } from "../imports/ui/pages/floorMapComponents/canvas/components/layers/GhostLayer";
 import {
   canvasReducer,
@@ -154,6 +155,44 @@ describe("Floor map canvas", function () {
 
       assert.strictEqual(viewModeUnit.props.draggable, false);
       assert.strictEqual(editModeUnit.props.draggable, true);
+    });
+
+    it("activates storage units from both mouse clicks and touch taps", function () {
+      const activations = [];
+      const onSelect = (event) => activations.push(event.type);
+      const element = StorageUnit({
+        unit,
+        isSelected: false,
+        isCanvasEditMode: false,
+        onSelect,
+        onDragMove: () => {},
+        onDragEnd: () => {},
+        onTransformEnd: () => {},
+        groupRef: () => {},
+      });
+
+      element.props.onClick({ type: "click" });
+      element.props.onTap({ type: "tap" });
+
+      assert.deepStrictEqual(activations, ["click", "tap"]);
+    });
+
+    it("activates the stock-status overlay from both mouse clicks and touch taps", function () {
+      const activations = [];
+      const overlay = buildLowStockOverlay({
+        unit,
+        fill: "transparent",
+        selected: false,
+        onMouseEnter: () => {},
+        onMouseMove: () => {},
+        onMouseLeave: () => {},
+        onActivate: (event) => activations.push(event.type),
+      });
+
+      overlay.props.onClick({ type: "click" });
+      overlay.props.onTap({ type: "tap" });
+
+      assert.deepStrictEqual(activations, ["click", "tap"]);
     });
 
     it("uses a transparent stroke for unselected storage units", function () {
