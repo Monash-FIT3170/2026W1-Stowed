@@ -149,6 +149,7 @@
 }
 
 .auth-primary-button,
+.auth-secondary-button,
 .auth-link-button,
 .auth-segmented-control button {
   font: inherit;
@@ -180,6 +181,24 @@
 .auth-primary-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+/* The quieter of the two choices on the organisation stage: same pill as the
+   primary button so the pair reads as one control, outlined instead of filled
+   so "Log in" stays the obvious default. */
+.auth-secondary-button {
+  width: 100%;
+  border: 1px solid var(--border-subtle, #d9cfc0);
+  border-radius: 999px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-dark, #1a1a1a);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+
+.auth-secondary-button:hover {
+  border-color: var(--accent-secondary, #e89b6f);
 }
 
 .auth-link-button {

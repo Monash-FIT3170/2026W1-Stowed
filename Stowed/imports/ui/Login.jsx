@@ -6,8 +6,24 @@ import "./Register.css";
 
 /**
  * Login Page
+ *
+ * Two stages inside the one card, without leaving /login:
+ *
+ *  1. ORG - the organisation code, then a choice: continue as a guest
+ *     (the customer area) or log in to a staff account.
+ *  2. CREDENTIALS - email/username and password for the code entered above.
+ *
+ * Only stage 1 is reachable so far; neither button does anything yet, and the
+ * credentials stage is kept below ready to be wired up next.
  */
+
+const STAGE = {
+  ORG: "org",
+  CREDENTIALS: "credentials",
+};
+
 export const Login = () => {
+  const [stage] = useState(STAGE.ORG);
   const [orgCode, setOrgCode] = useState(""); // organisation code
   const [login, setLogin] = useState(""); // email or username
   const [password, setPassword] = useState("");
@@ -87,59 +103,82 @@ export const Login = () => {
         </div>
 
         <div className="auth-card">
-          <p className="auth-kicker">Account access</p>
-          <h2>Log in</h2>
+          {stage === STAGE.ORG && (
+            <>
+              <p className="auth-kicker">Account access</p>
+              <h2>Your organisation</h2>
 
-          {error && <p className="auth-status auth-status-error">{error}</p>}
+              {/* Enter is swallowed for now so the page cannot reload out from
+                  under the card; it will map to "Log in" once that is wired. */}
+              <form onSubmit={(e) => e.preventDefault()} className="auth-form">
+                <label className="auth-field" htmlFor="orgCode">
+                  <span>Organisation Code</span>
+                  <input
+                    id="orgCode"
+                    type="text"
+                    value={orgCode}
+                    onChange={(e) => setOrgCode(e.target.value)}
+                    required
+                    autoComplete="organization"
+                    className="auth-input"
+                  />
+                </label>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <label className="auth-field" htmlFor="orgCode">
-              <span>Organisation Code</span>
-              <input
-                id="orgCode"
-                type="text"
-                value={orgCode}
-                onChange={(e) => setOrgCode(e.target.value)}
-                required
-                autoComplete="organization"
-                className="auth-input"
-              />
-            </label>
+                {/* Neither button has an action yet. */}
+                <button type="button" className="auth-primary-button">
+                  Log in
+                </button>
+                <button type="button" className="auth-secondary-button">
+                  Continue as guest
+                </button>
 
-            <label className="auth-field" htmlFor="login">
-              <span>Email or Username</span>
-              <input
-                id="login"
-                type="text"
-                value={login}
-                onChange={(e) => setLogin(e.target.value)}
-                required
-                autoComplete="username"
-                className="auth-input"
-              />
-            </label>
+                <p className="auth-switch">
+                  New to Stowed? <Link to="/register">Set up your organisation</Link>
+                </p>
+              </form>
+            </>
+          )}
 
-            <label className="auth-field" htmlFor="password">
-              <span>Password</span>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="auth-input"
-              />
-            </label>
+          {stage === STAGE.CREDENTIALS && (
+            <>
+              <p className="auth-kicker">Account access</p>
+              <h2>Log in</h2>
 
-            <button type="submit" disabled={loading} className="auth-primary-button">
-              {loading ? "Logging in..." : "Log In"}
-            </button>
+              {error && <p className="auth-status auth-status-error">{error}</p>}
 
-            <p className="auth-switch">
-              New to Stowed? <Link to="/register">Set up your organisation</Link>
-            </p>
-          </form>
+              <form onSubmit={handleSubmit} className="auth-form">
+                <label className="auth-field" htmlFor="login">
+                  <span>Email or Username</span>
+                  <input
+                    id="login"
+                    type="text"
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
+                    required
+                    autoComplete="username"
+                    className="auth-input"
+                  />
+                </label>
+
+                <label className="auth-field" htmlFor="password">
+                  <span>Password</span>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="auth-input"
+                  />
+                </label>
+
+                <button type="submit" disabled={loading} className="auth-primary-button">
+                  {loading ? "Logging in..." : "Log In"}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </section>
     </div>
