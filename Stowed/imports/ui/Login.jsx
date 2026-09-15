@@ -87,8 +87,16 @@ export const Login = () => {
         </div>
 
         <div className="auth-card">
-          <p className="auth-kicker">Account access</p>
-          <h2>Log in</h2>
+          <div className="auth-card-header">
+            <div>
+              <p className="auth-kicker">Account access</p>
+              <h2>Log in</h2>
+            </div>
+
+            <button type="button" onClick={() => navigate("/")} className="auth-link-button">
+              Back to home
+            </button>
+          </div>
 
           {error && <p className="auth-status auth-status-error">{error}</p>}
 

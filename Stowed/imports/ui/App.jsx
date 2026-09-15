@@ -21,6 +21,7 @@ import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { Login } from "./Login";
+import { HomePage } from "./pages/HomePage";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
@@ -74,7 +75,7 @@ export function App() {
               />
               <Route
                 path="/"
-                element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />}
+                element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <HomePage />}
               />
               <Route
                 path="/dashboard"

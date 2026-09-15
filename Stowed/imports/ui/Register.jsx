@@ -131,8 +131,8 @@ const Register = () => {
             </div>
 
             {!isLoggedIn && (
-              <button type="button" onClick={() => navigate("/login")} className="auth-link-button">
-                Back to login
+              <button type="button" onClick={() => navigate("/")} className="auth-link-button">
+                Back to home
               </button>
             )}
           </div>
