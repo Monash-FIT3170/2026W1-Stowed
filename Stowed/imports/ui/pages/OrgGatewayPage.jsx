@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { Meteor } from "meteor/meteor";
 import { Navigate, useParams } from "react-router-dom";
-import { setCustomerOrgCode, clearCustomerOrgCode, endStaffSession } from "../customerSession";
+import { startCustomerSession } from "../customerSession";
 import "../Register.css";
 
 /**
  * ORG GATEWAY
  * Entry point for customers arriving without an account, e.g. /org/monash
  *
- * Reaching this URL means becoming a customer, so any staff login is ended
- * first. The code is then resolved against the Organisations collection: a real
- * one is stored for the browser session and the visitor goes straight to the
- * customer view, an unknown one stops here with an error.
+ * This is the way in for a printed QR code. The login page's "Continue as
+ * guest" does the same job inline; both run startCustomerSession, so the checks
+ * live in one place and this page only reports the outcome: a real code goes
+ * straight through to the customer view, an unknown one stops here with an
+ * error.
  */
 
 const STATUS = {
@@ -32,27 +32,11 @@ export function OrgGatewayPage() {
   useEffect(() => {
     let active = true;
 
-    // Landing here restarts the customer session from scratch: whatever
-    // organisation a previous visit left behind is dropped before the new code
-    // is even looked up, so a revisit can never fall back to the old one.
-    clearCustomerOrgCode();
-
-    // Logging out before the lookup, not after, so an unknown code still
-    // leaves the staff session closed rather than half-abandoned.
-    endStaffSession()
-      .then(() => Meteor.callAsync("organisations.exists", { orgCode: orgCode ?? "" }))
-      .then((exists) => {
-        if (!active) return;
-        if (!exists) {
-          setChecked({ code: orgCode, status: STATUS.NOT_FOUND });
-          return;
-        }
-        setCustomerOrgCode(orgCode);
-        setChecked({ code: orgCode, status: STATUS.FOUND });
+    startCustomerSession(orgCode)
+      .then((ok) => {
+        if (active) setChecked({ code: orgCode, status: ok ? STATUS.FOUND : STATUS.NOT_FOUND });
       })
       .catch(() => {
-        // The code may well be fine - we just could not reach the server, so
-        // this stays separate from "no such organisation".
         if (active) setChecked({ code: orgCode, status: STATUS.ERROR });
       });
 

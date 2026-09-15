@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { startCustomerSession } from "./customerSession";
 import "./Register.css";
 
 /**
@@ -15,8 +16,9 @@ import "./Register.css";
  *     the guest button gives way to a back button.
  *
  * Both choices need the code first, so the buttons stay disabled until one is
- * typed. "Continue as guest" hands the code to the /org gateway, which checks
- * it exists before opening the customer area. "Log in" is the form's submit in
+ * typed. "Continue as guest" runs the same entry as the /org gateway right
+ * here, so a valid code is one hop to /customer and an unknown one is an error
+ * on this card rather than a page elsewhere. "Log in" is the form's submit in
  * both stages: it advances to the credentials in stage 1 and logs in from
  * stage 2, so Enter does the right thing in either.
  */
@@ -32,18 +34,31 @@ export const Login = () => {
   const [login, setLogin] = useState(""); // email or username
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // staff login in flight
+  const [checkingOrg, setCheckingOrg] = useState(false); // guest entry in flight
   const navigate = useNavigate();
 
   const hasOrgCode = orgCode.trim().length > 0;
   const onCredentials = stage === STAGE.CREDENTIALS;
+  const busy = loading || checkingOrg;
 
-  // The gateway owns the check: it confirms the code exists, ends any staff
-  // session, stores the code and opens the customer area - or shows its own
-  // not-found error. Nothing here needs to know which.
-  const handleContinueAsGuest = () => {
+  const handleContinueAsGuest = async () => {
     if (!hasOrgCode) return;
-    navigate(`/org/${encodeURIComponent(orgCode.trim().toLowerCase())}`);
+    setError("");
+    setCheckingOrg(true);
+
+    try {
+      const ok = await startCustomerSession(orgCode);
+      if (!ok) {
+        setError(`No organisation with the code "${orgCode.trim()}" exists.`);
+        return;
+      }
+      navigate("/customer");
+    } catch {
+      setError("We could not check that organisation code. Please try again.");
+    } finally {
+      setCheckingOrg(false);
+    }
   };
 
   const handleBack = () => {
@@ -110,7 +125,10 @@ export const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!onCredentials) {
-      if (hasOrgCode) setStage(STAGE.CREDENTIALS);
+      if (hasOrgCode) {
+        setError("");
+        setStage(STAGE.CREDENTIALS);
+      }
       return;
     }
     handleLogin();
@@ -199,7 +217,7 @@ export const Login = () => {
                   <button
                     type="button"
                     className="auth-secondary-button"
-                    disabled={loading}
+                    disabled={busy}
                     onClick={handleBack}
                   >
                     Back
@@ -208,16 +226,16 @@ export const Login = () => {
                   <button
                     type="button"
                     className="auth-secondary-button"
-                    disabled={!hasOrgCode}
+                    disabled={!hasOrgCode || busy}
                     onClick={handleContinueAsGuest}
                   >
-                    Continue as guest
+                    {checkingOrg ? "Checking..." : "Continue as guest"}
                   </button>
                 )}
                 <button
                   type="submit"
                   className="auth-primary-button"
-                  disabled={!hasOrgCode || loading}
+                  disabled={!hasOrgCode || busy}
                 >
                   {loading ? "Logging in..." : "Log in"}
                 </button>

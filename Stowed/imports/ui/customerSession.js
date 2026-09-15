@@ -48,3 +48,29 @@ export function endStaffSession() {
   if (!Meteor.userId()) return Promise.resolve();
   return new Promise((resolve) => Meteor.logout(() => resolve()));
 }
+
+/**
+ * The full entry into the customer area, shared by the /org/:orgCode gateway
+ * (QR codes) and the login page's "Continue as guest", so the two can never
+ * drift: any previous organisation is dropped, any staff session is ended, and
+ * the code is looked up and stored only if it exists.
+ *
+ * Resolves true when the visitor may go to /customer, false when the code is
+ * unknown. Rejects only when the server could not be reached - the code may
+ * well be fine in that case, so callers keep it separate from "not found".
+ */
+export async function startCustomerSession(orgCode) {
+  // Dropped before the lookup, so a failed or abandoned attempt can never fall
+  // back to whatever organisation an earlier visit left behind.
+  clearCustomerOrgCode();
+
+  // Logging out before the lookup, not after, so an unknown code still leaves
+  // the staff session closed rather than half-abandoned.
+  await endStaffSession();
+
+  const exists = await Meteor.callAsync("organisations.exists", { orgCode: orgCode ?? "" });
+  if (!exists) return false;
+
+  setCustomerOrgCode(orgCode);
+  return true;
+}
