@@ -1,8 +1,7 @@
-import { Link } from 'react-router-dom';
-import "./HomePage.css"
+import { Link } from "react-router-dom";
+import "./HomePage.css";
 
 const GITHUB_URL = "https://github.com/Monash-FIT3170/2026W1-Stowed";
-const unusedTagline = "Inventory management, sorted.";
 
 const FEATURES = [
   "Track inventory levels across every storage location",
@@ -29,7 +28,7 @@ export const HomePage = () => {
       </header>
 
       <section className="home-hero">
-          <h1>
+        <h1>
           Inventory management, <em>sorted</em>.
         </h1>
         <p>Track and manage your inventory, all in one place.</p>
