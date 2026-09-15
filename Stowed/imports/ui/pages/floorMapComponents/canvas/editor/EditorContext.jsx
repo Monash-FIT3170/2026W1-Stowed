@@ -4,11 +4,7 @@ import { useTracker } from "meteor/react-meteor-data";
 
 import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
-import {
-  buildRectShape,
-  getBoundingBox,
-  getTransformedBounds,
-} from "/imports/api/locations/shapeUtils";
+import { buildRectShape, getTransformedBounds } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
@@ -261,65 +257,64 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       for (const unit of units) {
         const shape = getDrawableShape(unit);
-        const offset = unit.offset ?? { x: 0, y: 0 };
-        const scale = unit.scale ?? { x: 1, y: 1 };
+        const rotation = unit.rotation ?? 0;
+        const scale = {
+          x: unit.scale?.x ?? 1,
+          y: unit.scale?.y ?? 1,
+        };
 
-        if (unit._id) {
-          // Recalculate all new transformations and update accordingly
-          const loadedBounds = getTransformedBounds(shape, {
-            offset,
-            rotation: unit.rotation,
-            scale,
-          });
-          const newOffset = {
-            x: offset.x + (unit.x - loadedBounds.minX),
-            y: offset.y + (unit.y - loadedBounds.minY),
-          };
+        // Calculate placement consistently for existing and copied units.
+        const loadedBounds = getTransformedBounds(shape, {
+          rotation,
+          scale,
+        });
 
-          const rawBounds = getBoundingBox(shape.points);
-          const newScale = {
-            x: rawBounds.width > 0 ? unit.width / rawBounds.width : scale.x,
-            y: rawBounds.height > 0 ? unit.height / rawBounds.height : scale.y,
-          };
+        const newScale = {
+          x: loadedBounds.width > 0 ? scale.x * (unit.width / loadedBounds.width) : scale.x,
+          y: loadedBounds.height > 0 ? scale.y * (unit.height / loadedBounds.height) : scale.y,
+        };
 
+        const placedBounds = getTransformedBounds(shape, {
+          rotation,
+          scale: newScale,
+        });
+
+        const newOffset = {
+          x: Number(unit.x) - placedBounds.minX,
+          y: Number(unit.y) - placedBounds.minY,
+        };
+
+        const params = {
+          floorMapId: activeFloorMapId,
+          name: unit.name,
+          type: unit.type || "other",
+          shape,
+          offset: newOffset,
+          rotation,
+          scale: newScale,
+          fill: unit.fill || COLOURS.UNIT_DEFAULT,
+        };
+
+        let savedId = unit._id;
+
+        if (savedId) {
           await callMethod("storageUnits.update", {
-            storageUnitId: unit._id,
-            floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
-            shape,
-            offset: newOffset,
-            rotation: unit.rotation ?? 0,
-            scale: newScale,
-            fill: unit.fill || COLOURS.UNIT_DEFAULT,
+            storageUnitId: savedId,
+            ...params,
           });
-
-          savedCanvasUnits.push({ ...unit, shape, offset: newOffset, scale: newScale });
         } else {
-          const newOffset = { x: Number(unit.x), y: Number(unit.y) };
-          const newScale = { x: 1, y: 1 };
-
-          const newId = await callMethod("storageUnits.create", {
-            floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
-            shape,
-            offset: newOffset,
-            rotation: 0,
-            scale,
-            fill: unit.fill || COLOURS.UNIT_DEFAULT,
-          });
-
-          savedCanvasUnits.push({
-            ...unit,
-            _id: newId,
-            id: newId,
-            shape,
-            offset: newOffset,
-            rotation: 0,
-            scale: newScale,
-          });
+          savedId = await callMethod("storageUnits.create", params);
         }
+
+        savedCanvasUnits.push({
+          ...unit,
+          _id: savedId,
+          id: savedId,
+          shape,
+          offset: newOffset,
+          rotation,
+          scale: newScale,
+        });
       }
 
       setUnits(savedCanvasUnits);
@@ -457,58 +452,65 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   async function handleChangeShape(shape) {
     if (!selectedUnit) return;
 
-    // normalise custom shapes whose points can have huge variation
-    const normalisedPoints = normaliseShapePoints(shape.points);
+    // Read the unit's latest position from the canvas.
+    const currentUnit = units.find((unit) => unit.id === selectedUnit.id);
+    if (!currentUnit) return;
 
     const normalisedShape = {
       ...shape,
-      points: normalisedPoints,
+      points: normaliseShapePoints(shape.points),
     };
 
-    // updates unit details based on new shape
+    const rotation = currentUnit.rotation ?? 0;
+    const scale = {
+      x: currentUnit.scale?.x ?? 1,
+      y: currentUnit.scale?.y ?? 1,
+    };
+
+    // Calculate the replacement shape's bounds without a position offset.
     const newBounds = getTransformedBounds(normalisedShape, {
-      offset: selectedUnit.offset,
-      rotation: selectedUnit.rotation,
-      scale: selectedUnit.scale,
+      rotation,
+      scale,
     });
 
+    // Keep the replacement anchored at the current canvas position.
+    const offset = {
+      x: currentUnit.x - newBounds.minX,
+      y: currentUnit.y - newBounds.minY,
+    };
+
     const updatedUnit = {
-      ...selectedUnit,
+      ...currentUnit,
       shape: normalisedShape,
-      x: selectedUnit.x,
-      y: selectedUnit.y,
+      offset,
+      rotation,
+      scale,
       width: newBounds.width,
       height: newBounds.height,
     };
 
-    // block change if it causes a collision
-    if (hasCollisions(updatedUnit, units, selectedUnit._id)) {
+    // Exclude this unit using its canvas ID, including unsaved units.
+    if (hasCollisions(updatedUnit, units, currentUnit.id)) {
       alert("Cannot change to this shape because it would cause collisions.");
       return;
     }
 
-    // updates unsaved map configs
-    if (!selectedUnit._id) {
-      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
-      setSelectedUnit(updatedUnit);
-      return;
-    }
-
     try {
-      await callMethod("storageUnits.update", {
-        storageUnitId: selectedUnit._id,
-        floorMapId: floorMap._id,
-        name: selectedUnit.name,
-        type: selectedUnit.type,
-        shape: normalisedShape,
-        offset: selectedUnit.offset,
-        rotation: selectedUnit.rotation,
-        scale: selectedUnit.scale,
-        fill: selectedUnit.fill,
-      });
+      if (currentUnit._id) {
+        await callMethod("storageUnits.update", {
+          storageUnitId: currentUnit._id,
+          floorMapId: floorMap._id,
+          name: currentUnit.name,
+          type: currentUnit.type,
+          shape: normalisedShape,
+          offset,
+          rotation,
+          scale,
+          fill: currentUnit.fill,
+        });
+      }
 
-      // update view
-      commitUnits((prev) => prev.map((u) => (u.id === selectedUnit.id ? updatedUnit : u)));
+      commitUnits((prev) => prev.map((unit) => (unit.id === currentUnit.id ? updatedUnit : unit)));
 
       setSelectedUnit(updatedUnit);
     } catch (error) {

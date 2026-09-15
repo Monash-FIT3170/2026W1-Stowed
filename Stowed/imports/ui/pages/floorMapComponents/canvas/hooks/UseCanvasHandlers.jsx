@@ -514,12 +514,17 @@ export function useCanvasHandlers({
         const collides = hasCollisions(proposedUnit, [...units, ...placedUnits]);
 
         if (!collides) {
-          placedUnits.push({
+          const copiedUnit = {
             ...unit,
             id: `unit-${Date.now()}-${Math.random()}`,
             x: testX,
             y: testY,
-          });
+          };
+
+          // A copied unit must get its own database record when saved.
+          delete copiedUnit._id;
+
+          placedUnits.push(copiedUnit);
           break;
         }
       }
