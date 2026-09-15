@@ -4,10 +4,7 @@ import { useTracker } from "meteor/react-meteor-data";
 
 import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
-import {
-  buildRectShape,
-  getTransformedBounds,
-} from "/imports/api/locations/shapeUtils";
+import { buildRectShape, getTransformedBounds } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
@@ -35,9 +32,9 @@ function normalizeFloorSize(floorSize) {
   const looksLikeMeters = width <= 100 && height <= 100;
   return looksLikeMeters
     ? {
-      width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-      height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-    }
+        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
+        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
+      }
     : { width, height };
 }
 
@@ -273,14 +270,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         });
 
         const newScale = {
-          x:
-            loadedBounds.width > 0
-              ? scale.x * (unit.width / loadedBounds.width)
-              : scale.x,
-          y:
-            loadedBounds.height > 0
-              ? scale.y * (unit.height / loadedBounds.height)
-              : scale.y,
+          x: loadedBounds.width > 0 ? scale.x * (unit.width / loadedBounds.width) : scale.x,
+          y: loadedBounds.height > 0 ? scale.y * (unit.height / loadedBounds.height) : scale.y,
         };
 
         const placedBounds = getTransformedBounds(shape, {
@@ -453,11 +444,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }
-
 
   async function handleChangeShape(shape) {
     if (!selectedUnit) return;
@@ -520,18 +510,11 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         });
       }
 
-      commitUnits((prev) =>
-        prev.map((unit) =>
-          unit.id === currentUnit.id ? updatedUnit : unit,
-        ),
-      );
+      commitUnits((prev) => prev.map((unit) => (unit.id === currentUnit.id ? updatedUnit : unit)));
 
       setSelectedUnit(updatedUnit);
     } catch (error) {
-      alert(
-        error.reason ||
-        "Ensure that a valid shape has been selected to change to.",
-      );
+      alert(error.reason || "Ensure that a valid shape has been selected to change to.");
     }
   }
 
@@ -544,7 +527,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-        "Cannot delete this shape. Make sure it is not used for any storage units first.",
+          "Cannot delete this shape. Make sure it is not used for any storage units first.",
       );
     }
   }
