@@ -290,6 +290,35 @@
   color: #166534;
 }
 
+/* -- Notice card: a standalone message with one way forward -- */
+
+/* Sized for a sentence or two rather than a form, and centred by .auth-page. */
+.auth-notice {
+  width: min(420px, 100%);
+}
+
+.auth-notice h2 {
+  margin-bottom: 10px;
+}
+
+.auth-notice-text {
+  color: var(--text-muted, #998874);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+
+/* The code echoed back as the visitor typed it, set apart so a typo is easy
+   to spot. */
+.auth-notice-code {
+  color: var(--text-dark, #1a1a1a);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--bg-primary, #f5efe6);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
 .auth-role-group {
   display: grid;
   gap: 8px;

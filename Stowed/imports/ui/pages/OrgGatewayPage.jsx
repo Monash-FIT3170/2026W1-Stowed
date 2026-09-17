@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { startCustomerSession } from "../customerSession";
 import "../Register.css";
 
@@ -23,6 +23,7 @@ const STATUS = {
 
 export function OrgGatewayPage() {
   const { orgCode } = useParams();
+  const navigate = useNavigate();
 
   // The checked code is held alongside its outcome, so a change of :orgCode
   // reads as "checking" again without an effect having to reset the state.
@@ -55,16 +56,29 @@ export function OrgGatewayPage() {
     return null;
   }
 
+  const notFound = status === STATUS.NOT_FOUND;
+
+  // The back button is a placeholder for the general landing page still to
+  // come; /login is the only other way in for now.
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <p className="auth-kicker">Stowed</p>
-        <h2>{status === STATUS.NOT_FOUND ? "Organisation not found" : "Something went wrong"}</h2>
-        <p className="auth-status auth-status-error">
-          {status === STATUS.NOT_FOUND
-            ? `No organisation with the code "${orgCode}" exists.`
-            : "We could not check that organisation code. Please try again."}
+      <div className="auth-card auth-notice">
+        <p className="auth-kicker">Customer access</p>
+        <h2>{notFound ? "Organisation not found" : "Something went wrong"}</h2>
+        <p className="auth-notice-text">
+          {notFound ? (
+            <>
+              We couldn&apos;t find an organisation with the code{" "}
+              <strong className="auth-notice-code">{orgCode}</strong>. Check the code on your sign
+              or QR code, or ask a member of staff.
+            </>
+          ) : (
+            "We couldn't check that organisation code right now. Please try again in a moment."
+          )}
         </p>
+        <button type="button" className="auth-primary-button" onClick={() => navigate("/login")}>
+          Back
+        </button>
       </div>
     </div>
   );
