@@ -29,3 +29,4 @@ import "./accessibilityContrast.test.js";
 import "./accessibilityTextSize.test.js";
 import "./accessibilityLargeCursor.test.js";
 import "./accessibilityZoom.test.js";
+import "./accessibilityPanel.test.js";
