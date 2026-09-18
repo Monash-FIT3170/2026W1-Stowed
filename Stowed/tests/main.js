@@ -27,3 +27,4 @@ import "./barcodeHelpers.test.js";
 import "./stockAdjust.test.js";
 import "./accessibilityContrast.test.js";
 import "./accessibilityTextSize.test.js";
+import "./accessibilityLargeCursor.test.js";
