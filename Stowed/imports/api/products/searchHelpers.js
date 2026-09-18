@@ -63,8 +63,8 @@ export async function enrichShoppingResult(result, fetchImmersiveProduct) {
 
 export function shapeShoppingResults(shoppingResults, fetchImmersiveProduct) {
   return Promise.all(
-    shoppingResults.slice(0, MAX_RESULTS).map((result) =>
-      enrichShoppingResult(result, fetchImmersiveProduct),
-    ),
+    shoppingResults
+      .slice(0, MAX_RESULTS)
+      .map((result) => enrichShoppingResult(result, fetchImmersiveProduct)),
   );
 }

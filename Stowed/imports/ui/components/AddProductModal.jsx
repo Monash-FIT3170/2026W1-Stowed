@@ -40,11 +40,7 @@ export function AddProductModal({ onClose }) {
           name: result.title || "",
           brand: result.brand || "",
           unitCost: typeof result.sellPrice === "number" ? result.sellPrice : "",
-          images: result.images?.length
-            ? result.images
-            : result.imageUrl
-              ? [result.imageUrl]
-              : [],
+          images: result.images?.length ? result.images : result.imageUrl ? [result.imageUrl] : [],
         },
       },
     });
