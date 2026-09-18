@@ -25,3 +25,4 @@ import "./productExport.test.js";
 import "./bulkImport.test.js";
 import "./barcodeHelpers.test.js";
 import "./stockAdjust.test.js";
+import "./accessibilityContrast.test.js";
