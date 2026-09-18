@@ -138,7 +138,7 @@ describe("Grid Snapping - Canvas alignment and snapping to grid", function () {
     assert.ok(labels.every((label) => label.props.text !== "0m"));
   });
 
-  it("renders half-metre labels when grid interval is smaller than one metre", function () {
+  it("renders per-metre labels when grid interval is smaller than one metre", function () {
     const layer = GridLayer({
       width: 100,
       height: 50,
@@ -151,7 +151,7 @@ describe("Grid Snapping - Canvas alignment and snapping to grid", function () {
 
     assert.deepStrictEqual(
       labels.map((label) => label.props.text),
-      ["0.5m", "1m", "1.5m", "2m", "0.5m", "1m"],
+      ["1m", "2m", "1m"],
     );
   });
 

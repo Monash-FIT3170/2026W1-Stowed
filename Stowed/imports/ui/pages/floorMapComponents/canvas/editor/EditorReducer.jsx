@@ -23,7 +23,7 @@ export const initialCanvasState = {
  * // SELECT_UNIT         - sets selection to [id], or toggles id when shiftKey is true.
  * // DESELECT_ALL        - clears the selection set.
  * // SET_GHOST           - stores a ghost unit descriptor during a palette drag-over.
- * // SET_DRAG_OFFSETS    - records live deltaX/deltaY during a multi-unit drag.
+ * // SET_DRAG_OFFSETS    - records live deltaX/deltaY during a unit drag (single or multi).
  * // CLEAR_DRAG_OFFSETS  - resets drag offsets on drag end.
  * // SET_SCALE           - updates the stage zoom level.
  * // SET_STAGE_POS       - persists the stage pan position after a stage drag ends.

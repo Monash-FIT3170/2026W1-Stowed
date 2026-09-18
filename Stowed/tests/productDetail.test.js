@@ -151,6 +151,41 @@ describe("ProductDetailView", function () {
     });
   });
 
+  describe("category field", function () {
+    const base = {
+      _id: "p1",
+      name: "Widget",
+      sku: "SKU-1",
+      location: "Shelf 1",
+    };
+
+    function categoryInput(html) {
+      const match = html.match(/<input id="category"[^>]*value="([^"]*)"/);
+      return match ? match[1] : null;
+    }
+
+    it("resolves categoryId against the categories list", function () {
+      const html = renderWithoutLayoutEffectWarning(
+        React.createElement(
+          MemoryRouter,
+          null,
+          React.createElement(ProductDetailView, {
+            item: { ...base, categoryId: "c1" },
+            productId: base._id,
+            categories: [{ _id: "c1", name: "Lab Safety" }],
+          }),
+        ),
+      );
+      assert.strictEqual(categoryInput(html), "Lab Safety");
+      assert.ok(!html.includes("No category specified"));
+    });
+
+    it("falls back to the placeholder when the category is unknown", function () {
+      const html = renderProduct({ ...base, categoryId: "missing" });
+      assert.strictEqual(categoryInput(html), "No category specified");
+    });
+  });
+
   it("selects first catalog image as main image when available", function () {
     const item = getMockProductById("1") || mockProducts[0];
     const html = renderWithoutLayoutEffectWarning(

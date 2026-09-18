@@ -71,7 +71,7 @@ export function LocationDetailView({ location, unit, floorMap, site, rows = [] }
             )}
             <button
               type="button"
-              className="btn-primary"
+              className="btn-primary location-detail-desktop-cta"
               onClick={() => navigate(`/stocktake/${location._id}`)}
             >
               Start stocktake
@@ -229,6 +229,19 @@ export function LocationDetailView({ location, unit, floorMap, site, rows = [] }
             </div>
           </section>
         </div>
+      </div>
+
+      {/* Tablet/phone only — the primary action moved down here so it's
+          reachable at the bottom of the page instead of only up in the
+          header. Desktop keeps the header button and never sees this. */}
+      <div className="location-detail-mobile-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => navigate(`/stocktake/${location._id}`)}
+        >
+          Start stocktake
+        </button>
       </div>
     </div>
   );

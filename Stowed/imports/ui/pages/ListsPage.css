@@ -6,6 +6,17 @@
   min-width: 860px;
 }
 
+/* Tablet/phone: the 860px floor above forces the whole page to
+   horizontal-scroll on any screen narrower than that, regardless of how
+   the table itself is laid out — drop it so the page actually fits.
+   Desktop/laptop keeps the 860px floor untouched. */
+@media (max-width: 1024px) {
+  .lists-header,
+  .lists-body {
+    min-width: 0;
+  }
+}
+
 .lists-subtitle {
   margin: 0;
   font-size: 13px;
@@ -104,6 +115,115 @@
 
 .lists-overview-site {
   color: var(--text-muted);
+}
+
+/* Phone only: same "Details" idea as the Locations table — name and
+   status sharing the top line, then muted meta lines ("·" separated)
+   underneath — instead of 7 columns squeezed onto a narrow screen.
+   Rows stay plain list rows (same divider style as the desktop table),
+   not their own nested cards. Tablet/laptop keeps the original columns
+   above, untouched. */
+@media (max-width: 640px) {
+  .lists-overview-header {
+    display: none;
+  }
+
+  /* .section-content's own 20px padding stacks with each row's padding
+     below, insetting the list much further than the Inventory list (which
+     isn't wrapped in .section-content) — drop it here so the row padding
+     alone controls the inset, scoped to just this wrapper so nothing else
+     using .section-content elsewhere is affected. */
+  .section-content:has(.lists-overview-row) {
+    padding: 0;
+  }
+
+  .lists-overview-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name status"
+      "items site"
+      "purchased received"
+      "allocated allocated";
+    row-gap: 6px;
+    column-gap: 10px;
+    padding: 14px 16px;
+    align-items: center;
+  }
+
+  .lists-overview-row > span:nth-child(1) {
+    grid-area: name;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .lists-overview-row > span:nth-child(2) {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .lists-overview-row > span:nth-child(3) {
+    grid-area: items;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(3)::after {
+    content: " items";
+  }
+
+  .lists-overview-site {
+    grid-area: site;
+    justify-self: end;
+    font-size: 12px;
+  }
+
+  .lists-overview-site::before {
+    content: "· ";
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(5) {
+    grid-area: purchased;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(5)::before {
+    content: "Purchased ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+
+  .lists-overview-row > span:nth-child(6) {
+    grid-area: received;
+    justify-self: end;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-overview-row > span:nth-child(6)::before {
+    content: "· Received ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+
+  .lists-allocation-cell {
+    grid-area: allocated;
+    justify-self: start;
+    margin-top: 2px;
+    padding: 6px 10px;
+    background: var(--input-bg);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .lists-allocation-cell::before {
+    content: "Allocated ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
 }
 
 /* -- Empty state -- */

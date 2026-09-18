@@ -169,15 +169,54 @@
   text-decoration: none;
 }
 
-/* Placeholder buttons: styled as real actions but deliberately unwired. */
+/* Short button labels only ever show on tablet/phone — see the media
+   query below. Desktop keeps the full "Update stock" / "Mark complete". */
+.alert-action-label-short {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .alert-action-label-full {
+    display: none;
+  }
+
+  .alert-action-label-short {
+    display: inline;
+  }
+
+  .alert-actions {
+    justify-content: flex-end;
+  }
+
+  /* Location name, code and path can otherwise run past the card edge on
+     a narrow screen instead of wrapping. */
+  .alert-title,
+  .alert-path,
+  .alert-item-chip {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+}
+
+/* Inline result of the "Mark complete" action, shown under the card. */
 .alert-placeholder-note {
   margin-top: 10px;
   padding: 8px 12px;
   border-radius: 10px;
   background: var(--input-bg);
-  border: 1px dashed var(--border-subtle);
+  border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.alert-placeholder-note.success {
+  border-color: #2f9e44;
+  color: #2f9e44;
+}
+
+.alert-placeholder-note.error {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .alert-placeholder-note code {

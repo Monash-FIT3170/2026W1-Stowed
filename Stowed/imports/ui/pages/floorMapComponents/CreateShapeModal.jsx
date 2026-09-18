@@ -1,15 +1,22 @@
 import { useState } from "react";
+import { Stage, Layer, Circle, Line } from "react-konva";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 import { Meteor } from "meteor/meteor";
-import { buttonStyles } from "./FloorMapStyles";
+import { COLOURS, buttonStyles } from "./FloorMapStyles";
 
-export function CreateShapeModal({ onClose }) {
-  const [shapeName, setShapeName] = useState("");
+export function CreateShapeModal({ onClose, shape = null }) {
+  const [shapeName, setShapeName] = useState(shape?.name ?? "");
+  const [deletePointMode, setDeletePointMode] = useState(false);
 
-  const [points, setPoints] = useState([
-    { x: "", y: "" },
-    { x: "", y: "" },
-    { x: "", y: "" },
-  ]);
+  const canvasWidth = 800;
+  const canvasHeight = 300;
+
+  const [points, setPoints] = useState(
+    shape?.points?.map((point) => ({
+      x: point.x,
+      y: point.y,
+    })) ?? [],
+  );
 
   const handlePointChange = (index, coordinate, value) => {
     setPoints((currentPoints) =>
@@ -21,6 +28,44 @@ export function CreateShapeModal({ onClose }) {
             }
           : point,
       ),
+    );
+  };
+  const handlePointClick = (index, event) => {
+    event.cancelBubble = true;
+
+    if (!deletePointMode) return;
+
+    setPoints((currentPoints) => currentPoints.filter((_, pointIndex) => pointIndex !== index));
+  };
+  const handlePointDrag = (index, event) => {
+    const node = event.target;
+
+    const pixelX = Math.max(0, Math.min(node.x(), canvasWidth));
+
+    const pixelY = Math.max(0, Math.min(node.y(), canvasHeight));
+
+    // Keep the Konva node inside the canvas
+    node.position({
+      x: pixelX,
+      y: pixelY,
+    });
+
+    const newX = Number((pixelX / CANVAS_CONFIG.PIXELS_PER_METER).toFixed(2));
+
+    const newY = Number((pixelY / CANVAS_CONFIG.PIXELS_PER_METER).toFixed(2));
+
+    setPoints((currentPoints) =>
+      currentPoints.map((point, pointIndex) => {
+        if (pointIndex !== index) {
+          return point;
+        }
+
+        return {
+          ...point,
+          x: newX,
+          y: newY,
+        };
+      }),
     );
   };
 
@@ -36,6 +81,31 @@ export function CreateShapeModal({ onClose }) {
 
   const handleRemovePoint = (index) => {
     setPoints((currentPoints) => currentPoints.filter((_, pointIndex) => pointIndex !== index));
+  };
+
+  const handleCanvasClick = (event) => {
+    if (deletePointMode) return;
+
+    const stage = event.target.getStage();
+
+    if (!stage) return;
+    if (event.target !== stage) return;
+
+    const pointer = stage.getPointerPosition();
+
+    if (!pointer) return;
+
+    const x = pointer.x / CANVAS_CONFIG.PIXELS_PER_METER;
+
+    const y = pointer.y / CANVAS_CONFIG.PIXELS_PER_METER;
+
+    setPoints((currentPoints) => [
+      ...currentPoints,
+      {
+        x: Number(x.toFixed(2)),
+        y: Number(y.toFixed(2)),
+      },
+    ]);
   };
 
   const handleSave = async () => {
@@ -73,21 +143,30 @@ export function CreateShapeModal({ onClose }) {
     }
 
     try {
-      await Meteor.callAsync("mapShapes.create", {
-        name: trimmedName,
-        points: formattedPoints,
-        gridReference: {
-          x: 0,
-          y: 0,
-        },
-      });
+      if (shape) {
+        await Meteor.callAsync("mapShapes.update", {
+          orgId: shape.orgId,
+          shapeId: shape.shapeId,
+          name: trimmedName,
+          points: formattedPoints,
+          gridReference: shape.gridReference ?? {
+            x: 0,
+            y: 0,
+          },
+        });
+      } else {
+        await Meteor.callAsync("mapShapes.create", {
+          name: trimmedName,
+          points: formattedPoints,
+          gridReference: {
+            x: 0,
+            y: 0,
+          },
+        });
+      }
 
       setShapeName("");
-      setPoints([
-        { x: "", y: "" },
-        { x: "", y: "" },
-        { x: "", y: "" },
-      ]);
+      setPoints([]);
 
       onClose();
     } catch (error) {
@@ -99,96 +178,225 @@ export function CreateShapeModal({ onClose }) {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        <h2 style={styles.title}>Create New Shape</h2>
+        <div style={styles.modalHeader}>
+          <h2 style={styles.title}>{shape ? "Edit Shape" : "Shape Editor"}</h2>
 
-        <label style={styles.label}>
-          Shape name
-          <input
-            type="text"
-            value={shapeName}
-            onChange={(event) => setShapeName(event.target.value)}
-            placeholder="Enter shape name"
-            style={styles.fullInput}
-          />
-        </label>
+          <div style={styles.actions}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                ...buttonStyles.base,
+                ...buttonStyles.secondary,
+              }}
+            >
+              Cancel
+            </button>
 
-        <div style={styles.pointsContainer}>
-          {points.map((point, index) => (
-            <div key={index} style={styles.pointSection}>
-              <div style={styles.pointHeader}>
-                <span style={styles.pointTitle}>Point {index + 1}</span>
-
-                {points.length > 3 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePoint(index)}
-                    style={styles.removeButton}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              <div style={styles.pointRow}>
-                <label style={styles.coordinateLabel}>
-                  X coordinate
-                  <input
-                    type="number"
-                    value={point.x}
-                    onChange={(event) => handlePointChange(index, "x", event.target.value)}
-                    style={styles.coordinateInput}
-                  />
-                </label>
-
-                <label style={styles.coordinateLabel}>
-                  Y coordinate
-                  <input
-                    type="number"
-                    value={point.y}
-                    onChange={(event) => handlePointChange(index, "y", event.target.value)}
-                    style={styles.coordinateInput}
-                  />
-                </label>
-              </div>
-            </div>
-          ))}
+            <button
+              type="button"
+              onClick={handleSave}
+              style={{
+                ...buttonStyles.base,
+                ...buttonStyles.primary,
+              }}
+            >
+              {shape ? "Save Changes" : "Save Shape"}
+            </button>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAddPoint}
-          style={{
-            ...buttonStyles.base,
-            ...buttonStyles.secondary,
-            marginTop: 14,
-            width: "100%",
-          }}
-        >
-          Add Another Point
-        </button>
+        <input
+          type="text"
+          value={shapeName}
+          onChange={(event) => setShapeName(event.target.value)}
+          placeholder="Enter shape name"
+          style={styles.nameInput}
+        />
 
-        <div style={styles.actions}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              ...buttonStyles.base,
-              ...buttonStyles.secondary,
-            }}
-          >
-            Cancel
-          </button>
+        <div style={styles.canvasSection}>
+          <div style={styles.canvasHeader}>
+            <div>
+              <div style={styles.canvasTitle}>Place Points on Canvas</div>
+              <div style={styles.canvasDescription}>
+                Click anywhere on the canvas to create a point automatically.
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={handleSave}
-            style={{
-              ...buttonStyles.base,
-              ...buttonStyles.primary,
-            }}
-          >
-            Save Shape
-          </button>
+            {points.length > 0 && (
+              <div style={styles.canvasActions}>
+                <button
+                  type="button"
+                  onClick={() => setDeletePointMode((currentMode) => !currentMode)}
+                  style={{
+                    ...styles.deletePointButton,
+                    ...(deletePointMode ? styles.deletePointButtonActive : {}),
+                  }}
+                >
+                  {deletePointMode ? "Done Deleting" : "Delete Point"}
+                </button>
+
+                <button type="button" onClick={() => setPoints([])} style={styles.clearButton}>
+                  Clear Points
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div style={styles.canvasWrapper}>
+            <Stage
+              width={canvasWidth}
+              height={canvasHeight}
+              onClick={handleCanvasClick}
+              style={{
+                backgroundColor: "#fbfaf8",
+                cursor: deletePointMode ? "default" : "crosshair",
+              }}
+            >
+              <Layer>
+                <Line
+                  points={points.reduce(
+                    (acc, point) => [
+                      ...acc,
+                      point.x * CANVAS_CONFIG.PIXELS_PER_METER,
+                      point.y * CANVAS_CONFIG.PIXELS_PER_METER,
+                    ],
+                    [],
+                  )}
+                  fill={COLOURS.ACCENT_SOFT}
+                  stroke={COLOURS.CANVAS_LABEL}
+                  strokeWidth={3}
+                  closed
+                />
+              </Layer>
+              <Layer>
+                {points.map((point, index) => {
+                  if (point.x === "" || point.y === "") {
+                    return null;
+                  }
+
+                  const x = Number(point.x);
+                  const y = Number(point.y);
+
+                  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+                    return null;
+                  }
+
+                  return (
+                    <Circle
+                      key={index}
+                      x={x * CANVAS_CONFIG.PIXELS_PER_METER}
+                      y={y * CANVAS_CONFIG.PIXELS_PER_METER}
+                      radius={6}
+                      fill="#c45127"
+                      draggable={!deletePointMode}
+                      onClick={(event) => handlePointClick(index, event)}
+                      onTap={(event) => handlePointClick(index, event)}
+                      onDragMove={(event) => handlePointDrag(index, event)}
+                      onMouseEnter={(event) => {
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "grab";
+                        }
+                      }}
+                      onMouseLeave={(event) => {
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "crosshair";
+                        }
+                      }}
+                      onDragStart={(event) => {
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "grabbing";
+                        }
+                      }}
+                      onDragEnd={(event) => {
+                        handlePointDrag(index, event);
+
+                        const stage = event.target.getStage();
+
+                        if (stage) {
+                          stage.container().style.cursor = "grab";
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </Layer>
+            </Stage>
+          </div>
+        </div>
+
+        <div style={styles.pointsSection}>
+          <div style={styles.pointsHeader}>
+            <div>
+              <div style={styles.pointsTitle}>Point Coordinates</div>
+              <div style={styles.canvasDescription}>
+                Add a point manually or edit coordinates created from the canvas.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddPoint}
+              style={{
+                ...buttonStyles.base,
+                ...buttonStyles.secondary,
+              }}
+            >
+              + Add Point Manually
+            </button>
+          </div>
+
+          {points.length > 0 && (
+            <div style={styles.pointsContainer}>
+              {points.map((point, index) => (
+                <div key={index} style={styles.pointSection}>
+                  <div style={styles.pointHeader}>
+                    <span style={styles.pointTitle}>Point {index + 1}</span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePoint(index)}
+                      style={styles.removeButton}
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div style={styles.pointRow}>
+                    <label style={styles.coordinateGroup}>
+                      <span style={styles.coordinateLabel}>X</span>
+
+                      <input
+                        type="number"
+                        value={point.x}
+                        onWheel={(e) => e.target.blur()}
+                        onChange={(event) => handlePointChange(index, "x", event.target.value)}
+                        style={styles.coordinateInput}
+                      />
+                    </label>
+
+                    <label style={styles.coordinateGroup}>
+                      <span style={styles.coordinateLabel}>Y</span>
+
+                      <input
+                        type="number"
+                        value={point.y}
+                        onWheel={(e) => e.target.blur()}
+                        onChange={(event) => handlePointChange(index, "y", event.target.value)}
+                        style={styles.coordinateInput}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -207,46 +415,146 @@ const styles = {
   },
 
   modal: {
-    width: 420,
-    maxHeight: "80vh",
+    width: "62vw",
+    maxWidth: 960,
+    maxHeight: "86vh",
     overflowY: "auto",
-    padding: 24,
-    borderRadius: 12,
+    padding: "28px 30px",
+    borderRadius: 14,
     backgroundColor: "#ffffff",
-    boxShadow: "0 12px 30px rgba(0, 0, 0, 0.2)",
+    boxShadow: "0 14px 36px rgba(0, 0, 0, 0.18)",
+  },
+
+  modalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 22,
   },
 
   title: {
-    marginTop: 0,
-    marginBottom: 20,
+    margin: 0,
+    fontSize: 28,
+    fontWeight: 700,
+    color: "#1f1f1f",
   },
 
-  label: {
+  actions: {
     display: "flex",
-    flexDirection: "column",
-    gap: 6,
-    fontSize: 13,
-    fontWeight: 600,
+    justifyContent: "flex-end",
+    gap: 10,
   },
 
-  fullInput: {
-    padding: "9px 10px",
-    border: "1px solid #cccccc",
+  nameInput: {
+    width: 220,
+    padding: "10px 12px",
+    border: "1px solid #d8d1c8",
     borderRadius: 8,
     fontSize: 14,
+    boxSizing: "border-box",
+    backgroundColor: "#ffffff",
+  },
+
+  canvasSection: {
+    marginTop: 22,
+    padding: 16,
+    border: "1px solid #e3ddd5",
+    borderRadius: 10,
+    backgroundColor: "#fbfaf8",
+  },
+
+  canvasHeader: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  canvasTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: "#2a2a2a",
+  },
+
+  canvasDescription: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#77716b",
+  },
+
+  clearButton: {
+    padding: 0,
+    border: "none",
+    background: "transparent",
+    color: "#b94f2a",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 500,
+  },
+  canvasActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+  },
+
+  deletePointButton: {
+    padding: "5px 10px",
+    border: "1px solid #d8d1c8",
+    borderRadius: 6,
+    backgroundColor: "#ffffff",
+    color: "#555555",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 500,
+  },
+
+  deletePointButtonActive: {
+    borderColor: "#b42318",
+    backgroundColor: "#fef3f2",
+    color: "#b42318",
+  },
+
+  canvasWrapper: {
+    width: "100%",
+    border: "1px solid #ddd6ce",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#ffffff",
+  },
+
+  pointsSection: {
+    marginTop: 20,
+    padding: 16,
+    border: "1px solid #e3ddd5",
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+  },
+
+  pointsHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  pointsTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: "#2a2a2a",
   },
 
   pointsContainer: {
-    display: "flex",
-    flexDirection: "column",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     gap: 12,
-    marginTop: 18,
   },
 
   pointSection: {
     padding: 12,
-    border: "1px solid #dddddd",
+    border: "1px solid #e2ddd7",
     borderRadius: 8,
+    backgroundColor: "#fbfaf8",
+    minWidth: 0,
   },
 
   pointHeader: {
@@ -259,27 +567,37 @@ const styles = {
   pointTitle: {
     fontSize: 13,
     fontWeight: 600,
+    color: "#333333",
   },
 
   pointRow: {
     display: "flex",
-    gap: 12,
+    gap: 10,
+  },
+
+  coordinateGroup: {
+    display: "flex",
+    alignItems: "center",
+    flex: 1,
+    gap: 6,
+    minWidth: 0,
+    fontSize: 12,
   },
 
   coordinateLabel: {
-    display: "flex",
-    flex: 1,
-    flexDirection: "column",
-    gap: 5,
-    fontSize: 12,
+    color: "#66615c",
+    fontWeight: 500,
   },
 
   coordinateInput: {
     width: "100%",
+    minWidth: 0,
     boxSizing: "border-box",
-    padding: "8px 9px",
-    border: "1px solid #cccccc",
+    padding: "7px 8px",
+    border: "1px solid #d8d1c8",
     borderRadius: 7,
+    fontSize: 13,
+    backgroundColor: "#ffffff",
   },
 
   removeButton: {
@@ -291,10 +609,9 @@ const styles = {
     fontSize: 12,
   },
 
-  actions: {
+  manualButtonWrapper: {
+    marginTop: 14,
     display: "flex",
     justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 20,
   },
 };

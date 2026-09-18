@@ -1,0 +1,89 @@
+/* ScanSettingsPage.css — scoped under .scan-settings-page */
+
+.scan-settings-page .scan-settings-body {
+  padding: 0 28px 48px;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scan-settings-page .scan-settings-card {
+  padding: 16px 20px;
+}
+
+.scan-settings-page .scan-settings-card .section-title {
+  padding: 0 0 12px;
+  border-bottom: none;
+}
+
+.scan-settings-page .scan-settings-card .section-content {
+  padding: 0;
+}
+
+.scan-settings-page .scan-settings-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.scan-settings-page .scan-settings-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+}
+
+.scan-settings-page .scan-settings-pill.granted {
+  background: #d6ede8;
+  color: #4a8c78;
+}
+
+.scan-settings-page .scan-settings-pill.denied {
+  background: #fde8d8;
+  color: var(--accent-primary);
+}
+
+.scan-settings-page .scan-settings-pill.prompt {
+  background: #fdf3d6;
+  color: #997a2a;
+}
+
+.scan-settings-page .scan-settings-message,
+.scan-settings-page .scan-settings-note {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.scan-settings-page .scan-settings-warning {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--accent-primary);
+  line-height: 1.5;
+}
+
+.scan-settings-page .scan-settings-steps {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--text-dark);
+  line-height: 1.6;
+}
+
+.scan-settings-page .scan-settings-steps li + li {
+  margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .scan-settings-page .scan-settings-body {
+    padding: 0 16px 40px;
+    max-width: none;
+  }
+}

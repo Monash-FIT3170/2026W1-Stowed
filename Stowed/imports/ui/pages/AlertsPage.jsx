@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
@@ -46,9 +47,11 @@ function formatDate(date) {
 export function AlertsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
 
-  // Which placeholder button was pressed last, so we can explain inline that
-  // it is not connected yet. Shape: { locationId, message }.
-  const [placeholderNotice, setPlaceholderNotice] = useState(null);
+  // Inline result of the last "Mark complete" press, shown on that card.
+  // Shape: { locationId, message, tone: "success" | "error" }.
+  const [notice, setNotice] = useState(null);
+  // locationId currently being marked complete, so its button can disable.
+  const [pendingLocationId, setPendingLocationId] = useState(null);
 
   const { loading, storageLocations, storageUnits, floorMaps, sites, products, productRecords } =
     useTracker(() => {
@@ -102,13 +105,18 @@ export function AlertsPage() {
     { id: STOCKTAKE_STATUS.DUE_SOON, label: "Due soon", count: dueSoonCount },
   ];
 
-  // TODO(backend): call the existing `storageLocations.stocktakeComplete`
-  // method with { locationId }. It already stamps lastStocktakeAt, but needs
-  // permission + org checks added before being exposed.
   const handleMarkComplete = (alert) => {
-    setPlaceholderNotice({
-      locationId: alert.location._id,
-      message: "“Mark complete” is not connected yet — this stocktake is still outstanding.",
+    const locationId = alert.location._id;
+    setPendingLocationId(locationId);
+    Meteor.call("storageLocations.stocktakeComplete", { locationId }, (error) => {
+      setPendingLocationId(null);
+      setNotice({
+        locationId,
+        tone: error ? "error" : "success",
+        message: error
+          ? error.reason || "Could not mark this stocktake complete."
+          : "Marked as counted just now.",
+      });
     });
   };
 
@@ -160,13 +168,14 @@ export function AlertsPage() {
                   const isOverdue = alert.status === STOCKTAKE_STATUS.OVERDUE;
                   const shownItems = alert.items.slice(0, MAX_ITEM_CHIPS);
                   const hiddenItemCount = alert.items.length - shownItems.length;
-                  const showNotice = placeholderNotice?.locationId === alert.location._id;
+                  const cardNotice = notice?.locationId === alert.location._id ? notice : null;
+                  const isMarking = pendingLocationId === alert.location._id;
 
                   return (
                     <article key={alert.location._id} className={`alert-card ${alert.status}`}>
-                      <a
+                      <Link
                         className="alert-location-link"
-                        href={`/locations/${alert.location._id}`}
+                        to={`/locations/${alert.location._id}`}
                         aria-label={`View details for ${alert.location.name || "unnamed location"}`}
                       >
                         <div className="alert-card-top">
@@ -220,24 +229,35 @@ export function AlertsPage() {
                             </div>
                           )}
                         </div>
-                      </a>
+                      </Link>
 
                       <div className="alert-actions">
-                        <a className="btn-secondary" href={`/stocktake/${alert.location._id}`}>
-                          Update stock
-                        </a>
+                        <Link className="btn-secondary" to={`/stocktake/${alert.location._id}`}>
+                          <span className="alert-action-label-full">Update stock</span>
+                          <span className="alert-action-label-short">Update</span>
+                        </Link>
                         <button
                           type="button"
                           className="btn-primary"
                           onClick={() => handleMarkComplete(alert)}
+                          disabled={isMarking}
                         >
-                          Mark complete
+                          <span className="alert-action-label-full">
+                            {isMarking ? "Marking…" : "Mark complete"}
+                          </span>
+                          <span className="alert-action-label-short">
+                            {isMarking ? "…" : "Complete"}
+                          </span>
                         </button>
                       </div>
 
-                      {showNotice && (
-                        <p className="alert-placeholder-note" role="status" aria-live="polite">
-                          {placeholderNotice.message}
+                      {cardNotice && (
+                        <p
+                          className={`alert-placeholder-note ${cardNotice.tone}`}
+                          role="status"
+                          aria-live="polite"
+                        >
+                          {cardNotice.message}
                         </p>
                       )}
                     </article>

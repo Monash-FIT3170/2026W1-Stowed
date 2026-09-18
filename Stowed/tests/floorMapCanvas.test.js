@@ -266,7 +266,7 @@ describe("Floor map canvas", function () {
         selectedIds: new Set(["unit-a", "unit-b"]),
         units: [unit, { ...unit, id: "unit-b", name: "Shelf B", x: 6, y: 1 }],
         snapEnabled: true,
-        gridSizePx: 50,
+        snapSizePx: 50,
       });
 
       const [firstGhost, secondGhost] = React.Children.toArray(layer.props.children);

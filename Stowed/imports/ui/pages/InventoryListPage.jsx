@@ -10,6 +10,7 @@ import { StorageUnits, StorageLocations } from "../../api/locations/collections"
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import { AddProductModal } from "../components/AddProductModal";
+import { useToast } from "../components/Toast";
 import "./InventoryListPage.css";
 import "../Global.css";
 import {
@@ -82,6 +83,7 @@ export function InventoryListPage() {
   const { role } = useAuth();
   const canDelete = hasClientPermission(role, "products.delete");
   const canCreate = hasClientPermission(role, "products.create");
+  const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedFilter = searchParams.get("filter");
   const activeFilter = INVENTORY_FILTER_IDS.has(requestedFilter) ? requestedFilter : "all";
@@ -208,6 +210,7 @@ export function InventoryListPage() {
 
   const handleDeleteSelectedProducts = async () => {
     if (selectedProductIds.length === 0) return;
+    const deletedCount = selectedProductIds.length;
     setIsDeleting(true);
     setDeleteError("");
     try {
@@ -216,6 +219,7 @@ export function InventoryListPage() {
       }
       setSelectedProductIds([]);
       setShowDeleteModal(false);
+      toast.success(`Deleted ${deletedCount} product${deletedCount === 1 ? "" : "s"}.`);
     } catch (error) {
       console.error("Failed to delete selected products:", error);
       setDeleteError(error.reason || error.message || "Could not delete selected products.");
@@ -395,6 +399,12 @@ export function InventoryListPage() {
                   <Link to={`/inventory/${item._id}`} className="item-view-more">
                     View more
                   </Link>
+                  {/* Phone card only — combines the quantity and location
+                      columns into one "x N at ..." line instead of two;
+                      desktop/tablet keep those as separate columns above. */}
+                  <span className="item-location-quantity-mobile">
+                    x {item.totalQuantity} at {getLocationLabel(item._id)}
+                  </span>
                   <label className="row-select">
                     <input
                       type="checkbox"

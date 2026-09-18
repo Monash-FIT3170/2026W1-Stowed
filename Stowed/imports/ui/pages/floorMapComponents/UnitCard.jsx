@@ -27,7 +27,7 @@ export function UnitCard({ unit, onClick }) {
 
       <p style={storagePanelStyles.cardName}>{unit.name}</p>
       <p style={storagePanelStyles.cardSub}>
-        {unit.width} × {unit.height}m
+        {unit.width.toFixed(2)} × {unit.height.toFixed(2)}m
       </p>
     </div>
   );

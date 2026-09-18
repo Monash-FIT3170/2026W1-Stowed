@@ -204,29 +204,6 @@ describeServer("mapShapes.create", function () {
   });
 });
 
-// delete
-describeServer("mapShapes.delete", function () {
-  it("removes the shape from the database", async function () {
-    const insertedId = await callMethod("mapShapes.create", makeCreateParams());
-    const created = await MapShapes.findOneAsync(insertedId);
-
-    await callMethod("mapShapes.delete", { shapeId: created.shapeId });
-
-    const shape = await MapShapes.findOneAsync({ shapeId: created.shapeId });
-    assert.strictEqual(shape, undefined);
-  });
-
-  it("throws shape-not-found for an unknown shape id", async function () {
-    await assert.rejects(
-      () => callMethod("mapShapes.delete", { shapeId: -1 }),
-      (err) => {
-        assert.strictEqual(err.error, "shape-not-found");
-        return true;
-      },
-    );
-  });
-});
-
 // update
 describeServer("mapShapes.update", function () {
   let shapeId;

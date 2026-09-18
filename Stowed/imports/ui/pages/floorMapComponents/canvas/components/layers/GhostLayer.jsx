@@ -11,7 +11,7 @@ import { COLOURS } from "../../../FloorMapStyles";
  * @param {Set<string>}                                             selectedIds
  * @param {Object[]}                                                units
  * @param {boolean}                                                 snapEnabled
- * @param {number}                                                  gridSizePx
+ * @param {number}                                                  snapSizePx
  *
  * @returns {JSX.Element} A Konva <Layer> containing zero or more ghost groups.
  */
@@ -21,7 +21,7 @@ export function GhostLayer({
   selectedIds,
   units,
   snapEnabled,
-  gridSizePx,
+  snapSizePx,
 }) {
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
@@ -73,60 +73,54 @@ export function GhostLayer({
         </Group>
       )}
 
-      {/* MULTI-DRAG GHOSTS */}
+      {/* DRAG GHOSTS */}
       {dragOffsets.unitId &&
-        [...selectedIds].map((id) => {
-          const unit = units.find((u) => u.id === id);
+        (() => {
+          const ghostIds = selectedIds.has(dragOffsets.unitId)
+            ? new Set(selectedIds)
+            : new Set([dragOffsets.unitId]);
 
-          if (!unit) return null;
+          return [...ghostIds].map((id) => {
+            const unit = units.find((u) => u.id === id);
 
-          let ghostX = (unit.x + dragOffsets.deltaX) * px;
-          let ghostY = (unit.y + dragOffsets.deltaY) * px;
+            if (!unit) return null;
 
-          if (snapEnabled) {
-            ghostX = snapToGrid(ghostX, gridSizePx);
-            ghostY = snapToGrid(ghostY, gridSizePx);
-          }
+            let ghostX = (unit.x + dragOffsets.deltaX) * px;
+            let ghostY = (unit.y + dragOffsets.deltaY) * px;
 
-          return (
-            <Group key={`ghost-${id}`} x={ghostX} y={ghostY}>
-              {isCustomShape(unit) ? (
-                <Line
-                  points={getPolygonPoints(unit)}
-                  closed
-                  fill={unit.fill}
-                  stroke={COLOURS.ACCENT}
-                  strokeWidth={2}
-                  dash={[6, 4]}
-                  opacity={0.45}
-                />
-              ) : (
-                <Rect
-                  width={unit.width * px}
-                  height={unit.height * px}
-                  fill={unit.fill}
-                  stroke={COLOURS.ACCENT}
-                  strokeWidth={2}
-                  dash={[6, 4]}
-                  cornerRadius={4}
-                  opacity={0.45}
-                />
-              )}
+            if (snapEnabled) {
+              ghostX = snapToGrid(ghostX, snapSizePx);
+              ghostY = snapToGrid(ghostY, snapSizePx);
+            }
 
-              <Text
-                width={unit.width * px}
-                height={unit.height * px}
-                align="center"
-                verticalAlign="middle"
-                text={unit.name}
-                fontSize={12}
-                fill="white"
-                opacity={0.7}
-                listening={false}
-              />
-            </Group>
-          );
-        })}
+            return (
+              <Group key={`ghost-${id}`} x={ghostX} y={ghostY}>
+                {isCustomShape(unit) ? (
+                  <Line
+                    points={getPolygonPoints(unit)}
+                    closed
+                    fill={unit.fill}
+                    stroke={COLOURS.ACCENT}
+                    strokeWidth={2}
+                    dash={[6, 4]}
+                    opacity={0.45}
+                  />
+                ) : (
+                  <Rect
+                    width={unit.width * px}
+                    height={unit.height * px}
+                    fill={unit.fill}
+                    stroke={COLOURS.ACCENT}
+                    strokeWidth={2}
+                    dash={[6, 4]}
+                    cornerRadius={4}
+                    opacity={0.45}
+                  />
+                )}
+              </Group>
+            );
+          });
+        })()}
     </Layer>
   );
 }

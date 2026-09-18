@@ -12,7 +12,13 @@ import { computeNextRunAt } from "./timing";
 // than one server instance would double-fire every schedule.
 const TICK_MS = 5000;
 
+let schedulerStarted = false;
+
 export function startScheduler() {
+  // Guard: one ticker per process. seedDatabase() calls this, so without the
+  // guard every reset-seed would start another interval and double-fire schedules.
+  if (schedulerStarted) return;
+  schedulerStarted = true;
   Meteor.setInterval(tick, TICK_MS);
 }
 

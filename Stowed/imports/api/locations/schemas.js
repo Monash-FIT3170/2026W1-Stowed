@@ -83,6 +83,11 @@ export const FloorMapSchema = new SimpleSchema({
     optional: true,
   },
 
+  "settings.snapInterval": {
+    type: Number,
+    optional: true,
+  },
+
   "settings.showGrid": {
     type: Boolean,
     optional: true,
@@ -201,6 +206,8 @@ export const StorageUnitSchema = new SimpleSchema({
     type: String,
     optional: true,
   },
+
+  qrGenerated: { type: Boolean, optional: true, defaultValue: false },
 });
 
 /**

@@ -1,0 +1,92 @@
+/* App-wide toast notifications. Fixed to the top-right, stacking downward. */
+
+.toast-viewport {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-dark, #1a1a1a);
+  border: 1px solid var(--border-subtle, #d9cfc0);
+  border-left: 4px solid var(--toast-accent, var(--accent-primary, #b5532a));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  font-size: 13px;
+  line-height: 1.4;
+  animation: toast-in 160ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-success {
+  --toast-accent: #2e7d46;
+}
+.toast-error {
+  --toast-accent: var(--danger, #cc0000);
+}
+.toast-info {
+  --toast-accent: var(--accent-secondary, #e89b6f);
+}
+
+.toast-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--toast-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.toast-message {
+  flex: 1 1 auto;
+  word-break: break-word;
+}
+
+.toast-close {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--text-muted, #998874);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px;
+  margin: -2px -2px 0 0;
+}
+
+.toast-close:hover {
+  color: var(--text-dark, #1a1a1a);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

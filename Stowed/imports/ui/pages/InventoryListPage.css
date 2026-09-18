@@ -35,21 +35,11 @@
   color: var(--text-muted);
 }
 
-.search-bar-container {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+.inventory-list-body {
+  padding: 0 28px 48px;
 }
 
-.search-input {
-  flex: 1;
-  background: var(--bg-primary);
-  border-radius: 16px;
-  padding: 8px 14px;
-  font-size: 12px;
-  border: none;
-  outline: none;
-}
+/* .search-bar-container and .search-input moved to Global.css */
 
 .filter-count {
   font-size: 11px;
@@ -128,7 +118,8 @@
   gap: 0 12px;
 }
 
-.table-row {
+/* Scoped to this page so these rules can't leak into the dashboard's rows */
+.inventory-list-container .table-row {
   display: grid;
   grid-template-columns: var(--inventory-grid);
   padding: 10px 24px;
@@ -138,16 +129,11 @@
   gap: 0 12px;
 }
 
-.table-row:last-child {
+.inventory-list-container .table-row:last-child {
   border-bottom: none;
 }
 
-.empty-state {
-  padding: 32px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 13px;
-}
+/* .empty-state moved to Global.css */
 
 .item-thumbnail {
   width: 36px;
@@ -172,17 +158,73 @@
   flex-shrink: 0;
 }
 
-.item-name-link {
+/* .item-name-link and .item-location moved to Global.css */
+
+/* "and N other locations" reads as an aside to the primary location, so it sits
+   on its own line, lighter and italic rather than competing with the name. It
+   links to the product, where the full per-location breakdown lives. */
+.item-location-more {
+  display: block;
+  width: fit-content;
+  margin-top: 2px;
+  font-size: 11px;
+  font-style: italic;
   color: inherit;
   text-decoration: none;
+  opacity: 0.65;
+  cursor: pointer;
 }
 
-.item-name-link:hover {
+.item-location-more:hover {
+  opacity: 1;
   text-decoration: underline;
 }
 
-.item-location {
-  color: var(--text-muted);
+.item-location-more:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* StatusBadge is a bare grid item, so it stretches to the full column unless it
+   is pinned to its own width. */
+.table-row > :nth-child(6) {
+  justify-self: start;
+}
+
+/* Phone-only combined "x N at Location" line — hidden by default so it
+   never becomes a 9th column in the desktop/tablet grid. Shown and
+   positioned inside the phone media query below. */
+.item-location-quantity-mobile {
+  display: none;
+}
+
+.item-view-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-dark);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.item-view-more:hover {
+  background: var(--input-bg);
+  border-color: var(--accent-secondary);
+}
+
+.item-view-more:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
 }
 
 /* "and N other locations" reads as an aside to the primary location, so it sits
@@ -299,28 +341,95 @@
   .selected-actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 8px;
+    padding: 8px 16px;
   }
 
-  .table-row {
-    grid-template-columns: 44px minmax(0, 1fr) 72px;
-    row-gap: 8px;
+  /* Phone rows: same "Details" idea as the Locations table — name up
+     top, then a flowing block of secondary text underneath (location,
+     status, quantity + view-more) instead of a grid of separately
+     positioned pieces that can end up overlapping. Checkbox is the only
+     thing pinned to its own corner, and only for row 1, so nothing else
+     can ever land on top of it. */
+  .inventory-list-container .table-row {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-rows: repeat(3, auto);
+    row-gap: 4px;
+    column-gap: 12px;
+    padding: 12px 16px;
+    align-items: start;
   }
 
-  .table-row > span:nth-of-type(2),
-  .table-row > span:nth-of-type(3),
-  .table-row > span:nth-of-type(4),
-  .table-row > :nth-child(6) {
-    grid-column: 2 / 4;
+  .inventory-list-container .table-row > .item-thumbnail {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    align-self: center;
   }
 
-  .item-view-more {
-    grid-column: 2 / 4;
+  /* product name */
+  .inventory-list-container .table-row > span:nth-of-type(1) {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 14px;
+    line-height: 1.25;
+    min-width: 0;
+    overflow-wrap: break-word;
+    align-self: center;
+  }
+
+  /* tag chip is usually "-" on phones — hide it */
+  .inventory-list-container .table-row > span:nth-of-type(2) {
+    display: none;
+  }
+
+  /* Location and quantity columns are combined into one "x N at ..."
+     line on phone (.item-location-quantity-mobile, below) — hide the
+     separate desktop/tablet columns here instead of showing both. */
+  .inventory-list-container .table-row > span:nth-of-type(3),
+  .inventory-list-container .table-row > span:nth-of-type(4) {
+    display: none;
+  }
+
+  .inventory-list-container .table-row > .item-location-quantity-mobile {
+    display: block;
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--text-muted);
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  /* status badge on its own line, left-aligned — same placement and pill
+     styling as .locations-status-badge. The badge component sets its own
+     inline style, which normal CSS specificity can't beat, so this needs
+     !important — scoped tightly to the phone row so desktop/tablet keep
+     the badge's own look untouched. */
+  .inventory-list-container .table-row > span:nth-of-type(5) {
+    grid-column: 2;
+    grid-row: 3;
     justify-self: start;
+    padding: 4px 8px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
   }
 
+  /* The name is already a link to the product page, so a separate "View
+     more" button is redundant weight on a small card — hide it on phone
+     only, the desktop/tablet table keeps its own column. */
+  .item-view-more {
+    display: none;
+  }
+
+  /* select checkbox, top-right — row 1 only, nothing else can land here */
   .row-select {
     grid-column: 3;
     grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    white-space: nowrap;
   }
 }

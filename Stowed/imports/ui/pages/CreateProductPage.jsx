@@ -13,6 +13,7 @@ import {
   StorageLocations,
 } from "/imports/api/locations/collections";
 import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
+import { useToast } from "../components/Toast";
 import "./CreateProductPage.css";
 import "../Global.css";
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
@@ -55,6 +56,7 @@ export function CreateProductPage() {
   const [categoryId, setCategoryId] = useState("");
   const [brand, setBrand] = useState(prefill?.brand || "");
   const [unitCost, setUnitCost] = useState(prefill?.unitCost ?? "");
+  const [sku, setSku] = useState("");
   const [purchaseCost, setPurchaseCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");
   const [reorderAt, setReorderAt] = useState("");
@@ -62,7 +64,7 @@ export function CreateProductPage() {
   const [imageUrls, setImageUrls] = useState(prefill?.images || []);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const toast = useToast();
   const fileInputRef = useRef(null);
 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -115,11 +117,10 @@ export function CreateProductPage() {
     if (!file) return;
 
     if (!isImageFile(file)) {
-      setUploadError("Please select an image file.");
+      toast.error("Please select an image file.");
       return;
     }
 
-    setUploadError("");
     setUploadingImage(true);
     try {
       const url = await uploadImageToServer(file);
@@ -130,7 +131,7 @@ export function CreateProductPage() {
       });
     } catch (error) {
       console.error("Image upload failed:", error);
-      setUploadError("Upload failed. Please try again.");
+      toast.error("Image upload failed. Please try again.");
     } finally {
       setUploadingImage(false);
     }
@@ -154,6 +155,7 @@ export function CreateProductPage() {
         description,
         categoryId,
         brand,
+        sku: sku.trim(),
         unitCost: unitCost ? parseFloat(unitCost) : undefined,
         purchaseCost: purchaseCost ? parseFloat(purchaseCost) : undefined,
         totalQuantity: parsedTotal,
@@ -165,9 +167,11 @@ export function CreateProductPage() {
         })),
       });
 
+      toast.success(`"${name}" created.`);
       navigate("/inventory");
     } catch (error) {
       console.error("Failed to create product:", error);
+      toast.error(error.reason || error.message || "Failed to create product.");
     }
   }
 
@@ -258,6 +262,16 @@ export function CreateProductPage() {
                       onChange={(e) => setBrand(e.target.value)}
                       className="form-input"
                       placeholder="e.g. Duracell"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>SKU / barcode value</label>
+                    <input
+                      type="text"
+                      value={sku}
+                      onChange={(e) => setSku(e.target.value)}
+                      className="form-input"
+                      placeholder="e.g. LAB-GOG-01 (used for the printed barcode)"
                     />
                   </div>
                 </div>
@@ -485,12 +499,6 @@ export function CreateProductPage() {
                     style={{ display: "none" }}
                   />
                 </div>
-
-                {uploadError && (
-                  <p className="warning-text" style={{ marginTop: "8px" }}>
-                    {uploadError}
-                  </p>
-                )}
               </div>
             </div>
           </div>

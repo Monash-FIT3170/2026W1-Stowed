@@ -44,6 +44,9 @@ export const ProductSchema = new SimpleSchema({
     min: 0,
   },
 
+  // DEPRECATED — codes are derived at render time (barcode = sku || _id,
+  // unit QR = page URL; see imports/api/products/codes.js). Kept for
+  // back-compat, never read or written by current code.
   qrCode: {
     type: String,
     optional: true,

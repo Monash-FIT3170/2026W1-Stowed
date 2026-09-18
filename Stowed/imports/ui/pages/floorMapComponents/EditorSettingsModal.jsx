@@ -1,21 +1,37 @@
 import { useState } from "react";
 import { modalStyles } from "./FloorMapStyles";
+import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 
 /**
  * Modal overlay for editing canvas editor preferences (grid display and snapping),
  * as opposed to floor map properties like its dimensions - see FloorMapSettingsModal.
  *
  * @param {number} gridInterval - Current grid cell size in meters
+ * @param {number} snapInterval - Current snap increment in meters
  * @param {boolean} showGrid - Whether the grid is visible
  * @param {boolean} snapToGrid - Whether units snap to the grid on drop/drag
- * @param {(config: { gridInterval, showGrid, snapToGrid }) => void} onSave - Commit callback
+ * @param {(config: { gridInterval, snapInterval, showGrid, snapToGrid }) => void} onSave - Commit callback
  * @param {() => void} onClose - Cancel / close callback
  *
  * @returns {JSX.Element} Modal UI
  */
-export function EditorSettingsModal({ gridInterval, showGrid, snapToGrid, onSave, onClose }) {
+export function EditorSettingsModal({
+  gridInterval,
+  snapInterval,
+  showGrid,
+  snapToGrid,
+  onSave,
+  onClose,
+  floorSize,
+}) {
+  const toMeters = (px) => {
+    const m = Number(px) / CANVAS_CONFIG.PIXELS_PER_METER;
+    return m > 0 && isFinite(m) ? m : 10;
+  };
+
   const [draft, setDraft] = useState({
     gridInterval: gridInterval > 0 ? gridInterval : 1,
+    snapInterval: snapInterval > 0 ? snapInterval : 0.1,
     showGrid,
     snapToGrid,
   });
@@ -30,10 +46,20 @@ export function EditorSettingsModal({ gridInterval, showGrid, snapToGrid, onSave
   }
 
   function handleSave() {
-    if (draft.gridInterval <= 0) return;
+    const widthMeters = toMeters(floorSize.width);
+    const heightMeters = toMeters(floorSize.height);
+
+    if (
+      draft.gridInterval <= 0 ||
+      draft.snapInterval <= 0 ||
+      draft.gridInterval > widthMeters ||
+      draft.gridInterval > heightMeters
+    )
+      return;
 
     onSave({
       gridInterval: draft.gridInterval,
+      snapInterval: draft.snapInterval,
       showGrid: draft.showGrid,
       snapToGrid: draft.snapToGrid,
     });
@@ -58,6 +84,20 @@ export function EditorSettingsModal({ gridInterval, showGrid, snapToGrid, onSave
             min={0.5}
             step={0.5}
             value={draft.gridInterval}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* SNAP INTERVAL */}
+        <div style={modalStyles.field}>
+          <label style={modalStyles.label}>Snap Interval (m)</label>
+          <input
+            style={modalStyles.input}
+            type="number"
+            name="snapInterval"
+            min={0.1}
+            step={0.1}
+            value={draft.snapInterval}
             onChange={handleChange}
           />
         </div>
