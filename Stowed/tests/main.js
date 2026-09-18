@@ -21,6 +21,7 @@ import "./locationDetail.test.js";
 import "./dashboardPreferences.test.js";
 import "./productActivityBackfill.test.js";
 import "./locationMethods.test.js";
+import "./productSearch.test.js";
 import "./productExport.test.js";
 import "./bulkImport.test.js";
 import "./barcodeHelpers.test.js";
