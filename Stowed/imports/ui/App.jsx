@@ -5,7 +5,6 @@ import { Sidebar } from "./Sidebar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
-import { ProductSearchTestPage } from "./pages/ProductSearchTestPage";
 import { ListsPage } from "./pages/ListsPage";
 import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
