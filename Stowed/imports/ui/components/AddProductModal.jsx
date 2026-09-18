@@ -38,8 +38,13 @@ export function AddProductModal({ onClose }) {
       state: {
         prefill: {
           name: result.title || "",
+          brand: result.brand || "",
           unitCost: typeof result.sellPrice === "number" ? result.sellPrice : "",
-          images: result.imageUrl ? [result.imageUrl] : [],
+          images: result.images?.length
+            ? result.images
+            : result.imageUrl
+              ? [result.imageUrl]
+              : [],
         },
       },
     });
@@ -141,6 +146,7 @@ export function AddProductModal({ onClose }) {
                     {result.title}
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--text-muted, #998874)" }}>
+                    {result.brand ? `${result.brand} · ` : ""}
                     {typeof result.sellPrice === "number" ? `$${result.sellPrice}` : "Price n/a"}
                     {result.source ? ` · ${result.source}` : ""}
                   </div>

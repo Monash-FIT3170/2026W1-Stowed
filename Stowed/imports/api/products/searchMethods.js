@@ -1,18 +1,70 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { requirePermission } from "../userMethods";
-import { searchLensByImageUrl, searchShopping } from "../../../server/serpapi/serpapi";
+import {
+  getImmersiveProduct,
+  searchLensByImageUrl,
+  searchShopping,
+} from "../../../server/serpapi/serpapi";
 
 const MAX_RESULTS = 4;
+const MAX_IMAGES = 8;
 
-function shapeShoppingResults(shoppingResults) {
-  return shoppingResults.slice(0, MAX_RESULTS).map((result) => ({
+function uniqueUrls(urls) {
+  const seen = new Set();
+  const out = [];
+  for (const url of urls) {
+    if (typeof url !== "string") continue;
+    const trimmed = url.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+  }
+  return out;
+}
+
+function immersivePageToken(result) {
+  if (result.immersive_product_page_token) return result.immersive_product_page_token;
+  const apiUrl = result.serpapi_immersive_product_api;
+  if (!apiUrl) return "";
+  try {
+    return new URL(apiUrl).searchParams.get("page_token") || "";
+  } catch {
+    return "";
+  }
+}
+
+async function enrichShoppingResult(result) {
+  const fallbackImages = uniqueUrls([result.thumbnail]);
+  let brand = "";
+  let images = fallbackImages;
+
+  const pageToken = immersivePageToken(result);
+  if (pageToken) {
+    try {
+      const immersive = await getImmersiveProduct(pageToken);
+      const product = immersive.product_results || {};
+      brand = typeof product.brand === "string" ? product.brand.trim() : "";
+      const thumbnails = Array.isArray(product.thumbnails) ? product.thumbnails : [];
+      images = uniqueUrls([...thumbnails, ...fallbackImages]).slice(0, MAX_IMAGES);
+    } catch {
+      // Shopping listing still has a price and thumbnail if immersive details fail.
+    }
+  }
+
+  return {
     title: result.title,
-    imageUrl: result.thumbnail,
+    brand,
+    imageUrl: images[0] || result.thumbnail,
+    images,
     sellPrice: result.extracted_price,
     source: result.source,
     immersiveProductPageToken: result.immersive_product_page_token,
-  }));
+  };
+}
+
+function shapeShoppingResults(shoppingResults) {
+  return Promise.all(shoppingResults.slice(0, MAX_RESULTS).map(enrichShoppingResult));
 }
 
 Meteor.methods({

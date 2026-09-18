@@ -53,7 +53,7 @@ export function CreateProductPage() {
   const [name, setName] = useState(prefill?.name || "");
   const [description] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [brand, setBrand] = useState("");
+  const [brand, setBrand] = useState(prefill?.brand || "");
   const [unitCost, setUnitCost] = useState(prefill?.unitCost ?? "");
   const [purchaseCost, setPurchaseCost] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("");

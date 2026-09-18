@@ -55,3 +55,12 @@ export async function searchShopping(query) {
 
   return data.shopping_results || [];
 }
+
+// Extra product details (brand, image gallery) from the Google Shopping popup.
+export async function getImmersiveProduct(pageToken) {
+  return callSerpApi({
+    engine: "google_immersive_product",
+    page_token: pageToken,
+    json_restrictor: "product_results.{brand,thumbnails,title}",
+  });
+}
