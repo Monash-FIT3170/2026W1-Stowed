@@ -9,6 +9,7 @@ import { ProductCategories } from "/imports/api/categories/collections";
 import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
+import { AddProductModal } from "../components/AddProductModal";
 import { useToast } from "../components/Toast";
 import "./InventoryListPage.css";
 import "../Global.css";
@@ -96,6 +97,7 @@ export function InventoryListPage() {
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
   const [categoryFilterId, setCategoryFilterId] = useState("");
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
 
   const { items, loading, productRecords, categories, storageLocations, storageUnits } =
     useTracker(() => {
@@ -262,9 +264,11 @@ export function InventoryListPage() {
             All <em>Products</em>
           </h1>
           {canCreate && (
-            <Link to="/inventory/new">
-              <button className="btn-primary">+ Add product</button>
-            </Link>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="btn-primary" onClick={() => setShowAddProductModal(true)}>
+                + Add Product
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -486,6 +490,8 @@ export function InventoryListPage() {
             </div>
           </div>
         )}
+
+        {showAddProductModal && <AddProductModal onClose={() => setShowAddProductModal(false)} />}
       </div>
     </div>
   );
