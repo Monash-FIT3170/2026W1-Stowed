@@ -81,6 +81,12 @@ module.exports = [
     languageOptions: { globals: { ...globals.node, ...globals.mocha } },
   },
 
+  // The accessibility widget test renders React into the DOM and dispatches DOM events, so it needs browser globals too.
+  {
+    files: ["tests/accessibility.test.js"],
+    languageOptions: { globals: { ...globals.browser } },
+  },
+
   // CommonJS build/tooling config (eslint.config.js, rspack.config.js).
   {
     files: ["*.config.js", "*.config.cjs"],
