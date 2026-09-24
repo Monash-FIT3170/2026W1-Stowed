@@ -1,8 +1,3 @@
-/* Copy for the first-time tutorial. Kept separate from the components so the
-   wording can be tweaked without touching any layout or positioning logic. */
-
-/* Sidebar tour: one popover per sidebar link, in the order they appear.
-   Steps whose link isn't rendered for the current role are skipped. */
 export const SIDEBAR_TOUR_STEPS = [
   {
     to: "/dashboard",
