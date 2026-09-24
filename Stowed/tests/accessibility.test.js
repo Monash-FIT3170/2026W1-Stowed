@@ -110,10 +110,7 @@ if (Meteor.isClient) {
     });
 
     it("defaults to a font scale of 1 with Default marked as pressed", function () {
-      assert.strictEqual(
-        document.documentElement.style.getPropertyValue("--a11y-font-scale"),
-        "1",
-      );
+      assert.strictEqual(document.documentElement.style.getPropertyValue("--a11y-font-scale"), "1");
       assert.strictEqual(segmentButton("Default").getAttribute("aria-pressed"), "true");
     });
 
@@ -361,9 +358,7 @@ if (Meteor.isClient) {
       assert.ok(panel());
 
       act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
-        );
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       });
 
       assert.strictEqual(panel(), null);
