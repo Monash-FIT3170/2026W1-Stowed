@@ -11,6 +11,7 @@ Email.customTransport = async ({ to, subject, html }) => {
 };
 
 Accounts.urls.verifyEmail = (token) => Meteor.absoluteUrl(`verify-email/${token}`);
+Accounts.urls.resetPassword = (token) => Meteor.absoluteUrl(`reset-password/${token}`);
 
 Accounts.emailTemplates.siteName = "Stowed";
 Accounts.emailTemplates.verifyEmail = {
@@ -20,6 +21,15 @@ Accounts.emailTemplates.verifyEmail = {
       <h2>Welcome to Stowed</h2>
       <p>Confirm your email to finish setting up your account.</p>
       <p><a href="${url}">Verify email</a></p>
+    </div>`,
+};
+Accounts.emailTemplates.resetPassword = {
+  subject: () => "Reset your Stowed password",
+  html: (user, url) => `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto;">
+      <h2>Reset your password</h2>
+      <p>Click below to choose a new password. If you didn't request this, you can ignore this email.</p>
+      <p><a href="${url}">Reset password</a></p>
     </div>`,
 };
 

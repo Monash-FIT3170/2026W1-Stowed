@@ -21,6 +21,8 @@ import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
 import { VerifyEmail } from "./VerifyEmail";
+import { ForgotPassword } from "./ForgotPassword";
+import { ResetPassword } from "./ResetPassword";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
@@ -72,6 +74,8 @@ export function App() {
               {/* public routes */}
               <Route path="/register" element={<Register />} />
               <Route path="/verify-email/:token" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route
                 path="/login"
                 element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}

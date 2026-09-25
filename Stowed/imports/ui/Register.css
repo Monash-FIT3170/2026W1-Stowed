@@ -308,3 +308,14 @@
 .auth-field .auth-show-toggle:hover {
   text-decoration: underline;
 }
+
+.auth-card-solo {
+  width: min(420px, 100%);
+}
+
+.auth-card-text {
+  color: var(--text-muted, #998874);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
