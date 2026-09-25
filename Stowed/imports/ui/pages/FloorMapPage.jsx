@@ -10,6 +10,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
+import { WalkwaysPanel } from "./floorMapComponents/WalkwaysPanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites, StorageUnits, MapShapes } from "/imports/api/locations/collections";
@@ -588,7 +589,7 @@ function FloorMapPageInner() {
                           )}
                         </div>
                       </>
-                    ) : (
+                    ) : rightPanelTab === "templates" ? (
                       <>
                         {/* TEMPLATES TAB - reusable shape templates, draggable onto the canvas */}
                         <div
@@ -621,7 +622,9 @@ function FloorMapPageInner() {
                           </button>
                         </div>
                       </>
-                    )}
+                    ) : rightPanelTab === "walkways" ? (
+                      <WalkwaysPanel ></WalkwaysPanel>
+                    ): null}
                   </div>
                 </div>
               ) : (
