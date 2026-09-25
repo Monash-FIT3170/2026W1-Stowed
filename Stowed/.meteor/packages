@@ -26,3 +26,4 @@ accounts-base@3.2.1
 accounts-password@3.2.3
 aldeed:collection2
 email
+ddp-rate-limiter
