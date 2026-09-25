@@ -320,6 +320,16 @@
   box-shadow: 0 8px 18px rgba(181, 83, 42, 0.22);
 }
 
+.map-sidebar-tabs {
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
+
+}
+
+.map-sidebar-tabs::-webkit-scrollbar {
+  display: none; 
+}
+
 /* Keep the floating toggle clear of the fixed bottom nav bar */
 @media (max-width: 1024px) {
   .floor-map-mode-toggle {

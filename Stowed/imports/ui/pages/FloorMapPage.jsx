@@ -423,51 +423,69 @@ function FloorMapPageInner() {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "4px",
-                        padding: "0 8px 0 14px",
                         flexShrink: 0,
                         borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
                       }}
                     >
-                      {[
-                        { key: "units", label: "Storage Units" },
-                        { key: "templates", label: "Templates" },
-                      ].map((tab) => {
-                        const isActive = rightPanelTab === tab.key;
-                        return (
-                          <button
-                            key={tab.key}
-                            onClick={() => setRightPanelTab(tab.key)}
-                            style={{
-                              padding: "8px 10px",
-                              border: "none",
-                              borderBottom: isActive
-                                ? `2px solid ${COLOURS.ACCENT}`
-                                : "2px solid transparent",
-                              background: "transparent",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              fontWeight: isActive ? 700 : 400,
-                              color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
-                              fontFamily: "inherit",
-                            }}
-                          >
-                            {tab.label}
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => setSidebarOpen(false)}
+
+                      <div
+                      className="map-sidebar-tabs"
                         style={{
-                          ...pageStyles.sidebarToggle,
-                          fontSize: "11px",
-                          padding: "4px 8px",
-                          marginLeft: "auto",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          overflowX: "auto",
+                          overflowY: "hidden",
+                          flex: 1,
+                          minWidth: 0,
+                          paddingLeft: "14px"
                         }}
-                        aria-label="Collapse sidebar"
                       >
-                        <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
-                      </button>
+                        {[
+                          { key: "units", label: "Storage Units" },
+                          { key: "templates", label: "Templates" },
+                          { key: "walkways", label: "Walkways"}
+                        ].map((tab) => {
+                          const isActive = rightPanelTab === tab.key;
+                          return (
+                            <button
+                              key={tab.key}
+                              onClick={() => setRightPanelTab(tab.key)}
+                              style={{
+                                padding: "8px 10px",
+                                border: "none",
+                                borderBottom: isActive
+                                  ? `2px solid ${COLOURS.ACCENT}`
+                                  : "2px solid transparent",
+                                background: "transparent",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                fontWeight: isActive ? 700 : 400,
+                                color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+                                fontFamily: "inherit",
+                                flexShrink: 0,
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              {tab.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                        <button
+                          onClick={() => setSidebarOpen(false)}
+                          style={{
+                            ...pageStyles.sidebarToggle,
+                            fontSize: "11px",
+                            padding: "4px 8px",
+                            flexShrink: 0,
+                          }}
+                          aria-label="Collapse sidebar"
+                        >
+                          <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
+                        </button>
+                        
                     </div>
                   )}
 
