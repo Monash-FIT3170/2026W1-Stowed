@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, useRef } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/Toast";
 import { Sidebar } from "./Sidebar";
@@ -41,7 +41,9 @@ export function App() {
     };
   });
 
-  if (loggingIn) {
+  const hasLoaded = useRef(false);
+  if (!loggingIn) hasLoaded.current = true;
+  if (loggingIn && !hasLoaded.current) {
     return null;
   }
 
