@@ -288,3 +288,23 @@
     padding: 22px;
   }
 }
+
+.auth-field .auth-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.auth-field .auth-show-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-primary, #b5532a);
+}
+
+.auth-field .auth-show-toggle:hover {
+  text-decoration: underline;
+}

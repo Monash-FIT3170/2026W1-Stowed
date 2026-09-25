@@ -11,6 +11,7 @@ export const Login = () => {
   const [orgCode, setOrgCode] = useState(""); // organisation code
   const [login, setLogin] = useState(""); // email or username
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [unverified, setUnverified] = useState(false);
@@ -156,10 +157,19 @@ export const Login = () => {
             </label>
 
             <label className="auth-field" htmlFor="password">
-              <span>Password</span>
+              <span className="auth-field-row">
+                Password
+                <button
+                  type="button"
+                  className="auth-show-toggle"
+                  onClick={() => setShowPassword((s) => !s)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </span>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

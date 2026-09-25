@@ -26,6 +26,8 @@ const Register = () => {
   const [roleState, setRoleState] = useState(ROLES.STANDARD);
   const [orgCode, setOrgCode] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // get details of current user
   const { isLoggedIn, role } = useAuth();
@@ -184,10 +186,19 @@ const Register = () => {
             </label>
 
             <label className="auth-field">
-              <span>Password</span>
+              <span className="auth-field-row">
+                Password
+                <button
+                  type="button"
+                  className="auth-show-toggle"
+                  onClick={() => setShowPassword((s) => !s)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </span>
               <input
                 className="auth-input"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={password}
                 onChange={onChange}
@@ -196,10 +207,19 @@ const Register = () => {
             </label>
 
             <label className="auth-field">
-              <span>Confirm Password</span>
+              <span className="auth-field-row">
+                Confirm Password
+                <button
+                  type="button"
+                  className="auth-show-toggle"
+                  onClick={() => setShowConfirm((s) => !s)}
+                >
+                  {showConfirm ? "Hide" : "Show"}
+                </button>
+              </span>
               <input
                 className="auth-input"
-                type="password"
+                type={showConfirm ? "text" : "password"}
                 name="confirmPassword"
                 value={confirmPassword}
                 onChange={onChange}
