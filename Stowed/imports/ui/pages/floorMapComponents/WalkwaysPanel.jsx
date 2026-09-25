@@ -1,11 +1,17 @@
 import { COLOURS } from "./FloorMapStyles";
+import { buttonStyles } from "./FloorMapStyles";
 
-export function WalkwaysPanel() {
+export function WalkwaysPanel(
+    activeTool,
+    setActiveTool
+) {
+
+
   return (
     <div
       style={{
         padding: "12px",
-        boxSizing: "border-box",
+        boxSizing: "border-box"
       }}
     >
       <div
@@ -19,14 +25,27 @@ export function WalkwaysPanel() {
         Walkways
       </div>
 
-      <div
-        style={{
-          fontSize: "11px",
-          color: COLOURS.TEXT_MUTED,
-        }}
-      >
-        Create and manage walkways on the floor map.
-      </div>
+        <div
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px"
+            }}
+        >
+            <button
+                type="button"
+                onClick={() => {setActiveTool("ADD_WALKWAY")}}
+                style={{
+                ...buttonStyles.base,
+                ...buttonStyles.secondary,
+                width: "100%",
+                padding: "8px 10px",
+                 fontSize: 12,
+                }}
+            >
+                +  Add Walkways
+            </button>
+        </div>
     </div>
   );
 }
