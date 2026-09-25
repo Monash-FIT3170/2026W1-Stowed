@@ -36,6 +36,7 @@ import "/imports/api/bulkImport";
 import { Sites, StorageUnits } from "/imports/api/locations/collections";
 import { ProductActivities, Products } from "/imports/api/products/collections";
 import { seedDatabase, resetDatabase } from "./seed";
+import "./accounts";
 
 // Mark every pre-existing storage unit as already having its QR code generated,
 // so units created before the bulk-code feature don't all show as "pending".

@@ -75,7 +75,7 @@ const Register = () => {
           role: roleState,
         });
 
-        setSuccess(`User created: ${username}`);
+        setSuccess(`User created: ${username}. A verification email has been sent to ${email}.`);
       }
       // self registration
       else {
@@ -87,10 +87,7 @@ const Register = () => {
           orgName: orgName.trim(),
         });
 
-        setSuccess(`Account created for ${username}`);
-
-        // redirect to login page
-        navigate("/login");
+        setSuccess(`Account created! Check ${email} for a verification link before logging in.`);
       }
 
       setFormData({

@@ -20,6 +20,7 @@ import { ScanUpdatePage } from "./pages/ScanUpdatePage";
 import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
+import { VerifyEmail } from "./VerifyEmail";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
@@ -68,6 +69,7 @@ export function App() {
             <Routes>
               {/* public routes */}
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
               <Route
                 path="/login"
                 element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
