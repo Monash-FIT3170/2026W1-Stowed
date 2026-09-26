@@ -1,11 +1,15 @@
 import { COLOURS } from "./FloorMapStyles";
 import { buttonStyles } from "./FloorMapStyles";
+import { useState} from "react";
+import "../../Global.css";
+import "../FloorMapPage.css";
 
-export function WalkwaysPanel(
+export function WalkwaysPanel({
     activeTool,
     setActiveTool
-) {
+}) {
 
+  const [isAddingWalkway, setIsAddingWalkway] = useState(false);
 
   return (
     <div
@@ -25,6 +29,7 @@ export function WalkwaysPanel(
         Walkways
       </div>
 
+        {!isAddingWalkway ? (
         <div
             style={{
                 display: "flex",
@@ -34,7 +39,10 @@ export function WalkwaysPanel(
         >
             <button
                 type="button"
-                onClick={() => {setActiveTool("ADD_WALKWAY")}}
+                onClick={() => {
+                  setActiveTool("ADD_WALKWAY");
+                  setIsAddingWalkway(true);
+                }}
                 style={{
                 ...buttonStyles.base,
                 ...buttonStyles.secondary,
@@ -46,6 +54,33 @@ export function WalkwaysPanel(
                 +  Add Walkways
             </button>
         </div>
+
+        ): 
+          <div
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px"
+            }}
+          >
+            <button
+                className="btn-primary"
+                type="button"
+                onClick={() => {setIsAddingWalkway(false)}}
+            >
+                Save
+            </button>
+
+            <button
+                className="btn-danger"
+                type="button"
+                onClick={() => {setIsAddingWalkway(false)}}
+              
+            >
+                Delete
+            </button>
+        </div>
+        }
     </div>
   );
 }

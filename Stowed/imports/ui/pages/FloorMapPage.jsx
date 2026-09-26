@@ -623,10 +623,10 @@ function FloorMapPageInner() {
                         </div>
                       </>
                     ) : rightPanelTab === "walkways" ? (
-                      <WalkwaysPanel >
+                      <WalkwaysPanel 
                         activeTool={activeTool}
                         setActiveTool={setActiveTool}
-                      </WalkwaysPanel>
+                      />
                     ): null}
                   </div>
                 </div>
