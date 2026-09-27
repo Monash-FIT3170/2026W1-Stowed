@@ -36,9 +36,9 @@ function normalizeFloorSize(floorSize) {
   const looksLikeMeters = width <= 100 && height <= 100;
   return looksLikeMeters
     ? {
-        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-      }
+      width: width * CANVAS_CONFIG.PIXELS_PER_METER,
+      height: height * CANVAS_CONFIG.PIXELS_PER_METER,
+    }
     : { width, height };
 }
 
@@ -112,12 +112,16 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   // --- UNDO / REDO HISTORY ---
   const [, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
+  const loadedFloorMapIdRef = useRef(null);
+  const creatingUnitIdsRef = useRef(new Set());
   const canUndo = historyRef.current.index > 0;
   const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
 
   function commitUnits(updater) {
-    const next = typeof updater === "function" ? updater(units) : updater;
     const { stack, index } = historyRef.current;
+    const currentUnits = stack[index];
+    const next = typeof updater === "function" ? updater(currentUnits) : updater;
+
     const trimmed = stack.slice(0, index + 1);
     historyRef.current = { stack: [...trimmed, next], index: index + 1 };
     setUnits(next);
@@ -201,6 +205,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
+    // Initialise each map once. Database updates must not overwrite local edits.
+    if (loadedFloorMapIdRef.current === floorMap._id) return;
+    loadedFloorMapIdRef.current = floorMap._id;
+
     const nextFloorSize = normalizeFloorSize(floorMap.floorSize);
     if (nextFloorSize) {
       setFloorSize(nextFloorSize);
@@ -217,7 +225,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     setUnits(canvasUnits);
     historyRef.current = { stack: [canvasUnits], index: 0 };
-  }, [isLoading, floorMap, savedUnits.length]);
+  }, [isLoading, floorMap, savedUnits]);
 
   // --- SAVE / LOAD ---
   function callMethod(methodName, params) {
@@ -230,6 +238,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   async function handleSaveLayout() {
+    if (creatingUnitIdsRef.current.size > 0) {
+      alert("Please wait for new units to finish being created, then save again.");
+      return;
+    }
     if (!floorMap) {
       alert("No floor map exists in database.");
       return;
@@ -362,34 +374,55 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       return;
     }
 
-    const activeFloorMapId = floorMap._id;
+    const { stack, index } = historyRef.current;
+    const pendingIds = stack[index].filter((unit) => !unit._id).map((unit) => unit.id);
 
-    try {
-      for (const unit of units) {
-        if (!unit._id) {
-          // only interested in adding the unit that doesn't already exist
-          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
-          const shape = hasCustomShape
-            ? unit.shape
-            : buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
-          const offset = { x: Number(unit.x), y: Number(unit.y) };
-          const scale = { x: 1, y: 1 };
+    for (const id of pendingIds) {
+      const history = historyRef.current;
+      const unit = history.stack[history.index].find((item) => item.id === id);
 
-          await callMethod("storageUnits.create", {
-            floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
-            shape,
-            offset,
-            rotation: 0,
-            scale,
-            fill: unit.fill || "#7a5230",
-          });
-        }
+      if (!unit || unit._id || creatingUnitIdsRef.current.has(id)) continue;
+
+      creatingUnitIdsRef.current.add(id);
+
+      try {
+        const shape = getDrawableShape(unit);
+        const offset = unit.offset ?? { x: Number(unit.x), y: Number(unit.y) };
+        const scale = unit.scale ?? { x: 1, y: 1 };
+
+        const newId = await callMethod("storageUnits.create", {
+          floorMapId: floorMap._id,
+          name: unit.name,
+          type: unit.type || "other",
+          shape,
+          offset,
+          rotation: unit.rotation ?? 0,
+          scale,
+          fill: unit.fill || COLOURS.UNIT_DEFAULT,
+        });
+
+        // Attach the database ID without overwriting newer movements or renames.
+        // Keep the canvas ID stable so selection continues to work.
+        const attachDatabaseId = (item) =>
+          item.id === id ? { ...item, _id: newId, offset: item.offset ?? offset } : item;
+
+        // Update all snapshots so undo/redo retains the database identity.
+        const latestHistory = historyRef.current;
+        const nextStack = latestHistory.stack.map((snapshot) => snapshot.map(attachDatabaseId));
+
+        historyRef.current = {
+          stack: nextStack,
+          index: latestHistory.index,
+        };
+
+        setUnits(nextStack[latestHistory.index]);
+        setSelectedUnit((current) => (current ? attachDatabaseId(current) : current));
+      } catch (error) {
+        console.error(error);
+        alert(error.reason || "Failed to create unit.");
+      } finally {
+        creatingUnitIdsRef.current.delete(id);
       }
-    } catch (error) {
-      console.error(error);
-      alert(error.reason || "Failed to create unit.");
     }
   }
 
@@ -449,7 +482,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this unit. Make sure all storage locations within it are removed first.",
+        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
       );
     }
   }
@@ -525,7 +558,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     } catch (error) {
       alert(
         error.reason ||
-          "Cannot delete this shape. Make sure it is not used for any storage units first.",
+        "Cannot delete this shape. Make sure it is not used for any storage units first.",
       );
     }
   }
