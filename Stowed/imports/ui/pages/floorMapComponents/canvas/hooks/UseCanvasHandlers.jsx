@@ -43,7 +43,10 @@ export function useCanvasHandlers({
   wrapperRef,
   clipboard,
   isCanvasEditMode,
-  isAddingWalkway
+  isAddingWalkway,
+  walkwayCells,
+  setWalkwayCells,
+  gridSizePx
 }) {
   const { setSelectedUnit, setIsPanelOpen } = useEditor();
 
@@ -216,9 +219,36 @@ export function useCanvasHandlers({
 
   function handleStageClick(e) {
 
+    // when clicking a position in grid, make it a walkway
     if (isAddingWalkway) {
 
-      //TODO: work out which cell was clicked and fill it in as walkway
+      const pointer = stage.getPointerPosition()
+
+      if (!pointer) return;
+
+      const x = (pointer.x - stage.x()) / stage.scaleX();
+      const y = (pointer.y - stage.y()) / stage.scaleY();
+
+      if (x < 0 || y <0 || x >= width || y >= height) {
+        return;
+      }
+
+      const col = Math.floor(x / gridSizePx);
+      const row = Math.floor(y / gridSizePx);
+
+      const alreadyWalkway = walkwayCells.some(
+        (cell) => cell.row === row && cell.col === col
+      );
+
+      if (alreadyWalkway) {
+        return;
+      } else {
+        setWalkwayCells((prev) => [
+          ...prev,
+          {row, col}
+        ]);
+      }
+      
       return;
     }
 

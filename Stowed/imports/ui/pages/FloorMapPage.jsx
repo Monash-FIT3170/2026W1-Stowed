@@ -76,6 +76,7 @@ function FloorMapPageInner() {
   const [isChangingShape, setIsChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
   const [isAddingWalkway, setIsAddingWalkway] = useState(false);
+  const [walkwayCells, setWalkwayCells] = useState([]);
 
   // Fetch all sites, floor maps, storage units and shapes
   const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
@@ -334,6 +335,8 @@ function FloorMapPageInner() {
               style={{ display: "block", width: "100%", height: "100%" }}
               isCanvasEditMode={isCanvasEditMode}
               isAddingWalkway={isAddingWalkway}
+              walkwayCells={walkwayCells}
+              setWalkwayCells={setWalkwayCells}
               selectedStorageUnitId={selectedStorageUnitId}
               setSelectedStorageUnitId={handleUnitSelect}
               setTooltip={setTooltip}
