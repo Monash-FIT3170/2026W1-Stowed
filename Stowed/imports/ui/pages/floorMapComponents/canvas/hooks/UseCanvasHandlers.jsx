@@ -155,15 +155,6 @@ function paintWalkwayCell(cell) {
 
   lastWalkwayCell.current = cell;
 
-  // Only block ADDING.
-  // We should still be able to erase an existing walkway.
-  if (
-    walkwayPaintMode.current === "add" &&
-    walkwayCellCollidesWithUnit(cell)
-  ) {
-    return;
-  }
-
   setWalkwayCells((prev) => {
     const exists = prev.some(
       (existingCell) =>
@@ -194,30 +185,7 @@ function paintWalkwayCell(cell) {
   });
 }
 
-  function walkwayCellCollidesWithUnit(cell) {
-    const px = CANVAS_CONFIG.PIXELS_PER_METER;
-
-    // Size of one walkway/grid cell in metres
-    const cellSizeMetres = gridSizePx / px;
-
-    const x = cell.col * cellSizeMetres;
-    const y = cell.row * cellSizeMetres;
-
-    const walkwayAsUnit = {
-      id: "walkway-check",
-      x,
-      y,
-      width: cellSizeMetres,
-      height: cellSizeMetres,
-      shape: buildRectShape({
-        width: cellSizeMetres,
-        height: cellSizeMetres,
-        name: "Walkway",
-      }),
-    };
-
-    return hasCollisions(walkwayAsUnit, units);
-  }
+ 
   // DROP HANDLERS
 
   function handleDragOver(e) {
