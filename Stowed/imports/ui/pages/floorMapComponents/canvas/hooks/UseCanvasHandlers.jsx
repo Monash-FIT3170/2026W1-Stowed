@@ -43,6 +43,7 @@ export function useCanvasHandlers({
   wrapperRef,
   clipboard,
   isCanvasEditMode,
+  isAddingWalkway
 }) {
   const { setSelectedUnit, setIsPanelOpen } = useEditor();
 
@@ -214,6 +215,13 @@ export function useCanvasHandlers({
   }
 
   function handleStageClick(e) {
+
+    if (isAddingWalkway) {
+
+      //TODO: work out which cell was clicked and fill it in as walkway
+      return;
+    }
+
     if (e.target === e.target.getStage()) {
       dispatch({ type: CANVAS_ACTIONS.DESELECT_ALL });
     }

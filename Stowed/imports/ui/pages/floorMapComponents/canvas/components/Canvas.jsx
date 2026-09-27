@@ -28,7 +28,7 @@ if (typeof window !== "undefined") {
 }
 
 export const Canvas = forwardRef(function Canvas(
-  { style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip },
+  { style, isCanvasEditMode, isAddingWalkway, setSelectedStorageUnitId, setTooltip },
   ref,
 ) {
   const { units, commitUnits, floorSize, canvasSettings } = useEditor();
@@ -96,6 +96,7 @@ export const Canvas = forwardRef(function Canvas(
     wrapperRef,
     clipboard,
     isCanvasEditMode,
+    isAddingWalkway
   });
 
   useEffect(() => {

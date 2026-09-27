@@ -5,11 +5,10 @@ import "../../Global.css";
 import "../FloorMapPage.css";
 
 export function WalkwaysPanel({
-    activeTool,
-    setActiveTool
+    isAddingWalkway,
+    setIsAddingWalkway
 }) {
 
-  const [isAddingWalkway, setIsAddingWalkway] = useState(false);
 
   return (
     <div
@@ -40,7 +39,7 @@ export function WalkwaysPanel({
             <button
                 type="button"
                 onClick={() => {
-                  setActiveTool("ADD_WALKWAY");
+                  
                   setIsAddingWalkway(true);
                 }}
                 style={{
@@ -77,7 +76,7 @@ export function WalkwaysPanel({
                 onClick={() => {setIsAddingWalkway(false)}}
               
             >
-                Delete
+                Cancel
             </button>
         </div>
         }

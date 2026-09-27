@@ -104,6 +104,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   const [isEditorSettingsOpen, setEditorSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
+  const [walkwayCells, setWalkwayCells] = useState([]);
 
   // --- SLIDE-OUT PANEL STATE ---
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -586,6 +587,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected shape
     handleDeleteShape,
+
+    //Walkways
+    walkwayCells,
+    setWalkwayCells
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
