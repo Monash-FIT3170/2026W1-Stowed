@@ -18,3 +18,4 @@ import "./productMethods.test.js";
 import "./locationsPage.test.js";
 import "./locationDetail.test.js";
 import "./locationMethods.test.js";
+import "./unitStocktakePanel.test.js";
