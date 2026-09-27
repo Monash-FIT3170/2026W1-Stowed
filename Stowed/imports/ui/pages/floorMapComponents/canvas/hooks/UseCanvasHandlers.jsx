@@ -1,5 +1,5 @@
 import { useEditor } from "../editor/EditorContext";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { snapToGrid } from "../editor/utils/Snapping";
 import { hasCollisions } from "../editor/utils/Collisions";
@@ -49,6 +49,9 @@ export function useCanvasHandlers({
   gridSizePx
 }) {
   const { setSelectedUnit, setIsPanelOpen } = useEditor();
+  const isPaintingWalkway = useRef(false);
+  const walkwayPaintMode = useRef("add");
+  const lastWalkwayCell = useRef(null);
 
   // INTERNAL HELPERS
   function getGroupRef(id) {
@@ -114,6 +117,64 @@ export function useCanvasHandlers({
       width: wPixels,
       height: hPixels,
     };
+  }
+
+  function getWalkwayCellFromPointer() {
+    const stage = stageRef.current;
+
+    if (!stage) return null;
+
+    const pointer = stage.getPointerPosition();
+
+    if (!pointer) return null;
+
+    const x = (pointer.x - stage.x()) / stage.scaleX();
+
+    const y = (pointer.y - stage.y()) / stage.scaleY();
+
+    if ( x < 0 || y < 0 || x >= width || y >= height) {
+      return null;
+    }
+
+    const col = Math.floor(x / gridSizePx);
+    const row = Math.floor(y / gridSizePx);
+
+    return { row, col };
+  }
+
+  function paintWalkwayCell(cell) {
+    if (!cell) return;
+
+    // Don't process the same cell repeatedly
+    if ( lastWalkwayCell.current?.row === cell.row && lastWalkwayCell.current?.col === cell.col) {
+      return;
+    }
+
+    lastWalkwayCell.current = cell;
+
+    setWalkwayCells((prev) => {
+      const exists = prev.some(
+        (existingCell) => existingCell.row === cell.row && existingCell.col === cell.col
+      );
+
+      if (walkwayPaintMode.current === "add") {
+        if (exists) return prev;
+
+        return [ ...prev, cell ];
+      }
+
+      if (walkwayPaintMode.current === "remove") {
+        return prev.filter(
+          (existingCell) =>
+            !(
+              existingCell.row === cell.row &&
+              existingCell.col === cell.col
+            )
+        );
+      }
+
+      return prev;
+    });
   }
 
   // DROP HANDLERS
@@ -221,44 +282,6 @@ export function useCanvasHandlers({
 
     // when clicking a position in grid, make it a walkway
     if (isAddingWalkway) {
-
-      const stage = stageRef.current;
-
-      const pointer = stage.getPointerPosition()
-
-      if (!pointer) return;
-
-      const x = (pointer.x - stage.x()) / stage.scaleX();
-      const y = (pointer.y - stage.y()) / stage.scaleY();
-
-      if (x < 0 || y <0 || x >= width || y >= height) {
-        return;
-      }
-
-      const col = Math.floor(x / gridSizePx);
-      const row = Math.floor(y / gridSizePx);
-
-      const alreadyWalkway = walkwayCells.some(
-        (cell) => cell.row === row && cell.col === col
-      );
-
-      if (alreadyWalkway) {
-
-        setWalkwayCells((prev) =>
-          prev.filter(
-            (cell) => 
-              !(
-                cell.row === row &&
-                cell.col === col
-              )
-          ));
-       
-      } else {
-        setWalkwayCells((prev) => [
-          ...prev,
-          {row, col}
-        ]);
-      }
 
       return;
     }
@@ -633,6 +656,52 @@ export function useCanvasHandlers({
     dispatch({ type: CANVAS_ACTIONS.DELETE_UNIT });
   }
 
+  //WALK WAYS
+
+  function handleWalkwayMouseDown() {
+    if (!isAddingWalkway) return;
+
+    const cell = getWalkwayCellFromPointer();
+
+    if (!cell) return;
+
+    const alreadyWalkway = walkwayCells.some(
+      (existingCell) => existingCell.row === cell.row && existingCell.col === cell.col
+    );
+
+    // Clicking an existing walkway starts erase mode.
+    // Clicking an empty cell starts paint mode.
+    walkwayPaintMode.current = alreadyWalkway ? "remove" : "add";
+
+    isPaintingWalkway.current = true;
+
+    lastWalkwayCell.current = null;
+
+    paintWalkwayCell(cell);
+  }
+
+  function handleWalkwayMouseMove() {
+    if (!isAddingWalkway) return;
+
+    if (!isPaintingWalkway.current) return;
+
+    const cell = getWalkwayCellFromPointer();
+
+    paintWalkwayCell(cell);
+  }
+
+  function handleWalkwayMouseUp() {
+    if (!isAddingWalkway) return;
+
+    isPaintingWalkway.current = false;
+    lastWalkwayCell.current = null;
+  }
+
+  function handleWalkwayMouseLeave() {
+    isPaintingWalkway.current = false;
+    lastWalkwayCell.current = null;
+  }
+
   // RETURN
   return {
     getGroupRef,
@@ -653,5 +722,9 @@ export function useCanvasHandlers({
     handlePaste,
     handleDuplicate,
     handleDelete,
+    handleWalkwayMouseDown,
+    handleWalkwayMouseLeave,
+    handleWalkwayMouseUp,
+    handleWalkwayMouseMove
   };
 }

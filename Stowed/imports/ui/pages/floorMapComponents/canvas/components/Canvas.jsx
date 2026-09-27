@@ -82,6 +82,11 @@ export const Canvas = forwardRef(function Canvas(
     handlePaste,
     handleDuplicate,
     handleDelete,
+    handleWalkwayMouseDown,
+    handleWalkwayMouseMove,
+    handleWalkwayMouseUp,
+    handleWalkwayMouseLeave
+
   } = useCanvasHandlers({
     dispatch,
     units,
@@ -191,11 +196,15 @@ export const Canvas = forwardRef(function Canvas(
             scaleY={scale}
             onWheel={handleWheel}
             style={style}
-            draggable
+            draggable={!isAddingWalkway}
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
             onClick={handleStageClick}
+            onMouseDown={handleWalkwayMouseDown}
+            onMouseUp={handleWalkwayMouseUp}
+            onMouseMove={handleWalkwayMouseMove}
+            onMouseLeave={handleWalkwayMouseLeave}
           >
             <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
