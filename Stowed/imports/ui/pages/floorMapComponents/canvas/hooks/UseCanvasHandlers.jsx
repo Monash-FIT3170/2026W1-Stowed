@@ -243,7 +243,16 @@ export function useCanvasHandlers({
       );
 
       if (alreadyWalkway) {
-        return;
+
+        setWalkwayCells((prev) =>
+          prev.filter(
+            (cell) => 
+              !(
+                cell.row === row &&
+                cell.col === col
+              )
+          ));
+       
       } else {
         setWalkwayCells((prev) => [
           ...prev,
