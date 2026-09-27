@@ -5,6 +5,7 @@ import { snapToGrid } from "../editor/utils/Snapping";
 import { hasCollisions } from "../editor/utils/Collisions";
 import { dragState } from "../editor/DragState";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { buildRectShape } from "/imports/api/locations/shapeUtils";
 
 /**
  * Custom hook that provides all event handlers for the canvas.
@@ -142,41 +143,81 @@ export function useCanvasHandlers({
     return { row, col };
   }
 
-  function paintWalkwayCell(cell) {
-    if (!cell) return;
+function paintWalkwayCell(cell) {
+  if (!cell) return;
 
-    // Don't process the same cell repeatedly
-    if ( lastWalkwayCell.current?.row === cell.row && lastWalkwayCell.current?.col === cell.col) {
-      return;
-    }
-
-    lastWalkwayCell.current = cell;
-
-    setWalkwayCells((prev) => {
-      const exists = prev.some(
-        (existingCell) => existingCell.row === cell.row && existingCell.col === cell.col
-      );
-
-      if (walkwayPaintMode.current === "add") {
-        if (exists) return prev;
-
-        return [ ...prev, cell ];
-      }
-
-      if (walkwayPaintMode.current === "remove") {
-        return prev.filter(
-          (existingCell) =>
-            !(
-              existingCell.row === cell.row &&
-              existingCell.col === cell.col
-            )
-        );
-      }
-
-      return prev;
-    });
+  if (
+    lastWalkwayCell.current?.row === cell.row &&
+    lastWalkwayCell.current?.col === cell.col
+  ) {
+    return;
   }
 
+  lastWalkwayCell.current = cell;
+
+  // Only block ADDING.
+  // We should still be able to erase an existing walkway.
+  if (
+    walkwayPaintMode.current === "add" &&
+    walkwayCellCollidesWithUnit(cell)
+  ) {
+    return;
+  }
+
+  setWalkwayCells((prev) => {
+    const exists = prev.some(
+      (existingCell) =>
+        existingCell.row === cell.row &&
+        existingCell.col === cell.col
+    );
+
+    if (walkwayPaintMode.current === "add") {
+      if (exists) return prev;
+
+      return [
+        ...prev,
+        cell,
+      ];
+    }
+
+    if (walkwayPaintMode.current === "remove") {
+      return prev.filter(
+        (existingCell) =>
+          !(
+            existingCell.row === cell.row &&
+            existingCell.col === cell.col
+          )
+      );
+    }
+
+    return prev;
+  });
+}
+
+  function walkwayCellCollidesWithUnit(cell) {
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+
+    // Size of one walkway/grid cell in metres
+    const cellSizeMetres = gridSizePx / px;
+
+    const x = cell.col * cellSizeMetres;
+    const y = cell.row * cellSizeMetres;
+
+    const walkwayAsUnit = {
+      id: "walkway-check",
+      x,
+      y,
+      width: cellSizeMetres,
+      height: cellSizeMetres,
+      shape: buildRectShape({
+        width: cellSizeMetres,
+        height: cellSizeMetres,
+        name: "Walkway",
+      }),
+    };
+
+    return hasCollisions(walkwayAsUnit, units);
+  }
   // DROP HANDLERS
 
   function handleDragOver(e) {
