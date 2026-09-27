@@ -22,6 +22,7 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
+import { WalkwayLayer } from "./layers/WalkwayLayer";
 
 if (typeof window !== "undefined") {
   Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
@@ -197,6 +198,11 @@ export const Canvas = forwardRef(function Canvas(
             onClick={handleStageClick}
           >
             <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
+
+            <WalkwayLayer
+                walkwayCells={walkwayCells}
+                gridSizePx={gridSizePx}
+            />
 
             <UnitLayer
               units={units}

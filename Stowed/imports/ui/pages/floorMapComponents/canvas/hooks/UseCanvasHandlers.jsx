@@ -222,6 +222,8 @@ export function useCanvasHandlers({
     // when clicking a position in grid, make it a walkway
     if (isAddingWalkway) {
 
+      const stage = stageRef.current;
+
       const pointer = stage.getPointerPosition()
 
       if (!pointer) return;
@@ -248,7 +250,7 @@ export function useCanvasHandlers({
           {row, col}
         ]);
       }
-      
+
       return;
     }
 
