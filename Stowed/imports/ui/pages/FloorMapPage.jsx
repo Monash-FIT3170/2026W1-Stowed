@@ -19,6 +19,7 @@ import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
 import { UnitCard } from "./floorMapComponents/UnitCard";
 import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { buttonStyles } from "./floorMapComponents/FloorMapStyles";
+import { MapRouteInputs } from "./floorMapComponents/MapRouteInputs";
 
 const statusBarButtonStyle = {
   fontSize: "12px",
@@ -303,6 +304,12 @@ function FloorMapPageInner() {
           </button>
         </div>
       </div>
+
+      {!isCanvasEditMode && (
+        <MapRouteInputs key={currentFloorMap?._id ?? "default"} />
+      )}
+
+
 
       {/* -- Map row -- */}
       <div
