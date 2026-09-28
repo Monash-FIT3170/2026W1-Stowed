@@ -38,6 +38,8 @@ function FloorMapPageInner() {
   const canManage = hasClientPermission(role, "locations.manage");
   const canStocktake = hasClientPermission(role, "stocktake.save");
   const canvasRef = useRef(null);
+  const savingDialogRef = useRef(null);
+  const [isSavingLayout, setIsSavingLayout] = useState(false);
 
   const {
     activeTool,
@@ -94,17 +96,43 @@ function FloorMapPageInner() {
     setIsStockPanelOpen(!!unitId);
   };
 
-  const handleCanvasModeToggle = () => {
-    const nextEditMode = !isCanvasEditMode;
+  async function saveLayout(leaveEditMode = false) {
+    if (!canManage || isSavingLayout || savingDialogRef.current?.open) return;
 
-    if (!nextEditMode) {
-      setSelectedStorageUnitId(null);
-      setSelectedUnit(null);
-      setIsStockPanelOpen(false);
-      setTooltip(null);
+    setIsSavingLayout(true);
+    savingDialogRef.current.showModal();
+
+    try {
+      const saved = await handleSaveLayout({
+        showSuccessAlert: !leaveEditMode,
+      });
+
+      if (!saved) return;
+
+      if (leaveEditMode) {
+        setSelectedStorageUnitId(null);
+        setSelectedUnit(null);
+        setIsStockPanelOpen(false);
+        setTooltip(null);
+        setCanvasEditMode(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert(error.reason || "Failed to save layout. Please try again.");
+    } finally {
+      savingDialogRef.current.close();
+      setIsSavingLayout(false);
     }
+  }
 
-    setCanvasEditMode(nextEditMode);
+  const handleCanvasModeToggle = async () => {
+    if (!canManage || isSavingLayout) return;
+
+    if (isCanvasEditMode) {
+      await saveLayout(true);
+    } else {
+      setCanvasEditMode(true);
+    }
   };
   const handleEditShape = (shape) => {
     setEditingShape(shape);
@@ -164,6 +192,8 @@ function FloorMapPageInner() {
                   Site
                 </span>
                 <select
+                  disabled={isCanvasEditMode || isSavingLayout}
+                  title={isCanvasEditMode ? "Finish editing to switch maps" : undefined}
                   value={currentSite?._id ?? ""}
                   onChange={(e) => {
                     const targetSiteId = e.target.value;
@@ -206,6 +236,8 @@ function FloorMapPageInner() {
                     Floor Map
                   </span>
                   <select
+                    disabled={isCanvasEditMode || isSavingLayout}
+                    title={isCanvasEditMode ? "Finish editing to switch maps" : undefined}
                     value={currentFloorMap?._id ?? ""}
                     onChange={(e) => navigate(`/floor-map/${e.target.value}`)}
                     aria-label="Select floor map"
@@ -240,7 +272,8 @@ function FloorMapPageInner() {
           {isCanvasEditMode && canManage && (
             <button
               type="button"
-              onClick={handleSaveLayout}
+              onClick={() => saveLayout()}
+              disabled={isSavingLayout}
               style={{
                 ...statusBarButtonStyle,
                 background: COLOURS.ACCENT,
@@ -248,7 +281,7 @@ function FloorMapPageInner() {
                 color: "white",
               }}
             >
-              Save Layout
+              {isSavingLayout ? "Saving…" : "Save Layout"}
             </button>
           )}
         </div>
@@ -283,8 +316,8 @@ function FloorMapPageInner() {
 
           <button
             type="button"
-            onClick={() => canManage && handleCanvasModeToggle()}
-            disabled={!canManage}
+            onClick={handleCanvasModeToggle}
+            disabled={!canManage || isSavingLayout}
             style={{
               fontSize: "10px",
               fontWeight: 700,
@@ -299,7 +332,11 @@ function FloorMapPageInner() {
               fontFamily: "inherit",
             }}
           >
-            {isCanvasEditMode ? "Edit mode" : "View mode"}
+            {isSavingLayout
+              ? "Saving…"
+              : isCanvasEditMode
+                ? "Save & exit edit mode"
+                : "View mode"}
           </button>
         </div>
       </div>
@@ -732,6 +769,24 @@ function FloorMapPageInner() {
             </div>
           );
         })()}
+
+      <dialog
+        ref={savingDialogRef}
+        aria-labelledby="saving-layout-message"
+        onCancel={(event) => event.preventDefault()}
+        onKeyDown={(event) => event.stopPropagation()}
+        style={{
+          padding: "24px",
+          border: `1px solid ${COLOURS.CARD_BORDER}`,
+          borderRadius: "12px",
+          background: COLOURS.CARD_BG,
+          color: COLOURS.TEXT_PRIMARY,
+        }}
+      >
+        <p id="saving-layout-message" role="status">
+          Saving layout…
+        </p>
+      </dialog>
 
       {/* FLOOR MAP SETTINGS MODAL */}
       {isFloorMapSettingsOpen && (

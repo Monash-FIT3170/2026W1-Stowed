@@ -237,17 +237,20 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     });
   }
 
-  async function handleSaveLayout() {
+  async function handleSaveLayout({ showSuccessAlert = true } = {}) {
     if (creatingUnitIdsRef.current.size > 0) {
       alert("Please wait for new units to finish being created, then save again.");
-      return;
+      return false;
     }
     if (!floorMap) {
       alert("No floor map exists in database.");
-      return;
+      return false;
     }
 
     const activeFloorMapId = floorMap._id;
+
+    const { stack, index } = historyRef.current;
+    const unitsToSave = stack[index];
 
     try {
       await callMethod("floorMaps.update", {
@@ -259,7 +262,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         settings: canvasSettings,
       });
 
-      const currentUnitIds = units.filter((unit) => unit._id).map((unit) => unit._id);
+      const currentUnitIds = unitsToSave.filter((unit) => unit._id).map((unit) => unit._id);
 
       for (const savedUnit of savedUnits) {
         if (!currentUnitIds.includes(savedUnit._id)) {
@@ -271,7 +274,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       const savedCanvasUnits = [];
 
-      for (const unit of units) {
+      for (const unit of unitsToSave) {
         const shape = getDrawableShape(unit);
         const offset = unit.offset ?? { x: 0, y: 0 };
         const scale = unit.scale ?? { x: 1, y: 1 };
@@ -336,10 +339,13 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       setUnits(savedCanvasUnits);
       historyRef.current = { stack: [savedCanvasUnits], index: 0 };
-      alert("Layout saved to database!");
+
+      if (showSuccessAlert) alert("Layout saved to database!");
+      return true;
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
+      return false;
     }
   }
 
