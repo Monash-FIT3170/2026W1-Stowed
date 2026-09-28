@@ -1,6 +1,7 @@
-import { lazy } from "react";
+import { lazy, useState } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/Toast";
+import { Chatbot } from "./components/Chatbot";
 import { Sidebar } from "./Sidebar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
@@ -20,6 +21,9 @@ import { ScanUpdatePage } from "./pages/ScanUpdatePage";
 import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
+import { VerifyEmail } from "./VerifyEmail";
+import { ForgotPassword } from "./ForgotPassword";
+import { ResetPassword } from "./ResetPassword";
 import { Login } from "./Login";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
@@ -40,7 +44,9 @@ export function App() {
     };
   });
 
-  if (loggingIn) {
+  const [hasLoaded, setHasLoaded] = useState(false);
+  if (!loggingIn && !hasLoaded) setHasLoaded(true);
+  if (loggingIn && !hasLoaded) {
     return null;
   }
 
@@ -68,6 +74,9 @@ export function App() {
             <Routes>
               {/* public routes */}
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route
                 path="/login"
                 element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
@@ -346,6 +355,7 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          {isLoggedIn && hasClientPermission(role, "chatbot.chat") && <Chatbot />}
         </div>
       </BrowserRouter>
     </ToastProvider>
