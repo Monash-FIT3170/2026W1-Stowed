@@ -281,6 +281,21 @@ function FloorMapPageInner() {
             </>
           )}
 
+          {/* DETAILED VIEW - drill into units, locations and their stock */}
+          {!isCanvasEditMode && (
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  currentFloorMap ? `/floor-map/${currentFloorMap._id}/detail` : "/floor-map",
+                )
+              }
+              style={statusBarButtonStyle}
+            >
+              Detailed view
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => canManage && handleCanvasModeToggle()}
