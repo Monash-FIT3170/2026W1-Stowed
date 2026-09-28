@@ -683,7 +683,27 @@ function FloorMapPageInner() {
       {tooltip &&
         (() => {
           const tipItems = tooltip.items ?? [];
-          const tipLow = tipItems.filter((i) => i.isLow);
+          const lowProducts = new Map();
+
+          tipItems.forEach((item) => {
+            if (!item.isLow) return;
+
+            const productId = item.product._id;
+            if (!lowProducts.has(productId)) {
+              lowProducts.set(productId, {
+                product: item.product,
+                locations: new Map(),
+              });
+            }
+
+            lowProducts.get(productId).locations.set(item.locationId, {
+              id: item.locationId,
+              name: item.locationName,
+              quantity: item.quantity,
+            });
+          });
+
+          const tipLow = Array.from(lowProducts.values());
           const tipHasLow = tipLow.length > 0;
           return (
             <div
@@ -728,9 +748,9 @@ function FloorMapPageInner() {
                   >
                     Low stock products:
                   </div>
-                  {tipLow.map((item, i) => (
+                  {tipLow.map((item) => (
                     <div
-                      key={i}
+                      key={item.product._id}
                       style={{
                         display: "flex",
                         flexDirection: "column",
@@ -752,12 +772,20 @@ function FloorMapPageInner() {
                             marginLeft: "8px",
                           }}
                         >
-                          {item.quantity} left
+                          {item.product.totalQuantity} left overall
                         </span>
                       </div>
-                      <span style={{ fontSize: "10px", color: "#998874" }}>
-                        {item.locationName}
+                      <span style={{ fontSize: "10px", color: "#998874", marginTop: "2px" }}>
+                        Total across all locations
                       </span>
+                      <div style={{ fontSize: "10px", color: "#998874", marginTop: "4px" }}>
+                        Locations on this unit:
+                        {Array.from(item.locations.values()).map((location) => (
+                          <div key={location.id}>
+                            {location.name}: {location.quantity} left
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </>
