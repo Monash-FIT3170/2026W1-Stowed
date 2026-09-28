@@ -1,4 +1,4 @@
-import { lazy, useRef } from "react";
+import { lazy, useState } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/Toast";
 import { Sidebar } from "./Sidebar";
@@ -43,9 +43,9 @@ export function App() {
     };
   });
 
-  const hasLoaded = useRef(false);
-  if (!loggingIn) hasLoaded.current = true;
-  if (loggingIn && !hasLoaded.current) {
+  const [hasLoaded, setHasLoaded] = useState(false);
+  if (!loggingIn && !hasLoaded) setHasLoaded(true);
+  if (loggingIn && !hasLoaded) {
     return null;
   }
 

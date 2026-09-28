@@ -35,7 +35,7 @@ export const ForgotPassword = () => {
         ) : (
           <form onSubmit={handleSubmit} className="auth-form">
             <p className="auth-card-text">
-              Enter your email and we'll send you a link to reset your password.
+              {"Enter your email and we'll send you a link to reset your password."}
             </p>
             <label className="auth-field" htmlFor="email">
               <span>Email</span>
