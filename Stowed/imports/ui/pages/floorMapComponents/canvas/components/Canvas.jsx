@@ -1,4 +1,4 @@
-import { useRef, useEffect, useReducer, forwardRef, useImperativeHandle } from "react";
+import { useRef, useEffect, useReducer, forwardRef, useImperativeHandle, useState } from "react";
 import { Stage } from "react-konva";
 import Konva from "konva";
 import { useTracker } from "meteor/react-meteor-data";
@@ -23,6 +23,7 @@ import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
 import { WalkwayLayer } from "./layers/WalkwayLayer";
+import { WalkwayTransformerLayer } from "./layers/WalkwayTransformerLayer";
 
 if (typeof window !== "undefined") {
   Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
@@ -62,6 +63,16 @@ export const Canvas = forwardRef(function Canvas(
 
   const [state, dispatch] = useReducer(canvasReducer, initialCanvasState);
   const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize, clipboard } = state;
+  const [selectedWalkwayId, setSelectedWalkwayId] = useState(null);
+  const walkwayRefs = useRef({});
+
+  function getWalkwayRef(id) {
+    if (!walkwayRefs.current[id]) {
+      walkwayRefs.current[id] = { current: null };
+    }
+
+    return walkwayRefs.current[id];
+  }
 
   const {
     getGroupRef,
@@ -85,7 +96,8 @@ export const Canvas = forwardRef(function Canvas(
     handleWalkwayMouseDown,
     handleWalkwayMouseMove,
     handleWalkwayMouseUp,
-    handleWalkwayMouseLeave
+    handleWalkwayMouseLeave,
+    handleWalkwayTransformEnd
 
   } = useCanvasHandlers({
     dispatch,
@@ -105,7 +117,7 @@ export const Canvas = forwardRef(function Canvas(
     isAddingWalkway,
     walkwayCells,
     setWalkwayCells,
-    gridInterval,
+    gridInterval
   });
 
   useEffect(() => {
@@ -200,7 +212,13 @@ export const Canvas = forwardRef(function Canvas(
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
-            onClick={handleStageClick}
+            onClick={(e) => {
+              handleStageClick(e);
+
+              if (!isAddingWalkway) {
+                setSelectedWalkwayId(null);
+              }
+            }}
             onMouseDown={handleWalkwayMouseDown}
             onMouseUp={handleWalkwayMouseUp}
             onMouseMove={handleWalkwayMouseMove}
@@ -210,6 +228,14 @@ export const Canvas = forwardRef(function Canvas(
 
             <WalkwayLayer
                 walkwayCells={walkwayCells}
+                selectedWalkwayId={selectedWalkwayId}
+                getWalkwayRef={getWalkwayRef}
+                onWalkwayClick={(walkway) => {
+                  setSelectedWalkwayId(walkway.id);
+                }}
+                onTransformEnd={handleWalkwayTransformEnd}
+                isCanvasEditMode={isCanvasEditMode}
+                isAddingWalkway={isAddingWalkway}
             />
 
             <UnitLayer
@@ -227,6 +253,11 @@ export const Canvas = forwardRef(function Canvas(
             />
 
             <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef} />
+
+            <WalkwayTransformerLayer
+              selectedWalkwayId={selectedWalkwayId}
+              getWalkwayRef={getWalkwayRef}
+            />
 
             <GhostLayer
               ghostUnit={ghostUnit}

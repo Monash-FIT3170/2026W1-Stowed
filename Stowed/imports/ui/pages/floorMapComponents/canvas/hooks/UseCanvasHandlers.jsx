@@ -120,7 +120,7 @@ export function useCanvasHandlers({
     };
   }
 
-  function getWalkwayCellFromPointer() {
+function getWalkwayCellFromPointer() {
     const stage = stageRef.current;
 
     if (!stage) return null;
@@ -152,6 +152,7 @@ export function useCanvasHandlers({
 
     // Store actual physical position + size
     return {
+      id: `walkway-${Date.now()}-${Math.random()}`,
       x: walkwayX,
       y: walkwayY,
       width: gridInterval,
@@ -159,28 +160,46 @@ export function useCanvasHandlers({
     };
   }
 
-function paintWalkwayCell(cell) {
-  if (!cell) return;
-
-  if (
-    lastWalkwayCell.current?.x === cell.x &&
-    lastWalkwayCell.current?.y === cell.y &&
-    lastWalkwayCell.current?.width === cell.width &&
-    lastWalkwayCell.current?.height === cell.height
-  ) {
-    return;
+  function walkwayOverlapsCell(walkway, cell) {
+    return (
+      walkway.x < cell.x + cell.width &&
+      walkway.x + walkway.width > cell.x &&
+      walkway.y < cell.y + cell.height &&
+      walkway.y + walkway.height > cell.y
+    );
   }
 
-  lastWalkwayCell.current = cell;
+  function walkwaysOverlap(a, b) {
 
-  setWalkwayCells((prev) => {
-    const exists = prev.some(
-      (existingCell) =>
-        existingCell.x === cell.x &&
-        existingCell.y === cell.y &&
-        existingCell.width === cell.width &&
-        existingCell.height === cell.height
-  );
+    const EPSILON = 0.001;
+    return (
+      a.x < b.x + b.width - EPSILON &&
+      a.x + a.width > b.x + EPSILON &&
+      a.y < b.y + b.height - EPSILON &&
+      a.y + a.height > b.y + EPSILON
+    );
+  }
+
+
+  function paintWalkwayCell(cell) {
+    if (!cell) return;
+
+    if (
+      lastWalkwayCell.current?.x === cell.x &&
+      lastWalkwayCell.current?.y === cell.y &&
+      lastWalkwayCell.current?.width === cell.width &&
+      lastWalkwayCell.current?.height === cell.height
+    ) {
+      return;
+    }
+
+    lastWalkwayCell.current = cell;
+
+    setWalkwayCells((prev) => {
+      const exists = prev.some(
+        (existingWalkway) =>
+          walkwayOverlapsCell(existingWalkway, cell)
+      );
 
     if (walkwayPaintMode.current === "add") {
       if (exists) return prev;
@@ -192,15 +211,10 @@ function paintWalkwayCell(cell) {
     }
 
     if (walkwayPaintMode.current === "remove") {
-      return prev.filter(
-        (existingCell) =>
-          !(
-            existingCell.x === cell.x &&
-            existingCell.y === cell.y &&
-            existingCell.width === cell.width &&
-            existingCell.height === cell.height
-          )
-      );
+        return prev.filter(
+          (existingWalkway) =>
+            !walkwayOverlapsCell(existingWalkway, cell)
+        );
     }
 
     return prev;
@@ -689,6 +703,10 @@ function paintWalkwayCell(cell) {
 
   //WALK WAYS
 
+  function roundMetres(value) {
+    return Math.round(value * 1000) / 1000;
+  }
+
   function handleWalkwayMouseDown() {
     if (!isAddingWalkway) return;
 
@@ -697,11 +715,12 @@ function paintWalkwayCell(cell) {
     if (!cell) return;
 
     const alreadyWalkway = walkwayCells.some(
-      (existingCell) => existingCell.row === cell.row && existingCell.col === cell.col
+      (existingWalkway) =>
+        walkwayOverlapsCell(existingWalkway, cell)
     );
 
-    // Clicking an existing walkway starts erase mode.
-    // Clicking an empty cell starts paint mode.
+    // Clicking somewhere containing a walkway = erase mode
+    // Clicking empty space = add mode
     walkwayPaintMode.current = alreadyWalkway ? "remove" : "add";
 
     isPaintingWalkway.current = true;
@@ -733,6 +752,87 @@ function paintWalkwayCell(cell) {
     lastWalkwayCell.current = null;
   }
 
+  function handleWalkwayTransformEnd(e, walkway) {
+    const node = e.target;
+
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+
+    // New dimensions produced by the transformer
+    const newWidthPx = walkway.width * px * scaleX;
+
+    const newHeightPx = walkway.height * px * scaleY;
+
+    const minSizePx = 0.1 * px;
+
+    const finalWidthPx = Math.max(minSizePx, newWidthPx);
+
+    const finalHeightPx = Math.max(minSizePx, newHeightPx);
+
+    // Transformer works using scale.
+    // Reset it because we store real width/height instead.
+    node.scaleX(1);
+    node.scaleY(1);
+
+    // Keep inside floor bounds
+    const finalX = Math.max(0, Math.min(node.x(), width - finalWidthPx));
+
+    const finalY = Math.max(0, Math.min(node.y(), height - finalHeightPx));
+
+    // Proposed resized walkway, in metres
+    const proposedWalkway = {
+      ...walkway,
+      x: roundMetres(finalX / px),
+      y: roundMetres(finalY / px),
+      width: roundMetres(finalWidthPx / px),
+      height: roundMetres(finalHeightPx / px),
+    };
+
+  // Check against every OTHER walkway
+    const overlapsAnotherWalkway =
+      walkwayCells.some((otherWalkway) => {
+        if (otherWalkway.id === walkway.id) {
+          return false;
+        }
+
+        return walkwaysOverlap(
+          proposedWalkway,
+          otherWalkway
+        );
+      });
+
+    // Invalid resize -> put the walkway back
+    if (overlapsAnotherWalkway) {
+      node.x(walkway.x * px);
+      node.y(walkway.y * px);
+
+      node.width(walkway.width * px);
+      node.height(walkway.height * px);
+
+      node.scaleX(1);
+      node.scaleY(1);
+
+      return;
+    }
+
+    // Valid resize -> save it
+    setWalkwayCells((prev) =>
+      prev.map((w) =>
+        w.id === walkway.id
+          ? proposedWalkway
+          : w
+      )
+    );
+
+    node.x(finalX);
+    node.y(finalY);
+
+    node.width(finalWidthPx);
+    node.height(finalHeightPx);
+  }
+
   // RETURN
   return {
     getGroupRef,
@@ -756,6 +856,7 @@ function paintWalkwayCell(cell) {
     handleWalkwayMouseDown,
     handleWalkwayMouseLeave,
     handleWalkwayMouseUp,
-    handleWalkwayMouseMove
+    handleWalkwayMouseMove,
+    handleWalkwayTransformEnd
   };
 }
