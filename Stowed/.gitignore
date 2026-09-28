@@ -1,5 +1,5 @@
 node_modules/
-settings.json
+.env
 
 # Meteor Modern-Tools build context directories
 _build
