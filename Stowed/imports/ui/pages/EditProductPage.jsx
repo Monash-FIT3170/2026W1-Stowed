@@ -15,6 +15,8 @@ import {
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import { ManageCategoriesModal } from "../components/ManageCategoriesModal";
 import { useToast } from "../components/Toast";
+import { FieldError, FormErrorSummary } from "../components/FieldError";
+import { useProductFormValidation } from "../hooks/useProductFormValidation";
 import "./CreateProductPage.css";
 import "../Global.css";
 
@@ -148,14 +150,24 @@ export function EditProductPage() {
   }, [cameFromScan, initialised, scanFocusDone]);
 
   const parsedTotal = parseInt(totalQuantity, 10);
-  const nameIsValid = name.trim().length > 0;
-  const totalQuantityIsValid = totalQuantity !== "" && !isNaN(parsedTotal);
 
   const validAssignments = assignments.filter((a) => a.locationId && a.quantity !== "");
-  const assignedTotal = validAssignments.reduce((sum, a) => sum + parseInt(a.quantity, 10), 0);
-  const remaining = totalQuantityIsValid ? parsedTotal - assignedTotal : null;
-  const isBalanced = totalQuantityIsValid && remaining === 0;
-  const canSave = nameIsValid && totalQuantityIsValid && isBalanced;
+
+  const validation = useProductFormValidation({
+    name,
+    totalQuantity,
+    reorderAt,
+    unitCost,
+    purchaseCost,
+    assignments,
+  });
+  const { fieldError, rowError, inputProps } = validation;
+  const nameError = fieldError("name");
+  const unitCostError = fieldError("unitCost");
+  const purchaseCostError = fieldError("purchaseCost");
+  const totalQuantityError = fieldError("totalQuantity");
+  const reorderAtError = fieldError("reorderAt");
+  const assignmentsError = fieldError("assignments");
 
   const changes = useMemo(() => {
     if (!initialised || !product) return {};
@@ -274,6 +286,12 @@ export function EditProductPage() {
   }
 
   function handleSave() {
+    if (!validation.attemptSubmit()) {
+      toast.error(
+        `Please fix ${validation.count} issue${validation.count !== 1 ? "s" : ""} before saving.`,
+      );
+      return;
+    }
     if (Object.keys(changes).length === 0) {
       navigate(`/inventory/${productId}`);
       return;
@@ -358,8 +376,9 @@ export function EditProductPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="form-input"
+                  {...inputProps("name", nameError)}
                 />
+                <FieldError id="name-error" message={nameError} />
               </div>
               <div className="form-row">
                 <div className="form-group">
@@ -428,9 +447,10 @@ export function EditProductPage() {
                     step="0.01"
                     value={unitCost}
                     onChange={(e) => setUnitCost(e.target.value)}
-                    className="form-input"
+                    {...inputProps("unitCost", unitCostError)}
                     placeholder="$0.00"
                   />
+                  <FieldError id="unitCost-error" message={unitCostError} />
                 </div>
                 <div className="form-group">
                   <label>Purchase Price</label>
@@ -440,9 +460,10 @@ export function EditProductPage() {
                     step="0.01"
                     value={purchaseCost}
                     onChange={(e) => setPurchaseCost(e.target.value)}
-                    className="form-input"
+                    {...inputProps("purchaseCost", purchaseCostError)}
                     placeholder="$0.00"
                   />
+                  <FieldError id="purchaseCost-error" message={purchaseCostError} />
                 </div>
               </div>
               <div className="form-row">
@@ -452,9 +473,10 @@ export function EditProductPage() {
                     type="number"
                     value={totalQuantity}
                     onChange={(e) => setTotalQuantity(e.target.value)}
-                    className="form-input"
+                    {...inputProps("totalQuantity", totalQuantityError)}
                     min="0"
                   />
+                  <FieldError id="totalQuantity-error" message={totalQuantityError} />
                 </div>
                 <div className="form-group">
                   <label>Reorder at</label>
@@ -463,9 +485,10 @@ export function EditProductPage() {
                     min="0"
                     value={reorderAt}
                     onChange={(e) => setReorderAt(e.target.value)}
-                    className="form-input"
+                    {...inputProps("reorderAt", reorderAtError)}
                     placeholder="e.g. 10"
                   />
+                  <FieldError id="reorderAt-error" message={reorderAtError} />
                 </div>
               </div>
             </div>
@@ -487,50 +510,51 @@ export function EditProductPage() {
                 All stock must be assigned before saving.
               </p>
 
-              {assignments.map((assignment, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    alignItems: "center",
-                    marginBottom: "8px",
-                  }}
-                >
-                  <select
-                    value={assignment.locationId}
-                    onChange={(e) => updateAssignment(index, "locationId", e.target.value)}
-                    className="form-input"
-                    style={{ flex: 2 }}
-                  >
-                    <option value="">Select a location...</option>
-                    {storageLocations.map((location) => (
-                      <option key={location._id} value={location._id}>
-                        {buildLocationLabel(location, storageUnits, floorMaps, sites)}
-                      </option>
-                    ))}
-                  </select>
+              {assignments.map((assignment, index) => {
+                const assignmentError = rowError(index);
+                const rowKey = `row-${index}`;
+                const locationInvalid = assignmentError.startsWith("Choose a location");
+                return (
+                  <div key={index} style={{ marginBottom: "8px" }}>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <select
+                        value={assignment.locationId}
+                        onChange={(e) => updateAssignment(index, "locationId", e.target.value)}
+                        {...inputProps(rowKey, locationInvalid)}
+                        style={{ flex: 2 }}
+                      >
+                        <option value="">Select a location...</option>
+                        {storageLocations.map((location) => (
+                          <option key={location._id} value={location._id}>
+                            {buildLocationLabel(location, storageUnits, floorMaps, sites)}
+                          </option>
+                        ))}
+                      </select>
 
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Qty"
-                    ref={index === 0 ? scannedQuantityRef : null}
-                    value={assignment.quantity}
-                    onChange={(e) => updateAssignment(index, "quantity", e.target.value)}
-                    className="form-input"
-                    style={{ maxWidth: "80px" }}
-                  />
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Qty"
+                        aria-label="Quantity"
+                        ref={index === 0 ? scannedQuantityRef : null}
+                        value={assignment.quantity}
+                        onChange={(e) => updateAssignment(index, "quantity", e.target.value)}
+                        {...inputProps(rowKey, assignmentError && !locationInvalid)}
+                        style={{ maxWidth: "80px" }}
+                      />
 
-                  <button
-                    type="button"
-                    onClick={() => removeAssignment(index)}
-                    className="btn-secondary"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+                      <button
+                        type="button"
+                        onClick={() => removeAssignment(index)}
+                        className="btn-secondary"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <FieldError id={`${rowKey}-error`} message={assignmentError} />
+                  </div>
+                );
+              })}
 
               <button
                 type="button"
@@ -541,13 +565,10 @@ export function EditProductPage() {
                 + Add Location
               </button>
 
-              {remaining !== null && (
-                <p className="warning-text" style={{ marginTop: "12px" }}>
-                  {remaining === 0 && `All ${parsedTotal} units assigned.`}
-                  {remaining > 0 &&
-                    `${assignedTotal} of ${parsedTotal} assigned - ${remaining} remaining.`}
-                  {remaining < 0 &&
-                    `Over-assigned by ${Math.abs(remaining)} unit${Math.abs(remaining) !== 1 ? "s" : ""}.`}
+              <FieldError id="assignments-error" message={assignmentsError} />
+              {!assignmentsError && !validation.errors.totalQuantity && parsedTotal > 0 && (
+                <p className="field-hint" style={{ marginTop: "12px" }}>
+                  All {parsedTotal} units assigned.
                 </p>
               )}
             </div>
@@ -654,7 +675,11 @@ export function EditProductPage() {
         <button className="btn-secondary" onClick={() => navigate(-1)}>
           Cancel
         </button>
-        <button className="btn-primary" onClick={handleSave} disabled={!canSave}>
+        <FormErrorSummary
+          show={validation.submitAttempted && !validation.isValid}
+          count={validation.count}
+        />
+        <button className="btn-primary" onClick={handleSave} disabled={isSaving}>
           {isSaving ? "Saving..." : "Save changes"}
         </button>
       </div>
