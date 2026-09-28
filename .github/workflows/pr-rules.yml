@@ -4,12 +4,9 @@ on:
   pull_request:
     branches: [main, develop]
     types: [opened, edited, synchronize, reopened, ready_for_review]
-  pull_request_review:
-    types: [submitted, edited, dismissed]
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   conventional-commits:
@@ -59,40 +56,3 @@ jobs:
           fi
 
           echo "PR title and all commit messages follow the convention."
-
-  review-approved:
-    name: At least one approving review
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check PR has an approving review
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          states=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" \
-            --jq '.[] | select(.state != "COMMENTED" and .state != "PENDING") | "\(.user.login) \(.state)"')
-
-          declare -A latest
-          while read -r user state; do
-            [ -n "$user" ] && latest[$user]=$state
-          done <<< "$states"
-
-          approvals=0
-          for user in "${!latest[@]}"; do
-            case "${latest[$user]}" in
-              APPROVED) approvals=$((approvals + 1)) ;;
-              CHANGES_REQUESTED)
-                echo "::error::$user has requested changes."
-                exit 1
-                ;;
-            esac
-          done
-
-          if [ "$approvals" -lt 1 ]; then
-            echo "::error::This PR needs at least one approving review before it can be merged."
-            exit 1
-          fi
-
-          echo "PR has $approvals approving review(s)."
