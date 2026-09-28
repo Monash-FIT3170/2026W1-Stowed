@@ -53,7 +53,11 @@ export function Chatbot() {
 
         if (callError) {
           console.error("chatbot.chat failed:", callError);
-          setError(Meteor.isDevelopment ? callError.reason || DEFAULT_ERROR_MESSAGE : DEFAULT_ERROR_MESSAGE);
+          setError(
+            Meteor.isDevelopment
+              ? callError.reason || DEFAULT_ERROR_MESSAGE
+              : DEFAULT_ERROR_MESSAGE,
+          );
           return;
         }
 

@@ -146,7 +146,9 @@ Meteor.methods({
     try {
       const ai = getAiClient();
       const contents =
-        messages.length <= MAX_STATEFUL_MESSAGES ? toGeminiContents(messages) : [{ role: "user", parts: [{ text: input }] }];
+        messages.length <= MAX_STATEFUL_MESSAGES
+          ? toGeminiContents(messages)
+          : [{ role: "user", parts: [{ text: input }] }];
       const response = await createChatbotResponse({ ai, model, contents });
 
       return {
