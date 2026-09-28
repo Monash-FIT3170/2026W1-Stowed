@@ -1,0 +1,98 @@
+name: PR rules
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  conventional-commits:
+    name: Conventional commit messages & PR title
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR title and commit messages
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='(^(feat|style|fix|bugfix|docs|refactor|test|chore)(\([a-z0-9._/-]+\))?!?: .+|^Revert ")'
+          failed=0
+
+          if ! printf '%s' "$PR_TITLE" | grep -Eq "$pattern"; then
+            echo "::error::PR title does not follow the commit convention: '$PR_TITLE'"
+            failed=1
+          fi
+
+          while IFS= read -r line; do
+            sha="${line%% *}"
+            subject="${line#* }"
+            if ! printf '%s' "$subject" | grep -Eq "$pattern"; then
+              echo "::error::Commit $sha does not follow the commit convention: '$subject'"
+              failed=1
+            fi
+          done < <(git log --no-merges --format='%h %s' "$BASE_SHA..$HEAD_SHA")
+
+          if [ "$failed" -ne 0 ]; then
+            echo ""
+            echo "Commit messages and PR titles must start with one of:"
+            echo "  feat:      New feature              e.g. feat: added barcode generation module"
+            echo "  style:     Styling changes          e.g. style: changed font of sidebar"
+            echo "  fix:       Bug fix (or bugfix:)     e.g. fix: resolve login bug"
+            echo "  docs:      Documentation changes    e.g. docs: update docstring on augmented reality module"
+            echo "  refactor:  Code restructuring       e.g. refactor: extract filter logic into helper"
+            echo "  test:      Adding tests             e.g. test: added boundary test for overlapping zone"
+            echo "  chore:     Maintenance tasks        e.g. chore: upgrade Meteor to 3.1.2"
+            exit 1
+          fi
+
+          echo "PR title and all commit messages follow the convention."
+
+  review-approved:
+    name: At least one approving review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR has an approving review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          states=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+            --jq '.[] | select(.state != "COMMENTED" and .state != "PENDING") | "\(.user.login) \(.state)"')
+
+          declare -A latest
+          while read -r user state; do
+            [ -n "$user" ] && latest[$user]=$state
+          done <<< "$states"
+
+          approvals=0
+          for user in "${!latest[@]}"; do
+            case "${latest[$user]}" in
+              APPROVED) approvals=$((approvals + 1)) ;;
+              CHANGES_REQUESTED)
+                echo "::error::$user has requested changes."
+                exit 1
+                ;;
+            esac
+          done
+
+          if [ "$approvals" -lt 1 ]; then
+            echo "::error::This PR needs at least one approving review before it can be merged."
+            exit 1
+          fi
+
+          echo "PR has $approvals approving review(s)."
