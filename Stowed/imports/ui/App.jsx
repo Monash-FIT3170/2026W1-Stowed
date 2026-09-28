@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, useState } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/Toast";
 import { Sidebar } from "./Sidebar";
@@ -46,7 +46,16 @@ export function App() {
     };
   });
 
-  if (loggingIn) {
+  // Blank the app only while a login token from a previous visit is being
+  // resumed on page load, so a logged-in user's deep link is not bounced through
+  // /login to /dashboard before the session is known. Once that first check has
+  // settled the gate stays open: a later loggingIn - a submit from the login
+  // form - must not unmount the form mid-attempt, or its stage, fields and
+  // error message are lost with it.
+  const [resumed, setResumed] = useState(false);
+  if (!loggingIn && !resumed) setResumed(true);
+
+  if (loggingIn && !resumed) {
     return null;
   }
 
