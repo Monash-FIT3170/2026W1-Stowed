@@ -149,6 +149,7 @@
 }
 
 .auth-primary-button,
+.auth-secondary-button,
 .auth-link-button,
 .auth-segmented-control button {
   font: inherit;
@@ -180,6 +181,60 @@
 .auth-primary-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+/* The quieter of the two choices on the organisation stage: same pill as the
+   primary button so the pair reads as one control, outlined instead of filled
+   so "Log in" stays the obvious default. */
+.auth-secondary-button {
+  width: 100%;
+  border: 1px solid var(--border-subtle, #d9cfc0);
+  border-radius: 999px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-dark, #1a1a1a);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+
+.auth-secondary-button:hover:not(:disabled) {
+  border-color: var(--accent-secondary, #e89b6f);
+}
+
+.auth-secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* -- Organisation stage: one code, two ways forward -- */
+
+/* Hint and buttons are grouped tighter than the form's own gap, so the hint
+   reads as belonging to the pair rather than to the field above. */
+.auth-choice {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-choice-hint {
+  color: var(--text-muted, #998874);
+  font-size: 12px;
+  margin: 0;
+}
+
+/* Side by side and equal width: neither choice is presented as the afterthought,
+   only the fill of the primary button marks the default. */
+.auth-button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.auth-button-row .auth-primary-button,
+.auth-button-row .auth-secondary-button {
+  margin-top: 0;
+  padding-left: 12px;
+  padding-right: 12px;
+  white-space: nowrap;
 }
 
 .auth-link-button {
@@ -233,6 +288,35 @@
   background: #dcfce7;
   border: 1px solid #bdebc9;
   color: #166534;
+}
+
+/* -- Notice card: a standalone message with one way forward -- */
+
+/* Sized for a sentence or two rather than a form, and centred by .auth-page. */
+.auth-notice {
+  width: min(420px, 100%);
+}
+
+.auth-notice h2 {
+  margin-bottom: 10px;
+}
+
+.auth-notice-text {
+  color: var(--text-muted, #998874);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+
+/* The code echoed back as the visitor typed it, set apart so a typo is easy
+   to spot. */
+.auth-notice-code {
+  color: var(--text-dark, #1a1a1a);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--bg-primary, #f5efe6);
+  border-radius: 6px;
+  padding: 1px 6px;
 }
 
 .auth-role-group {
