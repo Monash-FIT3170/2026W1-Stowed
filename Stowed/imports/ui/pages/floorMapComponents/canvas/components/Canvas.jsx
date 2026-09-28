@@ -105,7 +105,7 @@ export const Canvas = forwardRef(function Canvas(
     isAddingWalkway,
     walkwayCells,
     setWalkwayCells,
-    gridSizePx
+    gridInterval,
   });
 
   useEffect(() => {
@@ -210,7 +210,6 @@ export const Canvas = forwardRef(function Canvas(
 
             <WalkwayLayer
                 walkwayCells={walkwayCells}
-                gridSizePx={gridSizePx}
             />
 
             <UnitLayer

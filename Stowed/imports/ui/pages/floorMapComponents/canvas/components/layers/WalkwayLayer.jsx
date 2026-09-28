@@ -1,21 +1,21 @@
 import { Layer, Rect } from "react-konva";
+import { CANVAS_CONFIG } from "../../CanvasConfig";
 
 export function WalkwayLayer({
   walkwayCells,
-  gridSizePx,
 }) {
+  const px = CANVAS_CONFIG.PIXELS_PER_METER;
+
   return (
     <Layer listening={false}>
-      {walkwayCells.map((cell) => (
+      {walkwayCells.map((cell, index) => (
         <Rect
-          key={`${cell.row}-${cell.col}`}
-          x={cell.col * gridSizePx}
-          y={cell.row * gridSizePx}
-          width={gridSizePx}
-          height={gridSizePx}
+          key={`${cell.x}-${cell.y}-${index}`}
+          x={cell.x * px}
+          y={cell.y * px}
+          width={cell.width * px}
+          height={cell.height * px}
           fill="#cbd5e1"
-          stroke="#94a3b8"
-          strokeWidth={1}
         />
       ))}
     </Layer>

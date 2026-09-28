@@ -47,7 +47,7 @@ export function useCanvasHandlers({
   isAddingWalkway,
   walkwayCells,
   setWalkwayCells,
-  gridSizePx
+  gridInterval
 }) {
   const { setSelectedUnit, setIsPanelOpen } = useEditor();
   const isPaintingWalkway = useRef(false);
@@ -129,26 +129,44 @@ export function useCanvasHandlers({
 
     if (!pointer) return null;
 
+    // Position on actual floor canvas, in pixels
     const x = (pointer.x - stage.x()) / stage.scaleX();
 
     const y = (pointer.y - stage.y()) / stage.scaleY();
 
-    if ( x < 0 || y < 0 || x >= width || y >= height) {
-      return null;
+    // Ignore clicks outside floor
+    if ( x < 0 || y < 0 || x >= width || y >= height ) {
+    return null;
     }
 
-    const col = Math.floor(x / gridSizePx);
-    const row = Math.floor(y / gridSizePx);
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
 
-    return { row, col };
+    // Convert pixel position into metres
+    const xMetres = x / px;
+    const yMetres = y / px;
+
+    // Snap to the top-left corner of the clicked grid square
+    const walkwayX = Math.floor(xMetres / gridInterval) * gridInterval;
+
+    const walkwayY = Math.floor(yMetres / gridInterval) * gridInterval;
+
+    // Store actual physical position + size
+    return {
+      x: walkwayX,
+      y: walkwayY,
+      width: gridInterval,
+      height: gridInterval,
+    };
   }
 
 function paintWalkwayCell(cell) {
   if (!cell) return;
 
   if (
-    lastWalkwayCell.current?.row === cell.row &&
-    lastWalkwayCell.current?.col === cell.col
+    lastWalkwayCell.current?.x === cell.x &&
+    lastWalkwayCell.current?.y === cell.y &&
+    lastWalkwayCell.current?.width === cell.width &&
+    lastWalkwayCell.current?.height === cell.height
   ) {
     return;
   }
@@ -158,9 +176,11 @@ function paintWalkwayCell(cell) {
   setWalkwayCells((prev) => {
     const exists = prev.some(
       (existingCell) =>
-        existingCell.row === cell.row &&
-        existingCell.col === cell.col
-    );
+        existingCell.x === cell.x &&
+        existingCell.y === cell.y &&
+        existingCell.width === cell.width &&
+        existingCell.height === cell.height
+  );
 
     if (walkwayPaintMode.current === "add") {
       if (exists) return prev;
@@ -175,8 +195,10 @@ function paintWalkwayCell(cell) {
       return prev.filter(
         (existingCell) =>
           !(
-            existingCell.row === cell.row &&
-            existingCell.col === cell.col
+            existingCell.x === cell.x &&
+            existingCell.y === cell.y &&
+            existingCell.width === cell.width &&
+            existingCell.height === cell.height
           )
       );
     }
