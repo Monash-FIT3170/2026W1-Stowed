@@ -122,6 +122,15 @@ export async function assertOrgAccess(collection, docId, userId) {
   if (doc.orgId !== orgId) throw new Meteor.Error("forbidden", "Access denied.");
 }
 
+async function sendVerification(userId) {
+  if (!Meteor.isServer) return;
+  try {
+    await Accounts.sendVerificationEmail(userId);
+  } catch (err) {
+    console.error("Verification email failed:", err);
+  }
+}
+
 /**
  * User Methods
  */
@@ -183,6 +192,7 @@ Meteor.methods({
         username,
       },
     });
+    await sendVerification(userId);
     return userId;
   },
 
@@ -241,6 +251,7 @@ Meteor.methods({
         },
       });
 
+      await sendVerification(userId);
       return userId;
     } catch (err) {
       // Roll back the org we just created - no user means no org
