@@ -35,6 +35,7 @@ Accounts.emailTemplates.resetPassword = {
 
 Accounts.validateLoginAttempt(({ user, allowed }) => {
   if (!allowed || !user) return false;
+  if (process.env.REQUIRE_EMAIL_VERIFICATION !== "true") return true;
   if (user.emails?.some((e) => e.verified)) return true;
   throw new Meteor.Error("email-not-verified", "Please verify your email before logging in.");
 });

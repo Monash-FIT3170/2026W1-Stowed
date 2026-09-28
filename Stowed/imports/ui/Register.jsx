@@ -89,7 +89,7 @@ const Register = () => {
           orgName: orgName.trim(),
         });
 
-        setSuccess(`Account created! Check ${email} for a verification link before logging in.`);
+        setSuccess(`Account created! Check ${email} for a verification link.`);
       }
 
       setFormData({
