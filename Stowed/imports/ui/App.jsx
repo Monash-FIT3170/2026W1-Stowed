@@ -11,6 +11,7 @@ import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
+import { FloorMapDetailPage } from "./pages/FloorMapDetailPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
@@ -144,6 +145,20 @@ export function App() {
                   isLoggedIn ? (
                     hasClientPermission(role, "route:/floor-map") ? (
                       <FloorMapPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route
+                path="/floor-map/:floorMapId/detail"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/floor-map") ? (
+                      <FloorMapDetailPage />
                     ) : (
                       <Navigate to="/" replace />
                     )
