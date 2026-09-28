@@ -1,6 +1,8 @@
 import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
 import { GoogleGenAI } from "@google/genai";
+import fs from "node:fs";
+import path from "node:path";
 import { requirePermission } from "../userMethods";
 
 const MAX_MESSAGES = 8;
@@ -10,13 +12,41 @@ const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 const DEFAULT_MAX_OUTPUT_TOKENS = 256;
 const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
-const INVALID_JSON_OUTPUT_MESSAGE =
-  "Model generated invalid JSON syntax and the output could not be parsed.";
+const SYSTEM_INSTRUCTION = [
+  "You are Stowed's inventory assistant.",
+  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, and related workflows.",
+  "Keep answers concise and practical.",
+  "If the user asks for something outside Stowed's inventory scope, briefly say you can only help with Stowed inventory tasks.",
+].join(" ");
 
 let aiClient = null;
+let localSettings = null;
+
+function getLocalSettings() {
+  if (localSettings) return localSettings;
+
+  const projectRoot = process.cwd().split(path.sep + ".meteor")[0];
+  const settingsPath = path.join(projectRoot, "settings.json");
+
+  try {
+    localSettings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+  } catch {
+    localSettings = {};
+  }
+
+  return localSettings;
+}
 
 function getSetting(name) {
-  return process.env[name] || Meteor.settings?.[name] || Meteor.settings?.private?.[name];
+  const fileSettings = getLocalSettings();
+
+  return (
+    process.env[name] ||
+    Meteor.settings?.[name] ||
+    Meteor.settings?.private?.[name] ||
+    fileSettings?.[name] ||
+    fileSettings?.private?.[name]
+  );
 }
 
 function getNumberSetting(name, fallback) {
@@ -27,7 +57,10 @@ function getNumberSetting(name, fallback) {
 function getAiClient() {
   const apiKey = getSetting("GEMINI_API_KEY") || getSetting("GOOGLE_API_KEY");
   if (!apiKey) {
-    throw new Meteor.Error("gemini-not-configured", DEFAULT_ERROR_MESSAGE);
+    throw new Meteor.Error(
+      "gemini-not-configured",
+      "Gemini API key is not configured. Start Meteor with --settings settings.json or set GEMINI_API_KEY.",
+    );
   }
 
   if (!aiClient) {
@@ -35,6 +68,29 @@ function getAiClient() {
   }
 
   return aiClient;
+}
+
+function getChatbotConfigStatus() {
+  const apiKey = getSetting("GEMINI_API_KEY") || getSetting("GOOGLE_API_KEY");
+  const model = getSetting("GEMINI_MODEL") || DEFAULT_MODEL;
+
+  return {
+    hasApiKey: Boolean(apiKey),
+    keySource: process.env.GEMINI_API_KEY
+      ? "environment"
+      : process.env.GOOGLE_API_KEY
+        ? "environment"
+        : Meteor.settings?.GEMINI_API_KEY || Meteor.settings?.private?.GEMINI_API_KEY
+          ? "settings"
+          : Meteor.settings?.GOOGLE_API_KEY || Meteor.settings?.private?.GOOGLE_API_KEY
+            ? "settings"
+            : getLocalSettings()?.GEMINI_API_KEY || getLocalSettings()?.private?.GEMINI_API_KEY
+              ? "settings.json"
+              : getLocalSettings()?.GOOGLE_API_KEY || getLocalSettings()?.private?.GOOGLE_API_KEY
+                ? "settings.json"
+                : "missing",
+    model,
+  };
 }
 
 function getLatestUserInput(messages) {
@@ -46,19 +102,25 @@ function getLatestUserInput(messages) {
   return latestUserMessage?.content.trim().slice(0, MAX_MESSAGE_LENGTH) || "";
 }
 
-function isInvalidJsonOutputError(error) {
-  return String(error?.message || error?.reason || "").includes(INVALID_JSON_OUTPUT_MESSAGE);
+function toGeminiContents(messages) {
+  return messages
+    .slice(-MAX_MESSAGES)
+    .map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content.trim().slice(0, MAX_MESSAGE_LENGTH) }],
+    }))
+    .filter((message) => message.parts[0].text.length > 0);
 }
 
-async function createChatbotInteraction({ ai, model, input, previousInteractionId }) {
-  return await ai.interactions.create({
+async function createChatbotResponse({ ai, model, contents }) {
+  return await ai.models.generateContent({
     model,
-    input,
-    generation_config: {
-      max_output_tokens: getNumberSetting("GEMINI_MAX_OUTPUT_TOKENS", DEFAULT_MAX_OUTPUT_TOKENS),
+    contents,
+    config: {
+      maxOutputTokens: getNumberSetting("GEMINI_MAX_OUTPUT_TOKENS", DEFAULT_MAX_OUTPUT_TOKENS),
       temperature: getNumberSetting("GEMINI_TEMPERATURE", DEFAULT_TEMPERATURE),
+      systemInstruction: SYSTEM_INSTRUCTION,
     },
-    ...(previousInteractionId ? { previous_interaction_id: previousInteractionId } : {}),
   });
 }
 
@@ -80,39 +142,41 @@ Meteor.methods({
     }
 
     const model = getSetting("GEMINI_MODEL") || DEFAULT_MODEL;
-    const activePreviousInteractionId =
-      messages.length <= MAX_STATEFUL_MESSAGES ? previousInteractionId : null;
-    const ai = getAiClient();
 
     try {
-      let interaction;
-
-      try {
-        interaction = await createChatbotInteraction({
-          ai,
-          model,
-          input,
-          previousInteractionId: activePreviousInteractionId,
-        });
-      } catch (error) {
-        if (!isInvalidJsonOutputError(error)) throw error;
-
-        interaction = await createChatbotInteraction({
-          ai,
-          model,
-          input: `${INVALID_JSON_OUTPUT_MESSAGE} Please retry the request and ensure any required structured output is valid JSON. Return the final answer as plain text.\n\nUser request: ${input}`,
-          previousInteractionId: activePreviousInteractionId,
-        });
-      }
+      const ai = getAiClient();
+      const contents =
+        messages.length <= MAX_STATEFUL_MESSAGES ? toGeminiContents(messages) : [{ role: "user", parts: [{ text: input }] }];
+      const response = await createChatbotResponse({ ai, model, contents });
 
       return {
-        text: interaction.output_text || "I could not generate a response this time.",
-        interactionId: interaction.id,
+        text: response.text || "I could not generate a response this time.",
+        interactionId: response.responseId,
         model,
       };
     } catch (error) {
       console.error("chatbot.chat failed:", error);
+      if (error instanceof Meteor.Error) {
+        throw error;
+      }
       throw new Meteor.Error("gemini-request-failed", DEFAULT_ERROR_MESSAGE);
     }
   },
+
+  "chatbot.configStatus"() {
+    if (!Meteor.isDevelopment) {
+      throw new Meteor.Error("not-available", "Only available in development.");
+    }
+
+    return getChatbotConfigStatus();
+  },
+});
+
+Meteor.startup(() => {
+  if (!Meteor.isDevelopment) return;
+
+  const status = getChatbotConfigStatus();
+  console.info(
+    `chatbot config: apiKey=${status.hasApiKey ? "loaded" : "missing"} source=${status.keySource} model=${status.model}`,
+  );
 });
