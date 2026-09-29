@@ -5,6 +5,7 @@ import { getCustomerOrgCode } from "../customerSession";
 import { StatusBadge } from "../components/StatusBadge";
 import { ProductThumbnail } from "./InventoryListPage";
 import { currency } from "./shoppingListHelpers";
+import { STOCK_STATUS } from "/imports/api/products/filters";
 import "../Global.css";
 import "./CustomerProductSearchPage.css";
 
@@ -17,6 +18,14 @@ import "./CustomerProductSearchPage.css";
  */
 
 const SEARCH_PATH = "/customer/search";
+
+// A line under the price that turns the stock tag into what it means for a
+// shopper standing in the store.
+const AVAILABILITY = {
+  [STOCK_STATUS.IN]: "Available in store today.",
+  [STOCK_STATUS.LOW]: "Only a few left - grab one while you can.",
+  [STOCK_STATUS.OUT]: "Sold out for now. Ask a staff member about restocking.",
+};
 
 export function CustomerProductDetailPage() {
   const { productId } = useParams();
@@ -62,16 +71,20 @@ export function CustomerProductDetailPage() {
     navigate(-1);
   };
 
-  const backLink = (
-    <Link to={SEARCH_PATH} onClick={handleBack} className="customer-detail-back">
-      ← Back to search
-    </Link>
+  // The shared breadcrumb, led by a way back to the results.
+  const breadcrumb = (trail) => (
+    <nav className="breadcrumb customer-detail-breadcrumb" aria-label="Breadcrumb">
+      <Link to={SEARCH_PATH} onClick={handleBack} className="breadcrumb-link">
+        ← Product search
+      </Link>
+      {trail}
+    </nav>
   );
 
   if (loadState !== "ready") {
     return (
       <div className="customer-page customer-detail">
-        {backLink}
+        {breadcrumb(null)}
         {loadState === "loading" && <div className="empty-state">Loading product...</div>}
         {loadState === "not-found" && (
           <div className="empty-state">This product isn&apos;t available at this store.</div>
@@ -96,10 +109,27 @@ export function CustomerProductDetailPage() {
   }
 
   const { images } = product;
+  const availability = AVAILABILITY[product.stockStatus];
+  const categorySearch = product.categoryId
+    ? `${SEARCH_PATH}?category=${encodeURIComponent(product.categoryId)}`
+    : null;
 
   return (
     <div className="customer-page customer-detail">
-      {backLink}
+      {breadcrumb(
+        <>
+          {product.categoryName && categorySearch && (
+            <>
+              <span className="breadcrumb-separator">/</span>
+              <Link to={categorySearch} className="breadcrumb-link">
+                {product.categoryName}
+              </Link>
+            </>
+          )}
+          <span className="breadcrumb-separator">/</span>
+          <span className="breadcrumb-current">{product.name}</span>
+        </>,
+      )}
 
       <article className="customer-detail-layout">
         <div className="customer-detail-gallery">
@@ -131,16 +161,22 @@ export function CustomerProductDetailPage() {
         </div>
 
         <div className="customer-detail-info">
-          <StatusBadge status={product.stockStatus} />
-          <h1 className="customer-page-title">{product.name}</h1>
-          {(product.brand || product.categoryName) && (
-            <p className="customer-product-meta">
-              {[product.brand, product.categoryName].filter(Boolean).join(" · ")}
-            </p>
+          {product.brand && <p className="customer-detail-brand">{product.brand}</p>}
+          <h1 className="customer-detail-name">{product.name}</h1>
+          {product.categoryName && categorySearch && (
+            <Link to={categorySearch} className="customer-detail-category">
+              {product.categoryName}
+            </Link>
           )}
-          <p className="customer-detail-price">
-            {product.price != null ? currency(product.price) : "Price on request"}
-          </p>
+
+          <div className="customer-detail-price-row">
+            <p className="customer-detail-price">
+              {product.price != null ? currency(product.price) : "Price on request"}
+            </p>
+            <StatusBadge status={product.stockStatus} />
+          </div>
+
+          <p className={`customer-detail-availability ${product.stockStatus}`}>{availability}</p>
 
           {product.description && (
             <section className="customer-detail-section">
@@ -153,12 +189,24 @@ export function CustomerProductDetailPage() {
             <h2>Where to find it</h2>
             {product.locations.length > 0 ? (
               <ul className="customer-detail-locations">
-                {product.locations.map((loc) => (
-                  <li key={loc.label}>{loc.label}</li>
+                {product.locations.map((loc, index) => (
+                  <li key={loc.label} className="customer-detail-location">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="customer-detail-pin">
+                      <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
+                    </svg>
+                    <span className="customer-detail-location-label">{loc.label}</span>
+                    {/* Locations arrive fullest first, so the first is the
+                        likeliest place to find one on the shelf. */}
+                    {index === 0 && product.locations.length > 1 && (
+                      <span className="customer-detail-location-tag">Best place to look</span>
+                    )}
+                  </li>
                 ))}
               </ul>
             ) : (
-              <p>Ask a staff member for help finding this product.</p>
+              <p className="customer-detail-muted">
+                Ask a staff member and they&apos;ll help you find it.
+              </p>
             )}
           </section>
         </div>
