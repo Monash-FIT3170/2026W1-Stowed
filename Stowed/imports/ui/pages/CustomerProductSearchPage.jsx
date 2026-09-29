@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Meteor } from "meteor/meteor";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getCustomerOrgCode } from "../customerSession";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
@@ -267,30 +267,32 @@ export function CustomerProductSearchPage() {
 
           <ul className="customer-product-grid">
             {pagedResults.map((product) => (
-              <li key={product._id} className="customer-product-card">
-                <div className="customer-product-image">
-                  <ProductThumbnail images={product.images} name={product.name} />
-                </div>
-                <div className="customer-product-body">
-                  <StatusBadge status={product.stockStatus} />
-                  <h2 className="customer-product-name">{product.name}</h2>
-                  {(product.brand || product.categoryName) && (
-                    <p className="customer-product-meta">
-                      {[product.brand, product.categoryName].filter(Boolean).join(" · ")}
+              <li key={product._id}>
+                <Link to={`/customer/search/${product._id}`} className="customer-product-card">
+                  <div className="customer-product-image">
+                    <ProductThumbnail images={product.images} name={product.name} />
+                  </div>
+                  <div className="customer-product-body">
+                    <StatusBadge status={product.stockStatus} />
+                    <h2 className="customer-product-name">{product.name}</h2>
+                    {(product.brand || product.categoryName) && (
+                      <p className="customer-product-meta">
+                        {[product.brand, product.categoryName].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                    <p className="customer-product-price">
+                      {product.price != null ? currency(product.price) : "Price on request"}
                     </p>
-                  )}
-                  <p className="customer-product-price">
-                    {product.price != null ? currency(product.price) : "Price on request"}
-                  </p>
-                  {product.locations.length > 0 && (
-                    <p className="customer-product-location">
-                      {product.locations[0].label}
-                      {product.locations.length > 1 && (
-                        <span> +{product.locations.length - 1} more</span>
-                      )}
-                    </p>
-                  )}
-                </div>
+                    {product.locations.length > 0 && (
+                      <p className="customer-product-location">
+                        {product.locations[0].label}
+                        {product.locations.length > 1 && (
+                          <span> +{product.locations.length - 1} more</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>

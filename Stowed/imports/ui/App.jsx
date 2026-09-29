@@ -29,6 +29,7 @@ import { OrgGatewayPage } from "./pages/OrgGatewayPage";
 import { CustomerLayout } from "./components/CustomerLayout";
 import { CustomerPage } from "./pages/CustomerPage";
 import { CustomerProductSearchPage } from "./pages/CustomerProductSearchPage";
+import { CustomerProductDetailPage } from "./pages/CustomerProductDetailPage";
 import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
 import { CustomerFloorMapPage } from "./pages/CustomerFloorMapPage";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -105,6 +106,7 @@ export function App() {
               <Route path="/customer" element={<CustomerLayout />}>
                 <Route index element={<CustomerPage />} />
                 <Route path="search" element={<CustomerProductSearchPage />} />
+                <Route path="search/:productId" element={<CustomerProductDetailPage />} />
                 <Route path="lists" element={<CustomerShoppingListPage />} />
                 <Route path="floor-map" element={<CustomerFloorMapPage />} />
               </Route>
