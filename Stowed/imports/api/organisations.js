@@ -36,6 +36,22 @@ if (Meteor.isServer) {
 }
 
 /**
+ * Resolves an organisation code as a visitor typed it - any case, stray spaces -
+ * to the organisation's id, or null when no organisation uses it. Shared by the
+ * gateway check below and the customer catalogue methods, which scope an
+ * account-less visitor by code alone.
+ */
+export async function findOrgIdByCode(orgCode) {
+  check(orgCode, String);
+
+  const code = orgCode.trim().toLowerCase();
+  if (!code) return null;
+
+  const org = await Organisations.findOneAsync({ code }, { fields: { _id: 1 } });
+  return org ? org._id : null;
+}
+
+/**
  * Organisation Methods
  */
 Meteor.methods({
@@ -44,12 +60,6 @@ Meteor.methods({
   // is any session to speak of. Returns only a boolean so an anonymous caller
   // learns nothing about the organisation beyond the code they already supplied.
   "organisations.exists": async function ({ orgCode }) {
-    check(orgCode, String);
-
-    const code = orgCode.trim().toLowerCase();
-    if (!code) return false;
-
-    const org = await Organisations.findOneAsync({ code }, { fields: { _id: 1 } });
-    return !!org;
+    return !!(await findOrgIdByCode(orgCode));
   },
 });
