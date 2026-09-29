@@ -1,7 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { ROLES } from "./roles";
-import { Organisations } from "./organisations";
+import { Organisations, validateOrgCode, ORG_CODE_REQUIRED_MESSAGE } from "./organisations";
 import { Accounts } from "meteor/accounts-base";
 
 /**
@@ -218,14 +218,18 @@ Meteor.methods({
 
     const orgCode_used = orgCode.trim().toLowerCase();
     if (!orgCode_used) {
-      throw new Meteor.Error("org-required", "Please provide an organisation code.");
+      throw new Meteor.Error("org-required", ORG_CODE_REQUIRED_MESSAGE);
+    }
+    const orgCodeError = validateOrgCode(orgCode_used);
+    if (orgCodeError) {
+      throw new Meteor.Error("invalid-org-code", orgCodeError);
     }
 
     const existing = await Organisations.findOneAsync({ code: orgCode_used });
     if (existing) {
       throw new Meteor.Error(
         "org-exists",
-        "An organisation with that code already exists. Contact the owner to create an account.",
+        "That organisation code is already taken. Choose a different code — if you're trying to join an existing organisation, ask its owner to add you.",
       );
     }
 
