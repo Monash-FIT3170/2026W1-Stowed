@@ -1,26 +1,44 @@
-export function searchProducts(products, query) {
+// The staff inventory searches identifiers too; the customer catalogue passes
+// its own fields, since a shopper never sees an id or SKU to type in.
+export const STAFF_SEARCH_FIELDS = ["name", "description", "sku", "_id"];
+
+export function searchProducts(products, query, fields = STAFF_SEARCH_FIELDS) {
   if (!query || !query.trim()) return products;
   const q = query.toLowerCase();
-  return products.filter((item) => {
-    const name = (item.name || "").toLowerCase();
-    const description = (item.description || "").toLowerCase();
-    const sku = (item.sku || "").toLowerCase();
-    const id = (item._id || "").toLowerCase();
-    return name.includes(q) || description.includes(q) || sku.includes(q) || id.includes(q);
-  });
+  return products.filter((item) =>
+    fields.some((field) => (item[field] || "").toLowerCase().includes(q)),
+  );
+}
+
+export const STOCK_STATUS = {
+  IN: "in-stock",
+  LOW: "low-stock",
+  OUT: "out-of-stock",
+};
+
+// The three states behind StatusBadge and the low/out filters below: out of
+// stock at zero, low at or below the reorder threshold, in stock otherwise. An
+// item with no threshold can only be out of stock or in stock.
+export function getStockStatus(quantity, threshold) {
+  if (quantity <= 0) return STOCK_STATUS.OUT;
+  if (threshold != null && quantity <= threshold) return STOCK_STATUS.LOW;
+  return STOCK_STATUS.IN;
 }
 
 // Low and out of stock are disjoint, matching the three states of StatusBadge:
 // an item with nothing left reads as out of stock, not low.
-export function filterLowStock(products) {
+export function filterByStockStatus(products, status) {
   return products.filter(
-    (item) =>
-      item.reorderAt != null && item.totalQuantity > 0 && item.totalQuantity <= item.reorderAt,
+    (item) => getStockStatus(item.totalQuantity, item.reorderAt ?? null) === status,
   );
 }
 
+export function filterLowStock(products) {
+  return filterByStockStatus(products, STOCK_STATUS.LOW);
+}
+
 export function filterOutOfStock(products) {
-  return products.filter((item) => item.totalQuantity <= 0);
+  return filterByStockStatus(products, STOCK_STATUS.OUT);
 }
 
 // Everything at or below its reorder point, out of stock included: the set the

@@ -31,3 +31,4 @@ import "./accessibility.test.js";
 import "./scheduleMethods.test.js";
 import "./scheduleGeneration.test.js";
 import "./codeGenerationMethods.test.js";
+import "./customerCatalogue.test.js";
