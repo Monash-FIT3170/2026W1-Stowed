@@ -19,13 +19,6 @@ import "./CustomerProductSearchPage.css";
 
 const SEARCH_PATH = "/customer/search";
 
-// A line under the price that turns the stock tag into what it means for a
-// shopper standing in the store.
-const AVAILABILITY = {
-  [STOCK_STATUS.IN]: "Available in store today.",
-  [STOCK_STATUS.LOW]: "Only a few left - grab one while you can.",
-  [STOCK_STATUS.OUT]: "Sold out for now. Ask a staff member about restocking.",
-};
 
 export function CustomerProductDetailPage() {
   const { productId } = useParams();
@@ -71,20 +64,30 @@ export function CustomerProductDetailPage() {
     navigate(-1);
   };
 
-  // The shared breadcrumb, led by a way back to the results.
-  const breadcrumb = (trail) => (
-    <nav className="breadcrumb customer-detail-breadcrumb" aria-label="Breadcrumb">
-      <Link to={SEARCH_PATH} onClick={handleBack} className="breadcrumb-link">
-        ← Product search
+  // A clear button back to the results, beside the shared breadcrumb trail.
+  const topBar = (trail) => (
+    <div className="customer-detail-topbar">
+      <Link to={SEARCH_PATH} onClick={handleBack} className="btn-secondary customer-detail-back">
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="customer-detail-back-icon">
+          <path d="M15.5 4.5 8 12l7.5 7.5" />
+        </svg>
+        Back to results
       </Link>
-      {trail}
-    </nav>
+      {trail && (
+        <nav className="breadcrumb customer-detail-breadcrumb" aria-label="Breadcrumb">
+          <Link to={SEARCH_PATH} className="breadcrumb-link">
+            Product search
+          </Link>
+          {trail}
+        </nav>
+      )}
+    </div>
   );
 
   if (loadState !== "ready") {
     return (
       <div className="customer-page customer-detail">
-        {breadcrumb(null)}
+        {topBar(null)}
         {loadState === "loading" && <div className="empty-state">Loading product...</div>}
         {loadState === "not-found" && (
           <div className="empty-state">This product isn&apos;t available at this store.</div>
@@ -109,14 +112,13 @@ export function CustomerProductDetailPage() {
   }
 
   const { images } = product;
-  const availability = AVAILABILITY[product.stockStatus];
   const categorySearch = product.categoryId
     ? `${SEARCH_PATH}?category=${encodeURIComponent(product.categoryId)}`
     : null;
 
   return (
     <div className="customer-page customer-detail">
-      {breadcrumb(
+      {topBar(
         <>
           {product.categoryName && categorySearch && (
             <>
@@ -175,8 +177,6 @@ export function CustomerProductDetailPage() {
             </p>
             <StatusBadge status={product.stockStatus} />
           </div>
-
-          <p className={`customer-detail-availability ${product.stockStatus}`}>{availability}</p>
 
           {product.description && (
             <section className="customer-detail-section">
