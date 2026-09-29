@@ -354,6 +354,11 @@ body {
   border-color: var(--accent-secondary);
 }
 
+.form-input.input-error,
+.form-input.input-error:focus {
+  border-color: var(--danger);
+}
+
 /* Keep multi-line and select fields the same width/shape as text inputs,
    so every field on a form reads as one consistent control. */
 textarea.form-input {
@@ -387,6 +392,23 @@ textarea.form-input {
   font-style: italic;
   margin-top: 4px;
   display: block;
+}
+
+.field-error {
+  font-style: normal;
+  font-weight: 500;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.form-error-summary {
+  align-self: center;
+  margin: 0 auto 0 0;
+  font-size: 12px;
 }
 
 select.form-input {

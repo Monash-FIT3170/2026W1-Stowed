@@ -1,7 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { ROLES } from "./roles";
-import { Organisations } from "./organisations";
+import { Organisations, validateOrgCode, ORG_CODE_REQUIRED_MESSAGE } from "./organisations";
 import { Accounts } from "meteor/accounts-base";
 
 /**
@@ -21,6 +21,7 @@ const PERMISSIONS = {
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
   "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "products.search": ROLES.ADMIN, // reverse image / text search for prefilling new products
   "products.findByCode": ROLES.STANDARD, // resolve a scanned barcode to a product
   "products.adjustStock": ROLES.STANDARD, // scan-driven +/- and set-count stock updates
   "products.bulkGenerateCodes": ROLES.ADMIN,
@@ -32,6 +33,7 @@ const PERMISSIONS = {
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
   "locations.bulkGenerateCodes": ROLES.ADMIN,
   "settings.manage": ROLES.ADMIN,
+  "chatbot.chat": ROLES.STANDARD,
 
   // Routes
   "route:/dashboard": ROLES.STANDARD,
@@ -121,6 +123,15 @@ export async function assertOrgAccess(collection, docId, userId) {
   if (doc.orgId !== orgId) throw new Meteor.Error("forbidden", "Access denied.");
 }
 
+async function sendVerification(userId) {
+  if (!Meteor.isServer) return;
+  try {
+    await Accounts.sendVerificationEmail(userId);
+  } catch (err) {
+    console.error("Verification email failed:", err);
+  }
+}
+
 /**
  * User Methods
  */
@@ -182,6 +193,7 @@ Meteor.methods({
         username,
       },
     });
+    await sendVerification(userId);
     return userId;
   },
 
@@ -206,14 +218,18 @@ Meteor.methods({
 
     const orgCode_used = orgCode.trim().toLowerCase();
     if (!orgCode_used) {
-      throw new Meteor.Error("org-required", "Please provide an organisation code.");
+      throw new Meteor.Error("org-required", ORG_CODE_REQUIRED_MESSAGE);
+    }
+    const orgCodeError = validateOrgCode(orgCode_used);
+    if (orgCodeError) {
+      throw new Meteor.Error("invalid-org-code", orgCodeError);
     }
 
     const existing = await Organisations.findOneAsync({ code: orgCode_used });
     if (existing) {
       throw new Meteor.Error(
         "org-exists",
-        "An organisation with that code already exists. Contact the owner to create an account.",
+        "That organisation code is already taken. Choose a different code — if you're trying to join an existing organisation, ask its owner to add you.",
       );
     }
 
@@ -240,6 +256,7 @@ Meteor.methods({
         },
       });
 
+      await sendVerification(userId);
       return userId;
     } catch (err) {
       // Roll back the org we just created - no user means no org

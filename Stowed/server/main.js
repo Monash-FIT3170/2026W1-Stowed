@@ -1,11 +1,34 @@
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+
+// Meteor runs the server bundle from .meteor/local/build/programs/server, not
+// the project root, so dotenv's default cwd-relative lookup can't find .env.
+// Walk up from cwd to find it instead of hardcoding Meteor's internal build depth.
+(function loadEnvFile() {
+  let dir = process.cwd();
+  for (let i = 0; i < 10; i++) {
+    const candidate = path.join(dir, ".env");
+    if (fs.existsSync(candidate)) {
+      dotenv.config({ path: candidate });
+      return;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return;
+    dir = parent;
+  }
+})();
+
 import { Meteor } from "meteor/meteor";
 import { WebApp } from "meteor/webapp";
 import crypto from "crypto";
 import "/imports/api/products/methods";
+import "/imports/api/products/searchMethods";
 import "/imports/api/categories/methods";
 import "/imports/api/shoppingLists/methods";
 import "/imports/api/schedules/methods";
 import "/imports/api/locations/methods";
+import "/imports/api/chatbot/methods";
 import "/imports/api/publications";
 import "/imports/api/userMethods";
 import { ROLES } from "/imports/api/roles";
@@ -14,6 +37,7 @@ import "/imports/api/bulkImport";
 import { Sites, StorageUnits } from "/imports/api/locations/collections";
 import { ProductActivities, Products } from "/imports/api/products/collections";
 import { seedDatabase, resetDatabase } from "./seed";
+import "./accounts";
 
 // Mark every pre-existing storage unit as already having its QR code generated,
 // so units created before the bulk-code feature don't all show as "pending".
