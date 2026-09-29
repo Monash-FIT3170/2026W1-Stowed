@@ -5,7 +5,6 @@ import { getCustomerOrgCode } from "../customerSession";
 import { StatusBadge } from "../components/StatusBadge";
 import { ProductThumbnail } from "./InventoryListPage";
 import { currency } from "./shoppingListHelpers";
-import { STOCK_STATUS } from "/imports/api/products/filters";
 import "../Global.css";
 import "./CustomerProductSearchPage.css";
 
@@ -18,7 +17,6 @@ import "./CustomerProductSearchPage.css";
  */
 
 const SEARCH_PATH = "/customer/search";
-
 
 export function CustomerProductDetailPage() {
   const { productId } = useParams();
