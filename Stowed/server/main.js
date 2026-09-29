@@ -29,6 +29,7 @@ import "/imports/api/shoppingLists/methods";
 import "/imports/api/schedules/methods";
 import "/imports/api/locations/methods";
 import "/imports/api/chatbot/methods";
+import "/imports/api/customer/methods";
 import "/imports/api/publications";
 import "/imports/api/userMethods";
 import { ROLES } from "/imports/api/roles";
