@@ -58,6 +58,7 @@ export function buildLocationsByProductId(productRecords, storageLocations, stor
     if (!ranked.has(record.productId)) ranked.set(record.productId, []);
     ranked.get(record.productId).push({
       unitId: unit ? unit._id : null,
+      unitName: unit?.name || "",
       label,
       quantity: record.quantity,
     });
@@ -69,7 +70,7 @@ export function buildLocationsByProductId(productRecords, storageLocations, stor
       productId,
       locations
         .sort((a, b) => b.quantity - a.quantity)
-        .map(({ unitId, label }) => ({ unitId, label })),
+        .map(({ unitId, unitName, label }) => ({ unitId, unitName, label })),
     );
   }
   return result;

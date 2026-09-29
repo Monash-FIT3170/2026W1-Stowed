@@ -118,8 +118,8 @@ describe("customer product shape", function () {
 
   it("lists stocked locations fullest first, without quantities", function () {
     assert.deepStrictEqual(customer.locations, [
-      { unitId: "unit-2", label: "Aisle 2 · Shelf B" },
-      { unitId: "unit-1", label: "Aisle 1 · Shelf A" },
+      { unitId: "unit-2", unitName: "Aisle 2", label: "Aisle 2 · Shelf B" },
+      { unitId: "unit-1", unitName: "Aisle 1", label: "Aisle 1 · Shelf A" },
     ]);
   });
 
@@ -147,7 +147,7 @@ describe("customer search, filter and sort", function () {
       categoryName: "Paint",
       price: 8,
       stockStatus: STOCK_STATUS.OUT,
-      locations: [{ unitId: "unit-2", label: "Aisle 2 · Shelf B" }],
+      locations: [{ unitId: "unit-2", unitName: "Aisle 2", label: "Aisle 2 · Shelf B" }],
     }),
     item({
       name: "Masking Tape",
@@ -155,7 +155,7 @@ describe("customer search, filter and sort", function () {
       categoryId: "paint",
       categoryName: "Paint",
       stockStatus: STOCK_STATUS.LOW,
-      locations: [{ unitId: "unit-1", label: "Aisle 1 · Shelf A" }],
+      locations: [{ unitId: "unit-1", unitName: "Aisle 1", label: "Aisle 1 · Shelf A" }],
     }),
   ];
   const names = (list) => list.map((i) => i.name);
@@ -310,7 +310,7 @@ describeServer("customer catalogue methods", function () {
     assert.strictEqual(hammer.categoryName, "Tools");
     assert.strictEqual(hammer.stockStatus, STOCK_STATUS.IN);
     assert.deepStrictEqual(hammer.locations, [
-      { unitId: "cust-unit-a", label: "Aisle 1 · Shelf A" },
+      { unitId: "cust-unit-a", unitName: "Aisle 1", label: "Aisle 1 · Shelf A" },
     ]);
     for (const field of PRIVATE_FIELDS) {
       assert.ok(!(field in hammer), `${field} leaked to the customer`);
