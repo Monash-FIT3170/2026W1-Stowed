@@ -27,7 +27,6 @@ import { ResetPassword } from "./ResetPassword";
 import { Login } from "./Login";
 import { OrgGatewayPage } from "./pages/OrgGatewayPage";
 import { CustomerLayout } from "./components/CustomerLayout";
-import { CustomerPage } from "./pages/CustomerPage";
 import { CustomerProductSearchPage } from "./pages/CustomerProductSearchPage";
 import { CustomerProductDetailPage } from "./pages/CustomerProductDetailPage";
 import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
@@ -104,7 +103,8 @@ export function App() {
                   CustomerLayout and the pages swap through its Outlet, so it
                   survives every click within /customer. */}
               <Route path="/customer" element={<CustomerLayout />}>
-                <Route index element={<CustomerPage />} />
+                {/* Product search is the customer home: every way in lands on /customer. */}
+                <Route index element={<Navigate to="search" replace />} />
                 <Route path="search" element={<CustomerProductSearchPage />} />
                 <Route path="search/:productId" element={<CustomerProductDetailPage />} />
                 <Route path="lists" element={<CustomerShoppingListPage />} />
