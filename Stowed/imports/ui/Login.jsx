@@ -33,9 +33,12 @@ export const Login = () => {
   const [orgCode, setOrgCode] = useState(""); // organisation code
   const [login, setLogin] = useState(""); // email or username
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false); // staff login in flight
   const [checkingOrg, setCheckingOrg] = useState(false); // guest entry in flight
+  const [unverified, setUnverified] = useState(false);
+  const [resendStatus, setResendStatus] = useState("");
   const navigate = useNavigate();
 
   const hasOrgCode = orgCode.trim().length > 0;
@@ -68,6 +71,8 @@ export const Login = () => {
 
   const handleLogin = async () => {
     setError("");
+    setUnverified(false);
+    setResendStatus("");
 
     // 1. Organisation required first
     if (!orgCode.trim()) {
@@ -103,7 +108,10 @@ export const Login = () => {
       navigate("/dashboard");
     } catch (err) {
       const reason = err.reason || err.message || "";
-      if (reason.toLowerCase().includes("incorrect password")) {
+      if (err.error === "email-not-verified") {
+        setError("Please verify your email before logging in. Check your inbox for the link.");
+        setUnverified(true);
+      } else if (reason.toLowerCase().includes("incorrect password")) {
         setError("Incorrect password. Please try again.");
       } else if (
         reason.toLowerCase().includes("user not found") ||
@@ -117,6 +125,19 @@ export const Login = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendStatus("sending");
+    try {
+      await Meteor.callAsync("users.resendVerification", {
+        orgCode: orgCode.trim(),
+        login: login.trim(),
+      });
+      setResendStatus("sent");
+    } catch {
+      setResendStatus("error");
     }
   };
 
@@ -161,6 +182,22 @@ export const Login = () => {
           <h2>{onCredentials ? "Log in" : "Your organisation"}</h2>
 
           {error && <p className="auth-status auth-status-error">{error}</p>}
+          {unverified && (
+            <button
+              type="button"
+              className="auth-link-button"
+              onClick={handleResend}
+              disabled={resendStatus === "sending" || resendStatus === "sent"}
+            >
+              {resendStatus === "sent"
+                ? "Verification email sent!"
+                : resendStatus === "sending"
+                  ? "Sending..."
+                  : resendStatus === "error"
+                    ? "Couldn't send, try again"
+                    : "Resend verification email"}
+            </button>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <label className="auth-field" htmlFor="orgCode">
@@ -193,10 +230,19 @@ export const Login = () => {
                 </label>
 
                 <label className="auth-field" htmlFor="password">
-                  <span>Password</span>
+                  <span className="auth-field-row">
+                    Password
+                    <button
+                      type="button"
+                      className="auth-show-toggle"
+                      onClick={() => setShowPassword((s) => !s)}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </span>
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -242,6 +288,9 @@ export const Login = () => {
               </div>
             </div>
 
+            <p className="auth-switch">
+              <Link to="/forgot-password">Forgot password?</Link>
+            </p>
             <p className="auth-switch">
               New to Stowed? <Link to="/register">Set up your organisation</Link>
             </p>

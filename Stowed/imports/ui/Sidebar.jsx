@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
 import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
+import { AccessibilityWidget } from "./accessibility/AccessibilityWidget";
 import "./Global.css";
 import "./Sidebar.css";
 
@@ -253,6 +254,7 @@ export function Sidebar() {
 
       {/* Bottom - logged in as */}
       {isLoggedIn && <div className="sidebar-user">Logged in as {username}</div>}
+      <AccessibilityWidget />
       <button className="sidebar-logout" onClick={handleLogout}>
         <span className="sidebar-logout-icon" aria-hidden="true">
           <LogoutIcon />
