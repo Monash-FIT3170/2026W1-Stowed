@@ -194,11 +194,12 @@ class WeightedGraph {
         }
       }
     }
-    const reachable = distances[smallest] !== Infinity;
+    const dist = distances[path[0]];
+    const reachable = dist !== Infinity;
     const findsTarget = finish.includes(path[0]);
     if (!reachable || !findsTarget) throw new Error("Dijkstra's algorithm could not "
       + `find a path from node ${start} to any of nodes [${finish.join(", ")}].`);
     const journey = path.reverse();
-    return {waypoints: journey, legDist: distances[smallest]};
+    return {waypoints: journey, legDist: dist};
   }
 }

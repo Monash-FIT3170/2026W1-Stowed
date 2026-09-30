@@ -246,19 +246,19 @@ describe('WeightedGraph', function () {
 
     const result0 = graph.dijkstra(3, [8]);
     const exp0 = { waypoints: [3, 2, 1, 0, 9, 8], legDist: 15 };
-    assert.deepStrictEqual(result0, exp0, `Expected: ${exp0}\nbut got: ${result0}`);
+    assert.deepStrictEqual(result0, exp0, `R0 - Expected: ${exp0}\nbut got: ${result0}`);
 
     const result1 = graph.dijkstra(3, [1, 6, 8]);
     const exp1 = { waypoints: [3, 2, 1], legDist: 6 };
-    assert.deepStrictEqual(result1, exp1, `Expected: ${exp1}\nbut got: ${result1}`);
+    assert.deepStrictEqual(result1, exp1, `R1 - Expected: ${exp1}\nbut got: ${result1}`);
 
     const result2 = graph.dijkstra(3, [0, 6, 8]);
-    const exp2 = (result2.waypoints[-1] === 0)
+    const exp2 = (result2.waypoints[result2.waypoints.length - 1] === 0)
       ? { waypoints: [3, 2, 1, 0], legDist: 9 } 
       : { waypoints: [3, 4, 5, 6], legDist: 9 };
-    assert.deepStrictEqual(result2, exp2, `Expected: ${exp2}\nbut got: ${result2}`);
+    assert.deepStrictEqual(result2, exp2, `R2 - Expected: ${exp2}\nbut got: ${result2}`);
 
     const result3 = graph.dijkstra(3, [7, 8]);
     const exp3 = { waypoints: [3, 2, 1, 0, 9, 7], legDist: 14 };
-    assert.deepStrictEqual(result3, exp3, `Expected: ${exp3}\nbut got: ${result3}`);  });
+    assert.deepStrictEqual(result3, exp3, `R3 - Expected: ${exp3}\nbut got: ${result3}`);  });
 });
