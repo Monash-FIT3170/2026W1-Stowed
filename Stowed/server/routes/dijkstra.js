@@ -12,6 +12,8 @@
  * product. 
  */
 
+export {Node, PriorityQueue, WeightedGraph};
+
 // code below copied from: https://gist.github.com/Prottoy2938/66849e04b0bac459606059f5f9f3aa1a
 
 //helper class for PriorityQueue
@@ -20,6 +22,10 @@ class Node {
     this.val = val;
     this.priority = priority;
   }
+
+  toString() {
+    return `V-${this.val} (P${this.priority})`;
+  }
 }
 
 class PriorityQueue {
@@ -27,7 +33,7 @@ class PriorityQueue {
     this.values = [];
   }
   enqueue(val, priority) {
-    let newNode = new Node(val, priority);
+    const newNode = new Node(val, priority);
     this.values.push(newNode);
     this.bubbleUp();
   }
@@ -83,6 +89,9 @@ class PriorityQueue {
       idx = swap;
     }
   }
+  isEmpty() {
+    return this.values.length === 0;
+  }
 }
 
 /**
@@ -113,9 +122,9 @@ class WeightedGraph {
   /**
    * Connect two nodes with a weighted edge
    * 
-   * @param {*} vertex1 one endpoint of the edge
-   * @param {*} vertex2 the other endpoint of the edge
-   * @param {*} weight the weight (distance) between the endpoints
+   * @param {number} vertex1 one endpoint of the edge
+   * @param {number} vertex2 the other endpoint of the edge
+   * @param {number} weight the weight (distance) between the endpoints
    */
   addEdge(vertex1, vertex2, weight) {
     this.adjacencyList[vertex1].push({ node: vertex2, weight });
@@ -130,7 +139,6 @@ class WeightedGraph {
    * @returns {{waypoints: number[], legDist: number}} the path to take and the distance of that path
    */
   dijkstra(start, finish) {
-    // TODO: update finish to be a list of nodes, rather than a single one
     const nodes = new PriorityQueue();
     const distances = [];
     const previous = [];
@@ -139,8 +147,8 @@ class WeightedGraph {
     // build up initial state
     for (let vertex = 0; vertex < this.adjacencyList.length; vertex++) {
       if (this.adjacencyList[vertex] === undefined) {
-        throw new Error(`Undefined node found in WeightedGraph at index ${vertex}.
-          Cannot complete dijkstra's algorithm with undefined nodes.`);
+        throw new Error(`Undefined node found in WeightedGraph at index ${vertex}.`
+          + "Cannot complete dijkstra's algorithm with undefined nodes.");
       } else if (vertex === start) {
         distances[vertex] = 0;
         nodes.enqueue(vertex, 0);
@@ -151,22 +159,24 @@ class WeightedGraph {
       previous[vertex] = null;
     }
     // confirm start node was found
-    if (nodes.length === 0) throw new Error(`Couldn't find the starting
-      index ${start} in graph of size [0..${this.adjacencyList.length - 1}] nodes`);
+    if (nodes.isEmpty()) throw new Error("Couldn't find the starting "
+      + `index ${start} in graph of size [0..${this.adjacencyList.length - 1}] nodes`);
 
     // as long as there is something to visit
     while (nodes.values.length) {
       smallest = nodes.dequeue().val;
-      if (finish.includes(smallest)) {
+      const reachable = distances[smallest] !== Infinity
+      if (finish.includes(smallest) && reachable) {
         // WE ARE DONE
         // BUILD UP PATH TO RETURN AT END
-        while (previous[smallest]) {
-          path.push(smallest);
+        path.push(smallest);
+        while (previous[smallest] !== null) {
           smallest = previous[smallest];
+          path.push(smallest);
         }
         break;
       }
-      if (smallest || distances[smallest] !== Infinity) {
+      if (reachable) {
         for (let neighbour = 0; neighbour < this.adjacencyList[smallest].length; neighbour++) {
           // find neighbouring node
           const edge = this.adjacencyList[smallest][neighbour];
@@ -184,8 +194,11 @@ class WeightedGraph {
         }
       }
     }
-    if (!finish.includes(smallest)) throw new Error(`Dijkstra's algorithm could not
-      find a path from node ${start} to any of nodes [${finish.join(", ")}].`);
-    return {waypoints: path.concat(smallest).reverse(), legDist: distances[smallest]};
+    const reachable = distances[smallest] !== Infinity;
+    const findsTarget = finish.includes(path[0]);
+    if (!reachable || !findsTarget) throw new Error("Dijkstra's algorithm could not "
+      + `find a path from node ${start} to any of nodes [${finish.join(", ")}].`);
+    const journey = path.reverse();
+    return {waypoints: journey, legDist: distances[smallest]};
   }
 }
