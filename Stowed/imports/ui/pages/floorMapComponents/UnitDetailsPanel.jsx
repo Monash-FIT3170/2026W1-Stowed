@@ -51,25 +51,15 @@ export function UnitDetailsPanel({ unit, onRename, onColourChange }) {
         <label style={locationPanelStyles.label} htmlFor="unit-colour">
           Colour
         </label>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="floor-map-colour-field">
           <input
             id="unit-colour"
             type="color"
             value={unit.fill || COLOURS.UNIT_DEFAULT}
             onChange={(e) => onColourChange(e.target.value)}
-            style={{
-              width: 36,
-              height: 28,
-              padding: 0,
-              border: `1px solid ${COLOURS.BUTTON_BORDER}`,
-              borderRadius: 6,
-              cursor: "pointer",
-              background: "none",
-            }}
+            className="floor-map-colour-input"
           />
-          <span style={{ fontSize: 11, color: COLOURS.TEXT_MUTED }}>
-            {unit.fill || COLOURS.UNIT_DEFAULT}
-          </span>
+          <span className="floor-map-colour-value">{unit.fill || COLOURS.UNIT_DEFAULT}</span>
         </div>
       </div>
     </div>

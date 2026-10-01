@@ -2,22 +2,77 @@ import { useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { startCustomerSession } from "./customerSession";
 import "./Register.css";
 
 /**
  * Login Page
+ *
+ * Two stages inside the one card and the one form, without leaving /login:
+ *
+ *  1. ORG - the organisation code, then a choice: continue as a guest
+ *     (the customer area) or log in to a staff account.
+ *  2. CREDENTIALS - email/username and password appear beneath the code, and
+ *     the guest button gives way to a back button.
+ *
+ * Both choices need the code first, so the buttons stay disabled until one is
+ * typed. "Continue as guest" runs the same entry as the /org gateway right
+ * here, so a valid code is one hop to /customer and an unknown one is an error
+ * on this card rather than a page elsewhere. "Log in" is the form's submit in
+ * both stages: it advances to the credentials in stage 1 and logs in from
+ * stage 2, so Enter does the right thing in either.
  */
+
+const STAGE = {
+  ORG: "org",
+  CREDENTIALS: "credentials",
+};
+
 export const Login = () => {
+  const [stage, setStage] = useState(STAGE.ORG);
   const [orgCode, setOrgCode] = useState(""); // organisation code
   const [login, setLogin] = useState(""); // email or username
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // staff login in flight
+  const [checkingOrg, setCheckingOrg] = useState(false); // guest entry in flight
+  const [unverified, setUnverified] = useState(false);
+  const [resendStatus, setResendStatus] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const hasOrgCode = orgCode.trim().length > 0;
+  const onCredentials = stage === STAGE.CREDENTIALS;
+  const busy = loading || checkingOrg;
+
+  const handleContinueAsGuest = async () => {
+    if (!hasOrgCode) return;
     setError("");
+    setCheckingOrg(true);
+
+    try {
+      const ok = await startCustomerSession(orgCode);
+      if (!ok) {
+        setError(`No organisation with the code "${orgCode.trim()}" exists.`);
+        return;
+      }
+      navigate("/customer");
+    } catch {
+      setError("We could not check that organisation code. Please try again.");
+    } finally {
+      setCheckingOrg(false);
+    }
+  };
+
+  const handleBack = () => {
+    setError("");
+    setStage(STAGE.ORG);
+  };
+
+  const handleLogin = async () => {
+    setError("");
+    setUnverified(false);
+    setResendStatus("");
 
     // 1. Organisation required first
     if (!orgCode.trim()) {
@@ -53,7 +108,10 @@ export const Login = () => {
       navigate("/dashboard");
     } catch (err) {
       const reason = err.reason || err.message || "";
-      if (reason.toLowerCase().includes("incorrect password")) {
+      if (err.error === "email-not-verified") {
+        setError("Please verify your email before logging in. Check your inbox for the link.");
+        setUnverified(true);
+      } else if (reason.toLowerCase().includes("incorrect password")) {
         setError("Incorrect password. Please try again.");
       } else if (
         reason.toLowerCase().includes("user not found") ||
@@ -69,6 +127,39 @@ export const Login = () => {
       setLoading(false);
     }
   };
+
+  const handleResend = async () => {
+    setResendStatus("sending");
+    try {
+      await Meteor.callAsync("users.resendVerification", {
+        orgCode: orgCode.trim(),
+        login: login.trim(),
+      });
+      setResendStatus("sent");
+    } catch {
+      setResendStatus("error");
+    }
+  };
+
+  // One submit handler for both stages, so a click on "Log in" and an Enter in
+  // any field take the same path.
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!onCredentials) {
+      if (hasOrgCode) {
+        setError("");
+        setStage(STAGE.CREDENTIALS);
+      }
+      return;
+    }
+    handleLogin();
+  };
+
+  const hint = !hasOrgCode
+    ? "Enter your organisation code to continue."
+    : onCredentials
+      ? "Enter the account details for this organisation."
+      : "Browse as a guest, or log in to your account.";
 
   return (
     <div className="auth-page">
@@ -88,9 +179,25 @@ export const Login = () => {
 
         <div className="auth-card">
           <p className="auth-kicker">Account access</p>
-          <h2>Log in</h2>
+          <h2>{onCredentials ? "Log in" : "Your organisation"}</h2>
 
           {error && <p className="auth-status auth-status-error">{error}</p>}
+          {unverified && (
+            <button
+              type="button"
+              className="auth-link-button"
+              onClick={handleResend}
+              disabled={resendStatus === "sending" || resendStatus === "sent"}
+            >
+              {resendStatus === "sent"
+                ? "Verification email sent!"
+                : resendStatus === "sending"
+                  ? "Sending..."
+                  : resendStatus === "error"
+                    ? "Couldn't send, try again"
+                    : "Resend verification email"}
+            </button>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <label className="auth-field" htmlFor="orgCode">
@@ -106,36 +213,84 @@ export const Login = () => {
               />
             </label>
 
-            <label className="auth-field" htmlFor="login">
-              <span>Email or Username</span>
-              <input
-                id="login"
-                type="text"
-                value={login}
-                onChange={(e) => setLogin(e.target.value)}
-                required
-                autoComplete="username"
-                className="auth-input"
-              />
-            </label>
+            {onCredentials && (
+              <>
+                <label className="auth-field" htmlFor="login">
+                  <span>Email or Username</span>
+                  <input
+                    id="login"
+                    type="text"
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
+                    required
+                    autoFocus
+                    autoComplete="username"
+                    className="auth-input"
+                  />
+                </label>
 
-            <label className="auth-field" htmlFor="password">
-              <span>Password</span>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="auth-input"
-              />
-            </label>
+                <label className="auth-field" htmlFor="password">
+                  <span className="auth-field-row">
+                    Password
+                    <button
+                      type="button"
+                      className="auth-show-toggle"
+                      onClick={() => setShowPassword((s) => !s)}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </span>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="auth-input"
+                  />
+                </label>
+              </>
+            )}
 
-            <button type="submit" disabled={loading} className="auth-primary-button">
-              {loading ? "Logging in..." : "Log In"}
-            </button>
+            <div className="auth-choice">
+              {/* The hint changes with the field and the stage, so an empty code
+                  explains the disabled buttons and a filled one explains the
+                  choice in front of the visitor. */}
+              <p className="auth-choice-hint">{hint}</p>
+              <div className="auth-button-row">
+                {onCredentials ? (
+                  <button
+                    type="button"
+                    className="auth-secondary-button"
+                    disabled={busy}
+                    onClick={handleBack}
+                  >
+                    Back
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="auth-secondary-button"
+                    disabled={!hasOrgCode || busy}
+                    onClick={handleContinueAsGuest}
+                  >
+                    {checkingOrg ? "Checking..." : "Continue as guest"}
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="auth-primary-button"
+                  disabled={!hasOrgCode || busy}
+                >
+                  {loading ? "Logging in..." : "Log in"}
+                </button>
+              </div>
+            </div>
 
+            <p className="auth-switch">
+              <Link to="/forgot-password">Forgot password?</Link>
+            </p>
             <p className="auth-switch">
               New to Stowed? <Link to="/register">Set up your organisation</Link>
             </p>

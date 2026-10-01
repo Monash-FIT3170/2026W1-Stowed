@@ -177,9 +177,16 @@ export function CreateShapeModal({ onClose, shape = null }) {
 
   return (
     <div style={styles.overlay}>
-      <div style={styles.modal}>
+      <div
+        style={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shape-editor-title"
+      >
         <div style={styles.modalHeader}>
-          <h2 style={styles.title}>{shape ? "Edit Shape" : "Shape Editor"}</h2>
+          <h2 id="shape-editor-title" style={styles.title}>
+            {shape ? "Edit Shape" : "Shape Editor"}
+          </h2>
 
           <div style={styles.actions}>
             <button
@@ -207,6 +214,8 @@ export function CreateShapeModal({ onClose, shape = null }) {
         </div>
 
         <input
+          autoFocus
+          aria-label="Shape name"
           type="text"
           value={shapeName}
           onChange={(event) => setShapeName(event.target.value)}
@@ -219,7 +228,8 @@ export function CreateShapeModal({ onClose, shape = null }) {
             <div>
               <div style={styles.canvasTitle}>Place Points on Canvas</div>
               <div style={styles.canvasDescription}>
-                Click anywhere on the canvas to create a point automatically.
+                Click or tap to add a point. On a small screen, scroll the drawing area to reach the
+                rest of the canvas.
               </div>
             </div>
 
@@ -411,14 +421,15 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0, 0, 0, 0.45)",
-    zIndex: 1000,
+    zIndex: 1300,
   },
 
   modal: {
-    width: "62vw",
+    width: "min(960px, calc(100vw - 24px))",
     maxWidth: 960,
-    maxHeight: "86vh",
+    maxHeight: "calc(100dvh - 24px)",
     overflowY: "auto",
+    boxSizing: "border-box",
     padding: "28px 30px",
     borderRadius: 14,
     backgroundColor: "#ffffff",
@@ -429,6 +440,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 12,
     marginBottom: 22,
   },
 
@@ -442,11 +455,12 @@ const styles = {
   actions: {
     display: "flex",
     justifyContent: "flex-end",
+    flexWrap: "wrap",
     gap: 10,
   },
 
   nameInput: {
-    width: 220,
+    width: "100%",
     padding: "10px 12px",
     border: "1px solid #d8d1c8",
     borderRadius: 8,
@@ -518,7 +532,7 @@ const styles = {
     width: "100%",
     border: "1px solid #ddd6ce",
     borderRadius: 8,
-    overflow: "hidden",
+    overflow: "auto",
     backgroundColor: "#ffffff",
   },
 

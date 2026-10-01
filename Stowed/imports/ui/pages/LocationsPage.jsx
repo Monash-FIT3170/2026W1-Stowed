@@ -32,7 +32,7 @@ const TABS = {
 
 const EMPTY_FORMS = {
   location: { storageUnitId: "", name: "", code: "", imageUrl: "" },
-  floorMap: { siteId: "", name: "", imageUrl: "" },
+  floorMap: { siteId: "", name: "", imageUrl: "", isPrivate: false },
   site: {
     name: "",
     description: "",
@@ -222,7 +222,12 @@ export function LocationsPage() {
         imageUrl: record.imageUrl ?? "",
       });
     } else if (type === TABS.FLOOR_MAPS) {
-      setForm({ siteId: record.siteId, name: record.name, imageUrl: record.imageUrl ?? "" });
+      setForm({
+        siteId: record.siteId,
+        name: record.name,
+        imageUrl: record.imageUrl ?? "",
+        isPrivate: record.isPrivate ?? false,
+      });
     } else {
       setForm({
         name: record.name,
@@ -266,6 +271,7 @@ export function LocationsPage() {
             siteId: form.siteId,
             name: form.name.trim(),
             imageUrl: form.imageUrl.trim(),
+            isPrivate: form.isPrivate,
             floorSize: editing.floorSize ?? {},
             settings: editing.settings ?? {},
           });
@@ -274,6 +280,7 @@ export function LocationsPage() {
             siteId: form.siteId,
             name: form.name.trim(),
             imageUrl: form.imageUrl.trim(),
+            isPrivate: form.isPrivate,
           });
         }
       } else {
@@ -787,6 +794,25 @@ export function LocationsPage() {
                     }
                     placeholder="Optional"
                   />
+                </FormField>
+                {/* toggle to make floor map private/public */}
+                <FormField label="Make floor map private">
+                  <div className="locations-toggle-field">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={form.isPrivate}
+                      className={`locations-toggle ${form.isPrivate ? "active" : ""}`}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          isPrivate: !current.isPrivate,
+                        }))
+                      }
+                    >
+                      <span className="locations-toggle-knob" />
+                    </button>
+                  </div>
                 </FormField>
               </>
             )}

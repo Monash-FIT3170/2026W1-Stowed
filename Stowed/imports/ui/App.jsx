@@ -1,6 +1,7 @@
-import { lazy } from "react";
+import { lazy, useState } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/Toast";
+import { Chatbot } from "./components/Chatbot";
 import { Sidebar } from "./Sidebar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
@@ -21,11 +22,14 @@ import { ScanUpdatePage } from "./pages/ScanUpdatePage";
 import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
+import { VerifyEmail } from "./VerifyEmail";
+import { ForgotPassword } from "./ForgotPassword";
+import { ResetPassword } from "./ResetPassword";
 import { Login } from "./Login";
 import { OrgGatewayPage } from "./pages/OrgGatewayPage";
 import { CustomerLayout } from "./components/CustomerLayout";
-import { CustomerPage } from "./pages/CustomerPage";
 import { CustomerProductSearchPage } from "./pages/CustomerProductSearchPage";
+import { CustomerProductDetailPage } from "./pages/CustomerProductDetailPage";
 import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
 import { CustomerFloorMapPage } from "./pages/CustomerFloorMapPage";
 import { ViewAccounts } from "./pages/ViewAccounts";
@@ -47,7 +51,16 @@ export function App() {
     };
   });
 
-  if (loggingIn) {
+  // Blank the app only while a login token from a previous visit is being
+  // resumed on page load, so a logged-in user's deep link is not bounced through
+  // /login to /dashboard before the session is known. Once that first check has
+  // settled the gate stays open: a later loggingIn - a submit from the login
+  // form - must not unmount the form mid-attempt, or its stage, fields and
+  // error message are lost with it.
+  const [resumed, setResumed] = useState(false);
+  if (!loggingIn && !resumed) setResumed(true);
+
+  if (loggingIn && !resumed) {
     return null;
   }
 
@@ -82,14 +95,19 @@ export function App() {
             <Routes>
               {/* public routes */}
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
               {/* Customer entry point: stores the org, then redirects to /customer */}
               <Route path="/org/:orgCode" element={<OrgGatewayPage />} />
               {/* One layout for the whole customer area: the nav is mounted by
                   CustomerLayout and the pages swap through its Outlet, so it
                   survives every click within /customer. */}
               <Route path="/customer" element={<CustomerLayout />}>
-                <Route index element={<CustomerPage />} />
+                {/* Product search is the customer home: every way in lands on /customer. */}
+                <Route index element={<Navigate to="search" replace />} />
                 <Route path="search" element={<CustomerProductSearchPage />} />
+                <Route path="search/:productId" element={<CustomerProductDetailPage />} />
                 <Route path="lists" element={<CustomerShoppingListPage />} />
                 <Route path="floor-map" element={<CustomerFloorMapPage />} />
               </Route>
@@ -385,6 +403,7 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          {isLoggedIn && hasClientPermission(role, "chatbot.chat") && <Chatbot />}
         </div>
       </BrowserRouter>
     </ToastProvider>
