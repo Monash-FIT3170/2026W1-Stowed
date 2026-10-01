@@ -174,6 +174,7 @@ Meteor.methods({
     floorMapId,
     siteId,
     name,
+    isPrivate = false,
     imageUrl = "",
     floorSize = {},
     settings = {},
@@ -181,6 +182,7 @@ Meteor.methods({
     check(floorMapId, String);
     check(siteId, String);
     check(name, String);
+    check(isPrivate, Boolean);
     check(imageUrl, String);
     check(floorSize, Object);
     check(settings, Object);
@@ -200,6 +202,7 @@ Meteor.methods({
       $set: {
         siteId,
         name,
+        isPrivate,
         imageUrl,
         floorSize,
         settings,
