@@ -4,7 +4,7 @@ import Konva from "konva";
 import { useTracker } from "meteor/react-meteor-data";
 import { Meteor } from "meteor/meteor";
 
-import { useEditor } from "../editor/EditorContext";
+import { CANVAS_MODES, useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
@@ -31,7 +31,7 @@ export const Canvas = forwardRef(function Canvas(
   { style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip },
   ref,
 ) {
-  const { units, commitUnits, floorSize, canvasSettings } = useEditor();
+  const { units, commitUnits, floorSize, canvasSettings, canvasMode } = useEditor();
 
   const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
     Meteor.subscribe("locations.all");
@@ -49,7 +49,7 @@ export const Canvas = forwardRef(function Canvas(
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
   const snapInterval = canvasSettings?.snapInterval ?? CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL;
-  const showGrid = isCanvasEditMode ? (canvasSettings?.showGrid ?? true) : false;
+  const showGrid = canvasMode !== CANVAS_MODES.VIEW ? (canvasSettings?.showGrid ?? true) : false;
   const snapEnabled = canvasSettings?.snapToGrid ?? true;
   const gridSizePx = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
   const snapSizePx = snapInterval * CANVAS_CONFIG.PIXELS_PER_METER;

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
-import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
+import { CANVAS_MODES, EditorProvider, useEditor} from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
@@ -50,8 +50,9 @@ function FloorMapPageInner() {
     isEditorSettingsOpen,
     setEditorSettingsOpen,
     handleEditorSettingsSave,
+    canvasMode,
+    setCanvasMode,
     isCanvasEditMode,
-    setCanvasEditMode,
     units,
     commitUnits,
     handleSaveLayout,
@@ -94,17 +95,14 @@ function FloorMapPageInner() {
     setIsStockPanelOpen(!!unitId);
   };
 
-  const handleCanvasModeToggle = () => {
-    const nextEditMode = !isCanvasEditMode;
+  const handleCanvasModeChange = (nextMode) => {
+    if (nextMode === canvasMode) return;
+    setSelectedStorageUnitId(null);
+    setSelectedUnit(null);
+    setIsStockPanelOpen(false);
+    setTooltip(null);
 
-    if (!nextEditMode) {
-      setSelectedStorageUnitId(null);
-      setSelectedUnit(null);
-      setIsStockPanelOpen(false);
-      setTooltip(null);
-    }
-
-    setCanvasEditMode(nextEditMode);
+    setCanvasMode(nextMode);
   };
   const handleEditShape = (shape) => {
     setEditingShape(shape);
@@ -254,7 +252,7 @@ function FloorMapPageInner() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* FLOOR MAP / EDITOR SETTINGS */}
+          {/* EXPORT / FLOOR MAP SETTINGS */}
           {isCanvasEditMode && canManage && (
             <>
               <button
@@ -271,36 +269,56 @@ function FloorMapPageInner() {
               >
                 Floor Map Settings
               </button>
-              <button
-                type="button"
-                onClick={() => setEditorSettingsOpen(true)}
-                style={statusBarButtonStyle}
-              >
-                Editor Settings
-              </button>
             </>
           )}
 
-          <button
-            type="button"
-            onClick={() => canManage && handleCanvasModeToggle()}
-            disabled={!canManage}
-            style={{
-              fontSize: "10px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              padding: "4px 10px",
-              borderRadius: "999px",
-              border: `1px solid ${isCanvasEditMode ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
-              color: isCanvasEditMode ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
-              background: isCanvasEditMode ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
-              cursor: canManage ? "pointer" : "default",
-              fontFamily: "inherit",
-            }}
-          >
-            {isCanvasEditMode ? "Edit mode" : "View mode"}
-          </button>
+          {/* EDITOR SETTINGS */}
+          {canvasMode !== CANVAS_MODES.VIEW && canManage && (
+            <button
+              type="button"
+              onClick={() => setEditorSettingsOpen(true)}
+              style={statusBarButtonStyle}
+            >
+              Editor Settings
+            </button>
+          )}
+
+          {/* MODE SWITCHER */}
+          <div role="group" aria-label="Floor map mode" style={{ display: "flex", gap: "6px" }}>
+            {[
+              { mode: CANVAS_MODES.VIEW, label: "View", requiresManage: false },
+              { mode: CANVAS_MODES.EDIT, label: "Edit", requiresManage: true },
+              { mode: CANVAS_MODES.ROUTE, label: "Route", requiresManage: true },
+            ].map(({ mode, label, requiresManage }) => {
+              const isActive = canvasMode === mode;
+              const isDisabled = requiresManage && !canManage;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => handleCanvasModeChange(mode)}
+                  disabled={isDisabled}
+                  aria-pressed={isActive}
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    border: `1px solid ${isActive ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
+                    color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+                    background: isActive ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
+                    cursor: isDisabled ? "not-allowed" : isActive ? "default" : "pointer",
+                    opacity: isDisabled ? 0.5 : 1,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -350,7 +368,7 @@ function FloorMapPageInner() {
           }}
         >
           {/* STOCKTAKE SLIDE-OUT PANEL - view mode only */}
-          {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
+          {selectedUnit && isStockPanelOpen && canvasMode === CANVAS_MODES.VIEW && (
             <UnitStocktakePanel
               unit={selectedUnit}
               canStocktake={canStocktake}
@@ -772,15 +790,15 @@ function FloorMapPageInner() {
 
 export function FloorMapPage() {
   const { floorMapId } = useParams();
-  // Owned here (outside the remounted EditorProvider) so edit/view mode
+  // Owned here (outside the remounted EditorProvider) so the current mode
   // persists when switching between floor maps / warehouses.
-  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
+  const [canvasMode, setCanvasMode] = useState(CANVAS_MODES.VIEW);
   return (
     <EditorProvider
       key={floorMapId ?? "default"}
       floorMapId={floorMapId}
-      isCanvasEditMode={isCanvasEditMode}
-      setCanvasEditMode={setCanvasEditMode}
+      canvasMode={canvasMode}
+      setCanvasMode={setCanvasMode}
     >
       <FloorMapPageInner />
     </EditorProvider>

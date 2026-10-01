@@ -87,6 +87,13 @@ export const DEFAULT_CANVAS_SETTINGS = {
   snapToGrid: true,
 };
 
+/** The modes the floor map page can be in. */
+export const CANVAS_MODES = {
+  VIEW: "view", // read-only floor plan with stock overlays
+  EDIT: "edit", // edit layout, storage units and their contents
+  ROUTE: "route", // edit walkway nodes and links for product routing
+};
+
 const EditorContext = createContext(null);
 
 /**
@@ -94,9 +101,10 @@ const EditorContext = createContext(null);
  * Owns all shared editor state: active tool, floor dimensions, canvas settings,
  * placed units, undo/redo history, save/load, and low stock alert data.
  *
- * @param {{ children: React.ReactNode, floorMapId: string, isCanvasEditMode: boolean, setCanvasEditMode: (v: boolean) => void }} props
+ * @param {{ children: React.ReactNode, floorMapId: string, canvasMode: string, setCanvasMode: (mode: string) => void }} props
  */
-export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanvasEditMode }) {
+export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode }) {
+  const isCanvasEditMode = canvasMode === CANVAS_MODES.EDIT;
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
@@ -549,8 +557,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     handleEditorSettingsSave,
 
     // Mode toggling
+    canvasMode,
+    setCanvasMode,
     isCanvasEditMode,
-    setCanvasEditMode,
 
     // Units
     units,
