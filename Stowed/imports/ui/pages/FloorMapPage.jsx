@@ -33,6 +33,32 @@ const statusBarButtonStyle = {
   whiteSpace: "nowrap",
 };
 
+const iconButtonStyle = (isActive = false) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "24px",
+  height: "24px",
+  padding: 0,
+  borderRadius: "999px",
+  border: `1px solid ${isActive ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
+  color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+  background: isActive ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
+  cursor: "pointer",
+});
+
+const ICON_PROPS = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": true,
+};
+
 function FloorMapPageInner() {
   const { role } = useAuth();
   const canManage = hasClientPermission(role, "locations.manage");
@@ -252,34 +278,14 @@ function FloorMapPageInner() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* EXPORT / FLOOR MAP SETTINGS */}
+          {/* FLOOR MAP SETTINGS */}
           {isCanvasEditMode && canManage && (
-            <>
-              <button
-                type="button"
-                onClick={() => canvasRef.current?.exportPng()}
-                style={statusBarButtonStyle}
-              >
-                Export as PNG
-              </button>
-              <button
-                type="button"
-                onClick={() => setFloorMapSettingsOpen(true)}
-                style={statusBarButtonStyle}
-              >
-                Floor Map Settings
-              </button>
-            </>
-          )}
-
-          {/* EDITOR SETTINGS */}
-          {canvasMode !== CANVAS_MODES.VIEW && canManage && (
             <button
               type="button"
-              onClick={() => setEditorSettingsOpen(true)}
+              onClick={() => setFloorMapSettingsOpen(true)}
               style={statusBarButtonStyle}
             >
-              Editor Settings
+              Floor Map Settings
             </button>
           )}
 
@@ -319,6 +325,35 @@ function FloorMapPageInner() {
               );
             })}
           </div>
+
+          {/* EXPORT AS PNG */}
+          <button
+            type="button"
+            onClick={() => canvasRef.current?.exportPng()}
+            aria-label="Export as PNG"
+            title="Export as PNG"
+            style={iconButtonStyle()}
+          >
+            <svg {...ICON_PROPS}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+
+          {/* EDITOR SETTINGS - available in every mode */}
+          <button
+            type="button"
+            onClick={() => setEditorSettingsOpen(true)}
+            aria-label="Editor settings"
+            title="Editor settings"
+            style={iconButtonStyle(isEditorSettingsOpen)}
+          >
+            <svg {...ICON_PROPS}>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
         </div>
       </div>
 
