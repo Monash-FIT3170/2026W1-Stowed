@@ -189,6 +189,129 @@ export const pageStyles = {
   },
 };
 
+// Pill shared by the mode switcher and the icon buttons beside it
+const statusPill = (isActive) => ({
+  borderRadius: "999px",
+  border: `1px solid ${isActive ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
+  color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+  background: isActive ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
+  fontFamily: "inherit",
+});
+
+const statusBarButton = {
+  fontSize: "12px",
+  fontWeight: 600,
+  color: COLOURS.TEXT_PRIMARY,
+  background: COLOURS.CARD_BG,
+  border: `1px solid ${COLOURS.CARD_BORDER}`,
+  borderRadius: "8px",
+  padding: "6px 10px",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  whiteSpace: "nowrap",
+};
+
+/** Slim status row above the canvas: site selects, mode switcher, icon actions. */
+export const statusBarStyles = {
+  button: statusBarButton,
+  primaryButton: {
+    ...statusBarButton,
+    background: COLOURS.ACCENT,
+    borderColor: COLOURS.ACCENT,
+    color: "white",
+  },
+  modeGroup: {
+    display: "flex",
+    gap: "6px",
+  },
+  modeButton: (isActive, isDisabled = false) => ({
+    ...statusPill(isActive),
+    fontSize: "10px",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    padding: "4px 10px",
+    cursor: isDisabled ? "not-allowed" : isActive ? "default" : "pointer",
+    opacity: isDisabled ? 0.5 : 1,
+  }),
+  iconButton: (isActive = false) => ({
+    ...statusPill(isActive),
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "24px",
+    height: "24px",
+    padding: 0,
+    cursor: "pointer",
+  }),
+};
+
+const sidebarTab = (isActive) => ({
+  padding: "8px 10px",
+  border: "none",
+  borderBottom: isActive ? `2px solid ${COLOURS.ACCENT}` : "2px solid transparent",
+  background: "transparent",
+  cursor: "pointer",
+  fontSize: "12px",
+  fontWeight: isActive ? 700 : 400,
+  color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+  fontFamily: "inherit",
+});
+
+/** Right-hand sidebar shared by edit mode and route mode. */
+export const sidebarStyles = {
+  panel: {
+    width: "260px",
+    minWidth: "260px",
+    maxWidth: "260px",
+    flexShrink: 0,
+    background: COLOURS.CARD_BG,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    flex: 1,
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    padding: "0 8px 0 14px",
+    flexShrink: 0,
+    borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+  },
+  tab: sidebarTab,
+  // Single, non-clickable heading styled like a selected tab
+  heading: {
+    ...sidebarTab(true),
+    cursor: "default",
+  },
+  collapseButton: {
+    ...pageStyles.sidebarToggle,
+    fontSize: "11px",
+    padding: "4px 8px",
+    marginLeft: "auto",
+  },
+  collapsedStrip: {
+    width: "32px",
+    flexShrink: 0,
+    background: COLOURS.CARD_BG,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    paddingTop: "14px",
+    gap: "8px",
+    flex: 1,
+  },
+  expandButton: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: COLOURS.TEXT_MUTED,
+    fontSize: "14px",
+    padding: "4px",
+  },
+};
+
 export const toolbarStyles = {
   bar: {
     display: "flex",
@@ -477,6 +600,41 @@ export const storagePanelStyles = {
     fontSize: 13,
     fontWeight: 600,
   },
+};
+
+/** Route mode tool list - cards reuse the storage unit card look. */
+export const routeToolbarStyles = {
+  list: {
+    padding: "12px",
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    overflowY: "auto",
+  },
+  card: (isActive, isHovered) => ({
+    ...storagePanelStyles.card,
+    background: isHovered ? COLOURS.UNIT_CARD_HOVER : storagePanelStyles.card.background,
+    ...(isActive ? buttonStyles.active : {}),
+    width: "100%",
+    textAlign: "left",
+    fontFamily: "inherit",
+  }),
+  iconTile: (isActive) => ({
+    ...storagePanelStyles.swatch,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: COLOURS.CARD_BG,
+    color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+  }),
+  cardText: {
+    minWidth: 0,
+  },
+  cardName: (isActive) => ({
+    ...storagePanelStyles.cardName,
+    fontWeight: isActive ? 700 : 400,
+  }),
 };
 
 export const locationPanelStyles = {

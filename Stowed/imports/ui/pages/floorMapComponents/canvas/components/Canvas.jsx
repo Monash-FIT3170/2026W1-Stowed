@@ -28,10 +28,11 @@ if (typeof window !== "undefined") {
 }
 
 export const Canvas = forwardRef(function Canvas(
-  { style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip },
+  { style, setSelectedStorageUnitId, setTooltip },
   ref,
 ) {
-  const { units, commitUnits, floorSize, canvasSettings, canvasMode } = useEditor();
+  const { units, commitUnits, floorSize, canvasSettings, canvasMode, isCanvasEditMode } =
+    useEditor();
 
   const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
     Meteor.subscribe("locations.all");
@@ -110,7 +111,7 @@ export const Canvas = forwardRef(function Canvas(
     if (prevCanvasModeRef.current === canvasMode) return;
     prevCanvasModeRef.current = canvasMode;
     handleFitToScreen();
-  }, [canvasMode]);
+  }, [canvasMode, handleFitToScreen]);
 
   useEffect(() => {
     const el = containerRef.current;

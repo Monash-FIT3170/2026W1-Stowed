@@ -1,53 +1,8 @@
 import { useState } from "react";
-import {
-  COLOURS,
-  buttonStyles,
-  customShapesPanelStyles,
-  pageStyles,
-  storagePanelStyles,
-} from "./FloorMapStyles";
+import { customShapesPanelStyles, routeToolbarStyles, sidebarStyles, storagePanelStyles } from "./FloorMapStyles";
+import { LinkIcon, ProductNodeIcon, WalkwayNodeIcon } from "./FloorMapIcons";
+import { SidebarCollapseButton } from "./SidebarControls";
 import { ROUTE_TOOLS } from "./canvas/editor/EditorContext";
-
-const ICON_PROPS = {
-  width: 16,
-  height: 16,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  "aria-hidden": true,
-};
-
-function WalkwayNodeIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-    </svg>
-  );
-}
-
-function LinkIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <circle cx="5" cy="19" r="2.5" />
-      <circle cx="19" cy="5" r="2.5" />
-      <line x1="7" y1="17" x2="17" y2="7" />
-    </svg>
-  );
-}
-
-function ProductNodeIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-      <line x1="12" y1="22.08" x2="12" y2="12" />
-    </svg>
-  );
-}
 
 const TOOLS = [
   {
@@ -83,29 +38,13 @@ function RouteToolCard({ name, description, Icon, isActive, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-pressed={isActive}
-      style={{
-        ...storagePanelStyles.card,
-        background: hovered ? COLOURS.UNIT_CARD_HOVER : storagePanelStyles.card.background,
-        ...(isActive ? buttonStyles.active : {}),
-        width: "100%",
-        textAlign: "left",
-        fontFamily: "inherit",
-      }}
+      style={routeToolbarStyles.card(isActive, hovered)}
     >
-      <div
-        style={{
-          ...storagePanelStyles.swatch,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: COLOURS.CARD_BG,
-          color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
-        }}
-      >
+      <div style={routeToolbarStyles.iconTile(isActive)}>
         <Icon />
       </div>
-      <div style={{ minWidth: 0 }}>
-        <p style={{ ...storagePanelStyles.cardName, fontWeight: isActive ? 700 : 400 }}>{name}</p>
+      <div style={routeToolbarStyles.cardText}>
+        <p style={routeToolbarStyles.cardName(isActive)}>{name}</p>
         <p style={storagePanelStyles.cardSub}>{description}</p>
       </div>
     </button>
@@ -120,67 +59,17 @@ function RouteToolCard({ name, description, Icon, isActive, onClick }) {
  */
 export function RouteToolbar({ activeTool, onSelectTool, onCollapse }) {
   return (
-    <div
-      style={{
-        width: "260px",
-        minWidth: "260px",
-        maxWidth: "260px",
-        flexShrink: 0,
-        background: COLOURS.CARD_BG,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        flex: 1,
-      }}
-    >
-      {/* HEADER - mirrors the edit sidebar's tab row */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "0 8px 0 14px",
-          flexShrink: 0,
-          borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
-        }}
-      >
-        <span
-          style={{
-            padding: "8px 10px",
-            borderBottom: `2px solid ${COLOURS.ACCENT}`,
-            fontSize: "12px",
-            fontWeight: 700,
-            color: COLOURS.ACCENT,
-          }}
-        >
-          Route Tools
-        </span>
-        <button
-          onClick={onCollapse}
-          style={{
-            ...pageStyles.sidebarToggle,
-            fontSize: "11px",
-            padding: "4px 8px",
-            marginLeft: "auto",
-          }}
-          aria-label="Collapse sidebar"
-        >
-          <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
-        </button>
+    <div style={sidebarStyles.panel}>
+      <div style={sidebarStyles.header}>
+        <span style={sidebarStyles.heading}>Route Tools</span>
+        <SidebarCollapseButton onClick={onCollapse} />
       </div>
 
-      {/* TOOLS */}
       <div
         role="toolbar"
         aria-label="Route tools"
         aria-orientation="vertical"
-        style={{
-          padding: "12px",
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          overflowY: "auto",
-        }}
+        style={routeToolbarStyles.list}
       >
         <p style={customShapesPanelStyles.title}>Add to route</p>
         {TOOLS.map(({ tool, name, description, Icon }) => {
