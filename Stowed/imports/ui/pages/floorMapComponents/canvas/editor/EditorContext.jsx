@@ -12,6 +12,7 @@ import {
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
+import { canLink } from "./utils/RouteGraph";
 import { COLOURS } from "../../FloorMapStyles";
 
 function hasUsableShape(shape) {
@@ -101,6 +102,11 @@ export const ROUTE_TOOLS = {
   PRODUCT_NODE: "productNode", // links a walkway to a storage unit
 };
 
+/** Client-side id for route nodes and links until they are persisted. */
+function createRouteId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 const EditorContext = createContext(null);
 
 /**
@@ -114,6 +120,12 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
   const isCanvasEditMode = canvasMode === CANVAS_MODES.EDIT;
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
   const [activeRouteTool, setActiveRouteTool] = useState(null);
+  // First node picked by the link tool, waiting for a second node
+  const [pendingLinkNodeId, setPendingLinkNodeId] = useState(null);
+  // Walkway nodes for routing, positioned in metres: [{ id, x, y }]
+  const [walkwayNodes, setWalkwayNodes] = useState([]);
+  // Undirected links between walkway nodes: [{ id, fromId, toId }]
+  const [walkwayLinks, setWalkwayLinks] = useState([]);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
   const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
@@ -438,6 +450,42 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     return true;
   }
 
+  // --- ROUTE TOOLS ---
+  /**
+   * Switches the active route tool (or clears it with null), dropping any half-finished link.
+   *
+   * @param {string | null} tool - One of ROUTE_TOOLS, or null
+   */
+  function selectRouteTool(tool) {
+    setActiveRouteTool(tool);
+    setPendingLinkNodeId(null);
+  }
+
+  // --- WALKWAY NODES ---
+  /**
+   * Adds a walkway node at the given position (in metres).
+   * Nodes are currently held in local state only and are not yet saved to the database.
+   *
+   * @param {{ x: number, y: number }} position
+   */
+  function addWalkwayNode({ x, y }) {
+    setWalkwayNodes((prev) => [...prev, { id: createRouteId("walkway"), x, y }]);
+  }
+
+  /**
+   * Links two walkway nodes. Ignored if they are the same node or already linked.
+   * Links are currently held in local state only and are not yet saved to the database.
+   *
+   * @param {string} fromId
+   * @param {string} toId
+   * @returns {boolean} Whether a link was added
+   */
+  function addWalkwayLink(fromId, toId) {
+    if (!canLink(walkwayLinks, fromId, toId)) return false;
+    setWalkwayLinks((prev) => [...prev, { id: createRouteId("link"), fromId, toId }]);
+    return true;
+  }
+
   // --- EDITOR SETTINGS ---
   function handleEditorSettingsSave({ gridInterval, snapInterval, showGrid, snapToGrid }) {
     setCanvasSettings({ gridInterval, snapInterval, showGrid, snapToGrid });
@@ -571,7 +619,13 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
 
     // Route mode
     activeRouteTool,
-    setActiveRouteTool,
+    selectRouteTool,
+    pendingLinkNodeId,
+    setPendingLinkNodeId,
+    walkwayNodes,
+    addWalkwayNode,
+    walkwayLinks,
+    addWalkwayLink,
 
     // Units
     units,

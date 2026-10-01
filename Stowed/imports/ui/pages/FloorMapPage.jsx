@@ -61,7 +61,7 @@ function FloorMapPageInner() {
     setCanvasMode,
     isCanvasEditMode,
     activeRouteTool,
-    setActiveRouteTool,
+    selectRouteTool,
     units,
     commitUnits,
     handleSaveLayout,
@@ -563,7 +563,7 @@ function FloorMapPageInner() {
             (isSidebarOpen ? (
               <RouteToolbar
                 activeTool={activeRouteTool}
-                onSelectTool={setActiveRouteTool}
+                onSelectTool={selectRouteTool}
                 onCollapse={() => setSidebarOpen(false)}
               />
             ) : (

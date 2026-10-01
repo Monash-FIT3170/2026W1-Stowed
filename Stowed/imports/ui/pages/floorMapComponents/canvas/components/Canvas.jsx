@@ -8,6 +8,7 @@ import { CANVAS_MODES, useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
+import { useRouteHandlers } from "../hooks/UseRouteHandlers";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import {
   StorageLocations,
@@ -22,6 +23,7 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
+import { RouteLayer } from "./layers/RouteLayer";
 
 if (typeof window !== "undefined") {
   Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
@@ -31,8 +33,16 @@ export const Canvas = forwardRef(function Canvas(
   { style, setSelectedStorageUnitId, setTooltip },
   ref,
 ) {
-  const { units, commitUnits, floorSize, canvasSettings, canvasMode, isCanvasEditMode } =
-    useEditor();
+  const {
+    units,
+    commitUnits,
+    floorSize,
+    canvasSettings,
+    canvasMode,
+    isCanvasEditMode,
+    walkwayNodes,
+    walkwayLinks,
+  } = useEditor();
 
   const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
     Meteor.subscribe("locations.all");
@@ -98,6 +108,18 @@ export const Canvas = forwardRef(function Canvas(
     clipboard,
     isCanvasEditMode,
   });
+
+  const {
+    isRouteToolActive,
+    cursor: routeCursor,
+    previewNode,
+    pendingLinkNodeId,
+    unavailableNodeIds,
+    linkPreviewEnd,
+    handleRouteMouseMove,
+    handleRouteMouseLeave,
+    handleRouteClick,
+  } = useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, height });
 
   useEffect(() => {
     if (!isCanvasEditMode) {
@@ -194,12 +216,14 @@ export const Canvas = forwardRef(function Canvas(
             scaleX={scale}
             scaleY={scale}
             onWheel={handleWheel}
-            style={style}
+            style={routeCursor ? { ...style, cursor: routeCursor } : style}
             draggable
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
-            onClick={handleStageClick}
+            onClick={isRouteToolActive ? handleRouteClick : handleStageClick}
+            onMouseMove={handleRouteMouseMove}
+            onMouseLeave={handleRouteMouseLeave}
           >
             <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
@@ -215,6 +239,9 @@ export const Canvas = forwardRef(function Canvas(
               onDragMove={handleDragMove}
               onDragEnd={handleDragEnd}
               onTransformEnd={handleTransformEnd}
+              opacity={
+                canvasMode === CANVAS_MODES.ROUTE ? CANVAS_CONFIG.ROUTE_MODE_UNIT_OPACITY : 1
+              }
             />
 
             <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef} />
@@ -228,23 +255,39 @@ export const Canvas = forwardRef(function Canvas(
               snapSizePx={snapSizePx}
             />
 
-            <LowStockLayer
-              units={units}
-              isCanvasEditMode={isCanvasEditMode}
-              onHover={(data) => setTooltip?.(data)}
-              onHoverEnd={() => setTooltip?.(null)}
-              onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
-            />
+            {canvasMode === CANVAS_MODES.VIEW && (
+              <>
+                <LowStockLayer
+                  units={units}
+                  isCanvasEditMode={isCanvasEditMode}
+                  onHover={(data) => setTooltip?.(data)}
+                  onHoverEnd={() => setTooltip?.(null)}
+                  onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+                />
 
-            <StocktakeAlertLayer
-              units={units}
-              storageLocations={storageLocations}
-              storageUnits={storageUnits}
-              floorMaps={floorMaps}
-              sites={sites}
-              isCanvasEditMode={isCanvasEditMode}
-              onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
-            />
+                <StocktakeAlertLayer
+                  units={units}
+                  storageLocations={storageLocations}
+                  storageUnits={storageUnits}
+                  floorMaps={floorMaps}
+                  sites={sites}
+                  isCanvasEditMode={isCanvasEditMode}
+                  onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+                />
+              </>
+            )}
+
+            {canvasMode === CANVAS_MODES.ROUTE && (
+              <RouteLayer
+                nodes={walkwayNodes}
+                links={walkwayLinks}
+                previewNode={previewNode}
+                pendingLinkNodeId={pendingLinkNodeId}
+                unavailableNodeIds={unavailableNodeIds}
+                linkPreviewEnd={linkPreviewEnd}
+                scale={scale}
+              />
+            )}
           </Stage>
         )}
       </div>

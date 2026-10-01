@@ -2,6 +2,9 @@ import { Layer, Rect, Line, Text } from "react-konva";
 import { COLOURS } from "../../../FloorMapStyles";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
 
+// Used to recognise clicks on the empty floor (background or grid lines)
+export const GRID_LAYER_NAME = "grid";
+
 /**
  * Renders a grid onto the Konva canvas
  *
@@ -97,7 +100,7 @@ export function GridLayer({ width, height, gridSizePx, showGrid }) {
   }
 
   return (
-    <Layer imageSmoothingEnabled={false}>
+    <Layer name={GRID_LAYER_NAME} imageSmoothingEnabled={false}>
       {/* BACKGROUND */}
       <Rect
         x={0}

@@ -29,6 +29,13 @@ export const COLOURS = {
   OVER_TRANSPARENT: "rgba(0, 0, 0, 0.08)",
   OVER_GREEN: "rgba(34, 197, 94, 0.50)",
   OVER_RED: "rgba(220, 38, 38, 0.60)",
+
+  // Route colours
+  WALKWAY_NODE_UNLINKED: "#dc2626",
+  WALKWAY_NODE_LINKED: "#16a34a",
+  WALKWAY_NODE_STROKE: "#ffffff",
+  WALKWAY_NODE_SELECTED_STROKE: "#14532d",
+  WALKWAY_LINK: "#16a34a",
 };
 
 const baseButton = {

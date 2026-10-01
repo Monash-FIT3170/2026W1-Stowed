@@ -12,6 +12,7 @@ import { StorageUnit } from "../units/StorageUnit";
  * @param {(e, id: string) => void}                      onDragMove
  * @param {(e, id: string) => void}                      onDragEnd
  * @param {(e, unit) => void}                            onTransformEnd
+ * @param {number}                                       [opacity=1] - Opacity of the whole layer
  *
  * @returns {JSX.Element}
  */
@@ -24,9 +25,10 @@ export function UnitLayer({
   onDragMove,
   onDragEnd,
   onTransformEnd,
+  opacity = 1,
 }) {
   return (
-    <Layer>
+    <Layer opacity={opacity}>
       {units.map((unit) => {
         const ref = getGroupRef(unit.id);
         return (
