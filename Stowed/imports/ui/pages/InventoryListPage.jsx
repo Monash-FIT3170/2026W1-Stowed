@@ -9,6 +9,8 @@ import { ProductCategories } from "/imports/api/categories/collections";
 import { StorageUnits, StorageLocations } from "../../api/locations/collections";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
+import { Pagination } from "../components/Pagination";
+import { AddProductModal } from "../components/AddProductModal";
 import { useToast } from "../components/Toast";
 import "./InventoryListPage.css";
 import "../Global.css";
@@ -96,6 +98,7 @@ export function InventoryListPage() {
   const [deleteError, setDeleteError] = useState("");
   const [locationFilterUnitId, setLocationFilterUnitId] = useState("");
   const [categoryFilterId, setCategoryFilterId] = useState("");
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
 
   const { items, loading, productRecords, categories, storageLocations, storageUnits } =
     useTracker(() => {
@@ -262,9 +265,11 @@ export function InventoryListPage() {
             All <em>Products</em>
           </h1>
           {canCreate && (
-            <Link to="/inventory/new">
-              <button className="btn-primary">+ Add product</button>
-            </Link>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="btn-primary" onClick={() => setShowAddProductModal(true)}>
+                + Add Product
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -413,37 +418,11 @@ export function InventoryListPage() {
               ))}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: "6px",
-                  marginTop: "12px",
-                  justifyContent: "center",
-                }}
-              >
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      border: page === currentPage ? "none" : "1px solid var(--border-subtle)",
-                      background: page === currentPage ? "var(--accent-primary)" : "var(--card-bg)",
-                      color: page === currentPage ? "#fff" : "var(--text-muted)",
-                      fontWeight: page === currentPage ? 700 : 400,
-                      fontSize: "13px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </>
         )}
 
@@ -486,6 +465,8 @@ export function InventoryListPage() {
             </div>
           </div>
         )}
+
+        {showAddProductModal && <AddProductModal onClose={() => setShowAddProductModal(false)} />}
       </div>
     </div>
   );
