@@ -221,12 +221,13 @@ const statusBarButton = {
 /** Slim status row above the canvas: site selects, mode switcher, icon actions. */
 export const statusBarStyles = {
   button: statusBarButton,
-  primaryButton: {
+  primaryButton: (isDisabled = false) => ({
     ...statusBarButton,
     background: COLOURS.ACCENT,
     borderColor: COLOURS.ACCENT,
     color: "white",
-  },
+    ...(isDisabled ? buttonStyles.disabled : {}),
+  }),
   modeGroup: {
     display: "flex",
     gap: "6px",

@@ -3,7 +3,15 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import { Sites, FloorMaps, StorageUnits, MapShapes, StorageLocations } from "./collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  MapShapes,
+  StorageLocations,
+  FloorMapRoutes,
+} from "./collections";
+import { validateRouteGraph } from "./routeGraph";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isValidStocktakeInterval } from "./stocktake";
@@ -231,6 +239,35 @@ Meteor.methods({
     }
 
     await FloorMaps.removeAsync(floorMapId);
+    await FloorMapRoutes.removeAsync({ floorMapId });
+  },
+
+  /**
+   * Saves the walkway route graph for a FloorMap, replacing any previously saved route.
+   * The whole graph is written at once so links can never refer to unsaved nodes.
+   */
+  async "floorMapRoutes.save"({ floorMapId, nodes, links }) {
+    check(floorMapId, String);
+    check(nodes, [{ id: String, x: Number, y: Number }]);
+    check(links, [{ id: String, fromId: String, toId: String }]);
+
+    await assertOrgAccess(FloorMaps, floorMapId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
+
+    const problem = validateRouteGraph(nodes, links);
+    if (problem) {
+      throw new Meteor.Error("invalid-route", problem);
+    }
+
+    const orgId = await getCallerOrgId(this.userId);
+    const now = new Date();
+    await FloorMapRoutes.upsertAsync(
+      { floorMapId },
+      {
+        $set: { nodes, links, updatedAt: now },
+        $setOnInsert: { orgId, floorMapId, createdAt: now },
+      },
+    );
   },
 
   /**

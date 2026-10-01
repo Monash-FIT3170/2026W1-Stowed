@@ -1,7 +1,11 @@
 import { useState, useRef } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
-import { CANVAS_MODES, EditorProvider, useEditor} from "./floorMapComponents/canvas/editor/EditorContext";
+import {
+  CANVAS_MODES,
+  EditorProvider,
+  useEditor,
+} from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
@@ -21,11 +25,7 @@ import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
 import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
 import { DownloadIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
-import {
-  buttonStyles,
-  sidebarStyles,
-  statusBarStyles,
-} from "./floorMapComponents/FloorMapStyles";
+import { buttonStyles, sidebarStyles, statusBarStyles } from "./floorMapComponents/FloorMapStyles";
 
 // Mode switcher buttons, in display order
 const MODE_OPTIONS = [
@@ -62,6 +62,9 @@ function FloorMapPageInner() {
     isCanvasEditMode,
     activeRouteTool,
     selectRouteTool,
+    isRouteDirty,
+    isSavingRoute,
+    handleSaveRoute,
     units,
     commitUnits,
     handleSaveLayout,
@@ -248,9 +251,21 @@ function FloorMapPageInner() {
             <button
               type="button"
               onClick={handleSaveLayout}
-              style={statusBarStyles.primaryButton}
+              style={statusBarStyles.primaryButton()}
             >
               Save Layout
+            </button>
+          )}
+
+          {/* SAVE ROUTE - only enabled when there are unsaved route changes */}
+          {canvasMode === CANVAS_MODES.ROUTE && canManage && (
+            <button
+              type="button"
+              onClick={handleSaveRoute}
+              disabled={!isRouteDirty || isSavingRoute}
+              style={statusBarStyles.primaryButton(!isRouteDirty || isSavingRoute)}
+            >
+              {isSavingRoute ? "Saving..." : isRouteDirty ? "Save Route" : "Route Saved"}
             </button>
           )}
         </div>

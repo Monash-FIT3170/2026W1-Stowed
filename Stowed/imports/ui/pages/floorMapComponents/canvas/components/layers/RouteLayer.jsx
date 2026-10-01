@@ -1,7 +1,7 @@
 import { Layer, Circle, Line } from "react-konva";
 import { COLOURS } from "../../../FloorMapStyles";
 import { CANVAS_CONFIG } from "../../CanvasConfig";
-import { getConnectedNodeIds } from "../../editor/utils/RouteGraph";
+import { getConnectedNodeIds } from "/imports/api/locations/routeGraph";
 
 export const ROUTE_LAYER_NAME = "route";
 

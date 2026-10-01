@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useEditor, CANVAS_MODES, ROUTE_TOOLS } from "../editor/EditorContext";
 import { snapToGrid } from "../editor/utils/Snapping";
-import { canLink, getLinkedNodeIds } from "../editor/utils/RouteGraph";
+import { canLink, getLinkedNodeIds } from "/imports/api/locations/routeGraph";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { GRID_LAYER_NAME } from "../components/layers/GridLayer";
 import { ROUTE_LAYER_NAME } from "../components/layers/RouteLayer";

@@ -2,7 +2,12 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
-import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
+import {
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+  FloorMapRoutes,
+} from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import {
   buildRectShape,
@@ -12,7 +17,7 @@ import {
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
-import { canLink } from "./utils/RouteGraph";
+import { canLink } from "/imports/api/locations/routeGraph";
 import { COLOURS } from "../../FloorMapStyles";
 
 function hasUsableShape(shape) {
@@ -126,6 +131,9 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
   const [walkwayNodes, setWalkwayNodes] = useState([]);
   // Undirected links between walkway nodes: [{ id, fromId, toId }]
   const [walkwayLinks, setWalkwayLinks] = useState([]);
+  // True when the route has changes that have not been saved to the database
+  const [isRouteDirty, setIsRouteDirty] = useState(false);
+  const [isSavingRoute, setIsSavingRoute] = useState(false);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
   const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
@@ -169,8 +177,8 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     forceRender((n) => n + 1);
   }
 
-  // --- FLOOR MAP + UNITS FROM MONGODB ---
-  const { isLoading, floorMap, savedUnits } = useTracker(() => {
+  // --- FLOOR MAP + UNITS + ROUTE FROM MONGODB ---
+  const { isLoading, floorMap, savedUnits, savedRoute } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
 
     const activeFloorMap = floorMapId ? FloorMaps.findOne(floorMapId) : FloorMaps.findOne();
@@ -183,8 +191,23 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
       savedUnits: activeFloorMapId
         ? StorageUnits.find({ floorMapId: activeFloorMapId }).fetch()
         : [],
+      savedRoute: activeFloorMapId
+        ? FloorMapRoutes.findOne({ floorMapId: activeFloorMapId })
+        : null,
     };
   }, [floorMapId]);
+
+  // Load the saved route once per floor map. Later database updates are deliberately not
+  // re-applied, so they can never overwrite unsaved route edits.
+  // (EditorProvider remounts when the floor map changes, which resets this.)
+  const hasLoadedRouteRef = useRef(false);
+  useEffect(() => {
+    if (isLoading || !floorMap || hasLoadedRouteRef.current) return;
+    hasLoadedRouteRef.current = true;
+    setWalkwayNodes(savedRoute?.nodes ?? []);
+    setWalkwayLinks(savedRoute?.links ?? []);
+    setIsRouteDirty(false);
+  }, [isLoading, floorMap, savedRoute]);
 
   // --- LOW STOCK DATA ---
   const { lowStockByUnitId } = useTracker(() => {
@@ -461,20 +484,20 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     setPendingLinkNodeId(null);
   }
 
-  // --- WALKWAY NODES ---
+  // --- WALKWAY ROUTE ---
   /**
-   * Adds a walkway node at the given position (in metres).
-   * Nodes are currently held in local state only and are not yet saved to the database.
+   * Adds a walkway node at the given position (in metres). Saved with handleSaveRoute.
    *
    * @param {{ x: number, y: number }} position
    */
   function addWalkwayNode({ x, y }) {
     setWalkwayNodes((prev) => [...prev, { id: createRouteId("walkway"), x, y }]);
+    setIsRouteDirty(true);
   }
 
   /**
    * Links two walkway nodes. Ignored if they are the same node or already linked.
-   * Links are currently held in local state only and are not yet saved to the database.
+   * Saved with handleSaveRoute.
    *
    * @param {string} fromId
    * @param {string} toId
@@ -483,7 +506,33 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
   function addWalkwayLink(fromId, toId) {
     if (!canLink(walkwayLinks, fromId, toId)) return false;
     setWalkwayLinks((prev) => [...prev, { id: createRouteId("link"), fromId, toId }]);
+    setIsRouteDirty(true);
     return true;
+  }
+
+  /**
+   * Saves the current walkway nodes and links for this floor map, replacing the saved route.
+   */
+  async function handleSaveRoute() {
+    if (!floorMap) {
+      alert("No floor map exists in database.");
+      return;
+    }
+
+    setIsSavingRoute(true);
+    try {
+      await callMethod("floorMapRoutes.save", {
+        floorMapId: floorMap._id,
+        nodes: walkwayNodes,
+        links: walkwayLinks,
+      });
+      setIsRouteDirty(false);
+    } catch (error) {
+      console.error(error);
+      alert(error.reason || "Failed to save route.");
+    } finally {
+      setIsSavingRoute(false);
+    }
   }
 
   // --- EDITOR SETTINGS ---
@@ -626,6 +675,9 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     addWalkwayNode,
     walkwayLinks,
     addWalkwayLink,
+    isRouteDirty,
+    isSavingRoute,
+    handleSaveRoute,
 
     // Units
     units,
