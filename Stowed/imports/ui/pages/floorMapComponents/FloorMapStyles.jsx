@@ -208,28 +208,69 @@ const statusPill = (isActive) => ({
   fontFamily: "inherit",
 });
 
-const statusBarButton = {
-  fontSize: "12px",
-  fontWeight: 600,
-  color: COLOURS.TEXT_PRIMARY,
-  background: COLOURS.CARD_BG,
-  border: `1px solid ${COLOURS.CARD_BORDER}`,
-  borderRadius: "8px",
-  padding: "6px 10px",
+const statusIconButton = (isActive = false) => ({
+  ...statusPill(isActive),
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "24px",
+  height: "24px",
+  padding: 0,
   cursor: "pointer",
-  fontFamily: "inherit",
-  whiteSpace: "nowrap",
-};
+});
 
 /** Slim status row above the canvas: site selects, mode switcher, icon actions. */
 export const statusBarStyles = {
-  button: statusBarButton,
-  primaryButton: (isDisabled = false) => ({
-    ...statusBarButton,
-    background: COLOURS.ACCENT,
-    borderColor: COLOURS.ACCENT,
-    color: "white",
-    ...(isDisabled ? buttonStyles.disabled : {}),
+  bar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "10px 28px",
+    // Keeps the bar the height it had when the site/floor map selects had labels above them,
+    // so the mode switcher and icons stay where they were
+    minHeight: "44px",
+    borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+    background: COLOURS.CARD_BG,
+    flexShrink: 0,
+  },
+  // A left or right cluster of controls, vertically centred together
+  group: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  // Site / floor map select styled like the mode pills: label and dropdown inside one pill
+  selectPill: {
+    ...statusPill(false),
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    height: "24px",
+    padding: "0 6px 0 10px",
+    boxSizing: "border-box",
+  },
+  selectLabel: {
+    fontSize: "10px",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  },
+  select: {
+    border: "none",
+    background: "transparent",
+    padding: 0,
+    fontSize: "11px",
+    fontWeight: 600,
+    color: COLOURS.ACCENT, // same orange as the highlighted status bar buttons
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  // Save Layout / Save Route: same look as the other icon buttons, highlighted (orange)
+  // while there are unsaved changes and plain once everything is saved
+  saveButton: (hasUnsavedChanges) => ({
+    ...statusIconButton(hasUnsavedChanges),
+    cursor: hasUnsavedChanges ? "pointer" : "default",
   }),
   modeGroup: {
     display: "flex",
@@ -245,16 +286,7 @@ export const statusBarStyles = {
     cursor: isDisabled ? "not-allowed" : isActive ? "default" : "pointer",
     opacity: isDisabled ? 0.5 : 1,
   }),
-  iconButton: (isActive = false) => ({
-    ...statusPill(isActive),
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "24px",
-    height: "24px",
-    padding: 0,
-    cursor: "pointer",
-  }),
+  iconButton: statusIconButton,
 };
 
 const sidebarTab = (isActive) => ({
@@ -269,12 +301,16 @@ const sidebarTab = (isActive) => ({
   fontFamily: "inherit",
 });
 
+/** Widths of the edit/route sidebar, also used to keep the canvas fit the same in view mode. */
+export const SIDEBAR_WIDTH_PX = 260;
+export const COLLAPSED_SIDEBAR_WIDTH_PX = 32;
+
 /** Right-hand sidebar shared by edit mode and route mode. */
 export const sidebarStyles = {
   panel: {
-    width: "260px",
-    minWidth: "260px",
-    maxWidth: "260px",
+    width: `${SIDEBAR_WIDTH_PX}px`,
+    minWidth: `${SIDEBAR_WIDTH_PX}px`,
+    maxWidth: `${SIDEBAR_WIDTH_PX}px`,
     flexShrink: 0,
     background: COLOURS.CARD_BG,
     display: "flex",
@@ -303,7 +339,7 @@ export const sidebarStyles = {
     marginLeft: "auto",
   },
   collapsedStrip: {
-    width: "32px",
+    width: `${COLLAPSED_SIDEBAR_WIDTH_PX}px`,
     flexShrink: 0,
     background: COLOURS.CARD_BG,
     display: "flex",
@@ -798,6 +834,12 @@ export const modalStyles = {
     color: COLOURS.TEXT_PRIMARY,
   },
 
+  helper: {
+    margin: 0,
+    fontSize: "11px",
+    color: COLOURS.TEXT_MUTED,
+  },
+
   checkboxRow: {
     fontSize: "11px",
     color: COLOURS.TEXT_PRIMARY,
@@ -830,11 +872,6 @@ export const modalStyles = {
 
 /** Storage location picker shown for product nodes - builds on modalStyles. */
 export const productNodeModalStyles = {
-  helper: {
-    margin: 0,
-    fontSize: "11px",
-    color: COLOURS.TEXT_MUTED,
-  },
   empty: {
     margin: 0,
     padding: "10px",

@@ -25,8 +25,14 @@ import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
 import { ProductNodeLocationsModal } from "./floorMapComponents/ProductNodeLocationsModal";
 import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
-import { DownloadIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
-import { buttonStyles, sidebarStyles, statusBarStyles } from "./floorMapComponents/FloorMapStyles";
+import { DownloadIcon, MapIcon, SaveIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
+import {
+  buttonStyles,
+  COLLAPSED_SIDEBAR_WIDTH_PX,
+  SIDEBAR_WIDTH_PX,
+  sidebarStyles,
+  statusBarStyles,
+} from "./floorMapComponents/FloorMapStyles";
 
 // Mode switcher buttons, in display order
 const MODE_OPTIONS = [
@@ -40,6 +46,34 @@ const EDIT_SIDEBAR_TABS = [
   { key: "units", label: "Storage Units" },
   { key: "templates", label: "Templates" },
 ];
+
+/**
+ * Save icon for the layout or route, styled like the other status bar icons: highlighted
+ * (orange) while there are unsaved changes, plain and disabled once everything is saved.
+ *
+ * @param {{ label: string, hasUnsavedChanges: boolean, isSaving: boolean, onSave: () => void }} props
+ */
+function SaveIconButton({ label, hasUnsavedChanges, isSaving, onSave }) {
+  const canSave = hasUnsavedChanges && !isSaving;
+  const title = isSaving
+    ? `Saving ${label}...`
+    : hasUnsavedChanges
+      ? `Save ${label} (unsaved changes)`
+      : `${label[0].toUpperCase()}${label.slice(1)} saved`;
+
+  return (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={!canSave}
+      aria-label={title}
+      title={title}
+      style={statusBarStyles.saveButton(hasUnsavedChanges)}
+    >
+      <SaveIcon size={14} />
+    </button>
+  );
+}
 
 function FloorMapPageInner() {
   const { role } = useAuth();
@@ -73,6 +107,8 @@ function FloorMapPageInner() {
     units,
     commitUnits,
     handleSaveLayout,
+    isLayoutDirty,
+    isSavingLayout,
     selectedUnit,
     setSelectedUnit,
     lowStockByUnitId,
@@ -97,6 +133,18 @@ function FloorMapPageInner() {
   const editingProductNodeData = editingProductNode
     ? walkwayNodes.find((node) => node.id === editingProductNode.nodeId)
     : null;
+
+  // In view mode there is no sidebar, so fitting would use a wider area than edit/route mode
+  // and the map would jump in size when switching. Leave room for the sidebar so every mode
+  // fits the map identically. Only for users who can switch modes, and not while the stock
+  // panel already takes up space on the right.
+  const isStockPanelShowing = Boolean(selectedUnit && isStockPanelOpen);
+  const viewFitInsetRight =
+    canvasMode === CANVAS_MODES.VIEW && canManage && !isStockPanelShowing
+      ? isSidebarOpen
+        ? SIDEBAR_WIDTH_PX
+        : COLLAPSED_SIDEBAR_WIDTH_PX
+      : 0;
 
   // Fetch all sites, floor maps, storage units and shapes
   const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
@@ -155,34 +203,13 @@ function FloorMapPageInner() {
       }}
     >
       {/* -- Slim status row - the sidebar nav already labels this page "Floor Map" -- */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          padding: "10px 28px",
-          borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
-          background: COLOURS.CARD_BG,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+      <div style={statusBarStyles.bar}>
+        <div style={statusBarStyles.group}>
           {sites.length > 0 ? (
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+            <>
               {/* WAREHOUSE (SITE) SELECT */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                <span
-                  style={{
-                    fontSize: "9px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: COLOURS.TEXT_MUTED,
-                  }}
-                >
-                  Site
-                </span>
+              <label style={statusBarStyles.selectPill}>
+                <span style={statusBarStyles.selectLabel}>Site</span>
                 <select
                   value={currentSite?._id ?? ""}
                   onChange={(e) => {
@@ -191,17 +218,7 @@ function FloorMapPageInner() {
                     if (targetMap) navigate(`/floor-map/${targetMap._id}`);
                   }}
                   aria-label="Select site"
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: COLOURS.TEXT_PRIMARY,
-                    background: COLOURS.CARD_BG,
-                    border: `1px solid ${COLOURS.CARD_BORDER}`,
-                    borderRadius: "8px",
-                    padding: "6px 10px",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
+                  style={statusBarStyles.select}
                 >
                   {sites.map((site) => (
                     <option key={site._id} value={site._id}>
@@ -209,37 +226,17 @@ function FloorMapPageInner() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
 
               {/* FLOOR MAP SELECT - only shown when the selected site has more than one floor map */}
               {currentSite && siteFloorMaps.length > 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span
-                    style={{
-                      fontSize: "9px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      color: COLOURS.TEXT_MUTED,
-                    }}
-                  >
-                    Floor Map
-                  </span>
+                <label style={statusBarStyles.selectPill}>
+                  <span style={statusBarStyles.selectLabel}>Floor Map</span>
                   <select
                     value={currentFloorMap?._id ?? ""}
                     onChange={(e) => navigate(`/floor-map/${e.target.value}`)}
                     aria-label="Select floor map"
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: COLOURS.TEXT_MUTED,
-                      background: COLOURS.CARD_BG,
-                      border: `1px solid ${COLOURS.CARD_BORDER}`,
-                      borderRadius: "8px",
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
+                    style={statusBarStyles.select}
                   >
                     {siteFloorMaps.map((fm) => (
                       <option key={fm._id} value={fm._id}>
@@ -247,51 +244,38 @@ function FloorMapPageInner() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </label>
               )}
-            </div>
+            </>
           ) : (
-            <span style={{ fontSize: "13px", fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
-              {currentFloorMap?.name ?? "Floor Map"}
+            <span style={statusBarStyles.selectPill}>
+              <span style={statusBarStyles.selectLabel}>Floor Map</span>
+              <span style={statusBarStyles.select}>{currentFloorMap?.name ?? "Floor Map"}</span>
             </span>
           )}
 
           {/* SAVE LAYOUT */}
           {isCanvasEditMode && canManage && (
-            <button
-              type="button"
-              onClick={handleSaveLayout}
-              style={statusBarStyles.primaryButton()}
-            >
-              Save Layout
-            </button>
+            <SaveIconButton
+              label="layout"
+              hasUnsavedChanges={isLayoutDirty}
+              isSaving={isSavingLayout}
+              onSave={handleSaveLayout}
+            />
           )}
 
-          {/* SAVE ROUTE - only enabled when there are unsaved route changes */}
+          {/* SAVE ROUTE */}
           {canvasMode === CANVAS_MODES.ROUTE && canManage && (
-            <button
-              type="button"
-              onClick={handleSaveRoute}
-              disabled={!isRouteDirty || isSavingRoute}
-              style={statusBarStyles.primaryButton(!isRouteDirty || isSavingRoute)}
-            >
-              {isSavingRoute ? "Saving..." : isRouteDirty ? "Save Route" : "Route Saved"}
-            </button>
+            <SaveIconButton
+              label="route"
+              hasUnsavedChanges={isRouteDirty}
+              isSaving={isSavingRoute}
+              onSave={handleSaveRoute}
+            />
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* FLOOR MAP SETTINGS */}
-          {isCanvasEditMode && canManage && (
-            <button
-              type="button"
-              onClick={() => setFloorMapSettingsOpen(true)}
-              style={statusBarStyles.button}
-            >
-              Floor Map Settings
-            </button>
-          )}
-
+        <div style={statusBarStyles.group}>
           {/* MODE SWITCHER */}
           <div role="group" aria-label="Floor map mode" style={statusBarStyles.modeGroup}>
             {MODE_OPTIONS.map(({ mode, label, requiresManage }) => {
@@ -333,6 +317,17 @@ function FloorMapPageInner() {
           >
             <SettingsIcon size={14} />
           </button>
+
+          {/* FLOOR MAP SETTINGS - visible in every mode, editable only in edit mode */}
+          <button
+            type="button"
+            onClick={() => setFloorMapSettingsOpen(true)}
+            aria-label="Floor map settings"
+            title="Floor map settings"
+            style={statusBarStyles.iconButton(isFloorMapSettingsOpen)}
+          >
+            <MapIcon size={14} />
+          </button>
         </div>
       </div>
 
@@ -365,6 +360,7 @@ function FloorMapPageInner() {
               selectedStorageUnitId={selectedStorageUnitId}
               setSelectedStorageUnitId={handleUnitSelect}
               setTooltip={setTooltip}
+              fitInsetRight={viewFitInsetRight}
               lowStockByUnitId={lowStockByUnitId}
             />
           )}
@@ -696,6 +692,13 @@ function FloorMapPageInner() {
           gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
+          // Changes are only saved via Save Layout, which exists in edit mode
+          isReadOnly={!(isCanvasEditMode && canManage)}
+          readOnlyMessage={
+            canManage
+              ? "Switch to Edit mode to change the floor size."
+              : "Only admins and owners can change the floor size."
+          }
         />
       )}
 

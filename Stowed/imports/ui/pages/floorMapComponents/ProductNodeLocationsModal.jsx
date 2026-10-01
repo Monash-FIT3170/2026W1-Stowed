@@ -48,7 +48,7 @@ export function ProductNodeLocationsModal({ node, isNew, onConfirm, onCancel }) 
       {/* MODAL */}
       <div onClick={(e) => e.stopPropagation()} style={modalStyles.modal}>
         <h3 style={modalStyles.title}>Accessible Storage Locations</h3>
-        <p style={productNodeModalStyles.helper}>
+        <p style={modalStyles.helper}>
           Which locations in <strong>{unit?.name ?? "this unit"}</strong> can be reached from this
           product node?
         </p>

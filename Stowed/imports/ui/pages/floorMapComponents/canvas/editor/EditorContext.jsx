@@ -150,6 +150,12 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
   const [, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
   const canUndo = historyRef.current.index > 0;
+
+  // History is reset on load and on save, so any undoable step is an unsaved unit change.
+  // Floor size and editor settings are also saved by Save Layout, so track those separately.
+  const [hasUnsavedLayoutSettings, setHasUnsavedLayoutSettings] = useState(false);
+  const [isSavingLayout, setIsSavingLayout] = useState(false);
+  const isLayoutDirty = canUndo || hasUnsavedLayoutSettings;
   const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
 
   function commitUnits(updater) {
@@ -269,6 +275,7 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
 
     setUnits(canvasUnits);
     historyRef.current = { stack: [canvasUnits], index: 0 };
+    setHasUnsavedLayoutSettings(false);
   }, [isLoading, floorMap, savedUnits.length]);
 
   // --- SAVE / LOAD ---
@@ -289,6 +296,7 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
 
     const activeFloorMapId = floorMap._id;
 
+    setIsSavingLayout(true);
     try {
       await callMethod("floorMaps.update", {
         floorMapId: activeFloorMapId,
@@ -376,10 +384,13 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
 
       setUnits(savedCanvasUnits);
       historyRef.current = { stack: [savedCanvasUnits], index: 0 };
+      setHasUnsavedLayoutSettings(false);
       alert("Layout saved to database!");
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
+    } finally {
+      setIsSavingLayout(false);
     }
   }
 
@@ -471,6 +482,7 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     }
 
     setFloorSize(newFloorSize);
+    setHasUnsavedLayoutSettings(true);
     return true;
   }
 
@@ -654,6 +666,7 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
   // --- EDITOR SETTINGS ---
   function handleEditorSettingsSave({ gridInterval, snapInterval, showGrid, snapToGrid }) {
     setCanvasSettings({ gridInterval, snapInterval, showGrid, snapToGrid });
+    setHasUnsavedLayoutSettings(true); // editor settings are saved with the layout
     return true;
   }
 
@@ -815,6 +828,8 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
 
     // Save / load
     handleSaveLayout,
+    isLayoutDirty,
+    isSavingLayout,
     handleLoadLayout,
 
     // Placement helpers

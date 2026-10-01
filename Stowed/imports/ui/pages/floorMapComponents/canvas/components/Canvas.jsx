@@ -30,7 +30,7 @@ if (typeof window !== "undefined") {
 }
 
 export const Canvas = forwardRef(function Canvas(
-  { style, setSelectedStorageUnitId, setTooltip },
+  { style, setSelectedStorageUnitId, setTooltip, fitInsetRight = 0 },
   ref,
 ) {
   const {
@@ -107,6 +107,7 @@ export const Canvas = forwardRef(function Canvas(
     wrapperRef,
     clipboard,
     isCanvasEditMode,
+    fitInsetRight,
   });
 
   const {
