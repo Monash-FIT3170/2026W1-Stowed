@@ -1,4 +1,5 @@
 import { CANVAS_ACTIONS } from "./Actions";
+import { resizeViewport } from "./viewport";
 
 export const initialCanvasState = {
   selectedIds: new Set(),
@@ -59,6 +60,14 @@ export function canvasReducer(state, action) {
 
     case CANVAS_ACTIONS.SET_DISPLAY_SIZE:
       return { ...state, displaySize: action.payload };
+
+    case CANVAS_ACTIONS.RESIZE_VIEWPORT:
+      return resizeViewport(
+        state,
+        action.payload.displaySize,
+        action.payload.floorSize,
+        action.payload.reset,
+      );
 
     case CANVAS_ACTIONS.COPY_UNITS:
       return { ...state, clipboard: action.payload.units };
