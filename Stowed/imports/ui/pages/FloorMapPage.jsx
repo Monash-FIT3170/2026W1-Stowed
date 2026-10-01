@@ -18,6 +18,7 @@ import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
 import { UnitCard } from "./floorMapComponents/UnitCard";
 import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
+import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
 import { buttonStyles } from "./floorMapComponents/FloorMapStyles";
 
 const statusBarButtonStyle = {
@@ -79,6 +80,8 @@ function FloorMapPageInner() {
     canvasMode,
     setCanvasMode,
     isCanvasEditMode,
+    activeRouteTool,
+    setActiveRouteTool,
     units,
     commitUnits,
     handleSaveLayout,
@@ -146,6 +149,38 @@ function FloorMapPageInner() {
   const currentFloorMap = floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
   const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
   const siteFloorMaps = currentSite ? floorMaps.filter((f) => f.siteId === currentSite._id) : [];
+
+  // Thin strip shown in place of the edit/route sidebar when it is collapsed
+  const collapsedSidebar = (
+    <div
+      style={{
+        width: "32px",
+        flexShrink: 0,
+        background: COLOURS.CARD_BG,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        paddingTop: "14px",
+        gap: "8px",
+        flex: 1,
+      }}
+    >
+      <button
+        onClick={() => setSidebarOpen(true)}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: COLOURS.TEXT_MUTED,
+          fontSize: "14px",
+          padding: "4px",
+        }}
+        aria-label="Expand sidebar"
+      >
+        <img src="/sidebar-expand.svg" alt="" width="18" height="18" />
+      </button>
+    </div>
+  );
 
   return (
     <div
@@ -660,37 +695,23 @@ function FloorMapPageInner() {
                   </div>
                 </div>
               ) : (
-                <div
-                  style={{
-                    width: "32px",
-                    flexShrink: 0,
-                    background: COLOURS.CARD_BG,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: "14px",
-                    gap: "8px",
-                    flex: 1,
-                  }}
-                >
-                  <button
-                    onClick={() => setSidebarOpen(true)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: COLOURS.TEXT_MUTED,
-                      fontSize: "14px",
-                      padding: "4px",
-                    }}
-                    aria-label="Expand sidebar"
-                  >
-                    <img src="/sidebar-expand.svg" alt="" width="18" height="18" />
-                  </button>
-                </div>
+                collapsedSidebar
               )}
             </>
           )}
+
+          {/* ROUTE MODE SIDEBAR */}
+          {canvasMode === CANVAS_MODES.ROUTE &&
+            canManage &&
+            (isSidebarOpen ? (
+              <RouteToolbar
+                activeTool={activeRouteTool}
+                onSelectTool={setActiveRouteTool}
+                onCollapse={() => setSidebarOpen(false)}
+              />
+            ) : (
+              collapsedSidebar
+            ))}
         </div>
         {/* end right column */}
       </div>

@@ -94,6 +94,13 @@ export const CANVAS_MODES = {
   ROUTE: "route", // edit walkway nodes and links for product routing
 };
 
+/** The tools available in route mode. `null` means no tool is selected. */
+export const ROUTE_TOOLS = {
+  WALKWAY_NODE: "walkwayNode", // a point on a walkway
+  LINK: "link", // connects two nodes
+  PRODUCT_NODE: "productNode", // links a walkway to a storage unit
+};
+
 const EditorContext = createContext(null);
 
 /**
@@ -106,6 +113,7 @@ const EditorContext = createContext(null);
 export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode }) {
   const isCanvasEditMode = canvasMode === CANVAS_MODES.EDIT;
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
+  const [activeRouteTool, setActiveRouteTool] = useState(null);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
   const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
@@ -560,6 +568,10 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     canvasMode,
     setCanvasMode,
     isCanvasEditMode,
+
+    // Route mode
+    activeRouteTool,
+    setActiveRouteTool,
 
     // Units
     units,
