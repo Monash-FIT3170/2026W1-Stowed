@@ -104,6 +104,14 @@ export const Canvas = forwardRef(function Canvas(
     }
   }, [isCanvasEditMode]);
 
+  // Fit the map to the screen whenever the user switches mode
+  const prevCanvasModeRef = useRef(canvasMode);
+  useEffect(() => {
+    if (prevCanvasModeRef.current === canvasMode) return;
+    prevCanvasModeRef.current = canvasMode;
+    handleFitToScreen();
+  }, [canvasMode]);
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;

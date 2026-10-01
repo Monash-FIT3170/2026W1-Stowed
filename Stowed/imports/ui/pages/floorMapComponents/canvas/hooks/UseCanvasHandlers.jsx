@@ -477,8 +477,9 @@ export function useCanvasHandlers({
     const stage = stageRef.current;
     if (!stage) return;
 
-    const displayW = stage.width();
-    const displayH = stage.height();
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    const displayW = rect?.width || stage.width();
+    const displayH = rect?.height || stage.height();
     if (!displayW || !displayH || !width || !height) return;
 
     const PADDING = 0.9;
