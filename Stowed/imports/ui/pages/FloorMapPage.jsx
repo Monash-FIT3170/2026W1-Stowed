@@ -459,6 +459,9 @@ function FloorMapPageInner() {
             setEditorSettingsOpen(true);
             setMoreOpen(false);
           }}
+          onDetailView={() =>
+            navigate(currentFloorMap ? `/floor-map/${currentFloorMap._id}/detail` : "/floor-map")
+          }
         />
       </header>
 
