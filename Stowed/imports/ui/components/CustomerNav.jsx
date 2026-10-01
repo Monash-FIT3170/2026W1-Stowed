@@ -17,8 +17,8 @@ const CUSTOMER_LINKS = [
 export function CustomerNav() {
   return (
     <header className="customer-nav">
-      {/* The wordmark returns to the customer landing page, not to /, which
-          would bounce an account-less visitor out to the staff login. */}
+      {/* The wordmark returns to the customer home (product search), not to /,
+          which would bounce an account-less visitor out to the staff login. */}
       <NavLink to="/customer" end className="customer-nav-logo">
         Stowed<span className="customer-nav-logo-dot">.</span>
       </NavLink>

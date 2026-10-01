@@ -35,6 +35,7 @@ describe("Authentication - Registration", function () {
     const html = renderRegister();
     assert.ok(html.includes("Organisation Name"));
     assert.ok(html.includes("Organisation Code"));
+    assert.ok(html.includes("every time you log in"), "explains what the org code is for");
     assert.ok(html.includes("Username"));
     assert.ok(html.includes("Email"));
     assert.ok(html.includes("Password"));
@@ -98,6 +99,41 @@ describe("Authentication - Registration", function () {
           },
         ]),
         (err) => err?.error === "org-required",
+      );
+    });
+
+    it("requires an organisation code even when the client sends an empty value", async function () {
+      const method = Meteor.server?.method_handlers?.["users.register"];
+
+      await assert.rejects(
+        method.apply({}, [
+          {
+            username: "tester",
+            email: "tester@example.com",
+            password: "123456",
+            orgCode: "",
+            orgName: "Acme",
+          },
+        ]),
+        (err) =>
+          err?.error === "org-required" && err.reason.includes("create an organisation code"),
+      );
+    });
+
+    it("rejects organisation codes with unsupported characters", async function () {
+      const method = Meteor.server?.method_handlers?.["users.register"];
+
+      await assert.rejects(
+        method.apply({}, [
+          {
+            username: "tester",
+            email: "tester@example.com",
+            password: "123456",
+            orgCode: "acme~hq",
+            orgName: "Acme",
+          },
+        ]),
+        (err) => err?.error === "invalid-org-code",
       );
     });
 
