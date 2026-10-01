@@ -16,6 +16,7 @@ export function MapActions({
   onExport,
   onFloorSettings,
   onEditorSettings,
+  onDetailView,
 }) {
   return (
     <div
@@ -46,6 +47,12 @@ export function MapActions({
         >
           <FloorMapIcon name="panel" />
           <span>{isMobile ? "Tools" : panelOpen ? "Hide panel" : "Show panel"}</span>
+        </button>
+      )}
+      {!editing && onDetailView && (
+        <button type="button" className="floor-map-button" onClick={onDetailView}>
+          <FloorMapIcon name="units" />
+          <span>{isMobile ? "Details" : "Detailed view"}</span>
         </button>
       )}
       {canManage && (

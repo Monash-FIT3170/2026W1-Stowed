@@ -22,6 +22,7 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
+import { HighlightLayer } from "./layers/HighlightLayer";
 import { FloorMapIcon } from "../../FloorMapIcon";
 
 if (typeof window !== "undefined") Konva.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -34,6 +35,7 @@ export const Canvas = forwardRef(function Canvas(
     setSelectedStorageUnitId,
     setTooltip,
     publicView = false,
+    highlightedUnitId,
   },
   ref,
 ) {
@@ -216,6 +218,27 @@ export const Canvas = forwardRef(function Canvas(
   }, [handleCopy, handlePaste, handleDuplicate, handleDelete]);
 
   useImperativeHandle(ref, () => ({
+    /**
+     * Pans the stage so `unitId` sits in the middle of the viewport, leaving
+     * the zoom level alone - changing scale here would be undone by the
+     * re-centring effect above, which fires whenever scale changes.
+     */
+    focusUnit(unitId) {
+      const unit = units.find((candidate) => (candidate._id || candidate.id) === unitId);
+      if (!unit || !displaySize.width || !displaySize.height) return;
+
+      const px = CANVAS_CONFIG.PIXELS_PER_METER;
+      const centreX = (unit.x + unit.width / 2) * px;
+      const centreY = (unit.y + unit.height / 2) * px;
+
+      dispatch({
+        type: CANVAS_ACTIONS.SET_STAGE_POS,
+        payload: {
+          x: displaySize.width / 2 - centreX * scale,
+          y: displaySize.height / 2 - centreY * scale,
+        },
+      });
+    },
     exportPng() {
       const stage = stageRef.current;
       if (!stage) return;
@@ -319,6 +342,8 @@ export const Canvas = forwardRef(function Canvas(
                 onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
               />
             )}
+
+            <HighlightLayer units={units} highlightedUnitId={highlightedUnitId} />
           </Stage>
         )}
       </div>
