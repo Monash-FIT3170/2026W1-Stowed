@@ -328,6 +328,25 @@ export const FloorMapRouteSchema = new SimpleSchema({
     type: Number,
     min: 0,
   },
+  // Missing on routes saved before node types existed - treated as "walkway"
+  "nodes.$.type": {
+    type: String,
+    allowedValues: ["walkway", "product"],
+    optional: true,
+  },
+  // Set only on product nodes: the storage unit whose side the node sits on
+  "nodes.$.storageUnitId": {
+    type: String,
+    optional: true,
+  },
+  // Set only on product nodes: the storage locations (in storageUnitId) reachable from the node
+  "nodes.$.storageLocationIds": {
+    type: Array,
+    optional: true,
+  },
+  "nodes.$.storageLocationIds.$": {
+    type: String,
+  },
 
   links: {
     type: Array,

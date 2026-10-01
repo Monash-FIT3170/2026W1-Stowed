@@ -1,7 +1,7 @@
 // imports/api/locations/methods.js
 
 import { Meteor } from "meteor/meteor";
-import { check } from "meteor/check";
+import { check, Match } from "meteor/check";
 
 import {
   Sites,
@@ -11,7 +11,10 @@ import {
   StorageLocations,
   FloorMapRoutes,
 } from "./collections";
-import { validateRouteGraph } from "./routeGraph";
+import { validateRouteGraph, removeNodes } from "./routeGraph";
+import { getFloorSizeInMetres } from "./shapeUtils";
+// Plain constants shared with the floor map canvas (canvas pixels per metre)
+import { CANVAS_CONFIG } from "/imports/ui/pages/floorMapComponents/canvas/CanvasConfig";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isValidStocktakeInterval } from "./stocktake";
@@ -248,15 +251,62 @@ Meteor.methods({
    */
   async "floorMapRoutes.save"({ floorMapId, nodes, links }) {
     check(floorMapId, String);
-    check(nodes, [{ id: String, x: Number, y: Number }]);
+    check(nodes, [
+      {
+        id: String,
+        x: Number,
+        y: Number,
+        type: Match.Maybe(String),
+        storageUnitId: Match.Maybe(String),
+        storageLocationIds: Match.Maybe([String]),
+      },
+    ]);
     check(links, [{ id: String, fromId: String, toId: String }]);
 
     await assertOrgAccess(FloorMaps, floorMapId, this.userId);
     await requirePermission(this.userId, "locations.manage");
 
-    const problem = validateRouteGraph(nodes, links);
+    const floorMap = await FloorMaps.findOneAsync(floorMapId);
+    const floorSize = getFloorSizeInMetres(floorMap.floorSize, CANVAS_CONFIG.PIXELS_PER_METER);
+    const problem = validateRouteGraph(nodes, links, floorSize);
     if (problem) {
       throw new Meteor.Error("invalid-route", problem);
+    }
+
+    // Product nodes must sit on storage units belonging to this floor map
+    const storageUnitIds = [...new Set(nodes.map((n) => n.storageUnitId).filter(Boolean))];
+    if (storageUnitIds.length > 0) {
+      const foundCount = await StorageUnits.find({
+        _id: { $in: storageUnitIds },
+        floorMapId,
+      }).countAsync();
+      if (foundCount !== storageUnitIds.length) {
+        throw new Meteor.Error(
+          "invalid-route",
+          "A product node is attached to a storage unit that is not on this floor map.",
+        );
+      }
+    }
+
+    // Each product node may only give access to storage locations inside its own unit
+    const locationIds = [...new Set(nodes.flatMap((n) => n.storageLocationIds ?? []))];
+    if (locationIds.length > 0) {
+      const locations = await StorageLocations.find(
+        { _id: { $in: locationIds } },
+        { fields: { storageUnitId: 1 } },
+      ).fetchAsync();
+      const unitIdByLocationId = new Map(locations.map((l) => [l._id, l.storageUnitId]));
+      const hasForeignLocation = nodes.some((node) =>
+        (node.storageLocationIds ?? []).some(
+          (locationId) => unitIdByLocationId.get(locationId) !== node.storageUnitId,
+        ),
+      );
+      if (hasForeignLocation) {
+        throw new Meteor.Error(
+          "invalid-route",
+          "A product node lists a storage location that is not in its storage unit.",
+        );
+      }
     }
 
     const orgId = await getCallerOrgId(this.userId);
@@ -405,6 +455,19 @@ Meteor.methods({
     }
 
     await StorageUnits.removeAsync(storageUnitId);
+
+    // Product nodes on this unit's sides (and their links) no longer have anywhere to sit
+    const route = await FloorMapRoutes.findOneAsync({ floorMapId: storageUnit.floorMapId });
+    if (route?.nodes.some((node) => node.storageUnitId === storageUnitId)) {
+      const { nodes, links } = removeNodes(
+        route.nodes,
+        route.links,
+        (node) => node.storageUnitId === storageUnitId,
+      );
+      await FloorMapRoutes.updateAsync(route._id, {
+        $set: { nodes, links, updatedAt: new Date() },
+      });
+    }
   },
 
   async "storageUnits.bulkGenerateCodes"({ unitIds }) {
@@ -784,6 +847,21 @@ Meteor.methods({
     }
 
     await StorageLocations.removeAsync(storageLocationId);
+
+    // Product nodes on this unit no longer give access to the deleted location
+    const route = await FloorMapRoutes.findOneAsync({ floorMapId: storageUnit.floorMapId });
+    const listsLocation = (node) => node.storageLocationIds?.includes(storageLocationId);
+    if (route?.nodes.some(listsLocation)) {
+      const nodes = route.nodes.map((node) =>
+        listsLocation(node)
+          ? {
+              ...node,
+              storageLocationIds: node.storageLocationIds.filter((id) => id !== storageLocationId),
+            }
+          : node,
+      );
+      await FloorMapRoutes.updateAsync(route._id, { $set: { nodes, updatedAt: new Date() } });
+    }
   },
 
   /**

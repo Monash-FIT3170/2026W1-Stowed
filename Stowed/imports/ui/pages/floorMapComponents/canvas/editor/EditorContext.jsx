@@ -13,11 +13,17 @@ import {
   buildRectShape,
   getBoundingBox,
   getTransformedBounds,
+  getFloorSizeInMetres,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
-import { canLink } from "/imports/api/locations/routeGraph";
+import {
+  canLinkNodes,
+  removeNodes,
+  splitLink,
+  ROUTE_NODE_TYPES,
+} from "/imports/api/locations/routeGraph";
 import { COLOURS } from "../../FloorMapStyles";
 
 function hasUsableShape(shape) {
@@ -35,17 +41,9 @@ function getDrawableShape(unit) {
 }
 
 function normalizeFloorSize(floorSize) {
-  const width = Number(floorSize?.width);
-  const height = Number(floorSize?.height);
-  if (!(width > 0 && height > 0)) return null;
-
-  const looksLikeMeters = width <= 100 && height <= 100;
-  return looksLikeMeters
-    ? {
-        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-      }
-    : { width, height };
+  const px = CANVAS_CONFIG.PIXELS_PER_METER;
+  const metres = getFloorSizeInMetres(floorSize, px);
+  return metres ? { width: metres.width * px, height: metres.height * px } : null;
 }
 
 /**
@@ -104,7 +102,7 @@ export const CANVAS_MODES = {
 export const ROUTE_TOOLS = {
   WALKWAY_NODE: "walkwayNode", // a point on a walkway
   LINK: "link", // connects two nodes
-  PRODUCT_NODE: "productNode", // links a walkway to a storage unit
+  PRODUCT_NODE: "productNode", // a pick point on the side of a storage unit
 };
 
 /** Client-side id for route nodes and links until they are persisted. */
@@ -127,6 +125,9 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
   const [activeRouteTool, setActiveRouteTool] = useState(null);
   // First node picked by the link tool, waiting for a second node
   const [pendingLinkNodeId, setPendingLinkNodeId] = useState(null);
+  // Product node whose storage locations are being chosen: { nodeId, isNew } or null.
+  // `isNew` means it was just placed, so cancelling removes it again.
+  const [editingProductNode, setEditingProductNode] = useState(null);
   // Walkway nodes for routing, positioned in metres: [{ id, x, y }]
   const [walkwayNodes, setWalkwayNodes] = useState([]);
   // Undirected links between walkway nodes: [{ id, fromId, toId }]
@@ -485,18 +486,83 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
   }
 
   // --- WALKWAY ROUTE ---
+  /** Adds a node and returns its new id. */
+  function addRouteNode(node) {
+    const id = createRouteId(node.type);
+    setWalkwayNodes((prev) => [...prev, { id, ...node }]);
+    setIsRouteDirty(true);
+    return id;
+  }
+
   /**
    * Adds a walkway node at the given position (in metres). Saved with handleSaveRoute.
    *
    * @param {{ x: number, y: number }} position
    */
   function addWalkwayNode({ x, y }) {
-    setWalkwayNodes((prev) => [...prev, { id: createRouteId("walkway"), x, y }]);
-    setIsRouteDirty(true);
+    addRouteNode({ type: ROUTE_NODE_TYPES.WALKWAY, x, y });
   }
 
   /**
-   * Links two walkway nodes. Ignored if they are the same node or already linked.
+   * Adds a product node on the side of a storage unit, then asks the user which of the unit's
+   * storage locations can be reached from it (see editingProductNode). Saved with handleSaveRoute.
+   *
+   * @param {{ x: number, y: number, storageUnitId: string }} placement - Position in metres
+   */
+  function addProductNode({ x, y, storageUnitId }) {
+    const nodeId = addRouteNode({
+      type: ROUTE_NODE_TYPES.PRODUCT,
+      x,
+      y,
+      storageUnitId,
+      storageLocationIds: [],
+    });
+    setEditingProductNode({ nodeId, isNew: true });
+  }
+
+  /**
+   * Opens the storage location picker for an existing product node.
+   *
+   * @param {string} nodeId
+   */
+  function editProductNode(nodeId) {
+    setEditingProductNode({ nodeId, isNew: false });
+  }
+
+  /**
+   * Saves the chosen storage locations for the product node being edited and closes the picker.
+   *
+   * @param {string[]} storageLocationIds - Locations within the node's storage unit
+   */
+  function confirmProductNodeLocations(storageLocationIds) {
+    if (!editingProductNode) return;
+    const { nodeId } = editingProductNode;
+    setWalkwayNodes((prev) =>
+      prev.map((node) => (node.id === nodeId ? { ...node, storageLocationIds } : node)),
+    );
+    setIsRouteDirty(true);
+    setEditingProductNode(null);
+  }
+
+  /**
+   * Closes the storage location picker. A node that was only just placed is removed again,
+   * so every product node always has its accessible locations chosen.
+   */
+  function cancelProductNodeEdit() {
+    if (editingProductNode?.isNew) {
+      const { nodes, links } = removeNodes(
+        walkwayNodes,
+        walkwayLinks,
+        (node) => node.id === editingProductNode.nodeId,
+      );
+      setWalkwayNodes(nodes);
+      setWalkwayLinks(links);
+    }
+    setEditingProductNode(null);
+  }
+
+  /**
+   * Links two nodes. Ignored if they are the same node, already linked, or both product nodes.
    * Saved with handleSaveRoute.
    *
    * @param {string} fromId
@@ -504,8 +570,35 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
    * @returns {boolean} Whether a link was added
    */
   function addWalkwayLink(fromId, toId) {
-    if (!canLink(walkwayLinks, fromId, toId)) return false;
+    if (!canLinkNodes(walkwayNodes, walkwayLinks, fromId, toId)) return false;
     setWalkwayLinks((prev) => [...prev, { id: createRouteId("link"), fromId, toId }]);
+    setIsRouteDirty(true);
+    return true;
+  }
+
+  /**
+   * Connects a node onto the middle of an existing link: the link is split at `point` by a new
+   * walkway node, which is then linked to `nodeId`. Saved with handleSaveRoute.
+   *
+   * @param {string} nodeId - The node to connect (usually a product node)
+   * @param {string} linkId - The link to split
+   * @param {{ x: number, y: number }} point - Where on the link to insert the junction (metres)
+   * @returns {boolean} Whether the link was split
+   */
+  function linkNodeOntoLink(nodeId, linkId, point) {
+    const split = splitLink(walkwayNodes, walkwayLinks, linkId, point, {
+      nodeId: createRouteId(ROUTE_NODE_TYPES.WALKWAY),
+      linkIdA: createRouteId("link"),
+      linkIdB: createRouteId("link"),
+    });
+    if (!split) return false;
+
+    const junctionId = split.nodes.at(-1).id;
+    setWalkwayNodes(split.nodes);
+    setWalkwayLinks([
+      ...split.links,
+      { id: createRouteId("link"), fromId: nodeId, toId: junctionId },
+    ]);
     setIsRouteDirty(true);
     return true;
   }
@@ -519,13 +612,36 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
       return;
     }
 
+    // Drop product nodes whose storage unit has since been deleted, so they can't block the save
+    const savedUnitIds = new Set(savedUnits.map((unit) => unit._id));
+    const { nodes: remainingNodes, links } = removeNodes(
+      walkwayNodes,
+      walkwayLinks,
+      (node) => Boolean(node.storageUnitId) && !savedUnitIds.has(node.storageUnitId),
+    );
+
+    // Likewise drop storage locations that were deleted or moved to another unit
+    const unitIdByLocationId = new Map(
+      StorageLocations.find({}, { fields: { storageUnitId: 1 } })
+        .fetch()
+        .map((location) => [location._id, location.storageUnitId]),
+    );
+    const nodes = remainingNodes.map((node) =>
+      node.storageLocationIds
+        ? {
+            ...node,
+            storageLocationIds: node.storageLocationIds.filter(
+              (id) => unitIdByLocationId.get(id) === node.storageUnitId,
+            ),
+          }
+        : node,
+    );
+
     setIsSavingRoute(true);
     try {
-      await callMethod("floorMapRoutes.save", {
-        floorMapId: floorMap._id,
-        nodes: walkwayNodes,
-        links: walkwayLinks,
-      });
+      await callMethod("floorMapRoutes.save", { floorMapId: floorMap._id, nodes, links });
+      setWalkwayNodes(nodes);
+      setWalkwayLinks(links);
       setIsRouteDirty(false);
     } catch (error) {
       console.error(error);
@@ -673,8 +789,14 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     setPendingLinkNodeId,
     walkwayNodes,
     addWalkwayNode,
+    addProductNode,
+    editingProductNode,
+    editProductNode,
+    confirmProductNodeLocations,
+    cancelProductNodeEdit,
     walkwayLinks,
     addWalkwayLink,
+    linkNodeOntoLink,
     isRouteDirty,
     isSavingRoute,
     handleSaveRoute,

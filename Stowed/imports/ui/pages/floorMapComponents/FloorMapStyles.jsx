@@ -36,6 +36,9 @@ export const COLOURS = {
   WALKWAY_NODE_STROKE: "#ffffff",
   WALKWAY_NODE_SELECTED_STROKE: "#14532d",
   WALKWAY_LINK: "#16a34a",
+  PRODUCT_NODE: "#2563eb",
+  PRODUCT_LINK: "#2563eb",
+  PRODUCT_ACCESS_NODE: "#9333ea", // walkway node where a product node joins the walkway
 };
 
 const baseButton = {
@@ -823,4 +826,51 @@ export const modalStyles = {
     fontSize: 11,
     background: COLOURS.CARD_BG,
   },
+};
+
+/** Storage location picker shown for product nodes - builds on modalStyles. */
+export const productNodeModalStyles = {
+  helper: {
+    margin: 0,
+    fontSize: "11px",
+    color: COLOURS.TEXT_MUTED,
+  },
+  empty: {
+    margin: 0,
+    padding: "10px",
+    border: `1px dashed ${COLOURS.BUTTON_BORDER}`,
+    borderRadius: 8,
+    fontSize: "11px",
+    color: COLOURS.TEXT_MUTED,
+    textAlign: "center",
+  },
+  list: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    maxHeight: "240px",
+    overflowY: "auto",
+  },
+  option: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "6px 8px",
+    borderRadius: "8px",
+    border: `1px solid ${COLOURS.CARD_BORDER}`,
+    background: COLOURS.INPUT_BG,
+    fontSize: "11px",
+    cursor: "pointer",
+  },
+  optionCode: {
+    fontWeight: 700,
+    color: COLOURS.TEXT_PRIMARY,
+  },
+  optionName: {
+    color: COLOURS.TEXT_MUTED,
+  },
+  confirmButton: (isEnabled) => ({
+    ...modalStyles.buttonPrimary,
+    ...(isEnabled ? {} : buttonStyles.disabled),
+  }),
 };

@@ -110,12 +110,14 @@ export const Canvas = forwardRef(function Canvas(
   });
 
   const {
-    isRouteToolActive,
+    handlesClicks: routeHandlesClicks,
     cursor: routeCursor,
     previewNode,
     pendingLinkNodeId,
+    selectedNodeId,
     unavailableNodeIds,
     linkPreviewEnd,
+    junctionPreview,
     handleRouteMouseMove,
     handleRouteMouseLeave,
     handleRouteClick,
@@ -221,7 +223,7 @@ export const Canvas = forwardRef(function Canvas(
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
-            onClick={isRouteToolActive ? handleRouteClick : handleStageClick}
+            onClick={routeHandlesClicks ? handleRouteClick : handleStageClick}
             onMouseMove={handleRouteMouseMove}
             onMouseLeave={handleRouteMouseLeave}
           >
@@ -283,8 +285,10 @@ export const Canvas = forwardRef(function Canvas(
                 links={walkwayLinks}
                 previewNode={previewNode}
                 pendingLinkNodeId={pendingLinkNodeId}
+                selectedNodeId={selectedNodeId}
                 unavailableNodeIds={unavailableNodeIds}
                 linkPreviewEnd={linkPreviewEnd}
+                junctionPreview={junctionPreview}
                 scale={scale}
               />
             )}

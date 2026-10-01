@@ -23,6 +23,7 @@ import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
 import { UnitCard } from "./floorMapComponents/UnitCard";
 import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
+import { ProductNodeLocationsModal } from "./floorMapComponents/ProductNodeLocationsModal";
 import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
 import { DownloadIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
 import { buttonStyles, sidebarStyles, statusBarStyles } from "./floorMapComponents/FloorMapStyles";
@@ -65,6 +66,10 @@ function FloorMapPageInner() {
     isRouteDirty,
     isSavingRoute,
     handleSaveRoute,
+    walkwayNodes,
+    editingProductNode,
+    confirmProductNodeLocations,
+    cancelProductNodeEdit,
     units,
     commitUnits,
     handleSaveLayout,
@@ -87,6 +92,11 @@ function FloorMapPageInner() {
   const [editingShape, setEditingShape] = useState(null);
   const [isChangingShape, setIsChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
+
+  // The product node whose accessible storage locations are being chosen, if any
+  const editingProductNodeData = editingProductNode
+    ? walkwayNodes.find((node) => node.id === editingProductNode.nodeId)
+    : null;
 
   // Fetch all sites, floor maps, storage units and shapes
   const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
@@ -710,6 +720,17 @@ function FloorMapPageInner() {
             setIsCreateShapeOpen(false);
             setEditingShape(null);
           }}
+        />
+      )}
+
+      {/* PRODUCT NODE STORAGE LOCATIONS MODAL - on placement, or when a product node is clicked */}
+      {editingProductNodeData && (
+        <ProductNodeLocationsModal
+          key={editingProductNode.nodeId}
+          node={editingProductNodeData}
+          isNew={editingProductNode.isNew}
+          onConfirm={confirmProductNodeLocations}
+          onCancel={cancelProductNodeEdit}
         />
       )}
     </div>

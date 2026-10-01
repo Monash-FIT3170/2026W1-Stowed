@@ -20,7 +20,7 @@ const TOOLS = [
   {
     tool: ROUTE_TOOLS.PRODUCT_NODE,
     name: "Product Node",
-    description: "Link a walkway to a storage unit",
+    description: "Place on the side of a storage unit",
     Icon: ProductNodeIcon,
   },
 ];
