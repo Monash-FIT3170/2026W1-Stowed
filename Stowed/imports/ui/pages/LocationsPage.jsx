@@ -14,6 +14,7 @@ import {
 import { ProductRecords } from "/imports/api/products/collections";
 import { isImageFile, uploadImageToServer } from "/imports/api/upload";
 import { useToast } from "../components/Toast";
+import { LocationHierarchy } from "./locationComponents/LocationHierarchy";
 import {
   DEFAULT_STOCKTAKE_INTERVAL_DAYS,
   getLocationStocktakeStatus,
@@ -697,7 +698,13 @@ export function LocationsPage() {
         )}
 
         {activeTab === TABS.HIERARCHY && (
-          <div className="locations-empty">Loading location hierarchy…</div>
+          <LocationHierarchy
+            sites={sites}
+            floorMaps={floorMaps}
+            storageUnits={storageUnits}
+            storageLocations={storageLocations}
+            loading={loading}
+          />
         )}
       </div>
 
