@@ -5,6 +5,7 @@ import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { toCsv, INVENTORY_COLUMNS, LOCATION_COLUMNS } from "/imports/api/products/export";
 import { ImportRecords } from "/imports/api/importRecords/collections";
+import { resetTutorial } from "../tutorial/tutorialStorage";
 import "../Global.css";
 import "./SettingsPage.css";
 
@@ -142,7 +143,7 @@ function downloadJson(filename, data) {
 }
 
 export function SettingsPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const canExport = hasClientPermission(role, "products.export");
 
   const [showExportModal, setShowExportModal] = useState(false);
@@ -357,6 +358,20 @@ export function SettingsPage() {
         </div>
 
         <div className="settings-wrap">
+          <div className="tools-card bulk-card" style={{ marginBottom: "16px" }}>
+            <div className="export-format-row">
+              <div>
+                <div className="export-format-title">Tutorial</div>
+                <p className="export-format-desc">
+                  Replay the sidebar tour and the quick intros shown on each page.
+                </p>
+              </div>
+              <button className="btn-secondary" onClick={() => resetTutorial(user?._id)}>
+                Replay tutorial
+              </button>
+            </div>
+          </div>
+
           <div className="bulk-import-wrapper">
             <div className="tools-card bulk-card">
               <div className="bulk-import-hero">

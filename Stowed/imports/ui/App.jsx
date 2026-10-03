@@ -25,10 +25,12 @@ import { VerifyEmail } from "./VerifyEmail";
 import { ForgotPassword } from "./ForgotPassword";
 import { ResetPassword } from "./ResetPassword";
 import { Login } from "./Login";
+import { HomePage } from "./pages/HomePage";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { SettingsPage } from "./pages/SettingsPage";
+import { Tutorial } from "./tutorial/Tutorial";
 
 const LocationsPage = lazy(() =>
   import("./pages/LocationsPage").then((module) => ({
@@ -68,6 +70,7 @@ export function App() {
           }}
         >
           {isLoggedIn && <Sidebar />}
+          {isLoggedIn && <Tutorial userId={user._id} />}
           {/* Layout is in Sidebar.css, not inline: a media query cannot override
               an inline style, so the dock could never reclaim this margin. */}
           <main className={`app-main${isLoggedIn ? " with-sidebar" : ""}`}>
@@ -83,7 +86,7 @@ export function App() {
               />
               <Route
                 path="/"
-                element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />}
+                element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <HomePage />}
               />
               <Route
                 path="/dashboard"
