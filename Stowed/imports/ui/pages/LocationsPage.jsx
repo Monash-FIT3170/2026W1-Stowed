@@ -28,6 +28,7 @@ const TABS = {
   LOCATIONS: "locations",
   FLOOR_MAPS: "floor-maps",
   SITES: "sites",
+  HIERARCHY: "hierarchy",
 };
 
 const EMPTY_FORMS = {
@@ -200,6 +201,7 @@ export function LocationsPage() {
   }
 
   function openCreate() {
+    if (activeTab === TABS.HIERARCHY) return;
     setEditing(null);
     setFormMode(activeTab);
     if (activeTab === TABS.LOCATIONS) {
@@ -350,6 +352,7 @@ export function LocationsPage() {
     { id: TABS.LOCATIONS, label: "Storage Locations", count: storageLocations.length },
     { id: TABS.FLOOR_MAPS, label: "Floor Maps", count: floorMaps.length },
     { id: TABS.SITES, label: "Sites", count: sites.length },
+    { id: TABS.HIERARCHY, label: "Hierarchy", count: sites.length },
   ];
   const primaryLabel = {
     [TABS.LOCATIONS]: "Add location",
@@ -372,7 +375,7 @@ export function LocationsPage() {
               Browse storage locations and manage your organisation’s physical structure.
             </p>
           </div>
-          {canManage && (
+          {canManage && activeTab !== TABS.HIERARCHY && (
             <button type="button" className="btn-primary" onClick={openCreate}>
               + {primaryLabel}
             </button>
@@ -691,6 +694,10 @@ export function LocationsPage() {
               })
             )}
           </div>
+        )}
+
+        {activeTab === TABS.HIERARCHY && (
+          <div className="locations-empty">Loading location hierarchy…</div>
         )}
       </div>
 
