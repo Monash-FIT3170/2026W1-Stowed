@@ -11,6 +11,23 @@ export const OrganisationsSchema = new SimpleSchema({
   updatedAt: { type: Date },
 });
 
+// Org codes form the prefix of compound usernames (`${code}~${username}`),
+// so keep them short and free of the "~" separator.
+export const ORG_CODE_MAX_LENGTH = 20;
+export const ORG_CODE_REQUIRED_MESSAGE =
+  "You need to create an organisation code — your team will use it to log in.";
+export const ORG_CODE_FORMAT_MESSAGE = `Organisation code can only use letters, numbers, - and _ (max ${ORG_CODE_MAX_LENGTH} characters).`;
+
+// Returns an error message for an invalid org code, or "" when it is valid.
+export function validateOrgCode(code) {
+  const trimmed = (code ?? "").trim();
+  if (!trimmed) return ORG_CODE_REQUIRED_MESSAGE;
+  if (trimmed.length > ORG_CODE_MAX_LENGTH || !/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+    return ORG_CODE_FORMAT_MESSAGE;
+  }
+  return "";
+}
+
 if (Meteor.isServer) {
   Meteor.startup(() => {
     Organisations.rawCollection().createIndex({ code: 1 }, { unique: true });
