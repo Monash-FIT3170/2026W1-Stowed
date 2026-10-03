@@ -307,3 +307,188 @@ describeServer("mapShapes.update", function () {
     assert.strictEqual(updated.name, shape.name);
   });
 });
+
+// deleteWithReassign
+describeServer("storageUnits.deleteWithReassign", function () {
+  const SOURCE_UNIT_ID = "reassign-source-unit";
+  const TARGET_UNIT_ID = "reassign-target-unit";
+  const OTHER_SITE_ID = "reassign-other-site";
+  const OTHER_FLOOR_MAP_ID = "reassign-other-floor-map";
+  const OTHER_ORG_UNIT_ID = "reassign-other-org-unit";
+  const LOCATION_A = "reassign-loc-a";
+  const LOCATION_B = "reassign-loc-b";
+  const unitIds = [SOURCE_UNIT_ID, TARGET_UNIT_ID, OTHER_ORG_UNIT_ID];
+  const locationIds = [LOCATION_A, LOCATION_B];
+
+  function makeUnit(_id, orgId, floorMapId) {
+    const now = new Date();
+    return {
+      _id,
+      orgId,
+      floorMapId,
+      name: _id,
+      type: "shelf",
+      shape: {
+        orgId,
+        shapeId: 0,
+        name: "reassign-shape",
+        points: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 1 },
+          { x: 1, y: 0 },
+        ],
+        gridReference: { x: 0, y: 0 },
+      },
+      offset: { x: 0, y: 0 },
+      rotation: 0,
+      scale: { x: 1, y: 1 },
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  function makeLocation(_id) {
+    const now = new Date();
+    return {
+      _id,
+      orgId: TEST_ORG_ID,
+      storageUnitId: SOURCE_UNIT_ID,
+      name: _id,
+      storedItems: [],
+      lastStocktakeAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  async function cleanup() {
+    await StorageUnits.removeAsync({ _id: { $in: unitIds } });
+    await StorageLocations.removeAsync({ _id: { $in: locationIds } });
+    await FloorMaps.removeAsync(OTHER_FLOOR_MAP_ID);
+    await Sites.removeAsync(OTHER_SITE_ID);
+  }
+
+  beforeEach(async function () {
+    await cleanup();
+    const now = new Date();
+    await Sites.insertAsync({
+      _id: OTHER_SITE_ID,
+      orgId: "reassign-other-org",
+      name: "Other Site",
+      description: "",
+      createdAt: now,
+      updatedAt: now,
+    });
+    await FloorMaps.insertAsync({
+      _id: OTHER_FLOOR_MAP_ID,
+      orgId: "reassign-other-org",
+      siteId: OTHER_SITE_ID,
+      name: "Other Map",
+      createdAt: now,
+      updatedAt: now,
+    });
+    await StorageUnits.insertAsync(makeUnit(SOURCE_UNIT_ID, TEST_ORG_ID, TEST_FLOOR_MAP_ID));
+    await StorageUnits.insertAsync(makeUnit(TARGET_UNIT_ID, TEST_ORG_ID, TEST_FLOOR_MAP_ID));
+    await StorageUnits.insertAsync(
+      makeUnit(OTHER_ORG_UNIT_ID, "reassign-other-org", OTHER_FLOOR_MAP_ID),
+    );
+    await StorageLocations.insertAsync(makeLocation(LOCATION_A));
+    await StorageLocations.insertAsync(makeLocation(LOCATION_B));
+  });
+
+  after(cleanup);
+
+  it("moves every location to its chosen unit and deletes the unit", async function () {
+    await callMethod("storageUnits.deleteWithReassign", {
+      storageUnitId: SOURCE_UNIT_ID,
+      assignments: [
+        { storageLocationId: LOCATION_A, targetUnitId: TARGET_UNIT_ID },
+        { storageLocationId: LOCATION_B, targetUnitId: TARGET_UNIT_ID },
+      ],
+    });
+
+    assert.strictEqual(await StorageUnits.findOneAsync(SOURCE_UNIT_ID), undefined);
+    const locA = await StorageLocations.findOneAsync(LOCATION_A);
+    const locB = await StorageLocations.findOneAsync(LOCATION_B);
+    assert.strictEqual(locA.storageUnitId, TARGET_UNIT_ID);
+    assert.strictEqual(locB.storageUnitId, TARGET_UNIT_ID);
+  });
+
+  it("throws missing-destination when a location has no assignment", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("storageUnits.deleteWithReassign", {
+          storageUnitId: SOURCE_UNIT_ID,
+          assignments: [{ storageLocationId: LOCATION_A, targetUnitId: TARGET_UNIT_ID }],
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "missing-destination");
+        return true;
+      },
+    );
+    assert.ok(await StorageUnits.findOneAsync(SOURCE_UNIT_ID));
+  });
+
+  it("throws invalid-destination when the target is the unit being deleted", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("storageUnits.deleteWithReassign", {
+          storageUnitId: SOURCE_UNIT_ID,
+          assignments: [
+            { storageLocationId: LOCATION_A, targetUnitId: SOURCE_UNIT_ID },
+            { storageLocationId: LOCATION_B, targetUnitId: TARGET_UNIT_ID },
+          ],
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "invalid-destination");
+        return true;
+      },
+    );
+  });
+
+  it("throws invalid-storage-unit when the target does not exist", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("storageUnits.deleteWithReassign", {
+          storageUnitId: SOURCE_UNIT_ID,
+          assignments: [
+            { storageLocationId: LOCATION_A, targetUnitId: "no-such-unit" },
+            { storageLocationId: LOCATION_B, targetUnitId: TARGET_UNIT_ID },
+          ],
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "invalid-storage-unit");
+        return true;
+      },
+    );
+  });
+
+  it("throws forbidden when the target belongs to another organisation", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("storageUnits.deleteWithReassign", {
+          storageUnitId: SOURCE_UNIT_ID,
+          assignments: [
+            { storageLocationId: LOCATION_A, targetUnitId: OTHER_ORG_UNIT_ID },
+            { storageLocationId: LOCATION_B, targetUnitId: TARGET_UNIT_ID },
+          ],
+        }),
+      (err) => {
+        assert.strictEqual(err.error, "forbidden");
+        return true;
+      },
+    );
+    const locA = await StorageLocations.findOneAsync(LOCATION_A);
+    assert.strictEqual(locA.storageUnitId, SOURCE_UNIT_ID);
+  });
+
+  it("deletes an empty unit with no assignments", async function () {
+    await StorageLocations.removeAsync({ _id: { $in: locationIds } });
+    await callMethod("storageUnits.deleteWithReassign", {
+      storageUnitId: SOURCE_UNIT_ID,
+      assignments: [],
+    });
+    assert.strictEqual(await StorageUnits.findOneAsync(SOURCE_UNIT_ID), undefined);
+  });
+});
