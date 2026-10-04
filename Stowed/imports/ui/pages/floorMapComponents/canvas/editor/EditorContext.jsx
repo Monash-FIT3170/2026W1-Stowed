@@ -28,6 +28,22 @@ function getDrawableShape(unit) {
   return hasUsableShape(unit.shape) ? unit.shape : getFallbackShape(unit);
 }
 
+function isUnitInsideFloor(unit, floorSize) {
+  const widthMeters = floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+  const heightMeters = floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+  return (
+    unit.x >= 0 &&
+    unit.y >= 0 &&
+    unit.x + unit.width <= widthMeters &&
+    unit.y + unit.height <= heightMeters
+  );
+}
+
+function hasStorageLocations(unit) {
+  // Match storageUnits.delete: even an empty storage location prevents deletion.
+  return Boolean(unit._id && StorageLocations.findOne({ storageUnitId: unit._id }));
+}
+
 function normalizeFloorSize(floorSize) {
   const width = Number(floorSize?.width);
   const height = Number(floorSize?.height);
@@ -238,6 +254,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   async function handleSaveLayout({ showSuccessAlert = true } = {}) {
+    if (isLoading) {
+      alert("Please wait for the floor map and storage locations to finish loading.");
+      return false;
+    }
     if (creatingUnitIdsRef.current.size > 0) {
       alert("Please wait for new units to finish being created, then save again.");
       return false;
@@ -251,25 +271,31 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     const { stack, index } = historyRef.current;
     const unitsToSave = stack[index];
+    const currentUnitIds = new Set(unitsToSave.map((unit) => unit._id).filter(Boolean));
+    const unitsToDelete = savedUnits.filter((unit) => !currentUnitIds.has(unit._id));
+    const blockedUnits = unitsToDelete.filter(hasStorageLocations);
+
+    // Validate every removal before writing anything, including removals from undo/redo.
+    if (blockedUnits.length > 0) {
+      const unitNames = blockedUnits.map((unit) => unit.name || unit._id).join(", ");
+      alert(
+        `Cannot save the layout because these units still contain storage locations: ${unitNames}.\n\nRestore the units or remove their storage locations before saving.`,
+      );
+      return false;
+    }
+
+    if (unitsToSave.some((unit) => !isUnitInsideFloor(unit, floorSize))) {
+      alert(
+        "Cannot save the layout while units are outside the floor. Move them inside or increase the floor size.",
+      );
+      return false;
+    }
 
     try {
-      await callMethod("floorMaps.update", {
-        floorMapId: activeFloorMapId,
-        siteId: floorMap.siteId,
-        name: floorMap.name,
-        imageUrl: floorMap.imageUrl || "",
-        floorSize,
-        settings: canvasSettings,
-      });
-
-      const currentUnitIds = unitsToSave.filter((unit) => unit._id).map((unit) => unit._id);
-
-      for (const savedUnit of savedUnits) {
-        if (!currentUnitIds.includes(savedUnit._id)) {
-          await callMethod("storageUnits.delete", {
-            storageUnitId: savedUnit._id,
-          });
-        }
+      for (const savedUnit of unitsToDelete) {
+        await callMethod("storageUnits.delete", {
+          storageUnitId: savedUnit._id,
+        });
       }
 
       const savedCanvasUnits = [];
@@ -336,6 +362,17 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
           });
         }
       }
+
+      // Persist dimensions only after all unit operations succeed. A server-side
+      // deletion rejection (e.g. a newly added location) must not shrink the floor.
+      await callMethod("floorMaps.update", {
+        floorMapId: activeFloorMapId,
+        siteId: floorMap.siteId,
+        name: floorMap.name,
+        imageUrl: floorMap.imageUrl || "",
+        floorSize,
+        settings: canvasSettings,
+      });
 
       setUnits(savedCanvasUnits);
       historyRef.current = { stack: [savedCanvasUnits], index: 0 };
@@ -434,18 +471,28 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
   // --- FLOOR MAP SETTINGS ---
   function handleFloorMapSettingsSave({ floorSize: newFloorSize }) {
-    const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
-    const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
-    const unitsInsideFloor = units.filter(
-      (unit) =>
-        unit.x >= 0 &&
-        unit.y >= 0 &&
-        unit.x + unit.width <= floorWidthMeters &&
-        unit.y + unit.height <= floorHeightMeters,
-    );
+    if (isLoading) {
+      alert("Please wait for the floor map and storage locations to finish loading.");
+      return false;
+    }
+    if (creatingUnitIdsRef.current.size > 0) {
+      alert("Please wait for new units to finish being created, then resize again.");
+      return false;
+    }
+
+    const unitsInsideFloor = units.filter((unit) => isUnitInsideFloor(unit, newFloorSize));
     const removedUnits = units.filter(
       (unit) => !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id),
     );
+    const blockedUnits = removedUnits.filter(hasStorageLocations);
+
+    if (blockedUnits.length > 0) {
+      const unitNames = blockedUnits.map((unit) => unit.name || unit.id).join(", ");
+      alert(
+        `Cannot resize the floor because these units would be outside its bounds and still contain storage locations: ${unitNames}.\n\nMove these units inside the new bounds, choose a larger floor size, or remove their storage locations first.`,
+      );
+      return false;
+    }
 
     if (removedUnits.length > 0) {
       const unitNames = removedUnits.map((unit) => unit.name || unit.id).join(", ");
