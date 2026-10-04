@@ -1,3 +1,4 @@
+import "./loadEnv";
 import { Meteor } from "meteor/meteor";
 import { WebApp } from "meteor/webapp";
 import crypto from "crypto";
