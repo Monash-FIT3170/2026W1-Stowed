@@ -199,12 +199,17 @@ function actionKey(userId, toolName, args) {
   return `${userId}:${toolName}:${JSON.stringify(sorted)}`;
 }
 
-function checkConfirmation({ userId, toolName, args, turn }) {
+function checkConfirmation({ userId, toolName, args, turn, userConfirmed }) {
   const key = actionKey(userId, toolName, args);
   const now = Date.now();
   const pending = pendingActions.get(key);
+  const previewedEarlier = pending && pending.turn < turn && pending.expires > now;
 
-  if (args.confirmed === true && pending && pending.turn < turn && pending.expires > now) {
+  // Either the exact call was previewed on an earlier turn, or the user's own
+  // message this turn was a CONFIRM replying to a confirmation request. The
+  // model can't fake the user's message, so that covers the case where it asked
+  // in plain text without previewing through the tool first.
+  if (args.confirmed === true && (previewedEarlier || userConfirmed)) {
     pendingActions.delete(key);
     return true;
   }
@@ -382,6 +387,7 @@ export async function executeTool({
   toolName,
   args = {},
   turn,
+  userConfirmed = false,
   allowedToolNames,
   actions,
 }) {
@@ -389,7 +395,10 @@ export async function executeTool({
     return { error: "That action isn't available for your role." };
   }
 
-  if (MUTATING_TOOLS.has(toolName) && !checkConfirmation({ userId, toolName, args, turn })) {
+  if (
+    MUTATING_TOOLS.has(toolName) &&
+    !checkConfirmation({ userId, toolName, args, turn, userConfirmed })
+  ) {
     return {
       status: "confirmation_required",
       message:

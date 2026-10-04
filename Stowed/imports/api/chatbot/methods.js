@@ -20,8 +20,8 @@ const SYSTEM_INSTRUCTION = [
   "You are the assistant inside Stowed, an inventory app for shops and storerooms.",
   "Use the tools to look things up and to act for the user; never invent product or location ids.",
   "You can only use the tools you are given - they match the user's role. If asked for something outside them, say you can't do that with their account.",
-  "Before creating, editing or deleting a product, tell the user exactly what will change and end your message with: Reply CONFIRM to proceed. Do not run the change yet.",
-  "If the user's next message is CONFIRM (any capitalisation, or a plain yes), call the same tool again with exactly the same arguments plus confirmed true - do not ask again. Any other reply cancels the change.",
+  "To create, edit or delete a product: first call the tool WITHOUT confirmed (this only previews, nothing changes), then tell the user exactly what will change and end your message with: Reply CONFIRM to proceed.",
+  "If the user's next message is CONFIRM (any capitalisation, or a plain yes), immediately call the same tool again with exactly the same arguments plus confirmed true - do not ask again. Any other reply cancels the change.",
   "When asked to take the user somewhere, use the navigate tool. Keep replies short.",
 ].join(" ");
 
@@ -74,6 +74,17 @@ function withRecentContext(messages, input) {
   return `Recent conversation:\n${transcript}\n\nLatest user message: ${input}`;
 }
 
+const AFFIRMATION = /^\s*(confirm|confirmed|yes|y|yep|ok|okay|go ahead|do it)\W*$/i;
+
+// True when the user's latest message is just a CONFIRM/yes replying to an
+// assistant message that asked them to confirm.
+function isConfirmationReply(messages, input) {
+  const previous = messages.slice(0, -1).at(-1);
+  return (
+    AFFIRMATION.test(input) && previous?.role === "assistant" && /confirm/i.test(previous.content)
+  );
+}
+
 function isInvalidJsonOutputError(error) {
   return String(error?.message || error?.reason || "").includes(INVALID_JSON_OUTPUT_MESSAGE);
 }
@@ -124,6 +135,7 @@ Meteor.methods({
     const allowedToolNames = new Set(tools.map((tool) => tool.name));
     const actions = [];
     const turn = ++chatTurn;
+    const userConfirmed = isConfirmationReply(messages, input);
 
     try {
       let interaction;
@@ -160,6 +172,7 @@ Meteor.methods({
             toolName: call.name,
             args: call.arguments,
             turn,
+            userConfirmed,
             allowedToolNames,
             actions,
           });
