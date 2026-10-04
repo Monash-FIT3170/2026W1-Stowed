@@ -163,3 +163,10 @@
   margin-top: 12px;
   text-decoration: none;
 }
+
+/* "+2 more" is an aside to the primary location, not a second location, so it
+   stays lighter than the label it trails. */
+.shopping-list-location-more {
+  color: var(--text-muted);
+  font-size: 12px;
+}
