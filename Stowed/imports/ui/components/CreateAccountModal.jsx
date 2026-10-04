@@ -13,6 +13,20 @@ const EMPTY_FORM = {
 
 const FIELDS = ["username", "email", "password", "confirmPassword"];
 
+// heading and summary shown for the role currently selected
+const ROLE_COPY = {
+  [ROLES.ADMIN]: {
+    title: "Add an admin",
+    description:
+      "Admins can manage products, categories, locations and floor maps, and access settings, forecasts and alerts.",
+  },
+  [ROLES.STANDARD]: {
+    title: "Add a team member",
+    description:
+      "Team members can update stock counts, run stocktakes, scan codes and manage shopping lists.",
+  },
+};
+
 /**
  * Modal for an owner to create a team member account in their organisation.
  */
@@ -27,6 +41,7 @@ export function CreateAccountModal({ onClose }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const { username, email, password, confirmPassword } = formData;
+  const { title, description } = ROLE_COPY[roleState];
 
   // close on Escape
   useEffect(() => {
@@ -115,12 +130,9 @@ export function CreateAccountModal({ onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="create-account-modal-title" className="modal-title">
-          Add a team member
+          {title}
         </h3>
-        <p className="modal-text">
-          Give people access to manage products, update stock counts, and maintain storage
-          locations.
-        </p>
+        <p className="modal-text">{description}</p>
 
         {error && (
           <div className="auth-status auth-status-error" role="alert">
