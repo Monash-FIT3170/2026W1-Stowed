@@ -1,0 +1,141 @@
+/* CustomerShoppingListPage.css */
+
+/* The list is the page, so it gets a card of its own rather than floating on
+   the background. Columns are declared once and shared by the header and the
+   rows, so the two can never fall out of step.
+
+   Every track is a fixed or fr width - none is `auto`. The header and the rows
+   are separate grid containers, so an auto track sized to its own content would
+   resolve differently in each (the header's button cell is empty) and drag the
+   columns out of alignment. */
+
+.shopping-list {
+  --shopping-list-grid: 44px minmax(140px, 2.4fr) minmax(70px, 0.8fr) minmax(110px, 1.6fr) 96px;
+
+  margin-top: 20px;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+.shopping-list-header,
+.shopping-list-row {
+  display: grid;
+  grid-template-columns: var(--shopping-list-grid);
+  align-items: center;
+  gap: 0 14px;
+  padding: 10px 18px;
+}
+
+.shopping-list-header {
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.shopping-list-row {
+  border-bottom: 0.5px solid var(--border-light);
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.shopping-list-row:last-child {
+  border-bottom: none;
+}
+
+.shopping-list-name {
+  font-weight: 600;
+}
+
+.shopping-list-location {
+  color: var(--text-muted);
+}
+
+/* The combined quantity-and-location line is phone-only; wider screens show
+   the real columns instead. */
+.shopping-list-meta {
+  display: none;
+}
+
+/* Matches the staff list's "View more" pill, so the two areas read as one
+   product even though the customer view is read-only. */
+.shopping-list-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  padding: 5px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-dark);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.shopping-list-more:hover {
+  background: var(--input-bg);
+  border-color: var(--accent-secondary);
+}
+
+.shopping-list-more:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+/* -- Phone: each row becomes a card -- */
+
+/* Five columns cannot survive 375px, so the row folds into a thumbnail beside
+   a stack of name, quantity-and-location, and the button. The column headings
+   go with it, since there are no longer columns for them to head. */
+
+@media (max-width: 768px) {
+  .shopping-list-header {
+    display: none;
+  }
+
+  .shopping-list-row {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 2px 14px;
+    padding: 12px 16px;
+  }
+
+  /* Every cell is placed by hand. Auto-placement would put the combined meta
+     line in the third column beside the name, and leave the button spanning
+     the wrong two rows. */
+  .shopping-list-thumb {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .shopping-list-name {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 14px;
+  }
+
+  .shopping-list-more {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  /* The separate quantity and location cells join into one line, the way the
+     staff list does on a phone. */
+  .shopping-list-quantity,
+  .shopping-list-location {
+    display: none;
+  }
+
+  .shopping-list-meta {
+    display: block;
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+}
