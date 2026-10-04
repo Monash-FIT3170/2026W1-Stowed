@@ -139,3 +139,27 @@
     color: var(--text-muted);
   }
 }
+
+/* -- Empty state -- */
+
+/* .empty-state (Global.css) centres the text; these rules stack the two lines
+   and the action, and make the Link sit like the button it is dressed as. */
+
+.shopping-list .empty-state p {
+  margin: 0 0 4px;
+}
+
+/* .empty-state paints everything muted, which leaves the two lines reading as
+   equals. The first is the answer to "why is this page blank", so it carries
+   the weight and the second stays the aside. */
+.shopping-list .empty-state p:first-child {
+  color: var(--text-dark);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.shopping-list .empty-state .btn-secondary {
+  display: inline-block;
+  margin-top: 12px;
+  text-decoration: none;
+}

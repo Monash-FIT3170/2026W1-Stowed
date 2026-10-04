@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "../Global.css";
 import "./CustomerShoppingListPage.css";
 import { ProductThumbnail } from "../components/ProductThumbnail";
@@ -15,7 +16,6 @@ import { ProductThumbnail } from "../components/ProductThumbnail";
  *  - Let a customer collect items into a list without an account, and persist
  *    it for the session alongside the organisation code
  *  - Point "More info" at a read-only product view
- *  - Decide the empty state for a list with nothing in it yet
  */
 
 /* Sample rows, not data. Deliberately varied - a long name, a one-word name, a
@@ -29,41 +29,58 @@ const PLACEHOLDER_ITEMS = [
 ];
 
 export function CustomerShoppingListPage() {
+  // Swap to [] to preview the empty state until the real list is wired in.
+  const items = PLACEHOLDER_ITEMS;
+
   return (
     <div className="customer-page">
       <h1 className="customer-page-title">Shopping List</h1>
 
       <div className="shopping-list">
-        {/* Not a <table>: the rows fold into cards on a phone, which a table
-            cannot do without losing its own semantics anyway. Matches how the
-            staff inventory list is built. */}
-        <div className="shopping-list-header">
-          <span />
-          <span>Item</span>
-          <span>Qty</span>
-          <span>Location</span>
-          <span />
-        </div>
-
-        {PLACEHOLDER_ITEMS.map((item) => (
-          <div key={item._id} className="shopping-list-row">
-            <span className="shopping-list-thumb">
-              <ProductThumbnail name={item.name} />
-            </span>
-            <span className="shopping-list-name">{item.name}</span>
-            <span className="shopping-list-quantity">x {item.quantity}</span>
-            <span className="shopping-list-location">{item.location ?? "-"}</span>
-            {/* Phone only - the quantity and location columns as one line. */}
-            <span className="shopping-list-meta">
-              x {item.quantity}
-              {item.location ? ` at ${item.location}` : ""}
-            </span>
-            {/* Not wired yet. */}
-            <button type="button" className="shopping-list-more">
-              More info
-            </button>
+        {items.length === 0 ? (
+          /* The heading row goes too - column headings with no columns under
+             them read as a broken table rather than an empty one. */
+          <div className="empty-state">
+            <p>Your shopping list is empty.</p>
+            <p>Add items while you browse and they will show up here.</p>
+            <Link to="/customer/search" className="btn-secondary">
+              Browse products
+            </Link>
           </div>
-        ))}
+        ) : (
+          <>
+            {/* Not a <table>: the rows fold into cards on a phone, which a table
+                cannot do without losing its own semantics anyway. Matches how
+                the staff inventory list is built. */}
+            <div className="shopping-list-header">
+              <span />
+              <span>Item</span>
+              <span>Qty</span>
+              <span>Location</span>
+              <span />
+            </div>
+
+            {items.map((item) => (
+              <div key={item._id} className="shopping-list-row">
+                <span className="shopping-list-thumb">
+                  <ProductThumbnail name={item.name} />
+                </span>
+                <span className="shopping-list-name">{item.name}</span>
+                <span className="shopping-list-quantity">x {item.quantity}</span>
+                <span className="shopping-list-location">{item.location ?? "-"}</span>
+                {/* Phone only - the quantity and location columns as one line. */}
+                <span className="shopping-list-meta">
+                  x {item.quantity}
+                  {item.location ? ` at ${item.location}` : ""}
+                </span>
+                {/* Not wired yet. */}
+                <button type="button" className="shopping-list-more">
+                  More info
+                </button>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
