@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import "../imports/api/userMethods";
 import { Register } from "../imports/ui/Register";
+import { CreateAccountModal } from "../imports/ui/components/CreateAccountModal";
 import { ROLES } from "../imports/api/roles";
 
 function renderWithoutLayoutEffectWarning(element) {
@@ -45,6 +46,17 @@ describe("Authentication - Registration", function () {
   it("hides role selector when self-registering", function () {
     const html = renderRegister();
     assert.ok(!html.includes("User Type"));
+  });
+
+  it("renders the owner create-account modal with a role selector and no org fields", function () {
+    const html = renderWithoutLayoutEffectWarning(
+      React.createElement(CreateAccountModal, { onClose: () => {} }),
+    );
+    assert.ok(html.includes("User Type"));
+    assert.ok(html.includes("Username"));
+    assert.ok(html.includes("Email"));
+    assert.ok(html.includes("Confirm Password"));
+    assert.ok(!html.includes("Organisation"));
   });
 
   if (Meteor.isServer) {

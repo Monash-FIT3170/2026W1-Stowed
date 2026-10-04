@@ -1,20 +1,20 @@
 import { useState, useMemo } from "react";
 import { useTracker } from "meteor/react-meteor-data";
 import { Meteor } from "meteor/meteor";
-import { useNavigate } from "react-router-dom";
 import "../Global.css";
 import "./InventoryListPage.css";
 import "./ViewAccounts.css";
 import { ROLES } from "/imports/api/roles";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
+import { CreateAccountModal } from "../components/CreateAccountModal";
 
 export function ViewAccounts() {
-  const navigate = useNavigate();
   const [deleting, setDeleting] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { role } = useAuth();
   const canDeleteUsers = hasClientPermission(role, "delete-users");
@@ -78,7 +78,7 @@ export function ViewAccounts() {
             Manage <em>Accounts</em>
           </h1>
           {canCreateUsers && (
-            <button onClick={() => navigate("/register")} className="btn-primary">
+            <button onClick={() => setShowCreateModal(true)} className="btn-primary">
               + Create Account
             </button>
           )}
@@ -142,6 +142,8 @@ export function ViewAccounts() {
             ))
           )}
         </div>
+
+        {showCreateModal && <CreateAccountModal onClose={() => setShowCreateModal(false)} />}
 
         {showDeleteModal && (
           <div className="modal-overlay">
