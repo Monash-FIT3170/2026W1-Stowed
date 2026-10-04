@@ -217,6 +217,21 @@ describeServer("Chatbot tool execution", function () {
     );
   });
 
+  it("runs a confirmed call when the user's own message was the CONFIRM", async function () {
+    const args = newProduct();
+    // The model asked in plain text, so nothing was previewed through the tool.
+    const result = await executeTool({
+      userId: ADMIN_ID,
+      toolName: "createProduct",
+      args: { ...args, confirmed: true },
+      turn,
+      userConfirmed: true,
+      allowedToolNames: adminAllowed,
+      actions: [],
+    });
+    assert.strictEqual(result.status, "created");
+  });
+
   it("will not confirm a different action than the one proposed", async function () {
     const proposed = newProduct();
     await run(ADMIN_ID, adminAllowed, "createProduct", proposed);
