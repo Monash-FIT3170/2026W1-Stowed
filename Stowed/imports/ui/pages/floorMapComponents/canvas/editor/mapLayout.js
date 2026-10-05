@@ -5,7 +5,9 @@ import { COLOURS } from "../../FloorMapStyles";
 export function normalizeFloorSize(floorSize) {
   const width = Number(floorSize?.width);
   const height = Number(floorSize?.height);
-  if (!(width > 0 && height > 0)) return null;
+  // Older floor maps (including the seeded maps) have no saved dimensions.
+  // The full canvas displays them at its default size, so previews must too.
+  if (!(width > 0 && height > 0)) return { ...CANVAS_CONFIG.DEFAULT_FLOOR_SIZE };
 
   const looksLikeMeters = width <= 100 && height <= 100;
   return looksLikeMeters
