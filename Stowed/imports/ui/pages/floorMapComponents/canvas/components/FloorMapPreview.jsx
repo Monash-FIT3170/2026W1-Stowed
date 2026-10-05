@@ -8,27 +8,15 @@ import { UnitLayer } from "./layers/UnitLayer";
 import { HighlightLayer } from "./layers/HighlightLayer";
 import "./FloorMapPreview.css";
 
-function hasPosition(unit) {
-  return (
-    Array.isArray(unit.shape?.points) &&
-    unit.shape.points.length >= 3 &&
-    unit.shape.points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)) &&
-    Number.isFinite(unit.offset?.x) &&
-    Number.isFinite(unit.offset?.y) &&
-    Number.isFinite(unit.scale?.x ?? 1) &&
-    Number.isFinite(unit.scale?.y ?? 1) &&
-    Number.isFinite(unit.rotation ?? 0)
-  );
-}
-
 /** Build one projection per floor map, even when several product locations share it. */
 export function buildFloorMapPreviewModel(floorMap, storageUnits) {
   if (!floorMap) return null;
   const floorSize = normalizeFloorSize(floorMap.floorSize);
   const floorWidthMeters = floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
   const floorHeightMeters = floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+  // Match the full map's defaults for legacy units without saved geometry.
   const units = storageUnits
-    .filter((unit) => unit.floorMapId === floorMap._id && hasPosition(unit))
+    .filter((unit) => unit.floorMapId === floorMap._id)
     .map(mapStorageUnitToCanvasUnit)
     .filter(
       (unit) =>
