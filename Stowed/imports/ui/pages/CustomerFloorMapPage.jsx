@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites } from "/imports/api/locations/collections";
+import { useSearchParams } from "react-router-dom";
+import { FloorMaps, Sites, StorageUnits } from "/imports/api/locations/collections";
 import { getCustomerOrgCode } from "../customerSession";
 import { EditorProvider } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
@@ -11,25 +12,44 @@ import "./FloorMapPage.css";
 
 const STORAGE_KEY = "customerFloorMapId";
 
+export function publicHighlightedUnitId(unitId, floorMapId, units) {
+  return units.some((unit) => unit._id === unitId && unit.floorMapId === floorMapId)
+    ? unitId
+    : null;
+}
+
+export function selectCustomerFloorMap(visibleMaps, selectedFloorMapId, requestedMapId) {
+  return selectAvailableMap(visibleMaps, requestedMapId ?? selectedFloorMapId);
+}
+
 export function CustomerFloorMapPage() {
   const orgCode = getCustomerOrgCode();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedMapId = searchParams.get("map");
+  const requestedUnitId = searchParams.get("unit");
   const [selectedFloorMapId, setSelectedFloorMapId] = useState(() =>
     window.localStorage.getItem(STORAGE_KEY),
   );
 
-  const { sites, floorMaps, locationsReady } = useTracker(() => {
+  const { sites, floorMaps, storageUnits, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.publicFloorMaps", orgCode ?? "");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageUnits: StorageUnits.find().fetch(),
       locationsReady: handle.ready(),
     };
   }, [orgCode]);
 
   const visibleMaps = orgCode ? publicMaps(floorMaps) : [];
   const visibleSites = sites.filter((site) => visibleMaps.some((map) => map.siteId === site._id));
-  const currentFloorMap = selectAvailableMap(visibleMaps, selectedFloorMapId);
+  const currentFloorMap = selectCustomerFloorMap(visibleMaps, selectedFloorMapId, requestedMapId);
   const currentSite = visibleSites.find((site) => site._id === currentFloorMap?.siteId);
+  const highlightedUnitId = publicHighlightedUnitId(
+    requestedUnitId,
+    currentFloorMap?._id,
+    storageUnits,
+  );
 
   useEffect(() => {
     if (locationsReady && currentFloorMap && currentFloorMap._id !== selectedFloorMapId) {
@@ -41,6 +61,7 @@ export function CustomerFloorMapPage() {
     if (!visibleMaps.some((map) => map._id === mapId)) return;
     setSelectedFloorMapId(mapId);
     window.localStorage.setItem(STORAGE_KEY, mapId);
+    if (requestedMapId || requestedUnitId) setSearchParams({}, { replace: true });
   }
 
   return (
@@ -83,7 +104,7 @@ export function CustomerFloorMapPage() {
             isCanvasEditMode={false}
             setCanvasEditMode={() => {}}
           >
-            <Canvas isCanvasEditMode={false} publicView />
+            <Canvas isCanvasEditMode={false} publicView highlightedUnitId={highlightedUnitId} />
           </EditorProvider>
         )}
       </div>
