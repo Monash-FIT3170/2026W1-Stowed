@@ -222,6 +222,7 @@ export function ProductDetailView({
           },
         ]
       : [];
+  const firstMappedLocationIndex = storageAssignments.findIndex((assignment) => assignment.model);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -474,37 +475,56 @@ export function ProductDetailView({
               <div className="section-content">
                 {storageAssignments.length ? (
                   <div className="storage-location-list">
-                    {storageAssignments.map((assignment) => (
-                      <div key={assignment.key} className="storage-location-preview-card">
-                        <div className="storage-location-item">
-                          <div>
-                            <div className="storage-location-name">{assignment.label}</div>
-                            <div className="storage-location-meta">Assigned stock</div>
-                          </div>
-                          <div className="storage-location-quantity">{assignment.quantity}</div>
-                        </div>
-                        {assignment.model ? (
-                          <>
-                            <FloorMapPreview
-                              model={assignment.model}
-                              highlightedUnitId={assignment.unitId}
-                              locationName={assignment.locationName}
-                            />
-                            <Link
-                              className="location-map-link"
-                              to={`/floor-map/${assignment.floorMapId}/detail?location=${encodeURIComponent(assignment.locationId)}`}
-                              aria-label={`View ${assignment.locationName} on ${assignment.floorMapName} floor map`}
-                            >
-                              View on floor map →
-                            </Link>
-                          </>
-                        ) : (
-                          <div className="location-map-unavailable">
-                            Map preview unavailable for this location.
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {storageAssignments.map((assignment, index) => {
+                      const Card = assignment.model ? "details" : "div";
+                      const Heading = assignment.model ? "summary" : "div";
+                      return (
+                        <Card
+                          key={assignment.key}
+                          className="storage-location-preview-card"
+                          open={assignment.model ? index === firstMappedLocationIndex : undefined}
+                        >
+                          <Heading className="storage-location-item">
+                            <div className="storage-location-heading">
+                              <div className="storage-location-name">{assignment.label}</div>
+                              <div className="storage-location-meta">Assigned stock</div>
+                            </div>
+                            <div className="storage-location-actions">
+                              <div className="storage-location-quantity">{assignment.quantity}</div>
+                              {assignment.model && (
+                                <span className="location-map-toggle">
+                                  <span className="location-map-toggle-closed">Show map</span>
+                                  <span className="location-map-toggle-open">Hide map</span>
+                                  <span className="location-map-toggle-chevron" aria-hidden="true">
+                                    ▾
+                                  </span>
+                                </span>
+                              )}
+                            </div>
+                          </Heading>
+                          {assignment.model ? (
+                            <>
+                              <FloorMapPreview
+                                model={assignment.model}
+                                highlightedUnitId={assignment.unitId}
+                                locationName={assignment.locationName}
+                              />
+                              <Link
+                                className="location-map-link"
+                                to={`/floor-map/${assignment.floorMapId}/detail?location=${encodeURIComponent(assignment.locationId)}`}
+                                aria-label={`View ${assignment.locationName} on ${assignment.floorMapName} floor map`}
+                              >
+                                View on floor map →
+                              </Link>
+                            </>
+                          ) : (
+                            <div className="location-map-unavailable">
+                              Map preview unavailable for this location.
+                            </div>
+                          )}
+                        </Card>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="section-empty">No stock assigned to a storage location yet.</div>
