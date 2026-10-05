@@ -148,12 +148,26 @@ describe("ProductDetailView", function () {
     it("shows each location across floors with the matching unit", function () {
       const html = renderLocatedProduct(["loc-a", "loc-b", "loc-c"]);
       assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 3);
+      const disclosures = html.match(/<details\b[^>]*>/g) || [];
+      assert.strictEqual(disclosures.length, 3);
+      assert.ok(disclosures[0].includes('open=""'));
+      assert.ok(disclosures.slice(1).every((element) => !element.includes("open=")));
+      assert.strictEqual((html.match(/<summary\b/g) || []).length, 3);
+      assert.ok(html.includes("Show map") && html.includes("Hide map"));
       assert.ok(html.includes('data-highlighted-unit="unit-a"'));
       assert.ok(html.includes('data-highlighted-unit="unit-b"'));
       assert.ok(html.includes('data-highlighted-unit="unit-c"'));
       assert.ok(html.includes("/floor-map/floor-1/detail?location=loc-b"));
       assert.ok(html.includes("/floor-map/floor-2/detail?location=loc-c"));
       assert.ok(html.includes("Building 75 → Level 1 → Cabinet B → B-04"));
+    });
+
+    it("opens the first mapped location when an earlier location has no map", function () {
+      const html = renderLocatedProduct(["missing-location", "loc-a"]);
+      const disclosures = html.match(/<details\b[^>]*>/g) || [];
+      assert.strictEqual(disclosures.length, 1);
+      assert.ok(disclosures[0].includes('open=""'));
+      assert.ok(html.includes("Map preview unavailable for this location."));
     });
 
     it("combines duplicate records for the same storage location", function () {
