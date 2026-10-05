@@ -103,6 +103,7 @@ export const ROUTE_TOOLS = {
   WALKWAY_NODE: "walkwayNode", // a point on a walkway
   LINK: "link", // connects two nodes
   PRODUCT_NODE: "productNode", // a pick point on the side of a storage unit
+  DELETE: "delete", // removes a node (and its links) or a single link
 };
 
 /** Client-side id for route nodes and links until they are persisted. */
@@ -561,16 +562,36 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
    * so every product node always has its accessible locations chosen.
    */
   function cancelProductNodeEdit() {
-    if (editingProductNode?.isNew) {
-      const { nodes, links } = removeNodes(
-        walkwayNodes,
-        walkwayLinks,
-        (node) => node.id === editingProductNode.nodeId,
-      );
-      setWalkwayNodes(nodes);
-      setWalkwayLinks(links);
-    }
+    if (editingProductNode?.isNew) removeRouteNode(editingProductNode.nodeId);
     setEditingProductNode(null);
+  }
+
+  /** Removes a node and every link attached to it from the in-page route. */
+  function removeRouteNode(nodeId) {
+    const { nodes, links } = removeNodes(walkwayNodes, walkwayLinks, (node) => node.id === nodeId);
+    setWalkwayNodes(nodes);
+    setWalkwayLinks(links);
+  }
+
+  /**
+   * Deletes a node (walkway or product) together with every link attached to it.
+   * Saved with handleSaveRoute.
+   *
+   * @param {string} nodeId
+   */
+  function deleteRouteNode(nodeId) {
+    removeRouteNode(nodeId);
+    setIsRouteDirty(true);
+  }
+
+  /**
+   * Deletes a single link, keeping the nodes at both ends. Saved with handleSaveRoute.
+   *
+   * @param {string} linkId
+   */
+  function deleteRouteLink(linkId) {
+    setWalkwayLinks((prev) => prev.filter((link) => link.id !== linkId));
+    setIsRouteDirty(true);
   }
 
   /**
@@ -807,6 +828,8 @@ export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode
     editProductNode,
     confirmProductNodeLocations,
     cancelProductNodeEdit,
+    deleteRouteNode,
+    deleteRouteLink,
     walkwayLinks,
     addWalkwayLink,
     linkNodeOntoLink,

@@ -18,6 +18,7 @@ import { ROUTE_LAYER_NAME } from "../components/layers/RouteLayer";
  * - Walkway node tool: click empty floor to place a node (snapped to the grid if enabled).
  * - Product node tool: click near a saved storage unit to place a node on its nearest side,
  *   then choose which of the unit's storage locations can be reached from it.
+ * - Delete tool: click a node to remove it and its links, or click a link to remove just it.
  * - No tool: click a product node to change which storage locations it gives access to.
  * - Link tool: click one node, then another, to link them. Once a product node is picked, it can
  *   also be linked onto the middle of a walkway link, which splits that link with a new junction
@@ -44,12 +45,15 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
     setPendingLinkNodeId,
     editingProductNode,
     editProductNode,
+    deleteRouteNode,
+    deleteRouteLink,
   } = useEditor();
   // The selected tool is remembered across modes, but only acts in route mode
   const isRouteMode = canvasMode === CANVAS_MODES.ROUTE;
   const isPlacingWalkwayNode = isRouteMode && activeRouteTool === ROUTE_TOOLS.WALKWAY_NODE;
   const isPlacingProductNode = isRouteMode && activeRouteTool === ROUTE_TOOLS.PRODUCT_NODE;
   const isLinking = isRouteMode && activeRouteTool === ROUTE_TOOLS.LINK;
+  const isDeleting = isRouteMode && activeRouteTool === ROUTE_TOOLS.DELETE;
   // With no tool active, clicking a product node reopens its storage location picker
   const isSelecting = isRouteMode && !activeRouteTool;
 
@@ -183,13 +187,13 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
   }
 
   /**
-   * Finds the walkway link nearest the pointer, for linking a product node onto it.
-   * If the nearest point is right next to one of the link's end nodes, that node is
-   * targeted instead, so junctions are never stacked on top of existing nodes.
+   * Finds the link nearest the pointer, within a few on-screen pixels.
    *
-   * @returns {{ nodeId: string } | { linkId: string, x: number, y: number } | null}
+   * @param {(from: Object, to: Object) => boolean} [includeLink] - Filter on the link's end nodes
+   * @returns {{ link: Object, from: Object, to: Object, onLink: { x: number, y: number } } | null}
+   *   The link, its end nodes, and the closest point on it to the pointer (metres)
    */
-  function findWalkwayLinkTarget() {
+  function findNearestLink(includeLink = () => true) {
     const pointer = stageRef.current?.getRelativePointerPosition();
     if (!pointer) return null;
 
@@ -201,8 +205,7 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
     for (const link of walkwayLinks) {
       const from = nodesById.get(link.fromId);
       const to = nodesById.get(link.toId);
-      // Product links are not part of the walkway, so they cannot be joined onto
-      if (!from || !to || isProductNode(from) || isProductNode(to)) continue;
+      if (!from || !to || !includeLink(from, to)) continue;
 
       const onLink = closestPointOnSegment(point, from, to);
       const distance = Math.hypot(onLink.x - point.x, onLink.y - point.y);
@@ -211,6 +214,19 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
         best = { link, from, to, onLink };
       }
     }
+    return best;
+  }
+
+  /**
+   * Finds the walkway link nearest the pointer, for linking a product node onto it.
+   * If the nearest point is right next to one of the link's end nodes, that node is
+   * targeted instead, so junctions are never stacked on top of existing nodes.
+   *
+   * @returns {{ nodeId: string } | { linkId: string, x: number, y: number } | null}
+   */
+  function findWalkwayLinkTarget() {
+    // Product links are not part of the walkway, so they cannot be joined onto
+    const best = findNearestLink((from, to) => !isProductNode(from) && !isProductNode(to));
     if (!best) return null;
 
     const minGap = screenPxToMetres(CANVAS_CONFIG.WALKWAY_NODE_RADIUS_PX * 2);
@@ -240,6 +256,19 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
     return canLinkNodes(walkwayNodes, walkwayLinks, pendingLinkNodeId, target.nodeId);
   }
 
+  /**
+   * Works out what a delete tool click would remove: a node under the pointer (which takes
+   * priority) or the nearest link.
+   *
+   * @returns {{ nodeId: string } | { linkId: string } | null}
+   */
+  function getDeleteTarget() {
+    const nodeId = getNodeIdAtPointer();
+    if (nodeId) return { nodeId };
+    const nearest = findNearestLink();
+    return nearest ? { linkId: nearest.link.id } : null;
+  }
+
   /** Returns the product node under the pointer, or null. */
   function getProductNodeAtPointer() {
     const nodeId = getNodeIdAtPointer();
@@ -265,6 +294,8 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
         const pointer = stageRef.current?.getRelativePointerPosition();
         setLinkPreviewEnd(target?.linkId ? target : pointer ? toMetres(pointer) : null);
       }
+    } else if (isDeleting) {
+      setHoveredTarget(getDeleteTarget());
     }
   }
 
@@ -313,6 +344,14 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
         addWalkwayLink(pendingLinkNodeId, target.nodeId);
         cancelPendingLink();
       }
+      return;
+    }
+
+    if (isDeleting) {
+      const target = getDeleteTarget();
+      if (target?.nodeId) deleteRouteNode(target.nodeId);
+      else if (target?.linkId) deleteRouteLink(target.linkId);
+      setHoveredTarget(null); // whatever was hovered is gone
     }
   }
 
@@ -325,7 +364,7 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
     cursor = "crosshair";
   } else if (isLinking && hoveredTarget) {
     cursor = isValidLinkTarget(hoveredTarget) ? "pointer" : "not-allowed";
-  } else if (isSelecting && hoveredTarget) {
+  } else if ((isSelecting || isDeleting) && hoveredTarget) {
     cursor = "pointer";
   }
 
@@ -344,6 +383,8 @@ export function useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, hei
     unavailableNodeIds,
     linkPreviewEnd: pendingLinkNodeId ? linkPreviewEnd : null,
     junctionPreview,
+    // The node or link the delete tool would remove if clicked
+    deleteTarget: isDeleting ? hoveredTarget : null,
     handleRouteMouseMove,
     handleRouteMouseLeave,
     handleRouteClick,

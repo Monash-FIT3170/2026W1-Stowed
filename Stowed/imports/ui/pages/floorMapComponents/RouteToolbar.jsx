@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { customShapesPanelStyles, routeToolbarStyles, sidebarStyles, storagePanelStyles } from "./FloorMapStyles";
-import { LinkIcon, ProductNodeIcon, WalkwayNodeIcon } from "./FloorMapIcons";
+import {
+  customShapesPanelStyles,
+  routeToolbarStyles,
+  sidebarStyles,
+  storagePanelStyles,
+} from "./FloorMapStyles";
+import { LinkIcon, ProductNodeIcon, TrashIcon, WalkwayNodeIcon } from "./FloorMapIcons";
 import { SidebarCollapseButton } from "./SidebarControls";
 import { ROUTE_TOOLS } from "./canvas/editor/EditorContext";
 
@@ -22,6 +27,12 @@ const TOOLS = [
     name: "Product Node",
     description: "Place on the side of a storage unit",
     Icon: ProductNodeIcon,
+  },
+  {
+    tool: ROUTE_TOOLS.DELETE,
+    name: "Delete",
+    description: "Remove a node and its links, or a single link",
+    Icon: TrashIcon,
   },
 ];
 

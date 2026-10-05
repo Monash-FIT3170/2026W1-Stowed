@@ -39,6 +39,7 @@ export const COLOURS = {
   PRODUCT_NODE: "#2563eb",
   PRODUCT_LINK: "#2563eb",
   PRODUCT_ACCESS_NODE: "#9333ea", // walkway node where a product node joins the walkway
+  DELETE_HIGHLIGHT: "#991b1b", // what the route delete tool would remove
 };
 
 const baseButton = {

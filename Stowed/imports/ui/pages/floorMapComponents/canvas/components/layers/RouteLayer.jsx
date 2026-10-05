@@ -75,6 +75,7 @@ function RouteNode({ node, size, ...shapeProps }) {
  * @param {Set<string>}                                    unavailableNodeIds - Nodes that cannot be linked to the pending node
  * @param {{ x: number, y: number } | null}                linkPreviewEnd     - Pointer position for the in-progress link (metres)
  * @param {{ x: number, y: number } | null}                junctionPreview    - Where a link would be split for a product node (metres)
+ * @param {{ nodeId?: string, linkId?: string } | null}    deleteTarget       - What the delete tool would remove if clicked
  * @param {number}                                         scale              - Current stage zoom
  *
  * @returns {JSX.Element}
@@ -88,6 +89,7 @@ export function RouteLayer({
   unavailableNodeIds,
   linkPreviewEnd,
   junctionPreview,
+  deleteTarget,
   scale,
 }) {
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
@@ -96,6 +98,12 @@ export function RouteLayer({
   const pendingNode = pendingLinkNodeId ? nodesById.get(pendingLinkNodeId) : null;
   const connectedNodeIds = getConnectedNodeIds(links);
   const productAccessNodeIds = getProductAccessNodeIds(nodes, links);
+
+  // Shown in red: the hovered link, or the hovered node plus every link that would go with it
+  const isMarkedForDelete = (link) =>
+    link.id === deleteTarget?.linkId ||
+    link.fromId === deleteTarget?.nodeId ||
+    link.toId === deleteTarget?.nodeId;
 
   // Links joining a product node to the walkway are blue; walkway links are green
   const linkProps = (isProduct) => ({
@@ -113,11 +121,16 @@ export function RouteLayer({
         const from = nodesById.get(link.fromId);
         const to = nodesById.get(link.toId);
         if (!from || !to) return null;
+        const isDeleting = isMarkedForDelete(link);
         return (
           <Line
             key={link.id}
             points={[from.x * px, from.y * px, to.x * px, to.y * px]}
             {...linkProps(isProductLink(nodesById, link))}
+            {...(isDeleting && {
+              stroke: COLOURS.DELETE_HIGHLIGHT,
+              strokeWidth: CANVAS_CONFIG.WALKWAY_LINK_WIDTH_PX * 2,
+            })}
           />
         );
       })}
@@ -140,7 +153,8 @@ export function RouteLayer({
       {/* NODES */}
       {nodes.map((node) => {
         const isPending = node.id === pendingLinkNodeId;
-        const isHighlighted = isPending || node.id === selectedNodeId;
+        const isDeleting = node.id === deleteTarget?.nodeId;
+        const isHighlighted = isPending || isDeleting || node.id === selectedNodeId;
         return (
           <RouteNode
             key={node.id}
@@ -152,7 +166,11 @@ export function RouteLayer({
               isProductAccess: productAccessNodeIds.has(node.id),
             })}
             stroke={
-              isHighlighted ? COLOURS.WALKWAY_NODE_SELECTED_STROKE : COLOURS.WALKWAY_NODE_STROKE
+              isDeleting
+                ? COLOURS.DELETE_HIGHLIGHT
+                : isHighlighted
+                  ? COLOURS.WALKWAY_NODE_SELECTED_STROKE
+                  : COLOURS.WALKWAY_NODE_STROKE
             }
             strokeWidth={isHighlighted ? 3 : 2}
             opacity={unavailableNodeIds?.has(node.id) ? 0.35 : 1}

@@ -119,6 +119,7 @@ export const Canvas = forwardRef(function Canvas(
     unavailableNodeIds,
     linkPreviewEnd,
     junctionPreview,
+    deleteTarget,
     handleRouteMouseMove,
     handleRouteMouseLeave,
     handleRouteClick,
@@ -290,6 +291,7 @@ export const Canvas = forwardRef(function Canvas(
                 unavailableNodeIds={unavailableNodeIds}
                 linkPreviewEnd={linkPreviewEnd}
                 junctionPreview={junctionPreview}
+                deleteTarget={deleteTarget}
                 scale={scale}
               />
             )}
