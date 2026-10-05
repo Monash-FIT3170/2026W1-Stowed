@@ -3,6 +3,9 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { mockProducts, getMockProductById } from "../imports/api/mockProducts";
+import { PRODUCT_CATALOGUE } from "../imports/api/seedData/products";
+import { LOCATION_LAYOUT, PRODUCT_RECORD_PLAN } from "../imports/api/seedData/locations";
+import { buildRectShape } from "../imports/api/locations/shapeUtils";
 import { ProductDetailView } from "../imports/ui/pages/ProductDetailPage";
 import {
   buildFloorMapPreviewModel,
@@ -194,12 +197,67 @@ describe("ProductDetailView", function () {
       assert.ok(!html.includes("location-map-preview"));
     });
 
-    it("falls back when a floor has no configured map size", function () {
-      const floorMaps = mapFixtures.floorMaps.map((floorMap) =>
-        floorMap._id === "floor-1" ? { ...floorMap, floorSize: undefined } : floorMap,
+    it("uses the canvas default for older maps without saved dimensions across sites", function () {
+      const floorMaps = mapFixtures.floorMaps.map((floorMap) => ({
+        ...floorMap,
+        floorSize: floorMap._id === "floor-1" ? undefined : {},
+      }));
+      const html = renderLocatedProduct(["loc-a", "loc-c"], { floorMaps });
+      assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 2);
+      assert.ok(html.includes('data-highlighted-unit="unit-a"'));
+      assert.ok(html.includes('data-highlighted-unit="unit-c"'));
+      assert.ok(html.includes("/floor-map/floor-1/detail?location=loc-a"));
+      assert.ok(html.includes("/floor-map/floor-2/detail?location=loc-c"));
+      assert.ok(!html.includes("Map preview unavailable for this location."));
+    });
+
+    it("shows both seeded USB cable locations on the IT-room floor map", function () {
+      const name = "USB-A to USB-C Cable";
+      const product = PRODUCT_CATALOGUE.find((entry) => entry.name === name);
+      const assignments = PRODUCT_RECORD_PLAN.filter(([productName]) => productName === name);
+      const codes = new Set(assignments.map(([, code]) => code));
+      const floor = LOCATION_LAYOUT.floors.find((candidate) =>
+        candidate.units.some((unit) => unit.locations.some((location) => codes.has(location.code))),
       );
-      const html = renderLocatedProduct(["loc-a"], { floorMaps });
-      assert.ok(html.includes("Building 67 → Ground Floor → Shelf A → A-03"));
+      const floorMapId = "seeded-floor";
+      const storageUnits = floor.units.map((unit, index) => ({
+        _id: `seeded-unit-${index}`,
+        floorMapId,
+        name: unit.name,
+        type: unit.type,
+        shape: buildRectShape({ width: unit.width, height: unit.height }),
+        offset: { x: unit.x, y: unit.y },
+        scale: { x: 1, y: 1 },
+      }));
+      const storageLocations = floor.units.flatMap((unit, index) =>
+        unit.locations.map((location) => ({
+          _id: location.code,
+          storageUnitId: storageUnits[index]._id,
+          name: location.name,
+        })),
+      );
+      const html = renderLocatedProduct([], {
+        item: { ...product, _id: "seeded-usb" },
+        records: assignments.map(([, code, quantity], index) => ({
+          _id: `seeded-record-${index}`,
+          locationId: code,
+          quantity,
+        })),
+        sites: [{ _id: "seeded-site", name: LOCATION_LAYOUT.site.name }],
+        floorMaps: [{ _id: floorMapId, siteId: "seeded-site", name: floor.name }],
+        storageUnits,
+        storageLocations,
+      });
+      assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 2);
+      assert.ok(html.includes(floor.name));
+      assert.ok(html.includes("Equipment Rack 1"));
+      assert.ok(html.includes("Shelf A"));
+      assert.ok(!html.includes("Map preview unavailable for this location."));
+    });
+
+    it("falls back when the location's floor map document is missing", function () {
+      const html = renderLocatedProduct(["loc-a"], { floorMaps: [] });
+      assert.ok(html.includes("Shelf A → A-03"));
       assert.ok(html.includes("Map preview unavailable for this location."));
       assert.ok(!html.includes("location-map-preview"));
     });
