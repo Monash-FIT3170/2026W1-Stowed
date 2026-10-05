@@ -187,14 +187,33 @@ describe("ProductDetailView", function () {
       assert.ok(!html.includes("location-map-preview"));
     });
 
-    it("keeps text and uses a compact fallback when map geometry is missing", function () {
+    it("uses the full map's default position when a unit has no saved offset", function () {
       const storageUnits = mapFixtures.storageUnits.map((unit) =>
         unit._id === "unit-a" ? { ...unit, offset: undefined } : unit,
       );
       const html = renderLocatedProduct(["loc-a"], { storageUnits });
       assert.ok(html.includes("Building 67 → Ground Floor → Shelf A → A-03"));
-      assert.ok(html.includes("Map preview unavailable for this location."));
-      assert.ok(!html.includes("location-map-preview"));
+      assert.ok(html.includes('data-highlighted-unit="unit-a"'));
+      assert.ok(!html.includes("Map preview unavailable for this location."));
+    });
+
+    it("previews legacy units without geometry on different sites and floors", function () {
+      const storageUnits = mapFixtures.storageUnits.map((unit) =>
+        ["unit-a", "unit-c"].includes(unit._id)
+          ? { ...unit, shape: undefined, offset: undefined, scale: undefined }
+          : unit,
+      );
+      const floorMaps = mapFixtures.floorMaps.map((floorMap) => ({
+        ...floorMap,
+        floorSize: undefined,
+      }));
+      const html = renderLocatedProduct(["loc-a", "loc-c"], { floorMaps, storageUnits });
+      assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 2);
+      assert.ok(html.includes("Building 67 → Ground Floor → Shelf A → A-03"));
+      assert.ok(html.includes("Building 75 → Level 1 → Cabinet B → B-04"));
+      assert.ok(html.includes('data-highlighted-unit="unit-a"'));
+      assert.ok(html.includes('data-highlighted-unit="unit-c"'));
+      assert.ok(!html.includes("Map preview unavailable for this location."));
     });
 
     it("uses the canvas default for older maps without saved dimensions across sites", function () {

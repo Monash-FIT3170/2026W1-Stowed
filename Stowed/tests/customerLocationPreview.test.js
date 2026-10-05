@@ -88,6 +88,30 @@ describe("customer location map previews", function () {
     assert.ok(html.includes("Best place to look"));
   });
 
+  it("previews public units without saved geometry across sites", function () {
+    const legacyUnits = storageUnits.map((unit) =>
+      ["unit-a", "unit-b"].includes(unit._id)
+        ? { ...unit, shape: undefined, offset: undefined, scale: undefined }
+        : unit,
+    );
+    const html = renderLocations(
+      [
+        { unitId: "unit-a", label: "Rack A · Bay 1" },
+        { unitId: "unit-b", label: "Shelf B · Bay 2" },
+      ],
+      {
+        floorMaps: floorMaps.map((map) => ({ ...map, floorSize: undefined })),
+        storageUnits: legacyUnits,
+      },
+    );
+    assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 2);
+    assert.ok(html.includes("Main site · Ground Floor"));
+    assert.ok(html.includes("Annex · Level 1"));
+    assert.ok(html.includes('data-highlighted-unit="unit-a"'));
+    assert.ok(html.includes('data-highlighted-unit="unit-b"'));
+    assert.ok(!html.includes("Map preview unavailable for this location."));
+  });
+
   it("keeps a private or missing map textual and offers no map link", function () {
     const html = renderLocations([
       { unitId: "unit-private", label: "Private shelf · Bay 1" },
