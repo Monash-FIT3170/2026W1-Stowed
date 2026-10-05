@@ -361,7 +361,7 @@
 .map-route-inputs__fields {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 12px;
 }
 
@@ -383,6 +383,113 @@
   width: 100%;
   box-sizing: border-box;
   margin: 0;
+  min-height: 42px;
+}
+
+.map-route-inputs__field .form-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.map-route-inputs__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted, #786b5e);
+}
+
+.map-route-inputs__products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 2px 0 0;
+}
+
+.map-route-inputs__product {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 5px 3px 10px;
+  border: 1px solid var(--border-subtle, #e2d5c4);
+  border-radius: 18px;
+  background: var(--input-bg, #fdf7f2);
+  font-size: 12px;
+}
+
+.map-route-inputs__product > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.map-route-inputs__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-dark, #1a1a1a);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.map-route-inputs__remove:hover {
+  background: var(--border-light, #efe7da);
+}
+
+.map-route-inputs__start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
+
+.map-route-inputs__button {
+  min-height: 42px;
+}
+
+.map-route-inputs__text-button {
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-primary, #b5532a);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-route-inputs__text-button:hover {
+  background: var(--input-bg, #fdf7f2);
+}
+
+.map-route-inputs button:focus-visible,
+.map-route-inputs select:focus-visible {
+  outline: 2px solid var(--accent-primary, #b5532a);
+  outline-offset: 3px;
+}
+
+.map-route-inputs__coordinates {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-dark, #1a1a1a);
+  font-variant-numeric: tabular-nums;
+}
+
+.map-route-inputs__scan-button {
+  margin-top: 22px;
+  min-height: 42px;
 }
 
 .map-route-inputs__scan {
@@ -397,5 +504,13 @@
 @media (max-width: 600px) {
   .map-route-inputs {
     padding: 12px 16px;
+  }
+
+  .map-route-inputs__field {
+    flex-basis: 100%;
+  }
+
+  .map-route-inputs__scan-button {
+    margin-top: 0;
   }
 }

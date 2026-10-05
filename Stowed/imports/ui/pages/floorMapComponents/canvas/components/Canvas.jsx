@@ -1,5 +1,5 @@
 import { useRef, useEffect, useReducer, forwardRef, useImperativeHandle } from "react";
-import { Stage } from "react-konva";
+import { Stage, Layer, Rect, Circle, Group, Text } from "react-konva";
 import Konva from "konva";
 import { useTracker } from "meteor/react-meteor-data";
 import { Meteor } from "meteor/meteor";
@@ -9,6 +9,7 @@ import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { getStartingPoint } from "../routePoint";
 import {
   StorageLocations,
   StorageUnits,
@@ -28,7 +29,15 @@ if (typeof window !== "undefined") {
 }
 
 export const Canvas = forwardRef(function Canvas(
-  { style, isCanvasEditMode, setSelectedStorageUnitId, setTooltip },
+  {
+    style,
+    isCanvasEditMode,
+    setSelectedStorageUnitId,
+    setTooltip,
+    startingPoint = null,
+    isSelectingStart = false,
+    onStartingPointSelect,
+  },
   ref,
 ) {
   const { units, commitUnits, floorSize, canvasSettings } = useEditor();
@@ -46,6 +55,7 @@ export const Canvas = forwardRef(function Canvas(
 
   const width = floorSize.width;
   const height = floorSize.height;
+  const isPickingStart = isSelectingStart && !isCanvasEditMode;
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
   const snapInterval = canvasSettings?.snapInterval ?? CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL;
@@ -167,6 +177,15 @@ export const Canvas = forwardRef(function Canvas(
     },
   }));
 
+  const handleMapClick = (event) => {
+    if (!isPickingStart) {
+      handleStageClick(event);
+      return;
+    }
+    const point = getStartingPoint(stageRef.current, width, height);
+    if (point) onStartingPointSelect?.(point);
+  };
+
   return (
     <div
       ref={wrapperRef}
@@ -185,12 +204,13 @@ export const Canvas = forwardRef(function Canvas(
             scaleX={scale}
             scaleY={scale}
             onWheel={handleWheel}
-            style={style}
-            draggable
+            style={{ ...style, cursor: isPickingStart ? "crosshair" : undefined }}
+            draggable={!isPickingStart}
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
-            onClick={handleStageClick}
+            onClick={handleMapClick}
+            onTap={handleMapClick}
           >
             <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
@@ -236,6 +256,38 @@ export const Canvas = forwardRef(function Canvas(
               isCanvasEditMode={isCanvasEditMode}
               onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
             />
+
+            {!isCanvasEditMode && (
+              <Layer>
+                {/* Intercept shelf/alert clicks only while choosing a start. */}
+                {isPickingStart && (
+                  <Rect x={0} y={0} width={width} height={height} fill="transparent" />
+                )}
+                {startingPoint && (
+                  <Group
+                    x={startingPoint.x * CANVAS_CONFIG.PIXELS_PER_METER}
+                    y={startingPoint.y * CANVAS_CONFIG.PIXELS_PER_METER}
+                    scaleX={1 / scale}
+                    scaleY={1 / scale}
+                    listening={false}
+                  >
+                    <Circle radius={12} fill="#b5532a" stroke="white" strokeWidth={3} />
+                    <Circle radius={3} fill="white" />
+                    <Rect x={-23} y={17} width={46} height={23} fill="#b5532a" cornerRadius={5} />
+                    <Text
+                      x={-23}
+                      y={22}
+                      width={46}
+                      text="Start"
+                      align="center"
+                      fontSize={12}
+                      fontStyle="bold"
+                      fill="white"
+                    />
+                  </Group>
+                )}
+              </Layer>
+            )}
           </Stage>
         )}
       </div>

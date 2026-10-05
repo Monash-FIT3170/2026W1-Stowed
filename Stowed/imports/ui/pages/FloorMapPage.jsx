@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
@@ -13,6 +13,7 @@ import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites, StorageUnits, MapShapes } from "/imports/api/locations/collections";
+import { Products } from "/imports/api/products/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -75,6 +76,17 @@ function FloorMapPageInner() {
   const [editingShape, setEditingShape] = useState(null);
   const [isChangingShape, setIsChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [startingPoint, setStartingPoint] = useState(null);
+  const [isSelectingStart, setIsSelectingStart] = useState(true);
+
+  const { products, productsReady } = useTracker(() => {
+    const handle = Meteor.subscribe("products");
+    return {
+      products: Products.find({}, { sort: { name: 1 } }).fetch(),
+      productsReady: handle.ready(),
+    };
+  }, []);
 
   // Fetch all sites, floor maps, storage units and shapes
   const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
@@ -97,6 +109,7 @@ function FloorMapPageInner() {
 
   const handleCanvasModeToggle = () => {
     const nextEditMode = !isCanvasEditMode;
+    setIsSelectingStart(false);
 
     if (!nextEditMode) {
       setSelectedStorageUnitId(null);
@@ -123,6 +136,43 @@ function FloorMapPageInner() {
   const currentFloorMap = floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
   const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
   const siteFloorMaps = currentSite ? floorMaps.filter((f) => f.siteId === currentSite._id) : [];
+  const mapReady = locationsReady && !!currentFloorMap;
+
+  // A different floor or floor size needs a new route and starting point.
+  useEffect(() => {
+    setSelectedProductIds([]);
+    setStartingPoint(null);
+    setIsSelectingStart(true);
+  }, [currentFloorMap?._id, floorSize.width, floorSize.height]);
+
+  useEffect(() => {
+    if (!isSelectingStart || isCanvasEditMode) return;
+    const cancelSelection = (event) => {
+      if (event.key === "Escape") setIsSelectingStart(false);
+    };
+    window.addEventListener("keydown", cancelSelection);
+    return () => window.removeEventListener("keydown", cancelSelection);
+  }, [isSelectingStart, isCanvasEditMode]);
+
+  const handleSelectStart = () => {
+    setSelectedStorageUnitId(null);
+    setSelectedUnit(null);
+    setIsStockPanelOpen(false);
+    setTooltip(null);
+    setIsSelectingStart(true);
+  };
+
+  const handleStartingPointSelect = (point) => {
+    setStartingPoint(point);
+    setIsSelectingStart(false);
+  };
+
+  const handleAddProduct = (productId) => {
+    if (!products.some((product) => product._id === productId)) return;
+    setSelectedProductIds((previous) =>
+      previous.includes(productId) ? previous : [...previous, productId],
+    );
+  };
 
   return (
     <div
@@ -306,11 +356,26 @@ function FloorMapPageInner() {
       </div>
 
       {!isCanvasEditMode && (
-        <MapRouteInputs key={currentFloorMap?._id ?? "default"} />
+        <MapRouteInputs
+          key={currentFloorMap?._id ?? "default"}
+          products={products}
+          productsReady={productsReady}
+          selectedProductIds={selectedProductIds}
+          onAddProduct={handleAddProduct}
+          onRemoveProduct={(productId) =>
+            setSelectedProductIds((previous) => previous.filter((id) => id !== productId))
+          }
+          startingPoint={startingPoint}
+          isSelectingStart={isSelectingStart && mapReady}
+          onSelectStart={handleSelectStart}
+          onCancelSelectStart={() => setIsSelectingStart(false)}
+          onClearStart={() => {
+            setStartingPoint(null);
+            handleSelectStart();
+          }}
+          mapReady={mapReady}
+        />
       )}
-
-
-
       {/* -- Map row -- */}
       <div
         style={{
@@ -342,6 +407,9 @@ function FloorMapPageInner() {
               setSelectedStorageUnitId={handleUnitSelect}
               setTooltip={setTooltip}
               lowStockByUnitId={lowStockByUnitId}
+              startingPoint={startingPoint}
+              isSelectingStart={isSelectingStart && mapReady && !isCanvasEditMode}
+              onStartingPointSelect={handleStartingPointSelect}
             />
           )}
         </div>
