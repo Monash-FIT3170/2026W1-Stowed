@@ -48,6 +48,11 @@ export function getShoppingList() {
   }
 }
 
+/** Quantity by product id, for UI that has to show what is already listed. */
+export function getShoppingListQuantities() {
+  return new Map(getShoppingList().map((entry) => [entry.productId, entry.quantity]));
+}
+
 function writeShoppingList(entries) {
   try {
     window.sessionStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify(entries));

@@ -1,0 +1,99 @@
+/* ShoppingListControl.css */
+
+/* Sits at the foot of a product card: the stepper, then the action beneath it. */
+
+.slc {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* -- Stepper -- */
+
+/* One pill split into three, so minus, number and plus read as a single
+   control rather than two buttons with a label between them. */
+.slc-stepper {
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.slc-step {
+  border: none;
+  background: none;
+  color: var(--text-dark);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  padding: 7px 0;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.slc-step:hover:not(:disabled) {
+  background: var(--input-bg);
+}
+
+.slc-step:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.slc-step:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: -2px;
+}
+
+.slc-quantity {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- Action -- */
+
+.slc-action {
+  border: 1px solid var(--accent-primary);
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--card-bg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.slc-action:hover {
+  opacity: 0.9;
+}
+
+.slc-action:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+/* On the list, the action reverses: an outline in the danger colour rather
+   than a filled accent, so "already added" is legible at a glance across a
+   grid and removing never looks like the primary thing to do. */
+.slc-action.on-list {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.slc-action.on-list:hover {
+  background: rgba(204, 0, 0, 0.06);
+  opacity: 1;
+}
