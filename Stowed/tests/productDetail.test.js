@@ -4,6 +4,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { mockProducts, getMockProductById } from "../imports/api/mockProducts";
 import { ProductDetailView } from "../imports/ui/pages/ProductDetailPage";
+import {
+  buildFloorMapPreviewModel,
+  previewViewport,
+} from "../imports/ui/pages/floorMapComponents/canvas/components/FloorMapPreview";
 
 function renderWithoutLayoutEffectWarning(element) {
   const originalError = console.error;
@@ -39,6 +43,170 @@ function stockBadge(html) {
 }
 
 describe("ProductDetailView", function () {
+  const mapFixtures = {
+    sites: [
+      { _id: "site-1", name: "Building 67" },
+      { _id: "site-2", name: "Building 75" },
+    ],
+    floorMaps: [
+      {
+        _id: "floor-1",
+        siteId: "site-1",
+        name: "Ground Floor",
+        floorSize: { width: 500, height: 300 },
+      },
+      { _id: "floor-2", siteId: "site-2", name: "Level 1", floorSize: { width: 400, height: 400 } },
+    ],
+    storageUnits: [
+      {
+        _id: "unit-a",
+        floorMapId: "floor-1",
+        name: "Shelf A",
+        type: "shelf",
+        shape: {
+          points: [
+            { x: 0, y: 0 },
+            { x: 2, y: 0 },
+            { x: 2, y: 1 },
+            { x: 0, y: 1 },
+          ],
+        },
+        offset: { x: 2, y: 2 },
+        scale: { x: 1, y: 1 },
+      },
+      {
+        _id: "unit-b",
+        floorMapId: "floor-1",
+        name: "Shelf C",
+        type: "shelf",
+        shape: {
+          points: [
+            { x: 0, y: 0 },
+            { x: 2, y: 0 },
+            { x: 2, y: 1 },
+            { x: 0, y: 1 },
+          ],
+        },
+        offset: { x: 6, y: 2 },
+        scale: { x: 1, y: 1 },
+      },
+      {
+        _id: "unit-c",
+        floorMapId: "floor-2",
+        name: "Cabinet B",
+        type: "cabinet",
+        shape: {
+          points: [
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+            { x: 1, y: 2 },
+            { x: 0, y: 2 },
+          ],
+        },
+        offset: { x: 3, y: 4 },
+        scale: { x: 1, y: 1 },
+      },
+    ],
+    storageLocations: [
+      { _id: "loc-a", storageUnitId: "unit-a", name: "A-03" },
+      { _id: "loc-b", storageUnitId: "unit-b", name: "C-01" },
+      { _id: "loc-c", storageUnitId: "unit-c", name: "B-04" },
+    ],
+  };
+
+  function renderLocatedProduct(locationIds, overrides = {}) {
+    const item = { _id: "mapped-product", name: "Widget", sku: "W-1", totalQuantity: 12 };
+    return renderWithoutLayoutEffectWarning(
+      React.createElement(
+        MemoryRouter,
+        null,
+        React.createElement(ProductDetailView, {
+          item,
+          productId: item._id,
+          records: locationIds.map((locationId, index) => ({
+            _id: `record-${index}`,
+            locationId,
+            quantity: index + 2,
+          })),
+          ...mapFixtures,
+          ...overrides,
+        }),
+      ),
+    );
+  }
+
+  describe("location map previews", function () {
+    it("shows one mapped location and links to its highlighted full map", function () {
+      const html = renderLocatedProduct(["loc-a"]);
+      assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 1);
+      assert.ok(html.includes("Building 67 → Ground Floor → Shelf A → A-03"));
+      assert.ok(html.includes('data-highlighted-unit="unit-a"'));
+      assert.ok(html.includes("/floor-map/floor-1/detail?location=loc-a"));
+      assert.ok(html.includes("Assigned stock"));
+    });
+
+    it("shows each location across floors with the matching unit", function () {
+      const html = renderLocatedProduct(["loc-a", "loc-b", "loc-c"]);
+      assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 3);
+      assert.ok(html.includes('data-highlighted-unit="unit-a"'));
+      assert.ok(html.includes('data-highlighted-unit="unit-b"'));
+      assert.ok(html.includes('data-highlighted-unit="unit-c"'));
+      assert.ok(html.includes("/floor-map/floor-1/detail?location=loc-b"));
+      assert.ok(html.includes("/floor-map/floor-2/detail?location=loc-c"));
+      assert.ok(html.includes("Building 75 → Level 1 → Cabinet B → B-04"));
+    });
+
+    it("combines duplicate records for the same storage location", function () {
+      const html = renderLocatedProduct(["loc-a", "loc-a"]);
+      assert.strictEqual((html.match(/class="location-map-preview"/g) || []).length, 1);
+      assert.ok(html.includes('class="storage-location-quantity">5</div>'));
+    });
+
+    it("handles no locations and preserves the product details", function () {
+      const html = renderLocatedProduct([]);
+      assert.ok(html.includes("No stock assigned to a storage location yet."));
+      assert.ok(html.includes("Widget"));
+      assert.ok(html.includes("Current stock"));
+      assert.ok(!html.includes("location-map-preview"));
+    });
+
+    it("keeps text and uses a compact fallback when map geometry is missing", function () {
+      const storageUnits = mapFixtures.storageUnits.map((unit) =>
+        unit._id === "unit-a" ? { ...unit, offset: undefined } : unit,
+      );
+      const html = renderLocatedProduct(["loc-a"], { storageUnits });
+      assert.ok(html.includes("Building 67 → Ground Floor → Shelf A → A-03"));
+      assert.ok(html.includes("Map preview unavailable for this location."));
+      assert.ok(!html.includes("location-map-preview"));
+    });
+
+    it("falls back when a floor has no configured map size", function () {
+      const floorMaps = mapFixtures.floorMaps.map((floorMap) =>
+        floorMap._id === "floor-1" ? { ...floorMap, floorSize: undefined } : floorMap,
+      );
+      const html = renderLocatedProduct(["loc-a"], { floorMaps });
+      assert.ok(html.includes("Building 67 → Ground Floor → Shelf A → A-03"));
+      assert.ok(html.includes("Map preview unavailable for this location."));
+      assert.ok(!html.includes("location-map-preview"));
+    });
+
+    it("uses the existing read-only map layers and focuses on the selected unit", function () {
+      const model = buildFloorMapPreviewModel(mapFixtures.floorMaps[0], mapFixtures.storageUnits);
+      assert.deepStrictEqual(
+        model.units.map((unit) => unit.id),
+        ["unit-a", "unit-b"],
+      );
+      const viewport = previewViewport(model, "unit-b", 320, 200);
+      assert.strictEqual(viewport.unit.id, "unit-b");
+      assert.ok(viewport.scale > 0);
+      assert.ok(Number.isFinite(viewport.x) && Number.isFinite(viewport.y));
+      const html = renderLocatedProduct(["loc-b"]);
+      assert.ok(html.includes('role="img"'));
+      assert.ok(!html.includes("Map zoom controls"));
+      assert.ok(!html.includes("Layout editor"));
+    });
+  });
+
   it("renders not found when product is missing", function () {
     const html = renderWithoutLayoutEffectWarning(
       React.createElement(
