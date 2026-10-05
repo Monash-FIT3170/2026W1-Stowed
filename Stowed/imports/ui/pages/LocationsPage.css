@@ -60,6 +60,11 @@
   color: var(--text-dark);
 }
 
+.locations-tabs button:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+
 .locations-tabs button span {
   display: inline-flex;
   min-width: 22px;
@@ -460,6 +465,182 @@
   text-align: center;
 }
 
+.location-hierarchy {
+  border: 1px solid var(--border-light);
+  border-radius: 11px;
+  background: var(--card-bg);
+}
+
+.location-hierarchy-list,
+.location-hierarchy-children {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.location-hierarchy-list > li + li,
+.location-hierarchy-children > li + li {
+  border-top: 1px solid var(--border-light);
+}
+
+.location-hierarchy-children {
+  margin-left: 25px;
+  border-left: 1px solid var(--border-light);
+}
+
+.location-hierarchy-children[hidden] {
+  display: none;
+}
+
+.location-hierarchy-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.location-hierarchy-toggle {
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dark);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.location-hierarchy-site > .location-hierarchy-row .location-hierarchy-toggle {
+  min-height: 62px;
+  padding: 12px 14px;
+  background: var(--input-bg);
+}
+
+.location-hierarchy-toggle:hover {
+  background: var(--input-bg);
+}
+
+.location-hierarchy-toggle:focus-visible,
+.location-hierarchy-action:focus-visible,
+.location-hierarchy-location a:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+
+.location-hierarchy-chevron {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  font-size: 24px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 120ms ease;
+}
+
+.location-hierarchy-toggle[aria-expanded="true"] .location-hierarchy-chevron {
+  transform: rotate(90deg);
+}
+
+.location-hierarchy-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.location-hierarchy-name {
+  color: var(--text-dark);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.location-hierarchy-site > .location-hierarchy-row .location-hierarchy-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.location-hierarchy-summary,
+.location-hierarchy-code {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.location-hierarchy-code {
+  font-family: ui-monospace, "Cascadia Code", monospace;
+}
+
+.location-hierarchy-action {
+  display: inline-flex;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-right: 12px;
+  padding: 0 8px;
+  border-radius: 7px;
+  color: var(--accent-primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.location-hierarchy-action:hover {
+  background: var(--input-bg);
+  text-decoration: underline;
+}
+
+.location-hierarchy-location > .location-hierarchy-row {
+  min-height: 48px;
+  padding: 8px 12px;
+  gap: 10px;
+}
+
+.location-hierarchy-location a {
+  border-radius: 3px;
+  text-decoration: none;
+}
+
+.location-hierarchy-location a:hover {
+  text-decoration: underline;
+}
+
+.location-hierarchy-leaf-marker {
+  width: 24px;
+  flex: 0 0 24px;
+}
+
+.location-hierarchy-child-empty {
+  padding: 14px 12px 14px 46px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.location-hierarchy-empty strong,
+.location-hierarchy-empty span {
+  display: block;
+}
+
+.location-hierarchy-empty strong {
+  margin-bottom: 5px;
+  color: var(--text-dark);
+  font-size: 14px;
+}
+
 .locations-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -593,10 +774,40 @@
 
   .locations-tabs {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .locations-tabs button {
+    flex: 0 0 auto;
     white-space: nowrap;
+  }
+
+  .location-hierarchy-children {
+    margin-left: 11px;
+  }
+
+  .location-hierarchy-toggle {
+    gap: 5px;
+    padding: 8px 6px;
+  }
+
+  .location-hierarchy-site > .location-hierarchy-row .location-hierarchy-toggle {
+    padding: 10px 8px;
+  }
+
+  .location-hierarchy-action {
+    margin-right: 5px;
+    padding: 0 5px;
+    font-size: 11px;
+  }
+
+  .location-hierarchy-location > .location-hierarchy-row {
+    padding: 8px 6px;
+    gap: 5px;
+  }
+
+  .location-hierarchy-child-empty {
+    padding-left: 35px;
   }
 
   .locations-summary-grid,
