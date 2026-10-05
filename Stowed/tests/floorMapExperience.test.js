@@ -22,6 +22,7 @@ import { ROLES } from "../imports/api/roles";
 import { Meteor } from "meteor/meteor";
 import { FloorMaps, Sites, StorageUnits } from "../imports/api/locations/collections";
 import { Organisations } from "../imports/api/organisations";
+import { findLocationUnit } from "../imports/ui/pages/FloorMapDetailPage";
 
 const sites = [
   { _id: "site-a", name: "Main site" },
@@ -34,6 +35,17 @@ const maps = [
 ];
 
 describe("Floor map experience", function () {
+  it("resolves a product location deep link only on the current map", function () {
+    const locations = [
+      { _id: "loc-a", storageUnitId: "unit-a" },
+      { _id: "loc-b", storageUnitId: "unit-b" },
+    ];
+    const currentUnits = [{ _id: "unit-a" }];
+    assert.deepStrictEqual(findLocationUnit("loc-a", locations, currentUnits), currentUnits[0]);
+    assert.strictEqual(findLocationUnit("loc-b", locations, currentUnits), null);
+    assert.strictEqual(findLocationUnit("missing", locations, currentUnits), null);
+  });
+
   it("includes public maps and excludes private maps from guest choices", function () {
     const visible = publicMaps(maps);
     assert.deepStrictEqual(
