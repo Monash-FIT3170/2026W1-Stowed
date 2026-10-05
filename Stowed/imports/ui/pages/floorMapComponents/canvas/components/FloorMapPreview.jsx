@@ -22,8 +22,8 @@ function hasPosition(unit) {
 
 /** Build one projection per floor map, even when several product locations share it. */
 export function buildFloorMapPreviewModel(floorMap, storageUnits) {
-  const floorSize = normalizeFloorSize(floorMap?.floorSize);
-  if (!floorSize) return null;
+  if (!floorMap) return null;
+  const floorSize = normalizeFloorSize(floorMap.floorSize);
   const floorWidthMeters = floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
   const floorHeightMeters = floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
   const units = storageUnits

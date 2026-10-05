@@ -56,7 +56,7 @@ export function EditorProvider({
   publicOrgCode,
 }) {
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
-  const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
+  const [floorSize, setFloorSize] = useState(CANVAS_CONFIG.DEFAULT_FLOOR_SIZE);
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
   const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
   const [isEditorSettingsOpen, setEditorSettingsOpen] = useState(false);
