@@ -97,14 +97,6 @@ details[open] .location-map-toggle-chevron {
   transform: rotate(180deg);
 }
 
-.location-map-preview {
-  width: 100%;
-  overflow: hidden;
-  background: var(--input-bg);
-  border-top: 1px solid var(--border-light);
-  border-bottom: 1px solid var(--border-light);
-}
-
 .location-map-link {
   display: inline-flex;
   align-items: center;

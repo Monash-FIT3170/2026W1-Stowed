@@ -6,6 +6,7 @@ import { COLOURS } from "../../FloorMapStyles";
 import { GridLayer } from "./layers/GridLayer";
 import { UnitLayer } from "./layers/UnitLayer";
 import { HighlightLayer } from "./layers/HighlightLayer";
+import "./FloorMapPreview.css";
 
 function hasPosition(unit) {
   return (
