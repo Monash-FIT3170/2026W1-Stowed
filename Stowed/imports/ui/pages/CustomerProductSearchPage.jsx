@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { Link, useSearchParams } from "react-router-dom";
 import { getCustomerOrgCode } from "../customerSession";
+import { ShoppingListControl } from "../components/ShoppingListControl";
 import { FilterChips } from "../components/FilterChips";
 import { StatusBadge } from "../components/StatusBadge";
 import { Pagination } from "../components/Pagination";
@@ -268,6 +269,10 @@ export function CustomerProductSearchPage() {
           <ul className="customer-product-grid">
             {pagedResults.map((product) => (
               <li key={product._id}>
+                {/* The control is a sibling of the card, not a child: the card
+                    is a Link, and buttons inside a link are neither valid nor
+                    clickable without navigating. The li carries the card shell
+                    so the two still read as one. */}
                 <Link to={`/customer/search/${product._id}`} className="customer-product-card">
                   <div className="customer-product-image">
                     <ProductThumbnail images={product.images} name={product.name} />
@@ -293,6 +298,7 @@ export function CustomerProductSearchPage() {
                     )}
                   </div>
                 </Link>
+                <ShoppingListControl productId={product._id} productName={product.name} />
               </li>
             ))}
           </ul>
