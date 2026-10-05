@@ -24,9 +24,10 @@ export function UnitLayer({
   onDragMove,
   onDragEnd,
   onTransformEnd,
+  interactive = true,
 }) {
   return (
-    <Layer>
+    <Layer listening={interactive}>
       {units.map((unit) => {
         const ref = getGroupRef(unit.id);
         return (
