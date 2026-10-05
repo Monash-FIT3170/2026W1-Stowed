@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { useAuth } from "/imports/api/useAuth";
@@ -10,6 +10,10 @@ import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../../api/loca
 import { uploadImageToServer, isImageFile } from "/imports/api/upload";
 import { getBarcodeValue } from "/imports/api/products/codes";
 import { ProductBarcode } from "../components/ProductBarcode";
+import {
+  buildFloorMapPreviewModel,
+  FloorMapPreview,
+} from "./floorMapComponents/canvas/components/FloorMapPreview";
 import "./ProductDetailPage.css";
 import "../Global.css";
 
@@ -30,7 +34,9 @@ function buildLocationLabel(locationId, storageLocations, storageUnits, floorMap
   const floorMap = unit ? floorMaps.find((candidate) => candidate._id === unit.floorMapId) : null;
   const site = floorMap ? sites.find((candidate) => candidate._id === floorMap.siteId) : null;
 
-  return [site?.name, floorMap?.name, unit?.name, location.name].filter(Boolean).join(" → ");
+  return [site?.name, floorMap?.name, unit?.name, location.name || location.code || locationId]
+    .filter(Boolean)
+    .join(" → ");
 }
 
 export function ProductDetailView({
@@ -56,6 +62,20 @@ export function ProductDetailView({
   const canDelete = hasClientPermission(role, "products.delete");
   const canUploadImage = hasClientPermission(role, "products.uploadImage");
   const canRestock = hasClientPermission(role, "products.restock");
+  const previewMaps = useMemo(() => {
+    const locationUnits = new Map(
+      storageLocations.map((location) => [location._id, location.storageUnitId]),
+    );
+    const unitFloors = new Map(storageUnits.map((unit) => [unit._id, unit.floorMapId]));
+    const relevantFloorIds = new Set(
+      records.map((record) => unitFloors.get(locationUnits.get(record.locationId))).filter(Boolean),
+    );
+    return new Map(
+      floorMaps
+        .filter((floorMap) => relevantFloorIds.has(floorMap._id))
+        .map((floorMap) => [floorMap._id, buildFloorMapPreviewModel(floorMap, storageUnits)]),
+    );
+  }, [records, storageLocations, storageUnits, floorMaps]);
 
   // -- Restock modal state --
   const [showRestockModal, setShowRestockModal] = useState(false);
@@ -155,18 +175,44 @@ export function ProductDetailView({
   const hasUnitCost = Number.isFinite(unitCost);
   const hasPurchaseCost = Number.isFinite(purchaseCost) && item.purchaseCost != null;
   const storageAssignments = records.length
-    ? records.map((record) => ({
-        key: record._id,
-        locationId: record.locationId,
-        label: buildLocationLabel(
-          record.locationId,
-          storageLocations,
-          storageUnits,
-          floorMaps,
-          sites,
-        ),
-        quantity: record.quantity,
-      }))
+    ? Array.from(
+        records
+          .reduce((assignments, record) => {
+            const key = record.locationId || record._id;
+            const existing = assignments.get(key);
+            if (existing) {
+              existing.quantity += Number(record.quantity) || 0;
+              return assignments;
+            }
+            const location = storageLocations.find(
+              (candidate) => candidate._id === record.locationId,
+            );
+            const unit = storageUnits.find(
+              (candidate) => candidate._id === location?.storageUnitId,
+            );
+            const floorMap = floorMaps.find((candidate) => candidate._id === unit?.floorMapId);
+            const model = previewMaps.get(floorMap?._id);
+            assignments.set(key, {
+              key,
+              locationId: record.locationId,
+              locationName: location?.name || location?.code || record.locationId,
+              floorMapName: floorMap?.name,
+              floorMapId: floorMap?._id,
+              unitId: unit?._id,
+              model: model?.units.some((candidate) => candidate.id === unit?._id) ? model : null,
+              label: buildLocationLabel(
+                record.locationId,
+                storageLocations,
+                storageUnits,
+                floorMaps,
+                sites,
+              ),
+              quantity: Number(record.quantity) || 0,
+            });
+            return assignments;
+          }, new Map())
+          .values(),
+      )
     : item.location
       ? [
           {
@@ -423,18 +469,40 @@ export function ProductDetailView({
             <div className="detail-section">
               <h2 className="section-title">
                 <span className="section-badge lc">LC</span>
-                Storage locations
+                Locations
               </h2>
               <div className="section-content">
                 {storageAssignments.length ? (
                   <div className="storage-location-list">
                     {storageAssignments.map((assignment) => (
-                      <div key={assignment.key} className="storage-location-item">
-                        <div>
-                          <div className="storage-location-name">{assignment.label}</div>
-                          <div className="storage-location-meta">Assigned stock</div>
+                      <div key={assignment.key} className="storage-location-preview-card">
+                        <div className="storage-location-item">
+                          <div>
+                            <div className="storage-location-name">{assignment.label}</div>
+                            <div className="storage-location-meta">Assigned stock</div>
+                          </div>
+                          <div className="storage-location-quantity">{assignment.quantity}</div>
                         </div>
-                        <div className="storage-location-quantity">{assignment.quantity}</div>
+                        {assignment.model ? (
+                          <>
+                            <FloorMapPreview
+                              model={assignment.model}
+                              highlightedUnitId={assignment.unitId}
+                              locationName={assignment.locationName}
+                            />
+                            <Link
+                              className="location-map-link"
+                              to={`/floor-map/${assignment.floorMapId}/detail?location=${encodeURIComponent(assignment.locationId)}`}
+                              aria-label={`View ${assignment.locationName} on ${assignment.floorMapName} floor map`}
+                            >
+                              View on floor map →
+                            </Link>
+                          </>
+                        ) : (
+                          <div className="location-map-unavailable">
+                            Map preview unavailable for this location.
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
