@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
-import { FloorMaps, Sites } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, StorageLocations } from "/imports/api/locations/collections";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { LocationProductsPanel } from "./floorMapComponents/LocationProductsPanel";
@@ -14,23 +14,34 @@ import "./FloorMapDetailPage.css";
 /** How long the accent ring stays on a unit after "Show on map". */
 const HIGHLIGHT_MS = 2600;
 
+export function findLocationUnit(locationId, storageLocations, units) {
+  const location = storageLocations.find((candidate) => candidate._id === locationId);
+  return (
+    units.find((candidate) => (candidate._id ?? candidate.id) === location?.storageUnitId) ?? null
+  );
+}
+
 function FloorMapDetailInner({ floorMapId }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedLocationId = searchParams.get("location");
   const { units, selectedUnit, setSelectedUnit } = useEditor();
 
   const canvasRef = useRef(null);
   const highlightTimer = useRef(null);
+  const openedLocationRef = useRef(null);
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [highlightedUnitId, setHighlightedUnitId] = useState(null);
   const [focusLocationId, setFocusLocationId] = useState(null);
   const [focusNonce, setFocusNonce] = useState(0);
 
-  const { sites, floorMaps, ready } = useTracker(() => {
+  const { sites, floorMaps, storageLocations, ready } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageLocations: StorageLocations.find().fetch(),
       ready: handle.ready(),
     };
   }, []);
@@ -39,6 +50,22 @@ function FloorMapDetailInner({ floorMapId }) {
   const currentSite = sites.find((site) => site._id === currentFloorMap?.siteId);
 
   useEffect(() => () => clearTimeout(highlightTimer.current), []);
+
+  useEffect(() => {
+    if (!ready || !requestedLocationId || openedLocationRef.current === requestedLocationId) return;
+    const unit = findLocationUnit(requestedLocationId, storageLocations, units);
+    if (!unit) return;
+
+    openedLocationRef.current = requestedLocationId;
+    setSelectedUnit(unit);
+    setFocusLocationId(requestedLocationId);
+    setFocusNonce((nonce) => nonce + 1);
+    setIsPanelOpen(true);
+    setHighlightedUnitId(unit._id ?? unit.id);
+    canvasRef.current?.focusUnit(unit._id ?? unit.id);
+    clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightedUnitId(null), HIGHLIGHT_MS);
+  }, [ready, requestedLocationId, storageLocations, units, setSelectedUnit]);
 
   function openUnit(unitId, locationId = null) {
     const unit = units.find((candidate) => (candidate._id ?? candidate.id) === unitId) ?? null;
