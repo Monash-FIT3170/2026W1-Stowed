@@ -24,6 +24,8 @@ function hasPosition(unit) {
 export function buildFloorMapPreviewModel(floorMap, storageUnits) {
   const floorSize = normalizeFloorSize(floorMap?.floorSize);
   if (!floorSize) return null;
+  const floorWidthMeters = floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+  const floorHeightMeters = floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
   const units = storageUnits
     .filter((unit) => unit.floorMapId === floorMap._id && hasPosition(unit))
     .map(mapStorageUnitToCanvasUnit)
@@ -31,7 +33,11 @@ export function buildFloorMapPreviewModel(floorMap, storageUnits) {
       (unit) =>
         [unit.x, unit.y, unit.width, unit.height].every(Number.isFinite) &&
         unit.width > 0 &&
-        unit.height > 0,
+        unit.height > 0 &&
+        unit.x + unit.width / 2 >= 0 &&
+        unit.x + unit.width / 2 <= floorWidthMeters &&
+        unit.y + unit.height / 2 >= 0 &&
+        unit.y + unit.height / 2 <= floorHeightMeters,
     );
   return { floorSize, units };
 }

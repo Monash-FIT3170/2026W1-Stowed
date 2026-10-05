@@ -190,6 +190,15 @@ describe("ProductDetailView", function () {
       assert.ok(!html.includes("location-map-preview"));
     });
 
+    it("falls back when a storage unit is positioned outside its floor", function () {
+      const storageUnits = mapFixtures.storageUnits.map((unit) =>
+        unit._id === "unit-a" ? { ...unit, offset: { x: 50, y: 50 } } : unit,
+      );
+      const html = renderLocatedProduct(["loc-a"], { storageUnits });
+      assert.ok(html.includes("Map preview unavailable for this location."));
+      assert.ok(!html.includes("location-map-preview"));
+    });
+
     it("uses the existing read-only map layers and focuses on the selected unit", function () {
       const model = buildFloorMapPreviewModel(mapFixtures.floorMaps[0], mapFixtures.storageUnits);
       assert.deepStrictEqual(
