@@ -32,3 +32,4 @@ import "./stockAdjust.test.js";
 import "./scheduleMethods.test.js";
 import "./scheduleGeneration.test.js";
 import "./codeGenerationMethods.test.js";
+import "./dijkstraAlgorithm.test.js";
