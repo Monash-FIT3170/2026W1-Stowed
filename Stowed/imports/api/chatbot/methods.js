@@ -5,19 +5,16 @@ import { requirePermission, hasPermission } from "../userMethods";
 import { buildToolDeclarations, executeTool, TOOL_PERMISSIONS } from "./tools";
 
 const MAX_MESSAGES = 8;
-const MAX_STATEFUL_MESSAGES = 6;
-const MAX_CONTEXT_MESSAGES = 6;
 const MAX_MESSAGE_LENGTH = 1000;
+const MAX_TOOL_ROUNDS = 5;
 const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 const DEFAULT_MAX_OUTPUT_TOKENS = 256;
 const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
-const INVALID_JSON_OUTPUT_MESSAGE =
-  "Model generated invalid JSON syntax and the output could not be parsed.";
-
-const MAX_TOOL_ROUNDS = 5;
 const SYSTEM_INSTRUCTION = [
   "You are the assistant inside Stowed, an inventory app for shops and storerooms.",
+  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, and related workflows.",
+  "If the user asks for something outside Stowed's inventory scope, briefly say you can only help with Stowed inventory tasks.",
   "Use the tools to look things up and to act for the user; never invent product or location ids.",
   "You can only use the tools you are given - they match the user's role. If asked for something outside them, say you can't do that with their account.",
   "To create, edit or delete a product: first call the tool WITHOUT confirmed (this only previews, nothing changes), then tell the user exactly what will change and end your message with: Reply CONFIRM to proceed.",
@@ -40,7 +37,10 @@ function getNumberSetting(name, fallback) {
 function getAiClient() {
   const apiKey = getSetting("GEMINI_API_KEY") || getSetting("GOOGLE_API_KEY");
   if (!apiKey) {
-    throw new Meteor.Error("gemini-not-configured", DEFAULT_ERROR_MESSAGE);
+    throw new Meteor.Error(
+      "gemini-not-configured",
+      "Gemini API key is not configured. Set GEMINI_API_KEY in your .env file.",
+    );
   }
 
   if (!aiClient) {
@@ -48,6 +48,22 @@ function getAiClient() {
   }
 
   return aiClient;
+}
+
+function getChatbotConfigStatus() {
+  const apiKey = getSetting("GEMINI_API_KEY") || getSetting("GOOGLE_API_KEY");
+  const model = getSetting("GEMINI_MODEL") || DEFAULT_MODEL;
+
+  return {
+    hasApiKey: Boolean(apiKey),
+    keySource:
+      process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+        ? "environment"
+        : apiKey
+          ? "settings"
+          : "missing",
+    model,
+  };
 }
 
 function getLatestUserInput(messages) {
@@ -59,19 +75,14 @@ function getLatestUserInput(messages) {
   return latestUserMessage?.content.trim().slice(0, MAX_MESSAGE_LENGTH) || "";
 }
 
-// When the server-side chain is dropped (long chats), a bare "CONFIRM" would reach
-// the model with nothing to confirm - so replay the last few messages as text.
-function withRecentContext(messages, input) {
-  const earlier = messages.slice(0, -1).slice(-MAX_CONTEXT_MESSAGES);
-  if (earlier.length === 0) return input;
-
-  const transcript = earlier
-    .map((message) => {
-      const speaker = message.role === "user" ? "User" : "Assistant";
-      return `${speaker}: ${message.content.trim().slice(0, 500)}`;
-    })
-    .join("\n");
-  return `Recent conversation:\n${transcript}\n\nLatest user message: ${input}`;
+function toGeminiContents(messages) {
+  return messages
+    .slice(-MAX_MESSAGES)
+    .map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content.trim().slice(0, MAX_MESSAGE_LENGTH) }],
+    }))
+    .filter((message) => message.parts[0].text.length > 0);
 }
 
 const AFFIRMATION = /^\s*(confirm|confirmed|yes|y|yep|ok|okay|go ahead|do it)\W*$/i;
@@ -85,21 +96,25 @@ function isConfirmationReply(messages, input) {
   );
 }
 
-function isInvalidJsonOutputError(error) {
-  return String(error?.message || error?.reason || "").includes(INVALID_JSON_OUTPUT_MESSAGE);
+// generateContent wants function declarations without our "type: function" wrapper.
+function toFunctionDeclarations(tools) {
+  return tools.map(({ name, description, parameters }) => ({
+    name,
+    description,
+    parametersJsonSchema: parameters,
+  }));
 }
 
-async function createChatbotInteraction({ ai, model, input, previousInteractionId, tools }) {
-  return await ai.interactions.create({
+async function createChatbotResponse({ ai, model, contents, tools }) {
+  return await ai.models.generateContent({
     model,
-    input,
-    system_instruction: SYSTEM_INSTRUCTION,
-    ...(tools?.length ? { tools } : {}),
-    generation_config: {
-      max_output_tokens: getNumberSetting("GEMINI_MAX_OUTPUT_TOKENS", DEFAULT_MAX_OUTPUT_TOKENS),
+    contents,
+    config: {
+      maxOutputTokens: getNumberSetting("GEMINI_MAX_OUTPUT_TOKENS", DEFAULT_MAX_OUTPUT_TOKENS),
       temperature: getNumberSetting("GEMINI_TEMPERATURE", DEFAULT_TEMPERATURE),
+      systemInstruction: SYSTEM_INSTRUCTION,
+      ...(tools.length ? { tools: [{ functionDeclarations: toFunctionDeclarations(tools) }] } : {}),
     },
-    ...(previousInteractionId ? { previous_interaction_id: previousInteractionId } : {}),
   });
 }
 
@@ -121,10 +136,6 @@ Meteor.methods({
     }
 
     const model = getSetting("GEMINI_MODEL") || DEFAULT_MODEL;
-    const activePreviousInteractionId =
-      messages.length <= MAX_STATEFUL_MESSAGES ? previousInteractionId : null;
-    const ai = getAiClient();
-    const modelInput = activePreviousInteractionId ? input : withRecentContext(messages, input);
 
     const userId = this.userId;
     const permissionNames = new Set();
@@ -138,70 +149,69 @@ Meteor.methods({
     const userConfirmed = isConfirmationReply(messages, input);
 
     try {
-      let interaction;
-
-      try {
-        interaction = await createChatbotInteraction({
-          ai,
-          model,
-          input: modelInput,
-          previousInteractionId: activePreviousInteractionId,
-          tools,
-        });
-      } catch (error) {
-        if (!isInvalidJsonOutputError(error)) throw error;
-
-        interaction = await createChatbotInteraction({
-          ai,
-          model,
-          input: `${INVALID_JSON_OUTPUT_MESSAGE} Please retry the request and ensure any required structured output is valid JSON. Return the final answer as plain text.\n\nUser request: ${input}`,
-          previousInteractionId: activePreviousInteractionId,
-          tools,
-        });
-      }
+      const ai = getAiClient();
+      let contents = toGeminiContents(messages);
+      let response = await createChatbotResponse({ ai, model, contents, tools });
 
       // Run any tool calls the model asks for, as this user, and feed results back.
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-        const calls = (interaction.steps || []).filter((step) => step.type === "function_call");
+        const calls = response.functionCalls || [];
         if (calls.length === 0) break;
 
-        const results = [];
+        const parts = [];
         for (const call of calls) {
           const result = await executeTool({
             userId,
             toolName: call.name,
-            args: call.arguments,
+            args: call.args,
             turn,
             userConfirmed,
             allowedToolNames,
             actions,
           });
-          results.push({
-            type: "function_result",
-            call_id: call.id,
-            name: call.name,
-            result: JSON.stringify(result),
+          parts.push({
+            functionResponse: {
+              name: call.name,
+              response: result,
+              ...(call.id ? { id: call.id } : {}),
+            },
           });
         }
 
-        interaction = await createChatbotInteraction({
-          ai,
-          model,
-          input: results,
-          previousInteractionId: interaction.id,
-          tools,
-        });
+        // Replay the model's own turn untouched (it carries thought signatures).
+        contents = [...contents, response.candidates[0].content, { role: "user", parts }];
+        response = await createChatbotResponse({ ai, model, contents, tools });
       }
 
       return {
-        text: interaction.output_text || "I could not generate a response this time.",
-        interactionId: interaction.id,
+        text: response.text || "I could not generate a response this time.",
+        interactionId: response.responseId,
         model,
         actions,
       };
     } catch (error) {
       console.error("chatbot.chat failed:", error);
+      if (error instanceof Meteor.Error) {
+        throw error;
+      }
       throw new Meteor.Error("gemini-request-failed", DEFAULT_ERROR_MESSAGE);
     }
   },
+
+  "chatbot.configStatus"() {
+    if (!Meteor.isDevelopment) {
+      throw new Meteor.Error("not-available", "Only available in development.");
+    }
+
+    return getChatbotConfigStatus();
+  },
+});
+
+Meteor.startup(() => {
+  if (!Meteor.isDevelopment) return;
+
+  const status = getChatbotConfigStatus();
+  console.info(
+    `chatbot config: apiKey=${status.hasApiKey ? "loaded" : "missing"} source=${status.keySource} model=${status.model}`,
+  );
 });
