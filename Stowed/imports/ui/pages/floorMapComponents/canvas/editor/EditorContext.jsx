@@ -10,67 +10,19 @@ import {
   getTransformedBounds,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { mapStorageUnitToCanvasUnit, normalizeFloorSize } from "./mapLayout";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
 import { COLOURS } from "../../FloorMapStyles";
 
-function hasUsableShape(shape) {
-  return Array.isArray(shape?.points) && shape.points.length >= 3;
-}
-
-function getFallbackShape(unit) {
-  const width = Number(unit.width) > 0 ? Number(unit.width) : 1;
-  const height = Number(unit.height) > 0 ? Number(unit.height) : 1;
-  return buildRectShape({ width, height, name: unit.name || "Storage unit" });
-}
-
 function getDrawableShape(unit) {
-  return hasUsableShape(unit.shape) ? unit.shape : getFallbackShape(unit);
-}
-
-function normalizeFloorSize(floorSize) {
-  const width = Number(floorSize?.width);
-  const height = Number(floorSize?.height);
-  if (!(width > 0 && height > 0)) return null;
-
-  const looksLikeMeters = width <= 100 && height <= 100;
-  return looksLikeMeters
-    ? {
-        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-      }
-    : { width, height };
-}
-
-/**
- * Maps a StorageUnit to a the rectangle model the canvas currently renders.
- * The units real geometry is in its shape.points which is then transformed
- * use offset.rotation.scale.
- *
- * The x/y/width.height here are just the bounding box of the transformed points
- * as a stand in until the canvas can render different polygons
- */
-function mapStorageUnitToCanvasUnit(unit) {
-  const shape = getDrawableShape(unit);
-  const offset = unit.offset ?? { x: 0, y: 0 };
-  const scale = unit.scale ?? { x: 1, y: 1 };
-  const transform = { offset, rotation: unit.rotation, scale };
-  const bounds = getTransformedBounds(shape, transform);
-  return {
-    id: unit._id,
-    _id: unit._id,
-    name: unit.name,
-    type: unit.type,
-    x: bounds.minX,
-    y: bounds.minY,
-    width: bounds.width,
-    height: bounds.height,
-    shape,
-    offset,
-    rotation: unit.rotation ?? 0,
-    scale: unit.scale,
-    fill: unit.fill || COLOURS.UNIT_DEFAULT,
-  };
+  return Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3
+    ? unit.shape
+    : buildRectShape({
+        width: Number(unit.width) > 0 ? Number(unit.width) : 1,
+        height: Number(unit.height) > 0 ? Number(unit.height) : 1,
+        name: unit.name || "Storage unit",
+      });
 }
 
 // --- TOOL OPTIONS ---
