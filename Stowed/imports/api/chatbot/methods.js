@@ -1,6 +1,8 @@
 import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
 import { GoogleGenAI } from "@google/genai";
+import fs from "node:fs";
+import path from "node:path";
 import { requirePermission, hasPermission } from "../userMethods";
 import { buildToolDeclarations, executeTool, TOOL_PERMISSIONS } from "./tools";
 
@@ -24,9 +26,33 @@ const SYSTEM_INSTRUCTION = [
 
 let aiClient = null;
 let chatTurn = 0;
+let localSettings = null;
+
+function getLocalSettings() {
+  if (localSettings) return localSettings;
+
+  const projectRoot = process.cwd().split(path.sep + ".meteor")[0];
+  const settingsPath = path.join(projectRoot, "settings.json");
+
+  try {
+    localSettings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+  } catch {
+    localSettings = {};
+  }
+
+  return localSettings;
+}
 
 function getSetting(name) {
-  return process.env[name] || Meteor.settings?.[name] || Meteor.settings?.private?.[name];
+  const fileSettings = getLocalSettings();
+
+  return (
+    process.env[name] ||
+    Meteor.settings?.[name] ||
+    Meteor.settings?.private?.[name] ||
+    fileSettings?.[name] ||
+    fileSettings?.private?.[name]
+  );
 }
 
 function getNumberSetting(name, fallback) {
@@ -39,7 +65,7 @@ function getAiClient() {
   if (!apiKey) {
     throw new Meteor.Error(
       "gemini-not-configured",
-      "Gemini API key is not configured. Set GEMINI_API_KEY in your .env file.",
+      "Gemini API key is not configured. Start Meteor with --settings settings.json or set GEMINI_API_KEY.",
     );
   }
 
@@ -56,12 +82,19 @@ function getChatbotConfigStatus() {
 
   return {
     hasApiKey: Boolean(apiKey),
-    keySource:
-      process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+    keySource: process.env.GEMINI_API_KEY
+      ? "environment"
+      : process.env.GOOGLE_API_KEY
         ? "environment"
-        : apiKey
+        : Meteor.settings?.GEMINI_API_KEY || Meteor.settings?.private?.GEMINI_API_KEY
           ? "settings"
-          : "missing",
+          : Meteor.settings?.GOOGLE_API_KEY || Meteor.settings?.private?.GOOGLE_API_KEY
+            ? "settings"
+            : getLocalSettings()?.GEMINI_API_KEY || getLocalSettings()?.private?.GEMINI_API_KEY
+              ? "settings.json"
+              : getLocalSettings()?.GOOGLE_API_KEY || getLocalSettings()?.private?.GOOGLE_API_KEY
+                ? "settings.json"
+                : "missing",
     model,
   };
 }

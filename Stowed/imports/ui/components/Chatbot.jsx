@@ -54,7 +54,12 @@ export function Chatbot() {
         setIsSending(false);
 
         if (callError) {
-          setError(DEFAULT_ERROR_MESSAGE);
+          console.error("chatbot.chat failed:", callError);
+          setError(
+            Meteor.isDevelopment
+              ? callError.reason || DEFAULT_ERROR_MESSAGE
+              : DEFAULT_ERROR_MESSAGE,
+          );
           return;
         }
 

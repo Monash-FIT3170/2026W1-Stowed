@@ -21,6 +21,7 @@ const PERMISSIONS = {
   "products.restock": ROLES.STANDARD, // add stock — all staff can do this
   "products.receiveStock": ROLES.STANDARD, // mark shopping-list stock received / undo it — all staff can do this
   "products.uploadImage": ROLES.ADMIN, // attach images to products
+  "products.search": ROLES.ADMIN, // reverse image / text search for prefilling new products
   "products.findByCode": ROLES.STANDARD, // resolve a scanned barcode to a product
   "products.adjustStock": ROLES.STANDARD, // scan-driven +/- and set-count stock updates
   "products.bulkGenerateCodes": ROLES.ADMIN,
@@ -122,6 +123,15 @@ export async function assertOrgAccess(collection, docId, userId) {
   if (doc.orgId !== orgId) throw new Meteor.Error("forbidden", "Access denied.");
 }
 
+async function sendVerification(userId) {
+  if (!Meteor.isServer) return;
+  try {
+    await Accounts.sendVerificationEmail(userId);
+  } catch (err) {
+    console.error("Verification email failed:", err);
+  }
+}
+
 /**
  * User Methods
  */
@@ -183,6 +193,7 @@ Meteor.methods({
         username,
       },
     });
+    await sendVerification(userId);
     return userId;
   },
 
@@ -241,6 +252,7 @@ Meteor.methods({
         },
       });
 
+      await sendVerification(userId);
       return userId;
     } catch (err) {
       // Roll back the org we just created - no user means no org
