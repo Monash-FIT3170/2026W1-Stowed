@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
+import { useNavigate } from "react-router-dom";
 import "./Chatbot.css";
 
 const SUGGESTED_PROMPTS = [
@@ -22,6 +23,7 @@ export function Chatbot() {
   const [error, setError] = useState("");
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
   const inputRef = useRef(null);
+  const navigate = useNavigate();
 
   const canSend = draft.trim().length > 0 && !isSending;
 
@@ -64,6 +66,11 @@ export function Chatbot() {
         if (result?.interactionId) {
           setPreviousInteractionId(result.interactionId);
         }
+
+        // The server only returns paths the user's role is allowed to open.
+        result?.actions?.forEach((action) => {
+          if (action.type === "navigate" && action.path.startsWith("/")) navigate(action.path);
+        });
 
         setMessages((current) => [
           ...current,
