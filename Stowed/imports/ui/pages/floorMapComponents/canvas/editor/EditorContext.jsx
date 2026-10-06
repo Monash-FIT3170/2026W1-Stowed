@@ -2,16 +2,28 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 
-import { FloorMaps, StorageUnits, StorageLocations } from "/imports/api/locations/collections";
+import {
+  FloorMaps,
+  StorageUnits,
+  StorageLocations,
+  FloorMapRoutes,
+} from "/imports/api/locations/collections";
 import { Products, ProductRecords } from "/imports/api/products/collections";
 import {
   buildRectShape,
   getBoundingBox,
   getTransformedBounds,
+  getFloorSizeInMetres,
 } from "/imports/api/locations/shapeUtils";
 import { CANVAS_CONFIG } from "../CanvasConfig";
 import { normaliseShapePoints } from "./utils/ShapeGeometry";
 import { hasCollisions } from "./utils/Collisions";
+import {
+  canLinkNodes,
+  removeNodes,
+  splitLink,
+  ROUTE_NODE_TYPES,
+} from "/imports/api/locations/routeGraph";
 import { COLOURS } from "../../FloorMapStyles";
 
 function hasUsableShape(shape) {
@@ -29,17 +41,9 @@ function getDrawableShape(unit) {
 }
 
 function normalizeFloorSize(floorSize) {
-  const width = Number(floorSize?.width);
-  const height = Number(floorSize?.height);
-  if (!(width > 0 && height > 0)) return null;
-
-  const looksLikeMeters = width <= 100 && height <= 100;
-  return looksLikeMeters
-    ? {
-        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-      }
-    : { width, height };
+  const px = CANVAS_CONFIG.PIXELS_PER_METER;
+  const metres = getFloorSizeInMetres(floorSize, px);
+  return metres ? { width: metres.width * px, height: metres.height * px } : null;
 }
 
 /**
@@ -87,6 +91,26 @@ export const DEFAULT_CANVAS_SETTINGS = {
   snapToGrid: true,
 };
 
+/** The modes the floor map page can be in. */
+export const CANVAS_MODES = {
+  VIEW: "view", // read-only floor plan with stock overlays
+  EDIT: "edit", // edit layout, storage units and their contents
+  ROUTE: "route", // edit walkway nodes and links for product routing
+};
+
+/** The tools available in route mode. `null` means no tool is selected. */
+export const ROUTE_TOOLS = {
+  WALKWAY_NODE: "walkwayNode", // a point on a walkway
+  LINK: "link", // connects two nodes
+  PRODUCT_NODE: "productNode", // a pick point on the side of a storage unit
+  DELETE: "delete", // removes a node (and its links) or a single link
+};
+
+/** Client-side id for route nodes and links until they are persisted. */
+function createRouteId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 const EditorContext = createContext(null);
 
 /**
@@ -94,10 +118,24 @@ const EditorContext = createContext(null);
  * Owns all shared editor state: active tool, floor dimensions, canvas settings,
  * placed units, undo/redo history, save/load, and low stock alert data.
  *
- * @param {{ children: React.ReactNode, floorMapId: string, isCanvasEditMode: boolean, setCanvasEditMode: (v: boolean) => void }} props
+ * @param {{ children: React.ReactNode, floorMapId: string, canvasMode: string, setCanvasMode: (mode: string) => void }} props
  */
-export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanvasEditMode }) {
+export function EditorProvider({ children, floorMapId, canvasMode, setCanvasMode }) {
+  const isCanvasEditMode = canvasMode === CANVAS_MODES.EDIT;
   const [activeTool, setActiveTool] = useState(TOOLS.SELECT);
+  const [activeRouteTool, setActiveRouteTool] = useState(null);
+  // First node picked by the link tool, waiting for a second node
+  const [pendingLinkNodeId, setPendingLinkNodeId] = useState(null);
+  // Product node whose storage locations are being chosen: { nodeId, isNew } or null.
+  // `isNew` means it was just placed, so cancelling removes it again.
+  const [editingProductNode, setEditingProductNode] = useState(null);
+  // Walkway nodes for routing, positioned in metres: [{ id, x, y }]
+  const [walkwayNodes, setWalkwayNodes] = useState([]);
+  // Undirected links between walkway nodes: [{ id, fromId, toId }]
+  const [walkwayLinks, setWalkwayLinks] = useState([]);
+  // True when the route has changes that have not been saved to the database
+  const [isRouteDirty, setIsRouteDirty] = useState(false);
+  const [isSavingRoute, setIsSavingRoute] = useState(false);
   const [floorSize, setFloorSize] = useState({ width: 500, height: 500 });
   const [canvasSettings, setCanvasSettings] = useState(DEFAULT_CANVAS_SETTINGS);
   const [isFloorMapSettingsOpen, setFloorMapSettingsOpen] = useState(false);
@@ -113,6 +151,12 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   const [, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
   const canUndo = historyRef.current.index > 0;
+
+  // History is reset on load and on save, so any undoable step is an unsaved unit change.
+  // Floor size and editor settings are also saved by Save Layout, so track those separately.
+  const [hasUnsavedLayoutSettings, setHasUnsavedLayoutSettings] = useState(false);
+  const [isSavingLayout, setIsSavingLayout] = useState(false);
+  const isLayoutDirty = canUndo || hasUnsavedLayoutSettings;
   const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
 
   function commitUnits(updater) {
@@ -141,8 +185,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     forceRender((n) => n + 1);
   }
 
-  // --- FLOOR MAP + UNITS FROM MONGODB ---
-  const { isLoading, floorMap, savedUnits } = useTracker(() => {
+  // --- FLOOR MAP + UNITS + ROUTE FROM MONGODB ---
+  const { isLoading, floorMap, savedUnits, savedRoute } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
 
     const activeFloorMap = floorMapId ? FloorMaps.findOne(floorMapId) : FloorMaps.findOne();
@@ -155,8 +199,23 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       savedUnits: activeFloorMapId
         ? StorageUnits.find({ floorMapId: activeFloorMapId }).fetch()
         : [],
+      savedRoute: activeFloorMapId
+        ? FloorMapRoutes.findOne({ floorMapId: activeFloorMapId })
+        : null,
     };
   }, [floorMapId]);
+
+  // Load the saved route once per floor map. Later database updates are deliberately not
+  // re-applied, so they can never overwrite unsaved route edits.
+  // (EditorProvider remounts when the floor map changes, which resets this.)
+  const hasLoadedRouteRef = useRef(false);
+  useEffect(() => {
+    if (isLoading || !floorMap || hasLoadedRouteRef.current) return;
+    hasLoadedRouteRef.current = true;
+    setWalkwayNodes(savedRoute?.nodes ?? []);
+    setWalkwayLinks(savedRoute?.links ?? []);
+    setIsRouteDirty(false);
+  }, [isLoading, floorMap, savedRoute]);
 
   // --- LOW STOCK DATA ---
   const { lowStockByUnitId } = useTracker(() => {
@@ -217,6 +276,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     setUnits(canvasUnits);
     historyRef.current = { stack: [canvasUnits], index: 0 };
+    setHasUnsavedLayoutSettings(false);
   }, [isLoading, floorMap, savedUnits.length]);
 
   // --- SAVE / LOAD ---
@@ -237,6 +297,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     const activeFloorMapId = floorMap._id;
 
+    setIsSavingLayout(true);
     try {
       await callMethod("floorMaps.update", {
         floorMapId: activeFloorMapId,
@@ -324,10 +385,13 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       setUnits(savedCanvasUnits);
       historyRef.current = { stack: [savedCanvasUnits], index: 0 };
+      setHasUnsavedLayoutSettings(false);
       alert("Layout saved to database!");
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
+    } finally {
+      setIsSavingLayout(false);
     }
   }
 
@@ -419,12 +483,211 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     }
 
     setFloorSize(newFloorSize);
+    setHasUnsavedLayoutSettings(true);
     return true;
+  }
+
+  // --- ROUTE TOOLS ---
+  /**
+   * Switches the active route tool (or clears it with null), dropping any half-finished link.
+   *
+   * @param {string | null} tool - One of ROUTE_TOOLS, or null
+   */
+  function selectRouteTool(tool) {
+    setActiveRouteTool(tool);
+    setPendingLinkNodeId(null);
+  }
+
+  // --- WALKWAY ROUTE ---
+  /** Adds a node and returns its new id. */
+  function addRouteNode(node) {
+    const id = createRouteId(node.type);
+    setWalkwayNodes((prev) => [...prev, { id, ...node }]);
+    setIsRouteDirty(true);
+    return id;
+  }
+
+  /**
+   * Adds a walkway node at the given position (in metres). Saved with handleSaveRoute.
+   *
+   * @param {{ x: number, y: number }} position
+   */
+  function addWalkwayNode({ x, y }) {
+    addRouteNode({ type: ROUTE_NODE_TYPES.WALKWAY, x, y });
+  }
+
+  /**
+   * Adds a product node on the side of a storage unit, then asks the user which of the unit's
+   * storage locations can be reached from it (see editingProductNode). Saved with handleSaveRoute.
+   *
+   * @param {{ x: number, y: number, storageUnitId: string }} placement - Position in metres
+   */
+  function addProductNode({ x, y, storageUnitId }) {
+    const nodeId = addRouteNode({
+      type: ROUTE_NODE_TYPES.PRODUCT,
+      x,
+      y,
+      storageUnitId,
+      storageLocationIds: [],
+    });
+    setEditingProductNode({ nodeId, isNew: true });
+  }
+
+  /**
+   * Opens the storage location picker for an existing product node.
+   *
+   * @param {string} nodeId
+   */
+  function editProductNode(nodeId) {
+    setEditingProductNode({ nodeId, isNew: false });
+  }
+
+  /**
+   * Saves the chosen storage locations for the product node being edited and closes the picker.
+   *
+   * @param {string[]} storageLocationIds - Locations within the node's storage unit
+   */
+  function confirmProductNodeLocations(storageLocationIds) {
+    if (!editingProductNode) return;
+    const { nodeId } = editingProductNode;
+    setWalkwayNodes((prev) =>
+      prev.map((node) => (node.id === nodeId ? { ...node, storageLocationIds } : node)),
+    );
+    setIsRouteDirty(true);
+    setEditingProductNode(null);
+  }
+
+  /**
+   * Closes the storage location picker. A node that was only just placed is removed again,
+   * so every product node always has its accessible locations chosen.
+   */
+  function cancelProductNodeEdit() {
+    if (editingProductNode?.isNew) removeRouteNode(editingProductNode.nodeId);
+    setEditingProductNode(null);
+  }
+
+  /** Removes a node and every link attached to it from the in-page route. */
+  function removeRouteNode(nodeId) {
+    const { nodes, links } = removeNodes(walkwayNodes, walkwayLinks, (node) => node.id === nodeId);
+    setWalkwayNodes(nodes);
+    setWalkwayLinks(links);
+  }
+
+  /**
+   * Deletes a node (walkway or product) together with every link attached to it.
+   * Saved with handleSaveRoute.
+   *
+   * @param {string} nodeId
+   */
+  function deleteRouteNode(nodeId) {
+    removeRouteNode(nodeId);
+    setIsRouteDirty(true);
+  }
+
+  /**
+   * Deletes a single link, keeping the nodes at both ends. Saved with handleSaveRoute.
+   *
+   * @param {string} linkId
+   */
+  function deleteRouteLink(linkId) {
+    setWalkwayLinks((prev) => prev.filter((link) => link.id !== linkId));
+    setIsRouteDirty(true);
+  }
+
+  /**
+   * Links two nodes. Ignored if they are the same node, already linked, or both product nodes.
+   * Saved with handleSaveRoute.
+   *
+   * @param {string} fromId
+   * @param {string} toId
+   * @returns {boolean} Whether a link was added
+   */
+  function addWalkwayLink(fromId, toId) {
+    if (!canLinkNodes(walkwayNodes, walkwayLinks, fromId, toId)) return false;
+    setWalkwayLinks((prev) => [...prev, { id: createRouteId("link"), fromId, toId }]);
+    setIsRouteDirty(true);
+    return true;
+  }
+
+  /**
+   * Connects a node onto the middle of an existing link: the link is split at `point` by a new
+   * walkway node, which is then linked to `nodeId`. Saved with handleSaveRoute.
+   *
+   * @param {string} nodeId - The node to connect (usually a product node)
+   * @param {string} linkId - The link to split
+   * @param {{ x: number, y: number }} point - Where on the link to insert the junction (metres)
+   * @returns {boolean} Whether the link was split
+   */
+  function linkNodeOntoLink(nodeId, linkId, point) {
+    const split = splitLink(walkwayNodes, walkwayLinks, linkId, point, {
+      nodeId: createRouteId(ROUTE_NODE_TYPES.WALKWAY),
+      linkIdA: createRouteId("link"),
+      linkIdB: createRouteId("link"),
+    });
+    if (!split) return false;
+
+    const junctionId = split.nodes.at(-1).id;
+    setWalkwayNodes(split.nodes);
+    setWalkwayLinks([
+      ...split.links,
+      { id: createRouteId("link"), fromId: nodeId, toId: junctionId },
+    ]);
+    setIsRouteDirty(true);
+    return true;
+  }
+
+  /**
+   * Saves the current walkway nodes and links for this floor map, replacing the saved route.
+   */
+  async function handleSaveRoute() {
+    if (!floorMap) {
+      alert("No floor map exists in database.");
+      return;
+    }
+
+    // Drop product nodes whose storage unit has since been deleted, so they can't block the save
+    const savedUnitIds = new Set(savedUnits.map((unit) => unit._id));
+    const { nodes: remainingNodes, links } = removeNodes(
+      walkwayNodes,
+      walkwayLinks,
+      (node) => Boolean(node.storageUnitId) && !savedUnitIds.has(node.storageUnitId),
+    );
+
+    // Likewise drop storage locations that were deleted or moved to another unit
+    const unitIdByLocationId = new Map(
+      StorageLocations.find({}, { fields: { storageUnitId: 1 } })
+        .fetch()
+        .map((location) => [location._id, location.storageUnitId]),
+    );
+    const nodes = remainingNodes.map((node) =>
+      node.storageLocationIds
+        ? {
+            ...node,
+            storageLocationIds: node.storageLocationIds.filter(
+              (id) => unitIdByLocationId.get(id) === node.storageUnitId,
+            ),
+          }
+        : node,
+    );
+
+    setIsSavingRoute(true);
+    try {
+      await callMethod("floorMapRoutes.save", { floorMapId: floorMap._id, nodes, links });
+      setWalkwayNodes(nodes);
+      setWalkwayLinks(links);
+      setIsRouteDirty(false);
+    } catch (error) {
+      console.error(error);
+      alert(error.reason || "Failed to save route.");
+    } finally {
+      setIsSavingRoute(false);
+    }
   }
 
   // --- EDITOR SETTINGS ---
   function handleEditorSettingsSave({ gridInterval, snapInterval, showGrid, snapToGrid }) {
     setCanvasSettings({ gridInterval, snapInterval, showGrid, snapToGrid });
+    setHasUnsavedLayoutSettings(true); // editor settings are saved with the layout
     return true;
   }
 
@@ -549,8 +812,30 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     handleEditorSettingsSave,
 
     // Mode toggling
+    canvasMode,
+    setCanvasMode,
     isCanvasEditMode,
-    setCanvasEditMode,
+
+    // Route mode
+    activeRouteTool,
+    selectRouteTool,
+    pendingLinkNodeId,
+    setPendingLinkNodeId,
+    walkwayNodes,
+    addWalkwayNode,
+    addProductNode,
+    editingProductNode,
+    editProductNode,
+    confirmProductNodeLocations,
+    cancelProductNodeEdit,
+    deleteRouteNode,
+    deleteRouteLink,
+    walkwayLinks,
+    addWalkwayLink,
+    linkNodeOntoLink,
+    isRouteDirty,
+    isSavingRoute,
+    handleSaveRoute,
 
     // Units
     units,
@@ -566,6 +851,8 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Save / load
     handleSaveLayout,
+    isLayoutDirty,
+    isSavingLayout,
     handleLoadLayout,
 
     // Placement helpers

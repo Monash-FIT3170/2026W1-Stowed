@@ -262,3 +262,73 @@ describe('WeightedGraph', function () {
     const exp3 = { waypoints: [3, 2, 1, 0, 9, 7], legDist: 14 };
     assert.deepStrictEqual(result3, exp3, `R3 - Expected: ${exp3}\nbut got: ${result3}`);  });
 });
+
+describe('WeightedGraph.fromRoute', function () {
+  // A route as saved by the floor map editor (FloorMapRouteSchema).
+  // Walkway w1 -- w2 -- w3 along y=0, with product nodes hanging off w1 and w3:
+  //   p1 (on unit u1, location loc-a) linked to w1
+  //   p3 (on unit u1, locations loc-a and loc-b) linked to w3
+  const route = {
+    nodes: [
+      { id: 'w1', x: 0, y: 0 }, // saved before node types existed - a walkway node
+      { id: 'w2', x: 3, y: 0, type: 'walkway' },
+      { id: 'w3', x: 6, y: 0, type: 'walkway' },
+      { id: 'p1', x: 0, y: 4, type: 'product', storageUnitId: 'u1', storageLocationIds: ['loc-a'] },
+      { id: 'p3', x: 6, y: 1, type: 'product', storageUnitId: 'u1', storageLocationIds: ['loc-a', 'loc-b'] },
+    ],
+    links: [
+      { id: 'l1', fromId: 'w1', toId: 'w2' },
+      { id: 'l2', fromId: 'w3', toId: 'w2' },
+      { id: 'l3', fromId: 'p1', toId: 'w1' },
+      { id: 'l4', fromId: 'w3', toId: 'p3' },
+    ],
+  };
+
+  it('Gives each route node an index and keeps its position', function () {
+    const graph = WeightedGraph.fromRoute(route);
+    assert.strictEqual(graph.adjacencyList.length, route.nodes.length);
+    route.nodes.forEach((node, index) => {
+      assert.strictEqual(graph.indexOf(node.id), index);
+      assert.strictEqual(graph.routeNodes[index], node);
+      assert.deepStrictEqual(graph.coordMap[index], { x: node.x, y: node.y });
+    });
+  });
+
+  it('Weights each link by the distance between its nodes', function () {
+    const graph = WeightedGraph.fromRoute(route);
+    assert.deepStrictEqual(graph.adjacencyList[graph.indexOf('w1')], [
+      { node: graph.indexOf('w2'), weight: 3 },
+      { node: graph.indexOf('p1'), weight: 4 },
+    ]);
+    assert.deepStrictEqual(graph.adjacencyList[graph.indexOf('p3')], [
+      { node: graph.indexOf('w3'), weight: 1 },
+    ]);
+  });
+
+  it('Throws for an unknown route node id', function () {
+    const graph = WeightedGraph.fromRoute(route);
+    assert.throws(() => graph.indexOf('missing'), /Route node "missing" is not in the graph\./);
+  });
+
+  it('Finds the product nodes giving access to a storage location', function () {
+    const graph = WeightedGraph.fromRoute(route);
+    assert.deepStrictEqual(graph.productNodesFor('loc-a'), [graph.indexOf('p1'), graph.indexOf('p3')]);
+    assert.deepStrictEqual(graph.productNodesFor('loc-b'), [graph.indexOf('p3')]);
+    assert.deepStrictEqual(graph.productNodesFor('loc-c'), []);
+  });
+
+  it('Routes to the nearest product node for a storage location', function () {
+    const graph = WeightedGraph.fromRoute(route);
+    // from w3, p3 (dist 1) is nearer than p1 (dist 6 + 4)
+    const result = graph.dijkstra(graph.indexOf('w3'), graph.productNodesFor('loc-a'));
+    assert.deepStrictEqual(result, { waypoints: [graph.indexOf('w3'), graph.indexOf('p3')], legDist: 1 });
+    // from w1, p1 (dist 4) is nearer than p3 (dist 6 + 1)
+    const result2 = graph.dijkstra(graph.indexOf('w1'), graph.productNodesFor('loc-a'));
+    assert.deepStrictEqual(result2, { waypoints: [graph.indexOf('w1'), graph.indexOf('p1')], legDist: 4 });
+  });
+
+  it('Builds an empty graph from an empty route', function () {
+    const graph = WeightedGraph.fromRoute({ nodes: [], links: [] });
+    assert.deepStrictEqual(graph.adjacencyList, []);
+  });
+});

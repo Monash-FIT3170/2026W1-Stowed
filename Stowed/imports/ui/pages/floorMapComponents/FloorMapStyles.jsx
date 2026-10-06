@@ -29,6 +29,17 @@ export const COLOURS = {
   OVER_TRANSPARENT: "rgba(0, 0, 0, 0.08)",
   OVER_GREEN: "rgba(34, 197, 94, 0.50)",
   OVER_RED: "rgba(220, 38, 38, 0.60)",
+
+  // Route colours
+  WALKWAY_NODE_UNLINKED: "#dc2626",
+  WALKWAY_NODE_LINKED: "#16a34a",
+  WALKWAY_NODE_STROKE: "#ffffff",
+  WALKWAY_NODE_SELECTED_STROKE: "#14532d",
+  WALKWAY_LINK: "#16a34a",
+  PRODUCT_NODE: "#2563eb",
+  PRODUCT_LINK: "#2563eb",
+  PRODUCT_ACCESS_NODE: "#9333ea", // walkway node where a product node joins the walkway
+  DELETE_HIGHLIGHT: "#991b1b", // what the route delete tool would remove
 };
 
 const baseButton = {
@@ -186,6 +197,166 @@ export const pageStyles = {
     bottom: 24,
     right: 24,
     zIndex: 1000,
+  },
+};
+
+// Pill shared by the mode switcher and the icon buttons beside it
+const statusPill = (isActive) => ({
+  borderRadius: "999px",
+  border: `1px solid ${isActive ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
+  color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+  background: isActive ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
+  fontFamily: "inherit",
+});
+
+const statusIconButton = (isActive = false) => ({
+  ...statusPill(isActive),
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "24px",
+  height: "24px",
+  padding: 0,
+  cursor: "pointer",
+});
+
+/** Slim status row above the canvas: site selects, mode switcher, icon actions. */
+export const statusBarStyles = {
+  bar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "10px 28px",
+    // Keeps the bar the height it had when the site/floor map selects had labels above them,
+    // so the mode switcher and icons stay where they were
+    minHeight: "44px",
+    borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+    background: COLOURS.CARD_BG,
+    flexShrink: 0,
+  },
+  // A left or right cluster of controls, vertically centred together
+  group: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  // Site / floor map select styled like the mode pills: label and dropdown inside one pill
+  selectPill: {
+    ...statusPill(false),
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    height: "24px",
+    padding: "0 6px 0 10px",
+    boxSizing: "border-box",
+  },
+  selectLabel: {
+    fontSize: "10px",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  },
+  select: {
+    border: "none",
+    background: "transparent",
+    padding: 0,
+    fontSize: "11px",
+    fontWeight: 600,
+    color: COLOURS.ACCENT, // same orange as the highlighted status bar buttons
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  // Save Layout / Save Route: same look as the other icon buttons, highlighted (orange)
+  // while there are unsaved changes and plain once everything is saved
+  saveButton: (hasUnsavedChanges) => ({
+    ...statusIconButton(hasUnsavedChanges),
+    cursor: hasUnsavedChanges ? "pointer" : "default",
+  }),
+  modeGroup: {
+    display: "flex",
+    gap: "6px",
+  },
+  modeButton: (isActive, isDisabled = false) => ({
+    ...statusPill(isActive),
+    fontSize: "10px",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    padding: "4px 10px",
+    cursor: isDisabled ? "not-allowed" : isActive ? "default" : "pointer",
+    opacity: isDisabled ? 0.5 : 1,
+  }),
+  iconButton: statusIconButton,
+};
+
+const sidebarTab = (isActive) => ({
+  padding: "8px 10px",
+  border: "none",
+  borderBottom: isActive ? `2px solid ${COLOURS.ACCENT}` : "2px solid transparent",
+  background: "transparent",
+  cursor: "pointer",
+  fontSize: "12px",
+  fontWeight: isActive ? 700 : 400,
+  color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+  fontFamily: "inherit",
+});
+
+/** Widths of the edit/route sidebar, also used to keep the canvas fit the same in view mode. */
+export const SIDEBAR_WIDTH_PX = 260;
+export const COLLAPSED_SIDEBAR_WIDTH_PX = 32;
+
+/** Right-hand sidebar shared by edit mode and route mode. */
+export const sidebarStyles = {
+  panel: {
+    width: `${SIDEBAR_WIDTH_PX}px`,
+    minWidth: `${SIDEBAR_WIDTH_PX}px`,
+    maxWidth: `${SIDEBAR_WIDTH_PX}px`,
+    flexShrink: 0,
+    background: COLOURS.CARD_BG,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    flex: 1,
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    padding: "0 8px 0 14px",
+    flexShrink: 0,
+    borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
+  },
+  tab: sidebarTab,
+  // Single, non-clickable heading styled like a selected tab
+  heading: {
+    ...sidebarTab(true),
+    cursor: "default",
+  },
+  collapseButton: {
+    ...pageStyles.sidebarToggle,
+    fontSize: "11px",
+    padding: "4px 8px",
+    marginLeft: "auto",
+  },
+  collapsedStrip: {
+    width: `${COLLAPSED_SIDEBAR_WIDTH_PX}px`,
+    flexShrink: 0,
+    background: COLOURS.CARD_BG,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    paddingTop: "14px",
+    gap: "8px",
+    flex: 1,
+  },
+  expandButton: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: COLOURS.TEXT_MUTED,
+    fontSize: "14px",
+    padding: "4px",
   },
 };
 
@@ -479,6 +650,41 @@ export const storagePanelStyles = {
   },
 };
 
+/** Route mode tool list - cards reuse the storage unit card look. */
+export const routeToolbarStyles = {
+  list: {
+    padding: "12px",
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    overflowY: "auto",
+  },
+  card: (isActive, isHovered) => ({
+    ...storagePanelStyles.card,
+    background: isHovered ? COLOURS.UNIT_CARD_HOVER : storagePanelStyles.card.background,
+    ...(isActive ? buttonStyles.active : {}),
+    width: "100%",
+    textAlign: "left",
+    fontFamily: "inherit",
+  }),
+  iconTile: (isActive) => ({
+    ...storagePanelStyles.swatch,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: COLOURS.CARD_BG,
+    color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
+  }),
+  cardText: {
+    minWidth: 0,
+  },
+  cardName: (isActive) => ({
+    ...storagePanelStyles.cardName,
+    fontWeight: isActive ? 700 : 400,
+  }),
+};
+
 export const locationPanelStyles = {
   panel: {
     padding: "13px",
@@ -629,6 +835,12 @@ export const modalStyles = {
     color: COLOURS.TEXT_PRIMARY,
   },
 
+  helper: {
+    margin: 0,
+    fontSize: "11px",
+    color: COLOURS.TEXT_MUTED,
+  },
+
   checkboxRow: {
     fontSize: "11px",
     color: COLOURS.TEXT_PRIMARY,
@@ -657,4 +869,46 @@ export const modalStyles = {
     fontSize: 11,
     background: COLOURS.CARD_BG,
   },
+};
+
+/** Storage location picker shown for product nodes - builds on modalStyles. */
+export const productNodeModalStyles = {
+  empty: {
+    margin: 0,
+    padding: "10px",
+    border: `1px dashed ${COLOURS.BUTTON_BORDER}`,
+    borderRadius: 8,
+    fontSize: "11px",
+    color: COLOURS.TEXT_MUTED,
+    textAlign: "center",
+  },
+  list: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    maxHeight: "240px",
+    overflowY: "auto",
+  },
+  option: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "6px 8px",
+    borderRadius: "8px",
+    border: `1px solid ${COLOURS.CARD_BORDER}`,
+    background: COLOURS.INPUT_BG,
+    fontSize: "11px",
+    cursor: "pointer",
+  },
+  optionCode: {
+    fontWeight: 700,
+    color: COLOURS.TEXT_PRIMARY,
+  },
+  optionName: {
+    color: COLOURS.TEXT_MUTED,
+  },
+  confirmButton: (isEnabled) => ({
+    ...modalStyles.buttonPrimary,
+    ...(isEnabled ? {} : buttonStyles.disabled),
+  }),
 };

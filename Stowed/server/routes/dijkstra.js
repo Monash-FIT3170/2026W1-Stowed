@@ -12,6 +12,8 @@
  * product. 
  */
 
+import { isProductNode } from "/imports/api/locations/routeGraph";
+
 export {Node, PriorityQueue, WeightedGraph};
 
 // code below copied from: https://gist.github.com/Prottoy2938/66849e04b0bac459606059f5f9f3aa1a
@@ -101,12 +103,73 @@ class PriorityQueue {
  * - changing the `adjacencyList` from string keys (dictionary) to integer strings (list)
  * - adding the `coordMap` attribute to track where graph nodes are located on
  *     the floor map
- * - updating `dijkstra()` method to handle multiple possible endpoints to stop at 
+ * - updating `dijkstra()` method to handle multiple possible endpoints to stop at
+ * - adding `fromRoute()` to build a graph from a saved FloorMapRoute document
  */
 class WeightedGraph {
   constructor() {
     this.adjacencyList = [];
     this.coordMap = [];
+    // the saved route node at each index (only set by `fromRoute()`)
+    this.routeNodes = [];
+    this.indexByNodeId = new Map();
+  }
+
+  /**
+   * Build a graph from a saved FloorMapRoute document (see FloorMapRouteSchema).
+   * Route nodes have string ids, so each node is given the index of its position
+   * in `route.nodes`. Links don't store a weight, so each edge is weighted by
+   * the straight line distance (in metres) between its two nodes.
+   *
+   * @param {{nodes: Object[], links: Object[]}} route the saved route graph
+   * @returns {WeightedGraph} the graph, with `routeNodes` and `indexByNodeId` filled in
+   */
+  static fromRoute(route) {
+    const graph = new WeightedGraph();
+    route.nodes.forEach((node, index) => {
+      graph.addVertex(index, { x: node.x, y: node.y });
+      graph.routeNodes[index] = node;
+      graph.indexByNodeId.set(node.id, index);
+    });
+    for (const link of route.links) {
+      const from = graph.indexOf(link.fromId);
+      const to = graph.indexOf(link.toId);
+      const weight = Math.hypot(
+        graph.coordMap[from].x - graph.coordMap[to].x,
+        graph.coordMap[from].y - graph.coordMap[to].y,
+      );
+      graph.addEdge(from, to, weight);
+    }
+    return graph;
+  }
+
+  /**
+   * Get the index of a saved route node
+   *
+   * @param {string} nodeId the route node's id
+   * @returns {number} the node's index in the graph
+   */
+  indexOf(nodeId) {
+    const index = this.indexByNodeId.get(nodeId);
+    if (index === undefined) throw new Error(`Route node "${nodeId}" is not in the graph.`);
+    return index;
+  }
+
+  /**
+   * Find the product nodes a storage location can be picked from, for use as
+   * the `finish` list of `dijkstra()`
+   *
+   * @param {string} storageLocationId the storage location holding the product
+   * @returns {number[]} indices of the product nodes giving access to the location
+   */
+  productNodesFor(storageLocationId) {
+    const indices = [];
+    this.routeNodes.forEach((node, index) => {
+      if (isProductNode(node) && node.storageLocationIds?.includes(storageLocationId)) {
+        indices.push(index);
+      }
+    });
+    return indices;
   }
   /**
    * Add a node to the graph

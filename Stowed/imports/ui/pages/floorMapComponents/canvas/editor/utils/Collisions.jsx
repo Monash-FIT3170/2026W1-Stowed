@@ -8,7 +8,7 @@ import { hasPolygonCollision } from "./UnitCollisions";
  * @param {{ x: number, y: number, width: number, height: number, type?: string, shape?: { points: {x: number, y: number}[] } }} unit
  * @returns {{ x: number, y: number }[]}
  */
-function getUnitPolygon(unit) {
+export function getUnitPolygon(unit) {
   const isCustomShape =
     unit.type === "custom" && Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
 

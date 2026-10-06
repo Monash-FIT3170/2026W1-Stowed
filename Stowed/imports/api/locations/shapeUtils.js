@@ -85,3 +85,22 @@ export function getBoundingBox(points) {
 export function getTransformedBounds(shape, transform) {
   return getBoundingBox(transformPoints(shape, transform));
 }
+
+/**
+ * Reads a FloorMap's stored floorSize as metres. Older floor maps store metres and newer
+ * ones store canvas pixels, so small values (both sides <= 100) are taken to be metres.
+ *
+ * @param {{ width?: number, height?: number } | undefined} floorSize
+ * @param {number} pixelsPerMetre - Canvas scale, used when the stored size is in pixels
+ * @returns {{ width: number, height: number } | null} Size in metres, or null if not set
+ */
+export function getFloorSizeInMetres(floorSize, pixelsPerMetre) {
+  const width = Number(floorSize?.width);
+  const height = Number(floorSize?.height);
+  if (!(width > 0 && height > 0)) return null;
+
+  const looksLikeMetres = width <= 100 && height <= 100;
+  return looksLikeMetres
+    ? { width, height }
+    : { width: width / pixelsPerMetre, height: height / pixelsPerMetre };
+}

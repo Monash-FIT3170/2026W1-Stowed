@@ -1,7 +1,11 @@
 import { useState, useRef } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
-import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
+import {
+  CANVAS_MODES,
+  EditorProvider,
+  useEditor,
+} from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
@@ -18,20 +22,58 @@ import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
 import { UnitCard } from "./floorMapComponents/UnitCard";
 import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
-import { buttonStyles } from "./floorMapComponents/FloorMapStyles";
+import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
+import { ProductNodeLocationsModal } from "./floorMapComponents/ProductNodeLocationsModal";
+import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
+import { DownloadIcon, MapIcon, SaveIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
+import {
+  buttonStyles,
+  COLLAPSED_SIDEBAR_WIDTH_PX,
+  SIDEBAR_WIDTH_PX,
+  sidebarStyles,
+  statusBarStyles,
+} from "./floorMapComponents/FloorMapStyles";
 
-const statusBarButtonStyle = {
-  fontSize: "12px",
-  fontWeight: 600,
-  color: COLOURS.TEXT_PRIMARY,
-  background: COLOURS.CARD_BG,
-  border: `1px solid ${COLOURS.CARD_BORDER}`,
-  borderRadius: "8px",
-  padding: "6px 10px",
-  cursor: "pointer",
-  fontFamily: "inherit",
-  whiteSpace: "nowrap",
-};
+// Mode switcher buttons, in display order
+const MODE_OPTIONS = [
+  { mode: CANVAS_MODES.VIEW, label: "View", requiresManage: false },
+  { mode: CANVAS_MODES.EDIT, label: "Edit", requiresManage: true },
+  { mode: CANVAS_MODES.ROUTE, label: "Route", requiresManage: true },
+];
+
+// Tabs in the edit mode sidebar
+const EDIT_SIDEBAR_TABS = [
+  { key: "units", label: "Storage Units" },
+  { key: "templates", label: "Templates" },
+];
+
+/**
+ * Save icon for the layout or route, styled like the other status bar icons: highlighted
+ * (orange) while there are unsaved changes, plain and disabled once everything is saved.
+ *
+ * @param {{ label: string, hasUnsavedChanges: boolean, isSaving: boolean, onSave: () => void }} props
+ */
+function SaveIconButton({ label, hasUnsavedChanges, isSaving, onSave }) {
+  const canSave = hasUnsavedChanges && !isSaving;
+  const title = isSaving
+    ? `Saving ${label}...`
+    : hasUnsavedChanges
+      ? `Save ${label} (unsaved changes)`
+      : `${label[0].toUpperCase()}${label.slice(1)} saved`;
+
+  return (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={!canSave}
+      aria-label={title}
+      title={title}
+      style={statusBarStyles.saveButton(hasUnsavedChanges)}
+    >
+      <SaveIcon size={14} />
+    </button>
+  );
+}
 
 function FloorMapPageInner() {
   const { role } = useAuth();
@@ -50,11 +92,23 @@ function FloorMapPageInner() {
     isEditorSettingsOpen,
     setEditorSettingsOpen,
     handleEditorSettingsSave,
+    canvasMode,
+    setCanvasMode,
     isCanvasEditMode,
-    setCanvasEditMode,
+    activeRouteTool,
+    selectRouteTool,
+    isRouteDirty,
+    isSavingRoute,
+    handleSaveRoute,
+    walkwayNodes,
+    editingProductNode,
+    confirmProductNodeLocations,
+    cancelProductNodeEdit,
     units,
     commitUnits,
     handleSaveLayout,
+    isLayoutDirty,
+    isSavingLayout,
     selectedUnit,
     setSelectedUnit,
     lowStockByUnitId,
@@ -75,6 +129,23 @@ function FloorMapPageInner() {
   const [isChangingShape, setIsChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
 
+  // The product node whose accessible storage locations are being chosen, if any
+  const editingProductNodeData = editingProductNode
+    ? walkwayNodes.find((node) => node.id === editingProductNode.nodeId)
+    : null;
+
+  // In view mode there is no sidebar, so fitting would use a wider area than edit/route mode
+  // and the map would jump in size when switching. Leave room for the sidebar so every mode
+  // fits the map identically. Only for users who can switch modes, and not while the stock
+  // panel already takes up space on the right.
+  const isStockPanelShowing = Boolean(selectedUnit && isStockPanelOpen);
+  const viewFitInsetRight =
+    canvasMode === CANVAS_MODES.VIEW && canManage && !isStockPanelShowing
+      ? isSidebarOpen
+        ? SIDEBAR_WIDTH_PX
+        : COLLAPSED_SIDEBAR_WIDTH_PX
+      : 0;
+
   // Fetch all sites, floor maps, storage units and shapes
   const { sites, floorMaps, mapShapes, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.all");
@@ -94,17 +165,14 @@ function FloorMapPageInner() {
     setIsStockPanelOpen(!!unitId);
   };
 
-  const handleCanvasModeToggle = () => {
-    const nextEditMode = !isCanvasEditMode;
+  const handleCanvasModeChange = (nextMode) => {
+    if (nextMode === canvasMode) return;
+    setSelectedStorageUnitId(null);
+    setSelectedUnit(null);
+    setIsStockPanelOpen(false);
+    setTooltip(null);
 
-    if (!nextEditMode) {
-      setSelectedStorageUnitId(null);
-      setSelectedUnit(null);
-      setIsStockPanelOpen(false);
-      setTooltip(null);
-    }
-
-    setCanvasEditMode(nextEditMode);
+    setCanvasMode(nextMode);
   };
   const handleEditShape = (shape) => {
     setEditingShape(shape);
@@ -135,34 +203,13 @@ function FloorMapPageInner() {
       }}
     >
       {/* -- Slim status row - the sidebar nav already labels this page "Floor Map" -- */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          padding: "10px 28px",
-          borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
-          background: COLOURS.CARD_BG,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+      <div style={statusBarStyles.bar}>
+        <div style={statusBarStyles.group}>
           {sites.length > 0 ? (
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+            <>
               {/* WAREHOUSE (SITE) SELECT */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                <span
-                  style={{
-                    fontSize: "9px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: COLOURS.TEXT_MUTED,
-                  }}
-                >
-                  Site
-                </span>
+              <label style={statusBarStyles.selectPill}>
+                <span style={statusBarStyles.selectLabel}>Site</span>
                 <select
                   value={currentSite?._id ?? ""}
                   onChange={(e) => {
@@ -171,17 +218,7 @@ function FloorMapPageInner() {
                     if (targetMap) navigate(`/floor-map/${targetMap._id}`);
                   }}
                   aria-label="Select site"
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: COLOURS.TEXT_PRIMARY,
-                    background: COLOURS.CARD_BG,
-                    border: `1px solid ${COLOURS.CARD_BORDER}`,
-                    borderRadius: "8px",
-                    padding: "6px 10px",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
+                  style={statusBarStyles.select}
                 >
                   {sites.map((site) => (
                     <option key={site._id} value={site._id}>
@@ -189,37 +226,17 @@ function FloorMapPageInner() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
 
               {/* FLOOR MAP SELECT - only shown when the selected site has more than one floor map */}
               {currentSite && siteFloorMaps.length > 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span
-                    style={{
-                      fontSize: "9px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      color: COLOURS.TEXT_MUTED,
-                    }}
-                  >
-                    Floor Map
-                  </span>
+                <label style={statusBarStyles.selectPill}>
+                  <span style={statusBarStyles.selectLabel}>Floor Map</span>
                   <select
                     value={currentFloorMap?._id ?? ""}
                     onChange={(e) => navigate(`/floor-map/${e.target.value}`)}
                     aria-label="Select floor map"
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: COLOURS.TEXT_MUTED,
-                      background: COLOURS.CARD_BG,
-                      border: `1px solid ${COLOURS.CARD_BORDER}`,
-                      borderRadius: "8px",
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
+                    style={statusBarStyles.select}
                   >
                     {siteFloorMaps.map((fm) => (
                       <option key={fm._id} value={fm._id}>
@@ -227,79 +244,89 @@ function FloorMapPageInner() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </label>
               )}
-            </div>
+            </>
           ) : (
-            <span style={{ fontSize: "13px", fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
-              {currentFloorMap?.name ?? "Floor Map"}
+            <span style={statusBarStyles.selectPill}>
+              <span style={statusBarStyles.selectLabel}>Floor Map</span>
+              <span style={statusBarStyles.select}>{currentFloorMap?.name ?? "Floor Map"}</span>
             </span>
           )}
 
           {/* SAVE LAYOUT */}
           {isCanvasEditMode && canManage && (
-            <button
-              type="button"
-              onClick={handleSaveLayout}
-              style={{
-                ...statusBarButtonStyle,
-                background: COLOURS.ACCENT,
-                borderColor: COLOURS.ACCENT,
-                color: "white",
-              }}
-            >
-              Save Layout
-            </button>
+            <SaveIconButton
+              label="layout"
+              hasUnsavedChanges={isLayoutDirty}
+              isSaving={isSavingLayout}
+              onSave={handleSaveLayout}
+            />
+          )}
+
+          {/* SAVE ROUTE */}
+          {canvasMode === CANVAS_MODES.ROUTE && canManage && (
+            <SaveIconButton
+              label="route"
+              hasUnsavedChanges={isRouteDirty}
+              isSaving={isSavingRoute}
+              onSave={handleSaveRoute}
+            />
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* FLOOR MAP / EDITOR SETTINGS */}
-          {isCanvasEditMode && canManage && (
-            <>
-              <button
-                type="button"
-                onClick={() => canvasRef.current?.exportPng()}
-                style={statusBarButtonStyle}
-              >
-                Export as PNG
-              </button>
-              <button
-                type="button"
-                onClick={() => setFloorMapSettingsOpen(true)}
-                style={statusBarButtonStyle}
-              >
-                Floor Map Settings
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditorSettingsOpen(true)}
-                style={statusBarButtonStyle}
-              >
-                Editor Settings
-              </button>
-            </>
-          )}
+        <div style={statusBarStyles.group}>
+          {/* MODE SWITCHER */}
+          <div role="group" aria-label="Floor map mode" style={statusBarStyles.modeGroup}>
+            {MODE_OPTIONS.map(({ mode, label, requiresManage }) => {
+              const isActive = canvasMode === mode;
+              const isDisabled = requiresManage && !canManage;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => handleCanvasModeChange(mode)}
+                  disabled={isDisabled}
+                  aria-pressed={isActive}
+                  style={statusBarStyles.modeButton(isActive, isDisabled)}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
 
+          {/* EXPORT AS PNG */}
           <button
             type="button"
-            onClick={() => canManage && handleCanvasModeToggle()}
-            disabled={!canManage}
-            style={{
-              fontSize: "10px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              padding: "4px 10px",
-              borderRadius: "999px",
-              border: `1px solid ${isCanvasEditMode ? COLOURS.ACCENT : COLOURS.CARD_BORDER}`,
-              color: isCanvasEditMode ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
-              background: isCanvasEditMode ? COLOURS.ACCENT_SOFT : COLOURS.INPUT_BG,
-              cursor: canManage ? "pointer" : "default",
-              fontFamily: "inherit",
-            }}
+            onClick={() => canvasRef.current?.exportPng()}
+            aria-label="Export as PNG"
+            title="Export as PNG"
+            style={statusBarStyles.iconButton()}
           >
-            {isCanvasEditMode ? "Edit mode" : "View mode"}
+            <DownloadIcon size={14} />
+          </button>
+
+          {/* EDITOR SETTINGS - available in every mode */}
+          <button
+            type="button"
+            onClick={() => setEditorSettingsOpen(true)}
+            aria-label="Editor settings"
+            title="Editor settings"
+            style={statusBarStyles.iconButton(isEditorSettingsOpen)}
+          >
+            <SettingsIcon size={14} />
+          </button>
+
+          {/* FLOOR MAP SETTINGS - visible in every mode, editable only in edit mode */}
+          <button
+            type="button"
+            onClick={() => setFloorMapSettingsOpen(true)}
+            aria-label="Floor map settings"
+            title="Floor map settings"
+            style={statusBarStyles.iconButton(isFloorMapSettingsOpen)}
+          >
+            <MapIcon size={14} />
           </button>
         </div>
       </div>
@@ -330,10 +357,10 @@ function FloorMapPageInner() {
               ref={canvasRef}
               key={floorMapId ?? "default"}
               style={{ display: "block", width: "100%", height: "100%" }}
-              isCanvasEditMode={isCanvasEditMode}
               selectedStorageUnitId={selectedStorageUnitId}
               setSelectedStorageUnitId={handleUnitSelect}
               setTooltip={setTooltip}
+              fitInsetRight={viewFitInsetRight}
               lowStockByUnitId={lowStockByUnitId}
             />
           )}
@@ -350,7 +377,7 @@ function FloorMapPageInner() {
           }}
         >
           {/* STOCKTAKE SLIDE-OUT PANEL - view mode only */}
-          {selectedUnit && isStockPanelOpen && !isCanvasEditMode && (
+          {selectedUnit && isStockPanelOpen && canvasMode === CANVAS_MODES.VIEW && (
             <UnitStocktakePanel
               unit={selectedUnit}
               canStocktake={canStocktake}
@@ -362,19 +389,7 @@ function FloorMapPageInner() {
           {isCanvasEditMode && canManage && (
             <>
               {isSidebarOpen ? (
-                <div
-                  style={{
-                    width: "260px",
-                    minWidth: "260px",
-                    maxWidth: "260px",
-                    flexShrink: 0,
-                    background: COLOURS.CARD_BG,
-                    display: "flex",
-                    flexDirection: "column",
-                    overflow: "hidden",
-                    flex: 1,
-                  }}
-                >
+                <div style={sidebarStyles.panel}>
                   {selectedUnit ? (
                     <div
                       className="section-title"
@@ -405,69 +420,20 @@ function FloorMapPageInner() {
                       <span style={{ fontWeight: 700, color: COLOURS.TEXT_PRIMARY }}>
                         Edit &quot;{selectedUnit.name}&quot;
                       </span>
-                      <button
-                        onClick={() => setSidebarOpen(false)}
-                        style={{
-                          ...pageStyles.sidebarToggle,
-                          fontSize: "11px",
-                          padding: "4px 8px",
-                          marginLeft: "auto",
-                        }}
-                        aria-label="Collapse sidebar"
-                      >
-                        <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
-                      </button>
+                      <SidebarCollapseButton onClick={() => setSidebarOpen(false)} />
                     </div>
                   ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        padding: "0 8px 0 14px",
-                        flexShrink: 0,
-                        borderBottom: `1px solid ${COLOURS.CARD_BORDER}`,
-                      }}
-                    >
-                      {[
-                        { key: "units", label: "Storage Units" },
-                        { key: "templates", label: "Templates" },
-                      ].map((tab) => {
-                        const isActive = rightPanelTab === tab.key;
-                        return (
-                          <button
-                            key={tab.key}
-                            onClick={() => setRightPanelTab(tab.key)}
-                            style={{
-                              padding: "8px 10px",
-                              border: "none",
-                              borderBottom: isActive
-                                ? `2px solid ${COLOURS.ACCENT}`
-                                : "2px solid transparent",
-                              background: "transparent",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              fontWeight: isActive ? 700 : 400,
-                              color: isActive ? COLOURS.ACCENT : COLOURS.TEXT_MUTED,
-                              fontFamily: "inherit",
-                            }}
-                          >
-                            {tab.label}
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => setSidebarOpen(false)}
-                        style={{
-                          ...pageStyles.sidebarToggle,
-                          fontSize: "11px",
-                          padding: "4px 8px",
-                          marginLeft: "auto",
-                        }}
-                        aria-label="Collapse sidebar"
-                      >
-                        <img src="/sidebar-collapse.svg" alt="" width="18" height="18" />
-                      </button>
+                    <div style={sidebarStyles.header}>
+                      {EDIT_SIDEBAR_TABS.map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setRightPanelTab(tab.key)}
+                          style={sidebarStyles.tab(rightPanelTab === tab.key)}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                      <SidebarCollapseButton onClick={() => setSidebarOpen(false)} />
                     </div>
                   )}
 
@@ -607,37 +573,23 @@ function FloorMapPageInner() {
                   </div>
                 </div>
               ) : (
-                <div
-                  style={{
-                    width: "32px",
-                    flexShrink: 0,
-                    background: COLOURS.CARD_BG,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: "14px",
-                    gap: "8px",
-                    flex: 1,
-                  }}
-                >
-                  <button
-                    onClick={() => setSidebarOpen(true)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: COLOURS.TEXT_MUTED,
-                      fontSize: "14px",
-                      padding: "4px",
-                    }}
-                    aria-label="Expand sidebar"
-                  >
-                    <img src="/sidebar-expand.svg" alt="" width="18" height="18" />
-                  </button>
-                </div>
+                <CollapsedSidebar onExpand={() => setSidebarOpen(true)} />
               )}
             </>
           )}
+
+          {/* ROUTE MODE SIDEBAR */}
+          {canvasMode === CANVAS_MODES.ROUTE &&
+            canManage &&
+            (isSidebarOpen ? (
+              <RouteToolbar
+                activeTool={activeRouteTool}
+                onSelectTool={selectRouteTool}
+                onCollapse={() => setSidebarOpen(false)}
+              />
+            ) : (
+              <CollapsedSidebar onExpand={() => setSidebarOpen(true)} />
+            ))}
         </div>
         {/* end right column */}
       </div>
@@ -740,6 +692,13 @@ function FloorMapPageInner() {
           gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
+          // Changes are only saved via Save Layout, which exists in edit mode
+          isReadOnly={!(isCanvasEditMode && canManage)}
+          readOnlyMessage={
+            canManage
+              ? "Switch to Edit mode to change the floor size."
+              : "Only admins and owners can change the floor size."
+          }
         />
       )}
 
@@ -766,21 +725,32 @@ function FloorMapPageInner() {
           }}
         />
       )}
+
+      {/* PRODUCT NODE STORAGE LOCATIONS MODAL - on placement, or when a product node is clicked */}
+      {editingProductNodeData && (
+        <ProductNodeLocationsModal
+          key={editingProductNode.nodeId}
+          node={editingProductNodeData}
+          isNew={editingProductNode.isNew}
+          onConfirm={confirmProductNodeLocations}
+          onCancel={cancelProductNodeEdit}
+        />
+      )}
     </div>
   );
 }
 
 export function FloorMapPage() {
   const { floorMapId } = useParams();
-  // Owned here (outside the remounted EditorProvider) so edit/view mode
+  // Owned here (outside the remounted EditorProvider) so the current mode
   // persists when switching between floor maps / warehouses.
-  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
+  const [canvasMode, setCanvasMode] = useState(CANVAS_MODES.VIEW);
   return (
     <EditorProvider
       key={floorMapId ?? "default"}
       floorMapId={floorMapId}
-      isCanvasEditMode={isCanvasEditMode}
-      setCanvasEditMode={setCanvasEditMode}
+      canvasMode={canvasMode}
+      setCanvasMode={setCanvasMode}
     >
       <FloorMapPageInner />
     </EditorProvider>
