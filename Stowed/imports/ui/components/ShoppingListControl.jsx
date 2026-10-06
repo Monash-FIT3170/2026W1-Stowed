@@ -47,13 +47,24 @@ export function ShoppingListControl({ productId, productName }) {
   const onList = state.listed !== null;
   const quantity = onList ? state.listed : state.draft;
 
-  // Stepping stops at 1 either way: removing is the button's job, so a stepper
-  // cannot quietly empty the item off the list.
+  // Stepping down off the last one removes the item, so a shopper can undo an
+  // add without reaching for the button. A draft has nothing to remove, so it
+  // stops at 1 instead - see minusDisabled below.
+  const willRemove = onList && quantity === 1;
+
   const step = (delta) => {
     const current = stateRef.current;
     const listed = current.listed !== null;
-    const next = clamp((listed ? current.listed : current.draft) + delta);
-    if (next === (listed ? current.listed : current.draft)) return;
+
+    if (listed && delta < 0 && current.listed === 1) {
+      removeFromShoppingList(productId);
+      apply({ listed: null, draft: 1 });
+      return;
+    }
+
+    const from = listed ? current.listed : current.draft;
+    const next = clamp(from + delta);
+    if (next === from) return;
 
     if (listed) {
       setShoppingListQuantity(productId, next);
@@ -83,10 +94,14 @@ export function ShoppingListControl({ productId, productName }) {
       <div className="slc-stepper">
         <button
           type="button"
-          className="slc-step"
+          className={`slc-step${willRemove ? " will-remove" : ""}`}
           onClick={() => step(-1)}
-          disabled={quantity <= 1}
-          aria-label={`Decrease quantity for ${subject}`}
+          /* Only a draft floors the minus: on the list there is always
+             something left to take away, even at one. */
+          disabled={!onList && quantity <= 1}
+          aria-label={
+            willRemove ? `Remove ${subject} from shopping list` : `Decrease quantity for ${subject}`
+          }
         >
           &minus;
         </button>

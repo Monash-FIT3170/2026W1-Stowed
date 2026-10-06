@@ -97,3 +97,13 @@
   background: rgba(204, 0, 0, 0.06);
   opacity: 1;
 }
+
+/* At one on the list, minus takes the item off it rather than stepping down.
+   Colouring it like the remove button says so before it is pressed. */
+.slc-step.will-remove {
+  color: var(--danger);
+}
+
+.slc-step.will-remove:hover:not(:disabled) {
+  background: rgba(204, 0, 0, 0.06);
+}
