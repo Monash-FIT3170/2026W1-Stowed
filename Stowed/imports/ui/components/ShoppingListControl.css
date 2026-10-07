@@ -1,12 +1,24 @@
 /* ShoppingListControl.css */
 
-/* Sits at the foot of a product card: the stepper, then the action beneath it. */
-
 .slc {
   display: grid;
   gap: 8px;
+}
+
+/* "card": the foot of a product card - stepper, then the action beneath it. */
+.slc-card {
   padding: 10px 12px;
   border-top: 1px solid var(--border-light);
+}
+
+/* "row": a cell in the shopping list, where the stepper is the whole control
+   and has to sit on the row's baseline like the text either side of it. */
+.slc-row {
+  justify-items: start;
+}
+
+.slc-row .slc-stepper {
+  width: 104px;
 }
 
 /* -- Stepper -- */

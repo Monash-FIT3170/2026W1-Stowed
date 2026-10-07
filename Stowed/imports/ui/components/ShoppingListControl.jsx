@@ -18,14 +18,20 @@ import "./ShoppingListControl.css";
  *    through, and the button removes the item.
  *
  * Self-contained on purpose - each card owns its own control, so one card's
- * state cannot go stale when a neighbour is added.
+ * state cannot go stale when a neighbour is added. Where the surrounding page
+ * also renders from the list (the shopping list itself), onChange hands it the
+ * new entries so it can follow along.
+ *
+ * variant "card" is the foot of a product card: stepper plus add/remove button.
+ * variant "row" is a cell in the shopping list, where every item is on the list
+ * already - the stepper alone, with minus at one removing the row.
  */
 
 const MAX_QUANTITY = 99;
 
 const clamp = (value) => Math.min(MAX_QUANTITY, Math.max(1, value));
 
-export function ShoppingListControl({ productId, productName }) {
+export function ShoppingListControl({ productId, productName, variant = "card", onChange }) {
   // listed is null when the product is not on the list, otherwise its quantity.
   // draft is what the stepper holds before anything is added.
   const [state, setState] = useState(() => ({
@@ -39,9 +45,10 @@ export function ShoppingListControl({ productId, productName }) {
   // state changes, so the ref cannot drift from it and needs no resync here.
   const stateRef = useRef(state);
 
-  const apply = (next) => {
+  const apply = (next, entries) => {
     stateRef.current = next;
     setState(next);
+    if (entries && onChange) onChange(entries);
   };
 
   const onList = state.listed !== null;
@@ -57,8 +64,7 @@ export function ShoppingListControl({ productId, productName }) {
     const listed = current.listed !== null;
 
     if (listed && delta < 0 && current.listed === 1) {
-      removeFromShoppingList(productId);
-      apply({ listed: null, draft: 1 });
+      apply({ listed: null, draft: 1 }, removeFromShoppingList(productId));
       return;
     }
 
@@ -67,10 +73,10 @@ export function ShoppingListControl({ productId, productName }) {
     if (next === from) return;
 
     if (listed) {
-      setShoppingListQuantity(productId, next);
-      apply({ ...current, listed: next });
+      apply({ ...current, listed: next }, setShoppingListQuantity(productId, next));
       return;
     }
+    // A draft is not on the list yet, so nothing to tell the page about.
     apply({ ...current, draft: next });
   };
 
@@ -78,19 +84,17 @@ export function ShoppingListControl({ productId, productName }) {
     const current = stateRef.current;
 
     if (current.listed !== null) {
-      removeFromShoppingList(productId);
       // Back to a fresh draft, so the card reads the same as one never added.
-      apply({ listed: null, draft: 1 });
+      apply({ listed: null, draft: 1 }, removeFromShoppingList(productId));
       return;
     }
-    addToShoppingList(productId, current.draft);
-    apply({ ...current, listed: current.draft });
+    apply({ ...current, listed: current.draft }, addToShoppingList(productId, current.draft));
   };
 
   const subject = productName || "this item";
 
   return (
-    <div className="slc">
+    <div className={`slc slc-${variant}`}>
       <div className="slc-stepper">
         <button
           type="button"
@@ -119,16 +123,18 @@ export function ShoppingListControl({ productId, productName }) {
         </button>
       </div>
 
-      <button
-        type="button"
-        className={`slc-action${onList ? " on-list" : ""}`}
-        onClick={toggle}
-        aria-label={
-          onList ? `Remove ${subject} from shopping list` : `Add ${subject} to shopping list`
-        }
-      >
-        {onList ? "Remove from list" : "Add to shopping list"}
-      </button>
+      {variant === "card" && (
+        <button
+          type="button"
+          className={`slc-action${onList ? " on-list" : ""}`}
+          onClick={toggle}
+          aria-label={
+            onList ? `Remove ${subject} from shopping list` : `Add ${subject} to shopping list`
+          }
+        >
+          {onList ? "Remove from list" : "Add to shopping list"}
+        </button>
+      )}
     </div>
   );
 }
