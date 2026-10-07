@@ -5,6 +5,7 @@ import { getCustomerOrgCode } from "../customerSession";
 import { getShoppingList, pruneShoppingList } from "../customerShoppingList";
 import { ProductThumbnail } from "../components/ProductThumbnail";
 import { ShoppingListControl } from "../components/ShoppingListControl";
+import { CustomerProductModal } from "../components/CustomerProductModal";
 import "../Global.css";
 import "./CustomerShoppingListPage.css";
 
@@ -15,8 +16,6 @@ import "./CustomerShoppingListPage.css";
  * the same whitelisted customer catalogue the search page uses, so a name,
  * price or location that moved is never shown stale out of the tab.
  *
- * TODO for team:
- *  - Point "More info" at a read-only product view
  */
 
 export function CustomerShoppingListPage() {
@@ -25,6 +24,10 @@ export function CustomerShoppingListPage() {
   // Entries drive the rows; the catalogue is what they are joined against.
   const [entries, setEntries] = useState(() => getShoppingList());
   const [reloadCount, setReloadCount] = useState(0);
+
+  // Which product "More info" is showing, by id. Held as an id rather than the
+  // product so the dialog cannot outlive a row removed underneath it.
+  const [detailProductId, setDetailProductId] = useState(null);
 
   // An empty list needs no catalogue, so the empty state shows at once rather
   // than after a round trip. Going from empty to non-empty flips this and
@@ -63,6 +66,10 @@ export function CustomerShoppingListPage() {
       current = false;
     };
   }, [requestKey, orgCode, needsCatalogue]);
+
+  // Resolved from the id each render, so a product that leaves the list (or the
+  // catalogue) closes the dialog instead of leaving it showing a stale product.
+  const detailProduct = detailProductId ? (productsById?.get(detailProductId) ?? null) : null;
 
   const items = productsById
     ? entries
@@ -142,8 +149,13 @@ export function CustomerShoppingListPage() {
                       <span className="shopping-list-location-more"> +{rest.length} more</span>
                     )}
                   </span>
-                  {/* Not wired yet. */}
-                  <button type="button" className="shopping-list-more">
+                  <button
+                    type="button"
+                    className="shopping-list-more"
+                    onClick={() => setDetailProductId(product._id)}
+                    aria-haspopup="dialog"
+                    aria-label={`More info about ${product.name}`}
+                  >
                     More info
                   </button>
                 </div>
@@ -152,6 +164,10 @@ export function CustomerShoppingListPage() {
           </>
         )}
       </div>
+
+      {detailProduct && (
+        <CustomerProductModal product={detailProduct} onClose={() => setDetailProductId(null)} />
+      )}
     </div>
   );
 }
