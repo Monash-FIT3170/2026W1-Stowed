@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { getCustomerOrgCode } from "../customerSession";
 import { getShoppingList, pruneShoppingList } from "../customerShoppingList";
 import { ProductThumbnail } from "../components/ProductThumbnail";
+import { ShoppingListControl } from "../components/ShoppingListControl";
 import "../Global.css";
 import "./CustomerShoppingListPage.css";
 
@@ -15,8 +16,6 @@ import "./CustomerShoppingListPage.css";
  * price or location that moved is never shown stale out of the tab.
  *
  * TODO for team:
- *  - Add items to the list from search and the product view
- *  - Change quantity and remove items from this page
  *  - Point "More info" at a read-only product view
  */
 
@@ -117,7 +116,7 @@ export function CustomerShoppingListPage() {
               <span />
             </div>
 
-            {items.map(({ entry, product }) => {
+            {items.map(({ product }) => {
               const [first, ...rest] = product.locations;
               const locationLabel = first ? first.label : "-";
 
@@ -127,17 +126,21 @@ export function CustomerShoppingListPage() {
                     <ProductThumbnail images={product.images} name={product.name} />
                   </span>
                   <span className="shopping-list-name">{product.name}</span>
-                  <span className="shopping-list-quantity">x {entry.quantity}</span>
+                  <span className="shopping-list-quantity">
+                    {/* Every row is on the list by definition, so the stepper is
+                        always live here and minus at one removes the row. */}
+                    <ShoppingListControl
+                      productId={product._id}
+                      productName={product.name}
+                      variant="row"
+                      onChange={setEntries}
+                    />
+                  </span>
                   <span className="shopping-list-location">
                     {locationLabel}
                     {rest.length > 0 && (
                       <span className="shopping-list-location-more"> +{rest.length} more</span>
                     )}
-                  </span>
-                  {/* Phone only - the quantity and location columns as one line. */}
-                  <span className="shopping-list-meta">
-                    x {entry.quantity}
-                    {first ? ` at ${first.label}` : ""}
                   </span>
                   {/* Not wired yet. */}
                   <button type="button" className="shopping-list-more">

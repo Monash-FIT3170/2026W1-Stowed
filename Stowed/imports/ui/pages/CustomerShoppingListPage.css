@@ -10,7 +10,7 @@
    columns out of alignment. */
 
 .shopping-list {
-  --shopping-list-grid: 44px minmax(140px, 2.4fr) minmax(70px, 0.8fr) minmax(110px, 1.6fr) 96px;
+  --shopping-list-grid: 44px minmax(140px, 2.4fr) 112px minmax(110px, 1.6fr) 96px;
 
   margin-top: 20px;
   border: 1px solid var(--border-light);
@@ -53,12 +53,6 @@
   color: var(--text-muted);
 }
 
-/* The combined quantity-and-location line is phone-only; wider screens show
-   the real columns instead. */
-.shopping-list-meta {
-  display: none;
-}
-
 /* Matches the staff list's "View more" pill, so the two areas read as one
    product even though the customer view is read-only. */
 .shopping-list-more {
@@ -91,8 +85,8 @@
 /* -- Phone: each row becomes a card -- */
 
 /* Five columns cannot survive 375px, so the row folds into a thumbnail beside
-   a stack of name, quantity-and-location, and the button. The column headings
-   go with it, since there are no longer columns for them to head. */
+   a stack of name, location and stepper, with the button alongside. The column
+   headings go with it, since there are no longer columns for them to head. */
 
 @media (max-width: 768px) {
   .shopping-list-header {
@@ -101,16 +95,16 @@
 
   .shopping-list-row {
     grid-template-columns: 44px minmax(0, 1fr) auto;
-    gap: 2px 14px;
+    gap: 4px 14px;
     padding: 12px 16px;
   }
 
-  /* Every cell is placed by hand. Auto-placement would put the combined meta
-     line in the third column beside the name, and leave the button spanning
-     the wrong two rows. */
+  /* Every cell is placed by hand: auto-placement would spread the stack across
+     the thumbnail and button columns instead of down the middle one. */
   .shopping-list-thumb {
     grid-column: 1;
-    grid-row: 1 / span 2;
+    grid-row: 1 / span 3;
+    align-self: start;
   }
 
   .shopping-list-name {
@@ -119,24 +113,22 @@
     font-size: 14px;
   }
 
-  .shopping-list-more {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-  }
-
-  /* The separate quantity and location cells join into one line, the way the
-     staff list does on a phone. */
-  .shopping-list-quantity,
   .shopping-list-location {
-    display: none;
-  }
-
-  .shopping-list-meta {
-    display: block;
     grid-column: 2;
     grid-row: 2;
     font-size: 12px;
-    color: var(--text-muted);
+  }
+
+  .shopping-list-quantity {
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 2px;
+  }
+
+  .shopping-list-more {
+    grid-column: 3;
+    grid-row: 1 / span 3;
+    align-self: start;
   }
 }
 
