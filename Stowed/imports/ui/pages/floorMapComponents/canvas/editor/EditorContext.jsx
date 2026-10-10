@@ -28,6 +28,22 @@ function getDrawableShape(unit) {
   return hasUsableShape(unit.shape) ? unit.shape : getFallbackShape(unit);
 }
 
+function isUnitInsideFloor(unit, floorSize) {
+  const widthMeters = floorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
+  const heightMeters = floorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
+  return (
+    unit.x >= 0 &&
+    unit.y >= 0 &&
+    unit.x + unit.width <= widthMeters &&
+    unit.y + unit.height <= heightMeters
+  );
+}
+
+function hasStorageLocations(unit) {
+  // Match storageUnits.delete: even an empty storage location prevents deletion.
+  return Boolean(unit._id && StorageLocations.findOne({ storageUnitId: unit._id }));
+}
+
 function normalizeFloorSize(floorSize) {
   const width = Number(floorSize?.width);
   const height = Number(floorSize?.height);
@@ -36,9 +52,9 @@ function normalizeFloorSize(floorSize) {
   const looksLikeMeters = width <= 100 && height <= 100;
   return looksLikeMeters
     ? {
-        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-      }
+      width: width * CANVAS_CONFIG.PIXELS_PER_METER,
+      height: height * CANVAS_CONFIG.PIXELS_PER_METER,
+    }
     : { width, height };
 }
 
@@ -105,6 +121,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
   const [unitPendingDelete, setUnitPendingDelete] = useState(null);
+  const [shapePendingDelete, setShapePendingDelete] = useState(null);
 
   // --- SLIDE-OUT PANEL STATE ---
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -113,12 +130,16 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   // --- UNDO / REDO HISTORY ---
   const [, forceRender] = useState(0);
   const historyRef = useRef({ stack: [[]], index: 0 });
+  const loadedFloorMapIdRef = useRef(null);
+  const creatingUnitIdsRef = useRef(new Set());
   const canUndo = historyRef.current.index > 0;
   const canRedo = historyRef.current.index < historyRef.current.stack.length - 1;
 
   function commitUnits(updater) {
-    const next = typeof updater === "function" ? updater(units) : updater;
     const { stack, index } = historyRef.current;
+    const currentUnits = stack[index];
+    const next = typeof updater === "function" ? updater(currentUnits) : updater;
+
     const trimmed = stack.slice(0, index + 1);
     historyRef.current = { stack: [...trimmed, next], index: index + 1 };
     setUnits(next);
@@ -202,6 +223,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   useEffect(() => {
     if (isLoading || !floorMap) return;
 
+    // Initialise each map once. Database updates must not overwrite local edits.
+    if (loadedFloorMapIdRef.current === floorMap._id) return;
+    loadedFloorMapIdRef.current = floorMap._id;
+
     const nextFloorSize = normalizeFloorSize(floorMap.floorSize);
     if (nextFloorSize) {
       setFloorSize(nextFloorSize);
@@ -218,7 +243,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     setUnits(canvasUnits);
     historyRef.current = { stack: [canvasUnits], index: 0 };
-  }, [isLoading, floorMap, savedUnits.length]);
+  }, [isLoading, floorMap, savedUnits]);
 
   // --- SAVE / LOAD ---
   function callMethod(methodName, params) {
@@ -230,37 +255,54 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
     });
   }
 
-  async function handleSaveLayout() {
+  async function handleSaveLayout({ showSuccessAlert = true } = {}) {
+    if (isLoading) {
+      alert("Please wait for the floor map and storage locations to finish loading.");
+      return false;
+    }
+    if (creatingUnitIdsRef.current.size > 0) {
+      alert("Please wait for new units to finish being created, then save again.");
+      return false;
+    }
     if (!floorMap) {
       alert("No floor map exists in database.");
-      return;
+      return false;
     }
 
     const activeFloorMapId = floorMap._id;
 
+    const { stack, index } = historyRef.current;
+    const unitsToSave = stack[index];
+    const currentUnitIds = new Set(unitsToSave.map((unit) => unit._id).filter(Boolean));
+    const unitsToDelete = savedUnits.filter((unit) => !currentUnitIds.has(unit._id));
+    const blockedUnits = unitsToDelete.filter(hasStorageLocations);
+
+    // Validate every removal before writing anything, including removals from undo/redo.
+    if (blockedUnits.length > 0) {
+      const unitNames = blockedUnits.map((unit) => unit.name || unit._id).join(", ");
+      alert(
+        `Cannot save the layout because these units still contain storage locations: ${unitNames}.\n\nRestore the units or remove their storage locations before saving.`,
+      );
+      return false;
+    }
+
+    if (unitsToSave.some((unit) => !isUnitInsideFloor(unit, floorSize))) {
+      alert(
+        "Cannot save the layout while units are outside the floor. Move them inside or increase the floor size.",
+      );
+      return false;
+    }
+
     try {
-      await callMethod("floorMaps.update", {
-        floorMapId: activeFloorMapId,
-        siteId: floorMap.siteId,
-        name: floorMap.name,
-        imageUrl: floorMap.imageUrl || "",
-        floorSize,
-        settings: canvasSettings,
-      });
-
-      const currentUnitIds = units.filter((unit) => unit._id).map((unit) => unit._id);
-
-      for (const savedUnit of savedUnits) {
-        if (!currentUnitIds.includes(savedUnit._id)) {
-          await callMethod("storageUnits.delete", {
-            storageUnitId: savedUnit._id,
-          });
-        }
+      for (const savedUnit of unitsToDelete) {
+        await callMethod("storageUnits.delete", {
+          storageUnitId: savedUnit._id,
+        });
       }
 
       const savedCanvasUnits = [];
 
-      for (const unit of units) {
+      for (const unit of unitsToSave) {
         const shape = getDrawableShape(unit);
         const offset = unit.offset ?? { x: 0, y: 0 };
         const scale = unit.scale ?? { x: 1, y: 1 };
@@ -323,12 +365,26 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
         }
       }
 
+      // Persist dimensions only after all unit operations succeed. A server-side
+      // deletion rejection (e.g. a newly added location) must not shrink the floor.
+      await callMethod("floorMaps.update", {
+        floorMapId: activeFloorMapId,
+        siteId: floorMap.siteId,
+        name: floorMap.name,
+        imageUrl: floorMap.imageUrl || "",
+        floorSize,
+        settings: canvasSettings,
+      });
+
       setUnits(savedCanvasUnits);
       historyRef.current = { stack: [savedCanvasUnits], index: 0 };
-      alert("Layout saved to database!");
+
+      if (showSuccessAlert) alert("Layout saved to database!");
+      return true;
     } catch (error) {
       console.error(error);
       alert(error.reason || "Failed to save layout.");
+      return false;
     }
   }
 
@@ -363,51 +419,82 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       return;
     }
 
-    const activeFloorMapId = floorMap._id;
+    const { stack, index } = historyRef.current;
+    const pendingIds = stack[index].filter((unit) => !unit._id).map((unit) => unit.id);
 
-    try {
-      for (const unit of units) {
-        if (!unit._id) {
-          // only interested in adding the unit that doesn't already exist
-          const hasCustomShape = Array.isArray(unit.shape?.points) && unit.shape.points.length >= 3;
-          const shape = hasCustomShape
-            ? unit.shape
-            : buildRectShape({ width: unit.width, height: unit.height, name: unit.name });
-          const offset = { x: Number(unit.x), y: Number(unit.y) };
-          const scale = { x: 1, y: 1 };
+    for (const id of pendingIds) {
+      const history = historyRef.current;
+      const unit = history.stack[history.index].find((item) => item.id === id);
 
-          await callMethod("storageUnits.create", {
-            floorMapId: activeFloorMapId,
-            name: unit.name,
-            type: unit.type || "other",
-            shape,
-            offset,
-            rotation: 0,
-            scale,
-            fill: unit.fill || "#7a5230",
-          });
-        }
+      if (!unit || unit._id || creatingUnitIdsRef.current.has(id)) continue;
+
+      creatingUnitIdsRef.current.add(id);
+
+      try {
+        const shape = getDrawableShape(unit);
+        const offset = unit.offset ?? { x: Number(unit.x), y: Number(unit.y) };
+        const scale = unit.scale ?? { x: 1, y: 1 };
+
+        const newId = await callMethod("storageUnits.create", {
+          floorMapId: floorMap._id,
+          name: unit.name,
+          type: unit.type || "other",
+          shape,
+          offset,
+          rotation: unit.rotation ?? 0,
+          scale,
+          fill: unit.fill || COLOURS.UNIT_DEFAULT,
+        });
+
+        // Attach the database ID without overwriting newer movements or renames.
+        // Keep the canvas ID stable so selection continues to work.
+        const attachDatabaseId = (item) =>
+          item.id === id ? { ...item, _id: newId, offset: item.offset ?? offset } : item;
+
+        // Update all snapshots so undo/redo retains the database identity.
+        const latestHistory = historyRef.current;
+        const nextStack = latestHistory.stack.map((snapshot) => snapshot.map(attachDatabaseId));
+
+        historyRef.current = {
+          stack: nextStack,
+          index: latestHistory.index,
+        };
+
+        setUnits(nextStack[latestHistory.index]);
+        setSelectedUnit((current) => (current ? attachDatabaseId(current) : current));
+      } catch (error) {
+        console.error(error);
+        alert(error.reason || "Failed to create unit.");
+      } finally {
+        creatingUnitIdsRef.current.delete(id);
       }
-    } catch (error) {
-      console.error(error);
-      alert(error.reason || "Failed to create unit.");
     }
   }
 
   // --- FLOOR MAP SETTINGS ---
   function handleFloorMapSettingsSave({ floorSize: newFloorSize }) {
-    const floorWidthMeters = newFloorSize.width / CANVAS_CONFIG.PIXELS_PER_METER;
-    const floorHeightMeters = newFloorSize.height / CANVAS_CONFIG.PIXELS_PER_METER;
-    const unitsInsideFloor = units.filter(
-      (unit) =>
-        unit.x >= 0 &&
-        unit.y >= 0 &&
-        unit.x + unit.width <= floorWidthMeters &&
-        unit.y + unit.height <= floorHeightMeters,
-    );
+    if (isLoading) {
+      alert("Please wait for the floor map and storage locations to finish loading.");
+      return false;
+    }
+    if (creatingUnitIdsRef.current.size > 0) {
+      alert("Please wait for new units to finish being created, then resize again.");
+      return false;
+    }
+
+    const unitsInsideFloor = units.filter((unit) => isUnitInsideFloor(unit, newFloorSize));
     const removedUnits = units.filter(
       (unit) => !unitsInsideFloor.some((insideUnit) => insideUnit.id === unit.id),
     );
+    const blockedUnits = removedUnits.filter(hasStorageLocations);
+
+    if (blockedUnits.length > 0) {
+      const unitNames = blockedUnits.map((unit) => unit.name || unit.id).join(", ");
+      alert(
+        `Cannot resize the floor because these units would be outside its bounds and still contain storage locations: ${unitNames}.\n\nMove these units inside the new bounds, choose a larger floor size, or remove their storage locations first.`,
+      );
+      return false;
+    }
 
     if (removedUnits.length > 0) {
       const unitNames = removedUnits.map((unit) => unit.name || unit.id).join(", ");
@@ -538,17 +625,30 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   async function handleDeleteShape(shape) {
-    // validate something is selected
     if (!shape) return;
+
+    if (StorageUnits.find({ "shape.shapeId": shape.shapeId }).count() > 0) {
+      setShapePendingDelete(shape);
+      return;
+    }
 
     try {
       await callMethod("mapShapes.delete", { shape });
     } catch (error) {
-      alert(
-        error.reason ||
-          "Cannot delete this shape. Make sure it is not used for any storage units first.",
-      );
+      alert(error.reason || "Failed to delete this shape.");
     }
+  }
+
+  async function handleConfirmDeleteShapeWithReassign(assignments) {
+    const shape = shapePendingDelete;
+    if (!shape) return;
+
+    await callMethod("mapShapes.deleteWithReassign", {
+      shapeId: shape.shapeId,
+      assignments,
+    });
+
+    setShapePendingDelete(null);
   }
 
   const value = {
@@ -611,6 +711,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected shape
     handleDeleteShape,
+    shapePendingDelete,
+    setShapePendingDelete,
+    handleConfirmDeleteShapeWithReassign,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

@@ -682,6 +682,75 @@ Meteor.methods({
     await MapShapes.removeAsync({ shapeId: shape.shapeId });
   },
 
+  async "mapShapes.deleteWithReassign"({ shapeId, assignments }) {
+    check(shapeId, Number);
+    check(assignments, [{ storageUnitId: String, targetShapeId: Number }]);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    const orgId = await getCallerOrgId(this.userId);
+
+    const shape = await MapShapes.findOneAsync({ shapeId, orgId });
+    if (!shape) {
+      throw new Meteor.Error("shape-not-found", "No shape found with that ID.");
+    }
+
+    const orgFloorMapIds = (await FloorMaps.find({ orgId }).fetchAsync()).map((f) => f._id);
+    const units = await StorageUnits.find({
+      "shape.shapeId": shapeId,
+      floorMapId: { $in: orgFloorMapIds },
+    }).fetchAsync();
+
+    const targetByUnitId = new Map(assignments.map((a) => [a.storageUnitId, a.targetShapeId]));
+
+    for (const unit of units) {
+      if (!targetByUnitId.has(unit._id)) {
+        throw new Meteor.Error(
+          "missing-destination",
+          "Every storage unit using this shape needs a replacement shape.",
+        );
+      }
+    }
+
+    const targetShapes = new Map();
+    for (const targetShapeId of new Set(units.map((u) => targetByUnitId.get(u._id)))) {
+      if (targetShapeId === shapeId) {
+        throw new Meteor.Error("invalid-destination", "Choose a different shape to move units to.");
+      }
+      const target = await MapShapes.findOneAsync({ shapeId: targetShapeId, orgId });
+      if (!target) {
+        throw new Meteor.Error("invalid-shape", "Replacement shape does not exist.");
+      }
+      targetShapes.set(targetShapeId, target);
+    }
+
+    const now = new Date();
+    for (const unit of units) {
+      const target = targetShapes.get(targetByUnitId.get(unit._id));
+      const minX = Math.min(...target.points.map((p) => p.x));
+      const minY = Math.min(...target.points.map((p) => p.y));
+
+      await StorageUnits.updateAsync(unit._id, {
+        $set: {
+          shape: {
+            orgId,
+            shapeId: target.shapeId,
+            name: target.name,
+            gridReference: target.gridReference,
+            points: target.points.map((p) => ({ x: p.x - minX, y: p.y - minY })),
+          },
+          updatedAt: now,
+        },
+      });
+    }
+
+    await MapShapes.removeAsync({ shapeId, orgId });
+  },
+
   /**
    * Creates a new StorageLocation under an existing StorageUnit.
    */
