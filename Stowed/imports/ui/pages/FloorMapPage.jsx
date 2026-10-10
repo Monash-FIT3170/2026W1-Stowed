@@ -6,6 +6,7 @@ import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
 import { DeleteShapeModal } from "./floorMapComponents/DeleteShapeModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
+import { DeleteUnitModal } from "./floorMapComponents/DeleteUnitModal";
 import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
@@ -62,6 +63,10 @@ function FloorMapPageInner() {
     setSelectedUnit,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
+    unitPendingDelete,
+    setUnitPendingDelete,
+    unitIdsStagedForRemoval,
+    handleConfirmDeleteWithReassign,
     handleDeleteShape,
     shapePendingDelete,
     setShapePendingDelete,
@@ -827,6 +832,16 @@ function FloorMapPageInner() {
           gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
+        />
+      )}
+
+      {/* DELETE UNIT MODAL */}
+      {unitPendingDelete && (
+        <DeleteUnitModal
+          unit={unitPendingDelete}
+          excludedUnitIds={unitIdsStagedForRemoval}
+          onConfirm={handleConfirmDeleteWithReassign}
+          onClose={() => setUnitPendingDelete(null)}
         />
       )}
 

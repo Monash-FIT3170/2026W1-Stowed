@@ -120,6 +120,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   const [isEditorSettingsOpen, setEditorSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
+  const [unitPendingDelete, setUnitPendingDelete] = useState(null);
   const [shapePendingDelete, setShapePendingDelete] = useState(null);
 
   // --- SLIDE-OUT PANEL STATE ---
@@ -525,6 +526,11 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
       return;
     }
 
+    if (StorageLocations.find({ storageUnitId: selectedUnit._id }).count() > 0) {
+      setUnitPendingDelete(selectedUnit);
+      return;
+    }
+
     try {
       await callMethod("storageUnits.delete", {
         storageUnitId: selectedUnit._id,
@@ -534,12 +540,27 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
       setSelectedUnit(null);
     } catch (error) {
-      alert(
-        error.reason ||
-        "Cannot delete this unit. Make sure all storage locations within it are removed first.",
-      );
+      alert(error.reason || "Failed to delete this unit.");
     }
   }
+
+  async function handleConfirmDeleteWithReassign(assignments) {
+    const unit = unitPendingDelete;
+    if (!unit) return;
+
+    await callMethod("storageUnits.deleteWithReassign", {
+      storageUnitId: unit._id,
+      assignments,
+    });
+
+    commitUnits((prev) => prev.filter((u) => u._id !== unit._id));
+    setSelectedUnit(null);
+    setUnitPendingDelete(null);
+  }
+
+  const unitIdsStagedForRemoval = savedUnits
+    .filter((saved) => !units.some((u) => u._id === saved._id))
+    .map((saved) => saved._id);
 
   async function handleChangeShape(shape) {
     if (!selectedUnit) return;
@@ -682,6 +703,10 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected unit
     handleDeleteSelectedUnit,
+    unitPendingDelete,
+    setUnitPendingDelete,
+    unitIdsStagedForRemoval,
+    handleConfirmDeleteWithReassign,
     handleChangeShape,
 
     // Delete selected shape
