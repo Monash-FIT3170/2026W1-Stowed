@@ -307,3 +307,77 @@ describeServer("mapShapes.update", function () {
     assert.strictEqual(updated.name, shape.name);
   });
 });
+
+describeServer("mapShapes.deleteWithReassign", function () {
+  const UNIT_ID = "reassign-shape-unit";
+  let oldShape;
+  let newShape;
+
+  beforeEach(async function () {
+    await StorageUnits.removeAsync(UNIT_ID);
+    const oldId = await callMethod("mapShapes.create", makeCreateParams({ name: "Old Shape" }));
+    const newId = await callMethod(
+      "mapShapes.create",
+      makeCreateParams({
+        name: "New Shape",
+        points: [
+          { x: 0, y: 0 },
+          { x: 4, y: 0 },
+          { x: 4, y: 2 },
+          { x: 0, y: 2 },
+        ],
+      }),
+    );
+    oldShape = await MapShapes.findOneAsync(oldId);
+    newShape = await MapShapes.findOneAsync(newId);
+
+    await StorageUnits.insertAsync({
+      _id: UNIT_ID,
+      floorMapId: TEST_FLOOR_MAP_ID,
+      name: "Unit",
+      type: "other",
+      shape: { ...oldShape, orgId: TEST_ORG_ID },
+      offset: { x: 0, y: 0 },
+      rotation: 0,
+      scale: { x: 1, y: 1 },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  });
+
+  afterEach(async function () {
+    await StorageUnits.removeAsync(UNIT_ID);
+    await MapShapes.removeAsync({ _id: { $in: [oldShape?._id, newShape?._id] } });
+  });
+
+  it("switches units to the chosen shape and deletes the old one", async function () {
+    await callMethod("mapShapes.deleteWithReassign", {
+      shapeId: oldShape.shapeId,
+      assignments: [{ storageUnitId: UNIT_ID, targetShapeId: newShape.shapeId }],
+    });
+
+    const unit = await StorageUnits.findOneAsync(UNIT_ID);
+    assert.strictEqual(unit.shape.shapeId, newShape.shapeId);
+    assert.strictEqual(await MapShapes.findOneAsync(oldShape._id), undefined);
+  });
+
+  it("rejects when a unit has no replacement", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("mapShapes.deleteWithReassign", { shapeId: oldShape.shapeId, assignments: [] }),
+      (err) => err.error === "missing-destination",
+    );
+    assert.ok(await MapShapes.findOneAsync(oldShape._id));
+  });
+
+  it("rejects reassigning to the shape being deleted", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("mapShapes.deleteWithReassign", {
+          shapeId: oldShape.shapeId,
+          assignments: [{ storageUnitId: UNIT_ID, targetShapeId: oldShape.shapeId }],
+        }),
+      (err) => err.error === "invalid-destination",
+    );
+  });
+});
