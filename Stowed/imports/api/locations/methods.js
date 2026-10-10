@@ -608,10 +608,6 @@ Meteor.methods({
     await MapShapes.removeAsync({ shapeId: shape.shapeId });
   },
 
-  /**
-   * Moves every StorageUnit using a shape onto its chosen replacement shape,
-   * then deletes the now-unused shape.
-   */
   async "mapShapes.deleteWithReassign"({ shapeId, assignments }) {
     check(shapeId, Number);
     check(assignments, [{ storageUnitId: String, targetShapeId: Number }]);
