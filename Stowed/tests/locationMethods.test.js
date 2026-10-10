@@ -491,4 +491,152 @@ describeServer("storageUnits.deleteWithReassign", function () {
     });
     assert.strictEqual(await StorageUnits.findOneAsync(SOURCE_UNIT_ID), undefined);
   });
+
+  it("throws storage-unit-not-found for an unknown unit", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("storageUnits.deleteWithReassign", {
+          storageUnitId: "does-not-exist",
+          assignments: [],
+        }),
+      (err) => err.error === "storage-unit-not-found",
+    );
+  });
+
+  it("moves nothing when one of several destinations is invalid", async function () {
+    await assert.rejects(
+      () =>
+        callMethod("storageUnits.deleteWithReassign", {
+          storageUnitId: SOURCE_UNIT_ID,
+          assignments: [
+            { storageLocationId: LOCATION_A, targetUnitId: TARGET_UNIT_ID },
+            { storageLocationId: LOCATION_B, targetUnitId: "does-not-exist" },
+          ],
+        }),
+      (err) => err.error === "invalid-storage-unit",
+    );
+
+    assert.ok(await StorageUnits.findOneAsync(SOURCE_UNIT_ID));
+    assert.strictEqual(
+      (await StorageLocations.findOneAsync(LOCATION_A)).storageUnitId,
+      SOURCE_UNIT_ID,
+    );
+    assert.strictEqual(
+      (await StorageLocations.findOneAsync(LOCATION_B)).storageUnitId,
+      SOURCE_UNIT_ID,
+    );
+  });
+
+  it("sends locations to different destination units", async function () {
+    const secondTargetId = "reassign-second-target-unit";
+    await StorageUnits.insertAsync(makeUnit(secondTargetId, TEST_ORG_ID, TEST_FLOOR_MAP_ID));
+
+    try {
+      await callMethod("storageUnits.deleteWithReassign", {
+        storageUnitId: SOURCE_UNIT_ID,
+        assignments: [
+          { storageLocationId: LOCATION_A, targetUnitId: TARGET_UNIT_ID },
+          { storageLocationId: LOCATION_B, targetUnitId: secondTargetId },
+        ],
+      });
+
+      assert.strictEqual(
+        (await StorageLocations.findOneAsync(LOCATION_A)).storageUnitId,
+        TARGET_UNIT_ID,
+      );
+      assert.strictEqual(
+        (await StorageLocations.findOneAsync(LOCATION_B)).storageUnitId,
+        secondTargetId,
+      );
+    } finally {
+      await StorageUnits.removeAsync(secondTargetId);
+    }
+  });
+
+  it("keeps the moved location's name and ID", async function () {
+    await callMethod("storageUnits.deleteWithReassign", {
+      storageUnitId: SOURCE_UNIT_ID,
+      assignments: [
+        { storageLocationId: LOCATION_A, targetUnitId: TARGET_UNIT_ID },
+        { storageLocationId: LOCATION_B, targetUnitId: TARGET_UNIT_ID },
+      ],
+    });
+
+    const locA = await StorageLocations.findOneAsync(LOCATION_A);
+    assert.strictEqual(locA._id, LOCATION_A);
+    assert.strictEqual(locA.name, LOCATION_A);
+  });
+});
+
+describeServer("storageUnits.delete", function () {
+  const UNIT_ID = "delete-unit";
+  const LOCATION_ID = "delete-unit-loc";
+
+  async function cleanup() {
+    await StorageUnits.removeAsync(UNIT_ID);
+    await StorageLocations.removeAsync(LOCATION_ID);
+  }
+
+  beforeEach(async function () {
+    await cleanup();
+    const now = new Date();
+    await StorageUnits.insertAsync({
+      _id: UNIT_ID,
+      orgId: TEST_ORG_ID,
+      floorMapId: TEST_FLOOR_MAP_ID,
+      name: "Delete Me",
+      type: "shelf",
+      shape: {
+        orgId: TEST_ORG_ID,
+        shapeId: 0,
+        name: "delete-shape",
+        points: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 1 },
+          { x: 1, y: 0 },
+        ],
+        gridReference: { x: 0, y: 0 },
+      },
+      offset: { x: 0, y: 0 },
+      rotation: 0,
+      scale: { x: 1, y: 1 },
+      createdAt: now,
+      updatedAt: now,
+    });
+  });
+
+  after(cleanup);
+
+  it("deletes an empty unit", async function () {
+    await callMethod("storageUnits.delete", { storageUnitId: UNIT_ID });
+    assert.strictEqual(await StorageUnits.findOneAsync(UNIT_ID), undefined);
+  });
+
+  it("throws storage-unit-not-empty when the unit has locations", async function () {
+    const now = new Date();
+    await StorageLocations.insertAsync({
+      _id: LOCATION_ID,
+      orgId: TEST_ORG_ID,
+      storageUnitId: UNIT_ID,
+      name: "Loc",
+      storedItems: [],
+      lastStocktakeAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await assert.rejects(
+      () => callMethod("storageUnits.delete", { storageUnitId: UNIT_ID }),
+      (err) => err.error === "storage-unit-not-empty",
+    );
+    assert.ok(await StorageUnits.findOneAsync(UNIT_ID));
+  });
+
+  it("throws storage-unit-not-found for an unknown unit", async function () {
+    await assert.rejects(
+      () => callMethod("storageUnits.delete", { storageUnitId: "does-not-exist" }),
+      (err) => err.error === "storage-unit-not-found",
+    );
+  });
 });
