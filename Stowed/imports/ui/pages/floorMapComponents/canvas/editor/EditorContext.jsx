@@ -120,6 +120,7 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   const [isEditorSettingsOpen, setEditorSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]);
   const [pendingUnit, setPendingUnit] = useState(null);
+  const [shapePendingDelete, setShapePendingDelete] = useState(null);
 
   // --- SLIDE-OUT PANEL STATE ---
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -603,17 +604,30 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
   }
 
   async function handleDeleteShape(shape) {
-    // validate something is selected
     if (!shape) return;
+
+    if (StorageUnits.find({ "shape.shapeId": shape.shapeId }).count() > 0) {
+      setShapePendingDelete(shape);
+      return;
+    }
 
     try {
       await callMethod("mapShapes.delete", { shape });
     } catch (error) {
-      alert(
-        error.reason ||
-        "Cannot delete this shape. Make sure it is not used for any storage units first.",
-      );
+      alert(error.reason || "Failed to delete this shape.");
     }
+  }
+
+  async function handleConfirmDeleteShapeWithReassign(assignments) {
+    const shape = shapePendingDelete;
+    if (!shape) return;
+
+    await callMethod("mapShapes.deleteWithReassign", {
+      shapeId: shape.shapeId,
+      assignments,
+    });
+
+    setShapePendingDelete(null);
   }
 
   const value = {
@@ -672,6 +686,9 @@ export function EditorProvider({ children, floorMapId, isCanvasEditMode, setCanv
 
     // Delete selected shape
     handleDeleteShape,
+    shapePendingDelete,
+    setShapePendingDelete,
+    handleConfirmDeleteShapeWithReassign,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;

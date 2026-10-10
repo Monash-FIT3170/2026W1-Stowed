@@ -4,6 +4,7 @@ import { hasClientPermission } from "/imports/api/userMethods";
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
+import { DeleteShapeModal } from "./floorMapComponents/DeleteShapeModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
 import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
 import { useParams, useNavigate } from "react-router-dom";
@@ -62,6 +63,9 @@ function FloorMapPageInner() {
     lowStockByUnitId,
     handleDeleteSelectedUnit,
     handleDeleteShape,
+    shapePendingDelete,
+    setShapePendingDelete,
+    handleConfirmDeleteShapeWithReassign,
     handleChangeShape,
   } = useEditor();
 
@@ -823,6 +827,15 @@ function FloorMapPageInner() {
           gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
+        />
+      )}
+
+      {/* DELETE SHAPE MODAL */}
+      {shapePendingDelete && (
+        <DeleteShapeModal
+          shape={shapePendingDelete}
+          onConfirm={handleConfirmDeleteShapeWithReassign}
+          onClose={() => setShapePendingDelete(null)}
         />
       )}
 
