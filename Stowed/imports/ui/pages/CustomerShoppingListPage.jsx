@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { Link } from "react-router-dom";
 import { getCustomerOrgCode } from "../customerSession";
-import { getShoppingList, pruneShoppingList } from "../customerShoppingList";
+import {
+  clearShoppingList,
+  getShoppingList,
+  pruneShoppingList,
+  removeFromShoppingList,
+} from "../customerShoppingList";
 import { ProductThumbnail } from "../components/ProductThumbnail";
 import { ShoppingListControl } from "../components/ShoppingListControl";
 import { CustomerProductModal } from "../components/CustomerProductModal";
@@ -28,6 +33,25 @@ export function CustomerShoppingListPage() {
   // Which product "More info" is showing, by id. Held as an id rather than the
   // product so the dialog cannot outlive a row removed underneath it.
   const [detailProductId, setDetailProductId] = useState(null);
+
+  // Emptying the whole list is one click and cannot be undone, so it asks
+  // first. Removing a single row does not - it is one row, and the shopper can
+  // see exactly which one went.
+  const [confirmingClear, setConfirmingClear] = useState(false);
+
+  const handleRemove = (productId) => {
+    setEntries(removeFromShoppingList(productId));
+    // A dialog open on the row just deleted would be left describing something
+    // no longer on the list.
+    setDetailProductId((current) => (current === productId ? null : current));
+  };
+
+  const handleClearAll = () => {
+    clearShoppingList();
+    setEntries([]);
+    setDetailProductId(null);
+    setConfirmingClear(false);
+  };
 
   // An empty list needs no catalogue, so the empty state shows at once rather
   // than after a round trip. Going from empty to non-empty flips this and
@@ -79,7 +103,19 @@ export function CustomerShoppingListPage() {
 
   return (
     <div className="customer-page">
-      <h1 className="customer-page-title">Shopping List</h1>
+      <div className="shopping-list-heading">
+        <h1 className="customer-page-title">Shopping List</h1>
+        {/* Only offered when there is something to clear. */}
+        {loadState === "ready" && items.length > 0 && (
+          <button
+            type="button"
+            className="shopping-list-clear"
+            onClick={() => setConfirmingClear(true)}
+          >
+            Clear list
+          </button>
+        )}
+      </div>
 
       <div className="shopping-list">
         {loadState === "loading" && <div className="empty-state">Loading your list...</div>}
@@ -121,6 +157,7 @@ export function CustomerShoppingListPage() {
               <span>Qty</span>
               <span>Location</span>
               <span />
+              <span />
             </div>
 
             {items.map(({ product }) => {
@@ -158,6 +195,16 @@ export function CustomerShoppingListPage() {
                   >
                     More info
                   </button>
+                  <button
+                    type="button"
+                    className="shopping-list-delete"
+                    onClick={() => handleRemove(product._id)}
+                    aria-label={`Remove ${product.name} from the list`}
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                    </svg>
+                  </button>
                 </div>
               );
             })}
@@ -167,6 +214,39 @@ export function CustomerShoppingListPage() {
 
       {detailProduct && (
         <CustomerProductModal product={detailProduct} onClose={() => setDetailProductId(null)} />
+      )}
+
+      {confirmingClear && (
+        <div
+          className="modal-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setConfirmingClear(false);
+          }}
+        >
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="clear-list-title">
+            <h2 id="clear-list-title" className="modal-title">
+              Clear your shopping list?
+            </h2>
+            <p className="modal-text">
+              {items.length === 1
+                ? "The one item on your list will be removed. This cannot be undone."
+                : `All ${items.length} items will be removed. This cannot be undone.`}
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setConfirmingClear(false)}
+              >
+                Cancel
+              </button>
+              <button type="button" className="btn-danger" onClick={handleClearAll}>
+                Clear list
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

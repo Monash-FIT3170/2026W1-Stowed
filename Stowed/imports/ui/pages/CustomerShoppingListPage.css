@@ -9,8 +9,49 @@
    resolve differently in each (the header's button cell is empty) and drag the
    columns out of alignment. */
 
+/* -- Heading -- */
+
+/* Title and the clear-all action share a line; the action is pushed right so
+   it never reads as part of the heading itself. */
+.shopping-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Quiet until hovered: emptying the list is destructive, so it should not
+   compete with the list for attention, but it turns red on approach. */
+.shopping-list-clear {
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.shopping-list-clear:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(204, 0, 0, 0.06);
+}
+
+.shopping-list-clear:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
 .shopping-list {
-  --shopping-list-grid: 44px minmax(140px, 2.4fr) 112px minmax(110px, 1.6fr) 96px;
+  --shopping-list-grid: 44px minmax(140px, 2.4fr) 112px minmax(110px, 1.6fr) 96px 36px;
 
   margin-top: 20px;
   border: 1px solid var(--border-light);
@@ -82,6 +123,46 @@
   outline-offset: 2px;
 }
 
+/* Icon only: a second worded button would crowd the row, and the bin reads
+   the same at a glance. The label lives in aria-label. */
+.shopping-list-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.shopping-list-delete svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shopping-list-delete:hover {
+  color: var(--danger);
+  background: rgba(204, 0, 0, 0.08);
+}
+
+.shopping-list-delete:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
 /* -- Phone: each row becomes a card -- */
 
 /* Five columns cannot survive 375px, so the row folds into a thumbnail beside
@@ -125,9 +206,17 @@
     margin-top: 2px;
   }
 
+  /* The two actions stack in the last column rather than spanning the whole
+     card height, so the bin sits under More info instead of floating. */
   .shopping-list-more {
     grid-column: 3;
-    grid-row: 1 / span 3;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .shopping-list-delete {
+    grid-column: 3;
+    grid-row: 2;
     align-self: start;
   }
 }
