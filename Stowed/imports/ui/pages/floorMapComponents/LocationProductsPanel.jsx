@@ -22,8 +22,7 @@ function useUnitContents(unitId) {
     const productsHandle = Meteor.subscribe("products");
     const recordsHandle = Meteor.subscribe("productRecords");
 
-    const loading =
-      !locationsHandle.ready() || !productsHandle.ready() || !recordsHandle.ready();
+    const loading = !locationsHandle.ready() || !productsHandle.ready() || !recordsHandle.ready();
 
     if (!unitId) return { rows: [], loading };
 

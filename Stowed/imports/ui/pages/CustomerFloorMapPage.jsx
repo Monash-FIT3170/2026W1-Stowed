@@ -54,30 +54,30 @@ export function CustomerFloorMapPage() {
           <p>Find where products are located.</p>
         </div>
         {locationsReady && currentFloorMap && (
-        <div className="customer-floor-map-controls">
-        <>
-          <button
-            type="button"
-            className="floor-map-button"
-            onClick={() => canvasRef.current?.exportPng()}
-          >
-            Export as PNG
-          </button>
+          <div className="customer-floor-map-controls">
+            <>
+              <button
+                type="button"
+                className="floor-map-button"
+                onClick={() => canvasRef.current?.exportPng()}
+              >
+                Export as PNG
+              </button>
 
-          <MapSelectors
-            context="public"
-            sites={visibleSites}
-            floorMaps={visibleMaps}
-            currentSite={currentSite}
-            currentFloorMap={currentFloorMap}
-            onSiteChange={(siteId) => {
-              const map = firstMapForSite(visibleMaps, siteId);
-              if (map) chooseMap(map._id);
-            }}
-            onFloorMapChange={chooseMap}
-          />
-        </>
-      </div>
+              <MapSelectors
+                context="public"
+                sites={visibleSites}
+                floorMaps={visibleMaps}
+                currentSite={currentSite}
+                currentFloorMap={currentFloorMap}
+                onSiteChange={(siteId) => {
+                  const map = firstMapForSite(visibleMaps, siteId);
+                  if (map) chooseMap(map._id);
+                }}
+                onFloorMapChange={chooseMap}
+              />
+            </>
+          </div>
         )}
       </header>
       <div className="floor-map-viewport customer-floor-map-viewport">
@@ -96,11 +96,7 @@ export function CustomerFloorMapPage() {
             isCanvasEditMode={false}
             setCanvasEditMode={() => {}}
           >
-            <Canvas 
-              ref={canvasRef}
-              isCanvasEditMode={false} 
-              publicView 
-            />
+            <Canvas ref={canvasRef} isCanvasEditMode={false} publicView />
           </EditorProvider>
         )}
       </div>
