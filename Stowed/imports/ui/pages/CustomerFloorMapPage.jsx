@@ -54,9 +54,11 @@ export function CustomerFloorMapPage() {
           <p>Find where products are located.</p>
         </div>
         {locationsReady && currentFloorMap && (
+        <div className="customer-floor-map-controls">
         <>
           <button
             type="button"
+            className="floor-map-button"
             onClick={() => canvasRef.current?.exportPng()}
           >
             Export as PNG
@@ -75,6 +77,7 @@ export function CustomerFloorMapPage() {
             onFloorMapChange={chooseMap}
           />
         </>
+      </div>
         )}
       </header>
       <div className="floor-map-viewport customer-floor-map-viewport">
