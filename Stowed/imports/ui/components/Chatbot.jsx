@@ -23,8 +23,11 @@ export function Chatbot() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
+  const [isHandsFree, setIsHandsFree] = useState(false);
   const inputRef = useRef(null);
   const draftBeforeVoiceRef = useRef("");
+  const isOpenRef = useRef(false);
+  const handsFreeRef = useRef(false);
   const navigate = useNavigate();
 
   const {
@@ -35,9 +38,14 @@ export function Chatbot() {
     stop: stopListening,
     abort: abortListening,
   } = useSpeechRecognition({
-    onResult: (transcript) => {
+    onResult: (transcript, isFinal) => {
       const base = draftBeforeVoiceRef.current;
-      setDraft(base ? `${base} ${transcript}` : transcript);
+      const text = base ? `${base} ${transcript}` : transcript;
+      if (isFinal && handsFreeRef.current) {
+        sendMessage(text);
+        return;
+      }
+      setDraft(text);
     },
   });
 
@@ -49,11 +57,13 @@ export function Chatbot() {
   );
 
   function openChat() {
+    isOpenRef.current = true;
     setIsOpen(true);
     window.setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   function closeChat() {
+    isOpenRef.current = false;
     abortListening();
     setIsOpen(false);
   }
@@ -65,6 +75,22 @@ export function Chatbot() {
     }
     draftBeforeVoiceRef.current = draft.trim();
     startListening();
+  }
+
+  function toggleHandsFree() {
+    const next = !isHandsFree;
+    handsFreeRef.current = next;
+    setIsHandsFree(next);
+
+    if (!next) {
+      abortListening();
+      return;
+    }
+
+    if (!isListening && !isSending) {
+      draftBeforeVoiceRef.current = draft.trim();
+      startListening();
+    }
   }
 
   function sendMessage(text = draft) {
@@ -111,6 +137,11 @@ export function Chatbot() {
             content: result?.text || "I could not generate a response this time.",
           },
         ]);
+
+        if (handsFreeRef.current && isOpenRef.current) {
+          draftBeforeVoiceRef.current = "";
+          startListening();
+        }
       },
     );
   }
@@ -133,14 +164,26 @@ export function Chatbot() {
             <div>
               <h2>Chatbot</h2>
             </div>
-            <button
-              type="button"
-              className="chatbot-close"
-              aria-label="Close chatbot"
-              onClick={closeChat}
-            >
-              ×
-            </button>
+            <div className="chatbot-header-actions">
+              {canUseVoice && (
+                <button
+                  type="button"
+                  className={`chatbot-handsfree${isHandsFree ? " active" : ""}`}
+                  onClick={toggleHandsFree}
+                  aria-pressed={isHandsFree}
+                >
+                  Hands-free {isHandsFree ? "on" : "off"}
+                </button>
+              )}
+              <button
+                type="button"
+                className="chatbot-close"
+                aria-label="Close chatbot"
+                onClick={closeChat}
+              >
+                ×
+              </button>
+            </div>
           </header>
 
           <div className="chatbot-messages">

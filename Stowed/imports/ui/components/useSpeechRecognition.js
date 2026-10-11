@@ -39,7 +39,8 @@ export function useSpeechRecognition({ onResult, lang = "en-AU" } = {}) {
       const transcript = Array.from(event.results)
         .map((result) => result[0].transcript)
         .join("");
-      onResultRef.current?.(transcript);
+      const isFinal = event.results[event.results.length - 1].isFinal;
+      onResultRef.current?.(transcript, isFinal);
     };
 
     recognition.onerror = (event) => {
