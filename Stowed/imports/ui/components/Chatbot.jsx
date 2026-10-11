@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
+import { useSpeechRecognition } from "./useSpeechRecognition";
 import "./Chatbot.css";
 
 const SUGGESTED_PROMPTS = [
@@ -23,7 +24,22 @@ export function Chatbot() {
   const [error, setError] = useState("");
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
   const inputRef = useRef(null);
+  const draftBeforeVoiceRef = useRef("");
   const navigate = useNavigate();
+
+  const {
+    isSupported: canUseVoice,
+    isListening,
+    error: voiceError,
+    start: startListening,
+    stop: stopListening,
+    abort: abortListening,
+  } = useSpeechRecognition({
+    onResult: (transcript) => {
+      const base = draftBeforeVoiceRef.current;
+      setDraft(base ? `${base} ${transcript}` : transcript);
+    },
+  });
 
   const canSend = draft.trim().length > 0 && !isSending;
 
@@ -37,9 +53,25 @@ export function Chatbot() {
     window.setTimeout(() => inputRef.current?.focus(), 0);
   }
 
+  function closeChat() {
+    abortListening();
+    setIsOpen(false);
+  }
+
+  function toggleListening() {
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    draftBeforeVoiceRef.current = draft.trim();
+    startListening();
+  }
+
   function sendMessage(text = draft) {
     const content = text.trim();
     if (!content || isSending) return;
+
+    abortListening();
 
     const nextMessages = [...messages, { role: "user", content }];
     setMessages(nextMessages);
@@ -105,7 +137,7 @@ export function Chatbot() {
               type="button"
               className="chatbot-close"
               aria-label="Close chatbot"
-              onClick={() => setIsOpen(false)}
+              onClick={closeChat}
             >
               ×
             </button>
@@ -147,15 +179,42 @@ export function Chatbot() {
           )}
 
           {error && <div className="chatbot-error">{error}</div>}
+          {voiceError && <div className="chatbot-error">{voiceError}</div>}
 
           <form className="chatbot-composer" onSubmit={handleSubmit}>
             <textarea
               ref={inputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Ask Stowed..."
+              placeholder={isListening ? "Listening..." : "Ask Stowed..."}
               rows={2}
             />
+            {canUseVoice && (
+              <button
+                type="button"
+                className={`chatbot-mic${isListening ? " listening" : ""}`}
+                onClick={toggleListening}
+                aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                aria-pressed={isListening}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+              </button>
+            )}
             <button type="submit" disabled={!canSend} aria-label="Send message">
               Send
             </button>
@@ -167,7 +226,7 @@ export function Chatbot() {
         type="button"
         className="chatbot-launcher"
         aria-label={isOpen ? "Chatbot open" : "Open chatbot"}
-        onClick={isOpen ? () => setIsOpen(false) : openChat}
+        onClick={isOpen ? closeChat : openChat}
       >
         <svg
           viewBox="0 0 24 24"
