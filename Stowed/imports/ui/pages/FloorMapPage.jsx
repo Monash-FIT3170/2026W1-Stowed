@@ -270,7 +270,7 @@ function FloorMapPageInner() {
     isEditorSettingsOpen,
     setEditorSettingsOpen,
     handleEditorSettingsSave,
-    isCanvasEditMode, 
+    isCanvasEditMode,
     setCanvasEditMode,
     units,
     commitUnits,
