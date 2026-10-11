@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites } from "/imports/api/locations/collections";
@@ -16,6 +16,7 @@ export function CustomerFloorMapPage() {
   const [selectedFloorMapId, setSelectedFloorMapId] = useState(() =>
     window.localStorage.getItem(STORAGE_KEY),
   );
+  const canvasRef = useRef(null);
 
   const { sites, floorMaps, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.publicFloorMaps", orgCode ?? "");
@@ -53,6 +54,14 @@ export function CustomerFloorMapPage() {
           <p>Find where products are located.</p>
         </div>
         {locationsReady && currentFloorMap && (
+        <>
+          <button
+            type="button"
+            onClick={() => canvasRef.current?.exportPng()}
+          >
+            Export as PNG
+          </button>
+
           <MapSelectors
             context="public"
             sites={visibleSites}
@@ -65,6 +74,7 @@ export function CustomerFloorMapPage() {
             }}
             onFloorMapChange={chooseMap}
           />
+        </>
         )}
       </header>
       <div className="floor-map-viewport customer-floor-map-viewport">
@@ -83,7 +93,11 @@ export function CustomerFloorMapPage() {
             isCanvasEditMode={false}
             setCanvasEditMode={() => {}}
           >
-            <Canvas isCanvasEditMode={false} publicView />
+            <Canvas 
+              ref={canvasRef}
+              isCanvasEditMode={false} 
+              publicView 
+            />
           </EditorProvider>
         )}
       </div>
