@@ -599,12 +599,18 @@ async function getTargetFloorMap(orgId, floorMapName) {
 
 async function getTargetStorageUnit(orgId, unitName) {
   if (!unitName) {
-    const units = await StorageUnits.find({ orgId }, { sort: { createdAt: 1 }, limit: 2 }).fetchAsync();
+    const units = await StorageUnits.find(
+      { orgId },
+      { sort: { createdAt: 1 }, limit: 2 },
+    ).fetchAsync();
     if (units.length === 1) return units[0];
     if (units.length > 1) {
       throw new Meteor.Error("storage-unit-required", "Tell me which storage unit to use.");
     }
-    throw new Meteor.Error("storage-unit-required", "Create a storage unit before adding locations.");
+    throw new Meteor.Error(
+      "storage-unit-required",
+      "Create a storage unit before adding locations.",
+    );
   }
   return await findOneByName(StorageUnits, orgId, unitName, "storage unit");
 }
