@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import fs from "node:fs";
 import path from "node:path";
 import { getCallerOrgId, hasPermission, requirePermission } from "../userMethods";
-import { buildToolDeclarations, executeTool, TOOL_PERMISSIONS } from "./tools";
+import { buildToolDeclarations, callMethodAs, executeTool, TOOL_PERMISSIONS } from "./tools";
 import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../locations/collections";
 import { buildRectShape, getBoundingBox } from "../locations/shapeUtils";
 import { Products, ProductRecords } from "../products/collections";
@@ -685,14 +685,10 @@ async function confirmFloorMapAction(userId, action) {
   if (action.type === ACTION_TYPES.CREATE_SITE) {
     const name = String(action.payload?.name || "").trim();
     if (!name) throw new Meteor.Error("invalid-name", "Site name cannot be empty.");
-    const now = new Date();
-    const siteId = await Sites.insertAsync({
-      orgId,
+    const siteId = await callMethodAs(userId, "sites.create", {
       name,
       description: "",
       stocktakeIntervalDays: DEFAULT_STOCKTAKE_INTERVAL_DAYS,
-      createdAt: now,
-      updatedAt: now,
     });
     return {
       text: `Confirmed. I created site "${name}".`,
@@ -706,16 +702,12 @@ async function confirmFloorMapAction(userId, action) {
     const name = String(action.payload?.name || "").trim();
     if (!name) throw new Meteor.Error("invalid-name", "Floor map name cannot be empty.");
     const site = await getTargetSite(orgId, action.payload?.siteName);
-    const now = new Date();
-    const floorMapId = await FloorMaps.insertAsync({
-      orgId,
+    const floorMapId = await callMethodAs(userId, "floorMaps.create", {
       siteId: site._id,
       name,
       imageUrl: "",
       floorSize: { width: 500, height: 500 },
       settings: {},
-      createdAt: now,
-      updatedAt: now,
     });
     return {
       text: `Confirmed. I created floor map "${name}".`,
@@ -730,19 +722,15 @@ async function confirmFloorMapAction(userId, action) {
     const width = Number(action.payload?.width) || 2;
     const height = Number(action.payload?.height) || 1;
     const floorMap = await getTargetFloorMap(orgId, action.payload?.floorMapName);
-    const now = new Date();
-    const unitId = await StorageUnits.insertAsync({
-      orgId,
+    const unitId = await callMethodAs(userId, "storageUnits.create", {
       floorMapId: floorMap._id,
       name,
       type: action.payload?.type || "shelf",
-      shape: { ...buildRectShape({ width, height, name }), orgId },
+      shape: buildRectShape({ width, height, name }),
       offset: { x: Number(action.payload?.x) || 0, y: Number(action.payload?.y) || 0 },
       rotation: 0,
       scale: { x: 1, y: 1 },
       fill: "#7a5230",
-      createdAt: now,
-      updatedAt: now,
     });
     return {
       text: `Confirmed. I created storage unit "${name}".`,
@@ -757,17 +745,11 @@ async function confirmFloorMapAction(userId, action) {
     if (!name) throw new Meteor.Error("invalid-name", "Storage location name cannot be empty.");
     const storageUnit = await getTargetStorageUnit(orgId, action.payload?.unitName);
     const code = String(action.payload?.code || storageLocationCodeFrom(name)).trim();
-    const now = new Date();
-    const locationId = await StorageLocations.insertAsync({
-      orgId,
+    const locationId = await callMethodAs(userId, "storageLocations.create", {
       storageUnitId: storageUnit._id,
       name,
       code,
       imageUrl: "",
-      storedItems: [],
-      lastStocktakeAt: now,
-      createdAt: now,
-      updatedAt: now,
     });
     return {
       text: `Confirmed. I created storage location "${name}".`,

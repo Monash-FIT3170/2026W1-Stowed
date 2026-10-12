@@ -224,7 +224,7 @@ export function clearPendingActions() {
 
 // Runs an existing Meteor method as `userId`, so its own permission and
 // organisation checks apply to the chatbot exactly as they do to the UI.
-function callMethodAs(userId, name, params) {
+export function callMethodAs(userId, name, params) {
   return Meteor.server.method_handlers[name].call({ userId }, params);
 }
 
