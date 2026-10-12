@@ -819,3 +819,358 @@ input.lists-qty-input:disabled {
 .lists-preview-skipped {
   margin-top: 4px;
 }
+
+/* ------------------------------------------------------------------ */
+/* Tablet + phone (dock layout, <=1024px). Desktop above is untouched. */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 1024px) {
+  /* Finger-sized hit areas; the icons themselves stay the same size. */
+  .lists-name-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    margin-left: 4px;
+  }
+
+  .lists-remove-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* 901-960px (large phones in landscape): too narrow for the side column
+   and seven table columns, so stack like tablet portrait below. */
+@media (min-width: 901px) and (max-width: 960px) {
+  .lists-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lists-sidebar {
+    position: static;
+  }
+}
+
+/* Tablet portrait / phone landscape (641-960px): the list is full width
+   (the <=900px rule above and the block just above stack the layout), so
+   Actions and Delivery location sit side by side under it, and the product
+   column gives up its 340px floor so all seven columns fit without
+   scrolling (down to the ~640px content width beside the side rail). */
+@media (min-width: 641px) and (max-width: 960px) {
+  .lists-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .lists-card .lists-table th:first-child,
+  .lists-card .lists-table td:first-child {
+    min-width: 160px;
+  }
+}
+
+/* Compact table fit (headers may wrap, 6px cell padding) where the list
+   card is narrowest on tablet: 641-767px portrait, and 961-1024px landscape
+   where the desktop's Actions column stays on the right. */
+@media (min-width: 641px) and (max-width: 767px), (min-width: 961px) and (max-width: 1024px) {
+  .lists-card .lists-table th {
+    white-space: normal;
+  }
+
+  .lists-card .lists-table th,
+  .lists-card .lists-table td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .lists-card .lists-table th:first-child,
+  .lists-card .lists-table td:first-child {
+    min-width: 0;
+    padding-left: 0;
+  }
+
+  .lists-card .lists-table th:last-child,
+  .lists-card .lists-table td:last-child {
+    padding-right: 0;
+  }
+}
+
+/* Phone gutter matches the 16px page header (Global.css) */
+@media (max-width: 768px) {
+  .lists-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Phone (<=640px)                                                      */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 640px) {
+  /* Stat tiles: three across left ~74px for a 24px figure, so "$628.50"
+     spilled out of its tile. Items + Units share a row, cost gets its own. */
+  .lists-stat {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .lists-stat-cost {
+    flex-basis: 100%;
+  }
+
+  /* Header: actions drop under the title instead of squeezing it */
+  .lists-header .header-top:has(.lists-header-actions) {
+    flex-wrap: wrap;
+  }
+
+  .lists-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-bottom: 10px;
+  }
+
+  /* List table -> stacked rows, same idea as the overview rows above:
+       [product name ............ ×]
+       [In stock 4                Qty [ 6 ]]
+       [Reorder at 10                      ]
+       [☐ Purchased   ☐ Received]            (saved lists only)
+     Replaces the sideways-scrolling table. Scoped to the list card so the
+     share-email preview table keeps its own layout. */
+  .lists-card .lists-table,
+  .lists-card .lists-table tbody {
+    display: block;
+    width: 100%;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .lists-card .lists-table thead {
+    display: none;
+  }
+
+  .lists-card .lists-table tbody tr {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "name name name name remove"
+      "stock stock . qty qty"
+      "reorder reorder . qty qty";
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 4px;
+    padding: 12px 0;
+    border-bottom: 1px dotted var(--border-subtle);
+  }
+
+  .lists-card .lists-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .lists-card .lists-table td,
+  .lists-card .lists-table td:first-child {
+    display: block;
+    min-width: 0;
+    width: auto;
+    padding: 0;
+    border: none;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .lists-card .lists-table td:nth-child(1) {
+    grid-area: name;
+    margin-bottom: 4px;
+    overflow-wrap: break-word;
+  }
+
+  .lists-card .lists-table td:nth-child(2),
+  .lists-card .lists-table td:nth-child(3) {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .lists-card .lists-table td:nth-child(2) {
+    grid-area: stock;
+  }
+
+  .lists-card .lists-table td:nth-child(3) {
+    grid-area: reorder;
+  }
+
+  .lists-card .lists-table td:nth-child(2)::before {
+    content: "In stock ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+
+  .lists-card .lists-table td:nth-child(3)::before {
+    content: "Reorder at ";
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+
+  .lists-card .lists-table td:nth-child(4) {
+    grid-area: qty;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .lists-card .lists-table td:nth-child(4)::before {
+    content: "Qty";
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dark);
+  }
+
+  .lists-card .lists-table td.lists-col-remove {
+    grid-area: remove;
+    align-self: start;
+    text-align: right;
+  }
+
+  .lists-card .lists-table td.lists-col-check {
+    grid-row: 4;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dark);
+  }
+
+  .lists-card .lists-table td.lists-col-check:nth-child(5) {
+    grid-column: 1 / 2;
+  }
+
+  .lists-card .lists-table td.lists-col-check:nth-child(6) {
+    grid-column: 2 / 4;
+  }
+
+  .lists-card .lists-table td.lists-col-check:nth-child(5)::after {
+    content: "Purchased";
+  }
+
+  .lists-card .lists-table td.lists-col-check:nth-child(6)::after {
+    content: "Received";
+  }
+
+  /* Category / "Added manually" divider rows span the full card */
+  .lists-card .lists-table tbody tr.lists-divider {
+    display: block;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .lists-card .lists-table tr.lists-divider td {
+    padding: 14px 0 4px;
+    border-top: 1px dashed var(--border-subtle);
+  }
+
+  /* Add-manually row: product full width, qty + button share the next line */
+  .lists-add-product {
+    flex: 1 1 100%;
+  }
+
+  .lists-add-qty {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  /* Share-email modal: full width inside the overlay's 16px gutter
+     (Global.css) instead of a second 24px margin on each side. */
+  .modal.share-email-modal {
+    width: 100%;
+    padding: 20px 16px;
+  }
+}
+
+/* Share-email preview, tablet + phone: the five-column table scrolled
+   sideways inside the 420px modal (the 340px product floor and no-wrap
+   headers pushed "Line total" out of view), so each item becomes a
+   stacked row instead:
+       [Lab Safety Goggles ........ $250.00]
+       [Uncategorized · 20 × $12.50        ] */
+@media (max-width: 1024px) {
+  .modal.share-email-modal .lists-table,
+  .modal.share-email-modal .lists-table tbody {
+    display: block;
+    width: 100%;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .modal.share-email-modal .lists-table thead {
+    display: none;
+  }
+
+  .modal.share-email-modal .lists-table tbody tr {
+    display: grid;
+    grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name name name name total"
+      "cat qty unit . .";
+    column-gap: 4px;
+    row-gap: 2px;
+    padding: 10px 0;
+    border-bottom: 1px dotted var(--border-subtle);
+  }
+
+  .modal.share-email-modal .lists-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .modal.share-email-modal .lists-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(1) {
+    grid-area: name;
+    font-weight: 600;
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(2),
+  .modal.share-email-modal .lists-table td:nth-child(3),
+  .modal.share-email-modal .lists-table td:nth-child(4) {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(2) {
+    grid-area: cat;
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(3) {
+    grid-area: qty;
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(3)::before {
+    content: "· ";
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(4) {
+    grid-area: unit;
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(4)::before {
+    content: "× ";
+  }
+
+  .modal.share-email-modal .lists-table td:nth-child(5) {
+    grid-area: total;
+    text-align: right;
+    font-weight: 600;
+  }
+
+  .share-email-modal label {
+    overflow-wrap: anywhere;
+  }
+}
