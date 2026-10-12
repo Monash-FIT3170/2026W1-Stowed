@@ -78,7 +78,8 @@ function FloorMapPageInner() {
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [startingPoint, setStartingPoint] = useState(null);
-  const [isSelectingStart, setIsSelectingStart] = useState(true);
+  const [isSelectingStart, setIsSelectingStart] = useState(false);
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
 
   const { products, productsReady } = useTracker(() => {
     const handle = Meteor.subscribe("products");
@@ -118,6 +119,7 @@ function FloorMapPageInner() {
       setTooltip(null);
     }
 
+    setIsRouteModalOpen(false);
     setCanvasEditMode(nextEditMode);
   };
   const handleEditShape = (shape) => {
@@ -142,30 +144,51 @@ function FloorMapPageInner() {
   useEffect(() => {
     setSelectedProductIds([]);
     setStartingPoint(null);
-    setIsSelectingStart(true);
+    setIsSelectingStart(false);
+    setIsRouteModalOpen(false);
   }, [currentFloorMap?._id, floorSize.width, floorSize.height]);
 
   useEffect(() => {
-    if (!isSelectingStart || isCanvasEditMode) return;
-    const cancelSelection = (event) => {
-      if (event.key === "Escape") setIsSelectingStart(false);
-    };
-    window.addEventListener("keydown", cancelSelection);
-    return () => window.removeEventListener("keydown", cancelSelection);
-  }, [isSelectingStart, isCanvasEditMode]);
+    if (!isSelectingStart && !isRouteModalOpen) return;
 
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsSelectingStart(false);
+        setIsRouteModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isSelectingStart, isRouteModalOpen]);
+  
   const handleSelectStart = () => {
+    // Close modal so the user can interact with the canvas
+    setIsRouteModalOpen(false);
+
     setSelectedStorageUnitId(null);
     setSelectedUnit(null);
     setIsStockPanelOpen(false);
     setTooltip(null);
+
+    // Start selecting a point on the map
     setIsSelectingStart(true);
   };
 
   const handleStartingPointSelect = (point) => {
+    // Save the point selected on the canvas
     setStartingPoint(point);
+
+    // Stop selecting
     setIsSelectingStart(false);
+
+    // Open route planning modal
+    setIsRouteModalOpen(true);
   };
+
 
   const handleAddProduct = (productId) => {
     if (!products.some((product) => product._id === productId)) return;
@@ -332,6 +355,21 @@ function FloorMapPageInner() {
             </>
           )}
 
+
+          {!isCanvasEditMode && (
+            <button
+              type="button"
+              onClick={handleSelectStart}
+              disabled={!mapReady}
+              style={{
+              ...statusBarButtonStyle,
+              opacity: mapReady ? 1 : 0.5,
+              cursor: mapReady ? "pointer" : "not-allowed",
+              }}
+            >
+              Plan Route
+            </button>
+          )}
           <button
             type="button"
             onClick={() => canManage && handleCanvasModeToggle()}
@@ -355,27 +393,6 @@ function FloorMapPageInner() {
         </div>
       </div>
 
-      {!isCanvasEditMode && (
-        <MapRouteInputs
-          key={currentFloorMap?._id ?? "default"}
-          products={products}
-          productsReady={productsReady}
-          selectedProductIds={selectedProductIds}
-          onAddProduct={handleAddProduct}
-          onRemoveProduct={(productId) =>
-            setSelectedProductIds((previous) => previous.filter((id) => id !== productId))
-          }
-          startingPoint={startingPoint}
-          isSelectingStart={isSelectingStart && mapReady}
-          onSelectStart={handleSelectStart}
-          onCancelSelectStart={() => setIsSelectingStart(false)}
-          onClearStart={() => {
-            setStartingPoint(null);
-            handleSelectStart();
-          }}
-          mapReady={mapReady}
-        />
-      )}
       {/* -- Map row -- */}
       <div
         style={{
@@ -386,6 +403,22 @@ function FloorMapPageInner() {
           position: "relative",
         }}
       >
+
+        {isSelectingStart && !isCanvasEditMode && (
+          <div className="map-route-prompt" role="status">
+            <span>
+              Click a point on the floor map to set your starting point.
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setIsSelectingStart(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         {/* CANVAS - only render once data is ready */}
         <div
           style={{
@@ -841,6 +874,66 @@ function FloorMapPageInner() {
           }}
         />
       )}
+
+      {/* ROUTE PLANNING MODAL */}
+      {isRouteModalOpen && !isCanvasEditMode && (
+        <div
+          className="map-route-modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsRouteModalOpen(false);
+            }
+          }}
+        >
+          <div
+            className="map-route-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="map-route-modal-title"
+            style={{
+              background: COLOURS.CARD_BG,
+              color: COLOURS.TEXT_PRIMARY,
+              border: `1px solid ${COLOURS.CARD_BORDER}`,
+            }}
+          >
+            <div className="map-route-modal__header">
+              <h2 id="map-route-modal-title">Plan Route</h2>
+
+              <button
+                type="button"
+                autoFocus
+                className="map-route-modal__close"
+                aria-label="Close route planner"
+                onClick={() => setIsRouteModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <MapRouteInputs
+              key={currentFloorMap?._id ?? "default"}
+              products={products}
+              productsReady={productsReady}
+              selectedProductIds={selectedProductIds}
+              onAddProduct={handleAddProduct}
+              onRemoveProduct={(productId) =>
+                setSelectedProductIds((previous) =>
+                  previous.filter((id) => id !== productId)
+                )
+              }
+              startingPoint={startingPoint}
+              isSelectingStart={isSelectingStart && mapReady}
+              onSelectStart={handleSelectStart}
+              onCancelSelectStart={() => setIsSelectingStart(false)}
+              onClearStart={() => {
+                setStartingPoint(null);
+                handleSelectStart();
+              }}
+              mapReady={mapReady}
+            />
+          </div>
+          </div>
+        )}
     </div>
   );
 }

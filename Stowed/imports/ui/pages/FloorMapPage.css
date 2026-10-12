@@ -514,3 +514,106 @@
     margin-top: 0;
   }
 }
+
+/* Prompt displayed while selecting a starting point */
+.map-route-prompt {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 18px;
+  background: #22346f;
+  color: white;
+
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.map-route-prompt button {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: white;
+
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+/* Modal backdrop */
+.map-route-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: rgba(0, 0, 0, 0.5);
+  padding: 20px;
+}
+
+/* Modal container */
+.map-route-modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+
+  padding: 24px;
+  border-radius: 12px;
+  box-sizing: border-box;
+
+  overflow-y: auto;
+
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+}
+
+/* Header */
+.map-route-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.map-route-modal__header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Close button */
+.map-route-modal__close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* Override page-wide route input layout */
+.map-route-modal .map-route-inputs {
+  position: static;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.map-route-modal .map-route-inputs__fields {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+}
