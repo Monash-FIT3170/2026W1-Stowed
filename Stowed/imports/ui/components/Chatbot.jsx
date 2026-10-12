@@ -9,8 +9,101 @@ const SUGGESTED_PROMPTS = [
   "Make a low-stock checklist.",
 ];
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
+const NAVIGATION_COMMANDS = [
+  {
+    route: "/qr-codes",
+    label: "QR Codes",
+    aliases: ["qr code", "qr codes", "qrcode", "qrcodes", "barcode", "barcodes"],
+  },
+  {
+    route: "/inventory",
+    label: "Inventory",
+    aliases: ["inventory", "products", "product list"],
+  },
+  {
+    route: "/lists",
+    label: "Lists",
+    aliases: ["list", "lists", "shopping list", "shopping lists"],
+  },
+  {
+    route: "/locations",
+    label: "Locations",
+    aliases: ["location", "locations", "storage location", "storage locations"],
+  },
+  {
+    route: "/floor-map",
+    label: "Floor Map",
+    aliases: ["floor map", "floormap", "map"],
+  },
+  {
+    route: "/dashboard",
+    label: "Dashboard",
+    aliases: ["dashboard", "home"],
+  },
+  {
+    route: "/alerts",
+    label: "Stocktake",
+    aliases: ["alert", "alerts", "stocktake", "stock take"],
+  },
+  {
+    route: "/scan",
+    label: "Scan",
+    aliases: ["scan", "scanner"],
+  },
+  {
+    route: "/settings",
+    label: "Settings",
+    aliases: ["settings", "setting"],
+  },
+];
+
+const NAVIGATION_VERBS = [
+  "open",
+  "go to",
+  "goto",
+  "show",
+  "take me to",
+  "navigate to",
+  "redirect to",
+  "bring me to",
+];
+
+function normalizeCommand(input) {
+  return input
+    .toLowerCase()
+    .replace(/[-_/]+/g, " ")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function findNavigationCommand(input) {
+  const normalized = normalizeCommand(input)
+    .replace(/\bthe\b/g, "")
+    .replace(/\bpage\b/g, "")
+    .replace(/\bhub\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const hasNavigationVerb = NAVIGATION_VERBS.some(
+    (verb) => normalized === verb || normalized.startsWith(`${verb} `),
+  );
+  if (!hasNavigationVerb) return null;
+
+  return NAVIGATION_COMMANDS.find((command) =>
+    command.aliases.some((alias) => {
+      const normalizedAlias = normalizeCommand(alias);
+      return (
+        normalized === normalizedAlias ||
+        normalized.endsWith(` ${normalizedAlias}`) ||
+        normalized.includes(` ${normalizedAlias} `)
+      );
+    }),
+  );
+}
 
 export function Chatbot() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -22,13 +115,16 @@ export function Chatbot() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null);
   const inputRef = useRef(null);
-  const navigate = useNavigate();
 
   const canSend = draft.trim().length > 0 && !isSending;
 
   const visibleMessages = useMemo(
-    () => messages.filter((message) => message.content.trim().length > 0),
+    () =>
+      messages.filter(
+        (message) => message.content.trim().length > 0 || message.actions?.length > 0,
+      ),
     [messages],
   );
 
@@ -45,11 +141,27 @@ export function Chatbot() {
     setMessages(nextMessages);
     setDraft("");
     setError("");
+
+    const navigationCommand = findNavigationCommand(content);
+    if (navigationCommand) {
+      navigate(navigationCommand.route);
+      setPendingAction(null);
+      setMessages([
+        ...nextMessages,
+        {
+          role: "assistant",
+          content: `Opened ${navigationCommand.label}.`,
+        },
+      ]);
+      inputRef.current?.focus();
+      return;
+    }
+
     setIsSending(true);
 
     Meteor.call(
       "chatbot.chat",
-      { messages: nextMessages, previousInteractionId },
+      { messages: nextMessages, previousInteractionId, pendingAction },
       (callError, result) => {
         setIsSending(false);
 
@@ -67,6 +179,9 @@ export function Chatbot() {
           setPreviousInteractionId(result.interactionId);
         }
 
+        const nextAction = result?.suggestedActions?.[0] || null;
+        setPendingAction(nextAction);
+
         // The server only returns paths the user's role is allowed to open.
         result?.actions?.forEach((action) => {
           if (action.type === "navigate" && action.path.startsWith("/")) navigate(action.path);
@@ -77,10 +192,61 @@ export function Chatbot() {
           {
             role: "assistant",
             content: result?.text || "I could not generate a response this time.",
+            actions: result?.suggestedActions || [],
           },
         ]);
       },
     );
+  }
+
+  function confirmAction(action) {
+    if (isSending) return;
+
+    setError("");
+    setIsSending(true);
+    setMessages((current) => [...current, { role: "user", content: `Confirm: ${action.summary}` }]);
+
+    Meteor.call("chatbot.confirmAction", { action }, (callError, result) => {
+      setIsSending(false);
+
+      if (callError) {
+        console.error("chatbot.confirmAction failed:", callError);
+        setError(
+          Meteor.isDevelopment ? callError.reason || DEFAULT_ERROR_MESSAGE : DEFAULT_ERROR_MESSAGE,
+        );
+        return;
+      }
+
+      setPendingAction(null);
+      if (result?.openUrl && result?.url) {
+        navigate(result.url);
+      }
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content:
+            result?.url && !result?.openUrl
+              ? `${result.text}\nOpen it from Lists: ${result.url}`
+              : result.text,
+        },
+      ]);
+    });
+  }
+
+  function cancelAction(action) {
+    setPendingAction(null);
+    setMessages((current) => [
+      ...current,
+      { role: "user", content: `Cancel: ${action.title}` },
+      { role: "assistant", content: "Cancelled. Nothing was changed." },
+    ]);
+    inputRef.current?.focus();
+  }
+
+  function changeAction(action) {
+    setDraft(`Change ${action.title.toLowerCase()} to `);
+    inputRef.current?.focus();
   }
 
   function handleSubmit(event) {
@@ -120,7 +286,40 @@ export function Chatbot() {
                 <div className="chatbot-label">
                   {message.role === "assistant" ? "Chatbot" : "You"}
                 </div>
-                <div className="chatbot-body">{message.content}</div>
+                {message.content && <div className="chatbot-body">{message.content}</div>}
+                {message.actions?.length > 0 && (
+                  <div className="chatbot-actions">
+                    {message.actions.map((action) => (
+                      <div className="chatbot-action-card" key={action.id}>
+                        <div className="chatbot-action-title">{action.title}</div>
+                        <div className="chatbot-action-summary">{action.summary}</div>
+                        <div className="chatbot-action-buttons">
+                          <button
+                            type="button"
+                            disabled={isSending || pendingAction?.id !== action.id}
+                            onClick={() => confirmAction(action)}
+                          >
+                            {action.confirmLabel || "Confirm"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isSending || pendingAction?.id !== action.id}
+                            onClick={() => changeAction(action)}
+                          >
+                            Change
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isSending || pendingAction?.id !== action.id}
+                            onClick={() => cancelAction(action)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </article>
             ))}
             {isSending && (
