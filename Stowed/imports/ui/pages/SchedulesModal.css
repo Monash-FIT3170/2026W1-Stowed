@@ -176,3 +176,11 @@
     gap: 12px 28px;
   }
 }
+
+/* Phone: use the full width inside the overlay's 16px gutter (Global.css)
+   instead of stacking a second 24px margin on each side. */
+@media (max-width: 640px) {
+  .modal.schedules-modal {
+    width: 100%;
+  }
+}
