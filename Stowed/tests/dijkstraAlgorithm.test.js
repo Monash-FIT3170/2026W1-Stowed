@@ -1,49 +1,81 @@
-import assert from 'assert';
-import { Node, PriorityQueue, WeightedGraph } from '../server/routes/dijkstra';
+import assert from "assert";
+import { Node, PriorityQueue, WeightedGraph } from "../server/routes/dijkstra";
 
-describe('PriorityQueueNode', function () {
+describe("PriorityQueueNode", function () {
   const expected = {
-    value: 'thing',
+    value: "thing",
     priority: 12,
   };
 
-  it('correctly creates Node object', function () {
+  it("correctly creates Node object", function () {
     const actNode = new Node(expected.value, expected.priority);
 
-    assert.equal(actNode.val, expected.value, `ValueError: expected node value ${expected.value} but found ${actNode.val}`);
-    assert.strictEqual(actNode.val, expected.value, `TypeError: expected type ${typeof expected.value} but found ${typeof actNode.val}`);
-    assert.equal(actNode.priority, expected.priority, `ValueError: expected node value ${expected.priority} but found ${actNode.priority}`);
-    assert.strictEqual(actNode.priority, expected.priority, `TypeError: expected type ${typeof expected.priority} but found ${typeof actNode.priority}`);
+    assert.equal(
+      actNode.val,
+      expected.value,
+      `ValueError: expected node value ${expected.value} but found ${actNode.val}`,
+    );
+    assert.strictEqual(
+      actNode.val,
+      expected.value,
+      `TypeError: expected type ${typeof expected.value} but found ${typeof actNode.val}`,
+    );
+    assert.equal(
+      actNode.priority,
+      expected.priority,
+      `ValueError: expected node value ${expected.priority} but found ${actNode.priority}`,
+    );
+    assert.strictEqual(
+      actNode.priority,
+      expected.priority,
+      `TypeError: expected type ${typeof expected.priority} but found ${typeof actNode.priority}`,
+    );
   });
 });
 
-describe('PriorityQueue', function () {
+describe("PriorityQueue", function () {
   const nodes = [
-    new Node('thing', 3),
-    new Node('yeet', 100),
-    new Node('okay', -1),
-    new Node('wow', 1),
-    new Node('agh', 0),
-];
+    new Node("thing", 3),
+    new Node("yeet", 100),
+    new Node("okay", -1),
+    new Node("wow", 1),
+    new Node("agh", 0),
+  ];
 
-  it('correct initialise PriorityQueue object', function () {
+  it("correct initialise PriorityQueue object", function () {
     const newQueue = new PriorityQueue();
     const expQueue = [];
 
-    assert.deepStrictEqual(newQueue.values, expQueue, `ValueError: empty list, '${expQueue}' but found '${newQueue.values}'`);
+    assert.deepStrictEqual(
+      newQueue.values,
+      expQueue,
+      `ValueError: empty list, '${expQueue}' but found '${newQueue.values}'`,
+    );
   });
 
-  it('correctly adds PriorityQueue objects', function () {
+  it("correctly adds PriorityQueue objects", function () {
     const newQueue = new PriorityQueue();
     newQueue.enqueue(nodes[0].val, nodes[0].priority);
     const expVals = [nodes[0]];
 
-    assert.equal(newQueue.values.length, expVals.length, `ValueError: value lists were of different sizes. Expected ${expVals.length} but got ${newQueue.values.length}`);
-    assert.deepStrictEqual(newQueue.values[0], expVals[0], `ValueError: mismatch at index 0, expected ${expVals[0]} but got ${newQueue.values[0]}`)
-    assert.deepStrictEqual(newQueue.values, expVals, `ValueError: expected nodes ${expVals} but found ${newQueue.values}`);
+    assert.equal(
+      newQueue.values.length,
+      expVals.length,
+      `ValueError: value lists were of different sizes. Expected ${expVals.length} but got ${newQueue.values.length}`,
+    );
+    assert.deepStrictEqual(
+      newQueue.values[0],
+      expVals[0],
+      `ValueError: mismatch at index 0, expected ${expVals[0]} but got ${newQueue.values[0]}`,
+    );
+    assert.deepStrictEqual(
+      newQueue.values,
+      expVals,
+      `ValueError: expected nodes ${expVals} but found ${newQueue.values}`,
+    );
   });
 
-  it('correctly orders PriorityQueue objects', function () {
+  it("correctly orders PriorityQueue objects", function () {
     const newQueue = new PriorityQueue();
     newQueue.enqueue(nodes[2].val, nodes[2].priority); // priority -1
     newQueue.enqueue(nodes[0].val, nodes[0].priority); // priority 3
@@ -53,13 +85,21 @@ describe('PriorityQueue', function () {
     const expQueue2 = [nodes[2], nodes[0], nodes[3]];
 
     if (newQueue.values[1].priority == expQueue1[1].priority) {
-      assert.deepStrictEqual(newQueue.values, expQueue1, `ValueError: expected nodes ${expQueue1} but found ${newQueue.values}`);
+      assert.deepStrictEqual(
+        newQueue.values,
+        expQueue1,
+        `ValueError: expected nodes ${expQueue1} but found ${newQueue.values}`,
+      );
     } else {
-      assert.deepStrictEqual(newQueue.values, expQueue2, `ValueError: expected nodes ${expQueue2} but found ${newQueue.values}`);
+      assert.deepStrictEqual(
+        newQueue.values,
+        expQueue2,
+        `ValueError: expected nodes ${expQueue2} but found ${newQueue.values}`,
+      );
     }
   });
 
-  it('correctly removes and reorders PriorityQueue objects', function () {
+  it("correctly removes and reorders PriorityQueue objects", function () {
     const newQueue = new PriorityQueue();
     newQueue.enqueue(nodes[2].val, nodes[2].priority); // priority -1
     newQueue.enqueue(nodes[0].val, nodes[0].priority); // priority 3
@@ -70,62 +110,79 @@ describe('PriorityQueue', function () {
     const expRemoval = [nodes[2], nodes[4], nodes[3], nodes[0], nodes[1]];
 
     for (let i = 0; i < 5; i++) {
-      const nxtVal = newQueue.dequeue()
-      assert.deepStrictEqual(nxtVal, expRemoval[i], `ValueError: expected value ${expRemoval[i]} but found ${nxtVal}`);
+      const nxtVal = newQueue.dequeue();
+      assert.deepStrictEqual(
+        nxtVal,
+        expRemoval[i],
+        `ValueError: expected value ${expRemoval[i]} but found ${nxtVal}`,
+      );
     }
   });
 });
 
 // the following set of tests were generated by Claude
 // they were then reviewed to ensure correctness and extended for more complete coverage
-describe('WeightedGraph', function () {
-  it('Add new vertex to graph', function () {
+describe("WeightedGraph", function () {
+  it("Add new vertex to graph", function () {
     const graph = new WeightedGraph();
-    const coords = { x: 1, y: 2 }
+    const coords = { x: 1, y: 2 };
     graph.addVertex(0, coords);
-    assert.deepStrictEqual(graph.adjacencyList[0], [], `Expected an empty list but found ${graph.adjacencyList[0]}`);
-    assert.deepStrictEqual(graph.coordMap[0], coords, `Expected the object ${coords} but found ${graph.coordMap[0]}`);
+    assert.deepStrictEqual(
+      graph.adjacencyList[0],
+      [],
+      `Expected an empty list but found ${graph.adjacencyList[0]}`,
+    );
+    assert.deepStrictEqual(
+      graph.coordMap[0],
+      coords,
+      `Expected the object ${coords} but found ${graph.coordMap[0]}`,
+    );
   });
 
-  it('Fail on attempted replacement of existing vertex', function () {
+  it("Fail on attempted replacement of existing vertex", function () {
     const graph = new WeightedGraph();
     graph.addVertex(0, { x: 1, y: 2 });
     assert.throws(
       () => graph.addVertex(0, { x: 9, y: 9 }),
-      /Node with index 0 already existed in the graph\./
+      /Node with index 0 already existed in the graph\./,
     );
   });
 
-  it('Adds an edge between two existing vertices', function () {
+  it("Adds an edge between two existing vertices", function () {
     const graph = new WeightedGraph();
     graph.addVertex(0, { x: 0, y: 0 });
     graph.addVertex(1, { x: 1, y: 1 });
     graph.addEdge(0, 1, 5);
     const expEdge0 = { node: 1, weight: 5 };
     const expEdge1 = { node: 0, weight: 5 };
-    assert.deepStrictEqual(graph.adjacencyList[0], [expEdge0], `Expected edge: ${expEdge0} but found ${graph.adjacencyList[0]}`);
-    assert.deepStrictEqual(graph.adjacencyList[1], [expEdge1], `Expected edge: ${expEdge1} but found ${graph.adjacencyList[1]}`);
+    assert.deepStrictEqual(
+      graph.adjacencyList[0],
+      [expEdge0],
+      `Expected edge: ${expEdge0} but found ${graph.adjacencyList[0]}`,
+    );
+    assert.deepStrictEqual(
+      graph.adjacencyList[1],
+      [expEdge1],
+      `Expected edge: ${expEdge1} but found ${graph.adjacencyList[1]}`,
+    );
   });
 
-  it('Check raises error for empty/undefined nodes', function () {
+  it("Check raises error for empty/undefined nodes", function () {
     const graph = new WeightedGraph();
     graph.addVertex(0, { x: 0, y: 0 });
     graph.addVertex(2, { x: 2, y: 2 });
     assert.throws(
       () => graph.dijkstra(0, [2]),
-      'Undefined node found in WeightedGraph at index 1.'
+      "Undefined node found in WeightedGraph at index 1.",
     );
   });
 
-  it('Check raises error for empty graph', function () {
+  it("Check raises error for empty graph", function () {
     const graph = new WeightedGraph();
-    assert.throws(
-      () => graph.dijkstra(0, [0]),
-      /Couldn't find the starting index 0/
-    );
+    assert.throws(() => graph.dijkstra(0, [0]), /Couldn't find the starting index 0/);
   });
 
-  it('Check for error when no path exists from start to any finish', function () {
+  it("Check for error when no path exists from start to any finish", function () {
     const graph = new WeightedGraph();
     graph.addVertex(0, { x: 0, y: 0 }); // isolated - no edges
     graph.addVertex(1, { x: 1, y: 0 });
@@ -136,20 +193,24 @@ describe('WeightedGraph', function () {
     graph.addEdge(2, 3, 10);
     assert.throws(
       () => graph.dijkstra(1, [0, 4]),
-      /Dijkstra's algorithm could not find a path from node 1/
+      /Dijkstra's algorithm could not find a path from node 1/,
     );
   });
 
-  it('Check for 0-length path when start in finish list', function () {
+  it("Check for 0-length path when start in finish list", function () {
     const graph = new WeightedGraph();
     graph.addVertex(0, { x: 0, y: 0 });
     graph.addVertex(1, { x: 1, y: 0 });
     graph.addEdge(0, 1, 5);
     const result = graph.dijkstra(1, [0, 1]);
-    assert.deepStrictEqual(result, { waypoints: [1], legDist: 0 }, `Expected a single waypoint with distance=0 but got: ${result}`);
+    assert.deepStrictEqual(
+      result,
+      { waypoints: [1], legDist: 0 },
+      `Expected a single waypoint with distance=0 but got: ${result}`,
+    );
   });
 
-  it('Test Dijkstra\'s algorithm for correctness (single finish, simple)', function () {
+  it("Test Dijkstra's algorithm for correctness (single finish, simple)", function () {
     // Graph:
     //   0 --(1)--> 1 --(1)--> 3
     //   0 --(5)--> 2 --(1)--> 3
@@ -169,7 +230,7 @@ describe('WeightedGraph', function () {
     assert.deepStrictEqual(result, exp, `Expected: ${exp}\nbut got: ${result}`);
   });
 
-  it('Test Dijkstra\'s algorithm for correctness (multi finish, simple)', function () {
+  it("Test Dijkstra's algorithm for correctness (multi finish, simple)", function () {
     // Graph:
     //   0 --(1)--> 1 --(3)--> 3
     //   0 --(5)--> 2 --(1)--> 3
@@ -190,11 +251,11 @@ describe('WeightedGraph', function () {
     graph.addEdge(4, 5, 1);
 
     const result = graph.dijkstra(0, [3, 5]);
-    const exp = { waypoints: [0, 1, 4, 5], legDist: 3 }
+    const exp = { waypoints: [0, 1, 4, 5], legDist: 3 };
     assert.deepStrictEqual(result, exp, `Expected: ${exp}\nbut got: ${result}`);
   });
 
-  it('Test Dijkstra\'s algorithm for correctness (complex)', function () {
+  it("Test Dijkstra's algorithm for correctness (complex)", function () {
     /* Graph:
      3 ---(10)---- 6 ----(6)---- 7
      |\            | \         / |
@@ -253,38 +314,47 @@ describe('WeightedGraph', function () {
     assert.deepStrictEqual(result1, exp1, `R1 - Expected: ${exp1}\nbut got: ${result1}`);
 
     const result2 = graph.dijkstra(3, [0, 6, 8]);
-    const exp2 = (result2.waypoints[result2.waypoints.length - 1] === 0)
-      ? { waypoints: [3, 2, 1, 0], legDist: 9 } 
-      : { waypoints: [3, 4, 5, 6], legDist: 9 };
+    const exp2 =
+      result2.waypoints[result2.waypoints.length - 1] === 0
+        ? { waypoints: [3, 2, 1, 0], legDist: 9 }
+        : { waypoints: [3, 4, 5, 6], legDist: 9 };
     assert.deepStrictEqual(result2, exp2, `R2 - Expected: ${exp2}\nbut got: ${result2}`);
 
     const result3 = graph.dijkstra(3, [7, 8]);
     const exp3 = { waypoints: [3, 2, 1, 0, 9, 7], legDist: 14 };
-    assert.deepStrictEqual(result3, exp3, `R3 - Expected: ${exp3}\nbut got: ${result3}`);  });
+    assert.deepStrictEqual(result3, exp3, `R3 - Expected: ${exp3}\nbut got: ${result3}`);
+  });
 });
 
-describe('WeightedGraph.fromRoute', function () {
+describe("WeightedGraph.fromRoute", function () {
   // A route as saved by the floor map editor (FloorMapRouteSchema).
   // Walkway w1 -- w2 -- w3 along y=0, with product nodes hanging off w1 and w3:
   //   p1 (on unit u1, location loc-a) linked to w1
   //   p3 (on unit u1, locations loc-a and loc-b) linked to w3
   const route = {
     nodes: [
-      { id: 'w1', x: 0, y: 0 }, // saved before node types existed - a walkway node
-      { id: 'w2', x: 3, y: 0, type: 'walkway' },
-      { id: 'w3', x: 6, y: 0, type: 'walkway' },
-      { id: 'p1', x: 0, y: 4, type: 'product', storageUnitId: 'u1', storageLocationIds: ['loc-a'] },
-      { id: 'p3', x: 6, y: 1, type: 'product', storageUnitId: 'u1', storageLocationIds: ['loc-a', 'loc-b'] },
+      { id: "w1", x: 0, y: 0 }, // saved before node types existed - a walkway node
+      { id: "w2", x: 3, y: 0, type: "walkway" },
+      { id: "w3", x: 6, y: 0, type: "walkway" },
+      { id: "p1", x: 0, y: 4, type: "product", storageUnitId: "u1", storageLocationIds: ["loc-a"] },
+      {
+        id: "p3",
+        x: 6,
+        y: 1,
+        type: "product",
+        storageUnitId: "u1",
+        storageLocationIds: ["loc-a", "loc-b"],
+      },
     ],
     links: [
-      { id: 'l1', fromId: 'w1', toId: 'w2' },
-      { id: 'l2', fromId: 'w3', toId: 'w2' },
-      { id: 'l3', fromId: 'p1', toId: 'w1' },
-      { id: 'l4', fromId: 'w3', toId: 'p3' },
+      { id: "l1", fromId: "w1", toId: "w2" },
+      { id: "l2", fromId: "w3", toId: "w2" },
+      { id: "l3", fromId: "p1", toId: "w1" },
+      { id: "l4", fromId: "w3", toId: "p3" },
     ],
   };
 
-  it('Gives each route node an index and keeps its position', function () {
+  it("Gives each route node an index and keeps its position", function () {
     const graph = WeightedGraph.fromRoute(route);
     assert.strictEqual(graph.adjacencyList.length, route.nodes.length);
     route.nodes.forEach((node, index) => {
@@ -294,40 +364,49 @@ describe('WeightedGraph.fromRoute', function () {
     });
   });
 
-  it('Weights each link by the distance between its nodes', function () {
+  it("Weights each link by the distance between its nodes", function () {
     const graph = WeightedGraph.fromRoute(route);
-    assert.deepStrictEqual(graph.adjacencyList[graph.indexOf('w1')], [
-      { node: graph.indexOf('w2'), weight: 3 },
-      { node: graph.indexOf('p1'), weight: 4 },
+    assert.deepStrictEqual(graph.adjacencyList[graph.indexOf("w1")], [
+      { node: graph.indexOf("w2"), weight: 3 },
+      { node: graph.indexOf("p1"), weight: 4 },
     ]);
-    assert.deepStrictEqual(graph.adjacencyList[graph.indexOf('p3')], [
-      { node: graph.indexOf('w3'), weight: 1 },
+    assert.deepStrictEqual(graph.adjacencyList[graph.indexOf("p3")], [
+      { node: graph.indexOf("w3"), weight: 1 },
     ]);
   });
 
-  it('Throws for an unknown route node id', function () {
+  it("Throws for an unknown route node id", function () {
     const graph = WeightedGraph.fromRoute(route);
-    assert.throws(() => graph.indexOf('missing'), /Route node "missing" is not in the graph\./);
+    assert.throws(() => graph.indexOf("missing"), /Route node "missing" is not in the graph\./);
   });
 
-  it('Finds the product nodes giving access to a storage location', function () {
+  it("Finds the product nodes giving access to a storage location", function () {
     const graph = WeightedGraph.fromRoute(route);
-    assert.deepStrictEqual(graph.productNodesFor('loc-a'), [graph.indexOf('p1'), graph.indexOf('p3')]);
-    assert.deepStrictEqual(graph.productNodesFor('loc-b'), [graph.indexOf('p3')]);
-    assert.deepStrictEqual(graph.productNodesFor('loc-c'), []);
+    assert.deepStrictEqual(graph.productNodesFor("loc-a"), [
+      graph.indexOf("p1"),
+      graph.indexOf("p3"),
+    ]);
+    assert.deepStrictEqual(graph.productNodesFor("loc-b"), [graph.indexOf("p3")]);
+    assert.deepStrictEqual(graph.productNodesFor("loc-c"), []);
   });
 
-  it('Routes to the nearest product node for a storage location', function () {
+  it("Routes to the nearest product node for a storage location", function () {
     const graph = WeightedGraph.fromRoute(route);
     // from w3, p3 (dist 1) is nearer than p1 (dist 6 + 4)
-    const result = graph.dijkstra(graph.indexOf('w3'), graph.productNodesFor('loc-a'));
-    assert.deepStrictEqual(result, { waypoints: [graph.indexOf('w3'), graph.indexOf('p3')], legDist: 1 });
+    const result = graph.dijkstra(graph.indexOf("w3"), graph.productNodesFor("loc-a"));
+    assert.deepStrictEqual(result, {
+      waypoints: [graph.indexOf("w3"), graph.indexOf("p3")],
+      legDist: 1,
+    });
     // from w1, p1 (dist 4) is nearer than p3 (dist 6 + 1)
-    const result2 = graph.dijkstra(graph.indexOf('w1'), graph.productNodesFor('loc-a'));
-    assert.deepStrictEqual(result2, { waypoints: [graph.indexOf('w1'), graph.indexOf('p1')], legDist: 4 });
+    const result2 = graph.dijkstra(graph.indexOf("w1"), graph.productNodesFor("loc-a"));
+    assert.deepStrictEqual(result2, {
+      waypoints: [graph.indexOf("w1"), graph.indexOf("p1")],
+      legDist: 4,
+    });
   });
 
-  it('Builds an empty graph from an empty route', function () {
+  it("Builds an empty graph from an empty route", function () {
     const graph = WeightedGraph.fromRoute({ nodes: [], links: [] });
     assert.deepStrictEqual(graph.adjacencyList, []);
   });
