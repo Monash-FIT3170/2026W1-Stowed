@@ -396,6 +396,13 @@
   border-collapse: collapse;
 }
 
+/* .detail-section clips overflow, so a table wider than its card (the
+   340px product column plus 6 others) scrolls sideways here instead of
+   losing its right-hand columns. No effect when the table fits. */
+.section-content:has(> .lists-table) {
+  overflow-x: auto;
+}
+
 .lists-table th {
   padding: 0 10px 10px 10px;
   border-bottom: 1px dashed var(--border-subtle);

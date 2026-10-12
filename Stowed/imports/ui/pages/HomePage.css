@@ -141,3 +141,28 @@
 .home-footer a:hover {
   color: var(--accent-primary, #b5532a);
 }
+
+/* Phone: tighter side gutters so the hero and cards use the width */
+@media (max-width: 640px) {
+  .home-header {
+    padding: 16px;
+  }
+
+  .home-hero {
+    padding: 48px 16px 32px;
+  }
+
+  .home-hero-actions {
+    flex-wrap: wrap;
+  }
+
+  .home-features {
+    padding: 16px 16px 48px;
+  }
+
+  .home-footer {
+    flex-wrap: wrap;
+    padding: 20px 16px;
+    gap: 12px 24px;
+  }
+}

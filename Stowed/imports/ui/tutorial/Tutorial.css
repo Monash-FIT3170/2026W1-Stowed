@@ -134,3 +134,22 @@
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
+
+/* Phone/tablet (dock layout, Sidebar.css): the dock sits at z-index 1200,
+   above the tour's 1000, which hid the highlight ring and left the dock
+   undimmed. Lift the tour above it, and show the dock menu holding the
+   current step's link so that link can be highlighted. Laptop unchanged. */
+@media (max-width: 1024px) {
+  .tutorial-backdrop,
+  .tutorial-spotlight {
+    z-index: 1300;
+  }
+
+  .tutorial-popover {
+    z-index: 1301;
+  }
+
+  .sidebar-section-links[data-tutorial-open] {
+    display: flex;
+  }
+}

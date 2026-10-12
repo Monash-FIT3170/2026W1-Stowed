@@ -827,3 +827,10 @@
     white-space: normal;
   }
 }
+
+/* Tablet/phone: keep location modals above the floating dock (z-index 1200) */
+@media (max-width: 1024px) {
+  .locations-modal-backdrop {
+    z-index: 1300;
+  }
+}

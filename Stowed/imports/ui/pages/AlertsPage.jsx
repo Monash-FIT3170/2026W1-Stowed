@@ -133,7 +133,7 @@ export function AlertsPage() {
         </div>
       </div>
 
-      <div style={{ padding: "0 28px 48px" }}>
+      <div className="alerts-body">
         {loading ? (
           <div className="alerts-empty">Loading alerts...</div>
         ) : (
