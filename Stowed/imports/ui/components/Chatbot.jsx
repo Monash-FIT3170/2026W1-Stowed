@@ -182,6 +182,10 @@ export function Chatbot() {
         const nextAction = result?.suggestedActions?.[0] || null;
         setPendingAction(nextAction);
 
+        if (result?.openUrl && result?.url) {
+          navigate(result.url);
+        }
+
         // The server only returns paths the user's role is allowed to open.
         result?.actions?.forEach((action) => {
           if (action.type === "navigate" && action.path.startsWith("/")) navigate(action.path);

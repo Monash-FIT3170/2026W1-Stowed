@@ -2,6 +2,7 @@ import assert from "assert";
 import { Meteor } from "meteor/meteor";
 import { Organisations } from "../imports/api/organisations";
 import { Products, ProductRecords } from "../imports/api/products/collections";
+import { ShoppingLists } from "../imports/api/shoppingLists/collections";
 import {
   Sites,
   FloorMaps,
@@ -64,10 +65,14 @@ describeServer("Chatbot tool execution", function () {
 
   const run = (userId, allowed, toolName, args, actions = []) =>
     executeTool({ userId, toolName, args, turn, allowedToolNames: allowed, actions });
+  const callChatbot = (userId, params) =>
+    Meteor.server.method_handlers["chatbot.chat"].call({ userId }, params);
 
   async function cleanup() {
     await Meteor.users.removeAsync({ _id: { $in: [STANDARD_ID, ADMIN_ID] } });
     await Organisations.removeAsync({ _id: { $in: [ORG, OTHER_ORG] } });
+    await ShoppingLists.removeAsync({ orgId: ORG });
+    await Sites.removeAsync({ orgId: ORG });
     await Sites.removeAsync(SITE);
     await FloorMaps.removeAsync(FLOOR_MAP);
     await StorageUnits.removeAsync(UNIT);
@@ -78,6 +83,7 @@ describeServer("Chatbot tool execution", function () {
   }
 
   before(async function () {
+    await import("../imports/api/chatbot/methods");
     await cleanup();
     const now = new Date();
     for (const _id of [ORG, OTHER_ORG]) {
@@ -362,5 +368,135 @@ describeServer("Chatbot tool execution", function () {
     );
     assert.ok(crossOrg.error);
     assert.deepStrictEqual(blockedActions, []);
+  });
+
+  it("answers stocktake recommendations without an AI API key", async function () {
+    await Sites.updateAsync(SITE, { $set: { stocktakeIntervalDays: 30 } });
+    await StorageLocations.updateAsync(LOCATION, {
+      $set: { name: "Overdue Bay", lastStocktakeAt: new Date("2026-01-01T00:00:00.000Z") },
+    });
+
+    const result = await callChatbot(STANDARD_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "What should I stocktake today?" }],
+    });
+
+    assert.ok(result.text.includes("Stocktake these first:"));
+    assert.ok(result.text.includes("Overdue Bay"));
+    assert.ok(result.text.includes(`/stocktake/${LOCATION}`));
+    assert.deepStrictEqual(result.suggestedActions, []);
+  });
+
+  it("suggests storage location names without an AI API key", async function () {
+    await StorageLocations.updateAsync(LOCATION, {
+      $set: { name: "Bay 1", lastStocktakeAt: new Date() },
+    });
+
+    const result = await callChatbot(STANDARD_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "Help me name storage locations." }],
+    });
+
+    assert.ok(result.text.includes("Try a consistent unit + bay pattern"));
+    assert.ok(result.text.includes("Shelf A Bay 02"));
+    assert.ok(result.text.includes("SHELF-A-02"));
+    assert.deepStrictEqual(result.suggestedActions, []);
+  });
+
+  it("creates a site through the local action flow without an AI API key", async function () {
+    const proposed = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "create site" }],
+    });
+
+    const action = proposed.suggestedActions[0];
+    assert.strictEqual(action.type, "createSite");
+    assert.strictEqual(action.payload.name, "New site");
+    assert.ok(proposed.text.includes("Please confirm"));
+
+    const result = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: action,
+      messages: [
+        { role: "user", content: "create site" },
+        { role: "assistant", content: proposed.text, actions: [action] },
+        { role: "user", content: "confirm" },
+      ],
+    });
+
+    assert.ok(result.text.includes('I created site "New site"'));
+    assert.strictEqual(result.openUrl, true);
+    assert.strictEqual(result.url, "/locations?tab=sites");
+
+    const site = await Sites.findOneAsync(result.siteId);
+    assert.strictEqual(site.orgId, ORG);
+    assert.strictEqual(site.name, "New site");
+  });
+
+  it("creates a storage location through the local action flow without an AI API key", async function () {
+    const proposed = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "create location" }],
+    });
+
+    const action = proposed.suggestedActions[0];
+    assert.strictEqual(action.type, "createStorageLocation");
+    assert.strictEqual(action.payload.name, "New storage location");
+    assert.strictEqual(action.payload.code, "NEW-STORAGE-LOCATION");
+
+    const result = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: action,
+      messages: [
+        { role: "user", content: "create location" },
+        { role: "assistant", content: proposed.text, actions: [action] },
+        { role: "user", content: "confirm" },
+      ],
+    });
+
+    assert.ok(result.text.includes('I created storage location "New storage location"'));
+    assert.strictEqual(result.openUrl, true);
+    assert.strictEqual(result.url, `/locations/unit/${UNIT}`);
+
+    const location = await StorageLocations.findOneAsync(result.locationId);
+    assert.strictEqual(location.orgId, ORG);
+    assert.strictEqual(location.storageUnitId, UNIT);
+    assert.strictEqual(location.name, "New storage location");
+  });
+
+  it("runs a pending suggested action when the user types confirm", async function () {
+    const action = {
+      id: "chatbot-test-create-list-action",
+      type: "createShoppingList",
+      title: "Create shopping list",
+      summary: 'Create an empty shopping list named "Typed Confirm List".',
+      confirmLabel: "Confirm",
+      payload: { name: "Typed Confirm List" },
+    };
+
+    const result = await callChatbot(STANDARD_ID, {
+      previousInteractionId: null,
+      pendingAction: action,
+      messages: [
+        { role: "user", content: "make a shopping list called Typed Confirm List" },
+        {
+          role: "assistant",
+          content: "I can set that up. Please confirm before I make any changes.",
+          actions: [action],
+        },
+        { role: "user", content: "confirm" },
+      ],
+    });
+
+    assert.strictEqual(result.suggestedActions.length, 0);
+    assert.ok(result.text.includes('I created "Typed Confirm List"'));
+
+    const list = await ShoppingLists.findOneAsync({ orgId: ORG, name: "Typed Confirm List" });
+    assert.ok(list);
+    assert.strictEqual(result.listId, list._id);
   });
 });

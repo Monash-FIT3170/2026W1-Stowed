@@ -11,6 +11,12 @@ import { Products, ProductRecords } from "../products/collections";
 import { ShoppingLists } from "../shoppingLists/collections";
 import { ADD_PRODUCT_MODES, LIST_FREQUENCIES, LIST_ORIGINS } from "../shoppingLists/constants";
 import { isLowStock, toItem } from "../shoppingLists/generation";
+import {
+  DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+  describeStocktakeTiming,
+  getStocktakeAlerts,
+  STOCKTAKE_STATUS,
+} from "../locations/stocktake";
 
 const MAX_MESSAGES = 8;
 const MAX_MESSAGE_LENGTH = 1000;
@@ -19,11 +25,15 @@ const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 const DEFAULT_MAX_OUTPUT_TOKENS = 256;
 const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
+const MISSING_API_KEY_MESSAGE =
+  "The AI Assistant needs a Gemini API key before it can answer that. Start Meteor with --settings settings.json, or set GEMINI_API_KEY in your environment.";
 const ACTION_TYPES = {
   CREATE_SHOPPING_LIST: "createShoppingList",
   CREATE_LOW_STOCK_LIST: "createLowStockShoppingList",
+  CREATE_SITE: "createSite",
   CREATE_FLOOR_MAP: "createFloorMap",
   CREATE_STORAGE_UNIT: "createStorageUnit",
+  CREATE_STORAGE_LOCATION: "createStorageLocation",
   MOVE_STORAGE_UNIT: "moveStorageUnit",
   RESIZE_STORAGE_UNIT: "resizeStorageUnit",
   ASSIGN_STOCK_TO_UNIT: "assignStockToUnit",
@@ -31,6 +41,22 @@ const ACTION_TYPES = {
   SHOW_LOW_STOCK_FLOOR_MAP: "showLowStockFloorMap",
   SHOW_FLOOR_MAP_EDITOR: "showFloorMapEditor",
 };
+const SHOPPING_LIST_ACTION_TYPES = new Set([
+  ACTION_TYPES.CREATE_SHOPPING_LIST,
+  ACTION_TYPES.CREATE_LOW_STOCK_LIST,
+]);
+const FLOOR_MAP_ACTION_TYPES = new Set([
+  ACTION_TYPES.CREATE_SITE,
+  ACTION_TYPES.CREATE_FLOOR_MAP,
+  ACTION_TYPES.CREATE_STORAGE_UNIT,
+  ACTION_TYPES.CREATE_STORAGE_LOCATION,
+  ACTION_TYPES.MOVE_STORAGE_UNIT,
+  ACTION_TYPES.RESIZE_STORAGE_UNIT,
+  ACTION_TYPES.ASSIGN_STOCK_TO_UNIT,
+  ACTION_TYPES.OPEN_STORAGE_UNIT,
+  ACTION_TYPES.SHOW_LOW_STOCK_FLOOR_MAP,
+  ACTION_TYPES.SHOW_FLOOR_MAP_EDITOR,
+]);
 const actionPattern = {
   id: String,
   type: Match.Where((value) => Object.values(ACTION_TYPES).includes(value)),
@@ -184,12 +210,20 @@ function describeAction(action) {
     return `Create "${action.payload.name}" from current low-stock products using ${action.payload.frequency} quantities.`;
   }
 
+  if (action.type === ACTION_TYPES.CREATE_SITE) {
+    return `Create a site named "${action.payload.name}".`;
+  }
+
   if (action.type === ACTION_TYPES.CREATE_FLOOR_MAP) {
     return `Create a floor map named "${action.payload.name}"${action.payload.siteName ? ` for site "${action.payload.siteName}"` : ""}.`;
   }
 
   if (action.type === ACTION_TYPES.CREATE_STORAGE_UNIT) {
     return `Create storage unit "${action.payload.name}"${action.payload.floorMapName ? ` on "${action.payload.floorMapName}"` : ""}.`;
+  }
+
+  if (action.type === ACTION_TYPES.CREATE_STORAGE_LOCATION) {
+    return `Create storage location "${action.payload.name}"${action.payload.unitName ? ` in "${action.payload.unitName}"` : ""}.`;
   }
 
   if (action.type === ACTION_TYPES.MOVE_STORAGE_UNIT) {
@@ -286,6 +320,23 @@ function unitNameFrom(input) {
   );
 }
 
+function locationNameFrom(input) {
+  return (
+    getQuotedValue(input) ||
+    extractName(input, null) ||
+    valueAfter(input, ["storage location", "location", "bay", "bin"]) ||
+    "New storage location"
+  );
+}
+
+function storageLocationCodeFrom(name) {
+  return String(name || "LOC")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 24);
+}
+
 function destinationUnitNameFrom(input) {
   const match = input.match(
     /\b(?:to|in|on)\s+(?:(?:storage\s+unit|unit|shelf|cabinet|rack|drawer|fridge)\s+)?["']?(.{2,100}?)["']?[?.!]*$/i,
@@ -295,8 +346,39 @@ function destinationUnitNameFrom(input) {
 
 export function buildFloorMapAction(input) {
   const creates = /\b(create|make|add|new|build)\b/i.test(input);
+  const siteMentioned = /\b(site|warehouse)\b/i.test(input);
+  const storageLocationMentioned = /\b(storage\s+location|location|bay|bin)\b/i.test(input);
   const floorMapMentioned = /\b(floor\s*map|floormap|map)\b/i.test(input);
   const unitMentioned = /\b(storage\s+unit|unit|shelf|cabinet|rack|drawer|fridge)\b/i.test(input);
+
+  if (creates && siteMentioned && !floorMapMentioned && !unitMentioned) {
+    const action = {
+      id: makeActionId(ACTION_TYPES.CREATE_SITE),
+      type: ACTION_TYPES.CREATE_SITE,
+      title: "Create site",
+      confirmLabel: "Create",
+      payload: { name: extractName(input, getQuotedValue(input) || "New site") },
+    };
+    action.summary = describeAction(action);
+    return action;
+  }
+
+  if (creates && storageLocationMentioned && !floorMapMentioned) {
+    const name = locationNameFrom(input);
+    const action = {
+      id: makeActionId(ACTION_TYPES.CREATE_STORAGE_LOCATION),
+      type: ACTION_TYPES.CREATE_STORAGE_LOCATION,
+      title: "Create storage location",
+      confirmLabel: "Create",
+      payload: {
+        name,
+        unitName: unitNameFrom(input),
+        code: storageLocationCodeFrom(name),
+      },
+    };
+    action.summary = describeAction(action);
+    return action;
+  }
 
   if (creates && floorMapMentioned && !unitMentioned) {
     const name = extractName(input, getQuotedValue(input) || "New floor map");
@@ -424,6 +506,47 @@ export function buildFloorMapAction(input) {
   return null;
 }
 
+export function buildPendingFloorMapAction(input, previousAction) {
+  if (!previousAction || !FLOOR_MAP_ACTION_TYPES.has(previousAction.type)) return null;
+
+  const payload = { ...previousAction.payload };
+  const nextName = extractPendingActionName(input, null);
+  if (nextName) {
+    if (
+      previousAction.type === ACTION_TYPES.CREATE_SITE ||
+      previousAction.type === ACTION_TYPES.CREATE_FLOOR_MAP ||
+      previousAction.type === ACTION_TYPES.CREATE_STORAGE_UNIT ||
+      previousAction.type === ACTION_TYPES.CREATE_STORAGE_LOCATION
+    ) {
+      payload.name = nextName;
+    } else if (
+      [
+        ACTION_TYPES.MOVE_STORAGE_UNIT,
+        ACTION_TYPES.RESIZE_STORAGE_UNIT,
+        ACTION_TYPES.OPEN_STORAGE_UNIT,
+      ].includes(previousAction.type)
+    ) {
+      payload.unitName = nextName;
+    }
+  }
+
+  const { width, height } = dimensionsFrom(input);
+  if (width) payload.width = width;
+  if (height) payload.height = height;
+
+  const { x, y } = positionFrom(input);
+  if (x !== null) payload.x = x;
+  if (y !== null) payload.y = y;
+
+  const action = {
+    ...previousAction,
+    id: makeActionId(previousAction.type),
+    payload,
+  };
+  action.summary = describeAction(action);
+  return action;
+}
+
 async function findOneByName(collection, orgId, name, label) {
   if (!name) throw new Meteor.Error("missing-name", `Tell me which ${label} to use.`);
 
@@ -475,6 +598,14 @@ async function getTargetFloorMap(orgId, floorMapName) {
 }
 
 async function getTargetStorageUnit(orgId, unitName) {
+  if (!unitName) {
+    const units = await StorageUnits.find({ orgId }, { sort: { createdAt: 1 }, limit: 2 }).fetchAsync();
+    if (units.length === 1) return units[0];
+    if (units.length > 1) {
+      throw new Meteor.Error("storage-unit-required", "Tell me which storage unit to use.");
+    }
+    throw new Meteor.Error("storage-unit-required", "Create a storage unit before adding locations.");
+  }
   return await findOneByName(StorageUnits, orgId, unitName, "storage unit");
 }
 
@@ -551,6 +682,26 @@ async function confirmFloorMapAction(userId, action) {
 
   await requirePermission(userId, "locations.manage");
 
+  if (action.type === ACTION_TYPES.CREATE_SITE) {
+    const name = String(action.payload?.name || "").trim();
+    if (!name) throw new Meteor.Error("invalid-name", "Site name cannot be empty.");
+    const now = new Date();
+    const siteId = await Sites.insertAsync({
+      orgId,
+      name,
+      description: "",
+      stocktakeIntervalDays: DEFAULT_STOCKTAKE_INTERVAL_DAYS,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return {
+      text: `Confirmed. I created site "${name}".`,
+      url: "/locations?tab=sites",
+      openUrl: true,
+      siteId,
+    };
+  }
+
   if (action.type === ACTION_TYPES.CREATE_FLOOR_MAP) {
     const name = String(action.payload?.name || "").trim();
     if (!name) throw new Meteor.Error("invalid-name", "Floor map name cannot be empty.");
@@ -598,6 +749,31 @@ async function confirmFloorMapAction(userId, action) {
       url: `/floor-map/${floorMap._id}`,
       openUrl: true,
       unitId,
+    };
+  }
+
+  if (action.type === ACTION_TYPES.CREATE_STORAGE_LOCATION) {
+    const name = String(action.payload?.name || "").trim();
+    if (!name) throw new Meteor.Error("invalid-name", "Storage location name cannot be empty.");
+    const storageUnit = await getTargetStorageUnit(orgId, action.payload?.unitName);
+    const code = String(action.payload?.code || storageLocationCodeFrom(name)).trim();
+    const now = new Date();
+    const locationId = await StorageLocations.insertAsync({
+      orgId,
+      storageUnitId: storageUnit._id,
+      name,
+      code,
+      imageUrl: "",
+      storedItems: [],
+      lastStocktakeAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return {
+      text: `Confirmed. I created storage location "${name}".`,
+      url: `/locations/unit/${storageUnit._id}`,
+      openUrl: true,
+      locationId,
     };
   }
 
@@ -673,6 +849,8 @@ async function confirmFloorMapAction(userId, action) {
 }
 
 export function buildShoppingListAction(input, previousAction) {
+  const previousShoppingListAction =
+    previousAction && SHOPPING_LIST_ACTION_TYPES.has(previousAction.type) ? previousAction : null;
   const lowStockRequested =
     /\b(low[-\s]?stock|reorder|restock|checklist)\b/i.test(input) &&
     /\b(list|checklist|shopping|buy|order|make|create|generate|build)\b/i.test(input);
@@ -680,23 +858,23 @@ export function buildShoppingListAction(input, previousAction) {
     /\b(shopping\s+list|list)\b/i.test(input) &&
     /\b(create|make|generate|build|new)\b/i.test(input);
 
-  if (!previousAction && !lowStockRequested && !shoppingListRequested) return null;
+  if (!previousShoppingListAction && !lowStockRequested && !shoppingListRequested) return null;
 
   const type =
-    previousAction?.type ||
+    previousShoppingListAction?.type ||
     (lowStockRequested ? ACTION_TYPES.CREATE_LOW_STOCK_LIST : ACTION_TYPES.CREATE_SHOPPING_LIST);
   const fallbackName =
-    previousAction?.payload?.name ||
+    previousShoppingListAction?.payload?.name ||
     (type === ACTION_TYPES.CREATE_LOW_STOCK_LIST ? "Low-stock checklist" : "New shopping list");
   const payload = {
     name:
       extractName(input, null) ||
-      (previousAction ? extractPendingActionName(input, null) : null) ||
+      (previousShoppingListAction ? extractPendingActionName(input, null) : null) ||
       fallbackName,
   };
 
   if (type === ACTION_TYPES.CREATE_LOW_STOCK_LIST) {
-    payload.frequency = frequencyFrom(input, previousAction?.payload?.frequency);
+    payload.frequency = frequencyFrom(input, previousShoppingListAction?.payload?.frequency);
   }
 
   const action = {
@@ -750,6 +928,13 @@ async function confirmAction(userId, action) {
   };
 }
 
+async function runSuggestedAction(userId, action) {
+  if (FLOOR_MAP_ACTION_TYPES.has(action.type)) {
+    return await confirmFloorMapAction(userId, action);
+  }
+  return await confirmAction(userId, action);
+}
+
 function toGeminiContents(messages) {
   return messages
     .slice(-MAX_MESSAGES)
@@ -761,6 +946,10 @@ function toGeminiContents(messages) {
 }
 
 const AFFIRMATION = /^\s*(confirm|confirmed|yes|y|yep|ok|okay|go ahead|do it)\W*$/i;
+const STOCKTAKE_RECOMMENDATION_REQUEST =
+  /\b(?:what|which|where|show|list|tell|any|should|need)\b.*\bstock\s*take\b|\bstock\s*take\b.*\b(?:today|due|overdue|next|should|need)\b/i;
+const STORAGE_LOCATION_NAMING_REQUEST =
+  /\b(?:help|suggest|name|naming|ideas|recommend)\b.*\bstorage\s+locations?\b|\bstorage\s+locations?\b.*\b(?:name|naming|ideas|suggest|recommend)\b/i;
 
 // True when the user's latest message is just a CONFIRM/yes replying to an
 // assistant message that asked them to confirm.
@@ -769,6 +958,112 @@ function isConfirmationReply(messages, input) {
   return (
     AFFIRMATION.test(input) && previous?.role === "assistant" && /confirm/i.test(previous.content)
   );
+}
+
+async function buildStocktakeRecommendation(userId) {
+  await requirePermission(userId, "route:/stocktake");
+  const orgId = await getCallerOrgId(userId);
+  if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+  const sites = await Sites.find({ orgId }).fetchAsync();
+  const floorMaps = await FloorMaps.find({
+    orgId,
+    siteId: { $in: sites.map((site) => site._id) },
+  }).fetchAsync();
+  const storageUnits = await StorageUnits.find({
+    orgId,
+    floorMapId: { $in: floorMaps.map((floorMap) => floorMap._id) },
+  }).fetchAsync();
+  const storageLocations = await StorageLocations.find({
+    orgId,
+    storageUnitId: { $in: storageUnits.map((unit) => unit._id) },
+  }).fetchAsync();
+
+  const alerts = getStocktakeAlerts({
+    storageLocations,
+    storageUnits,
+    floorMaps,
+    sites,
+    statuses: [STOCKTAKE_STATUS.OVERDUE, STOCKTAKE_STATUS.DUE_SOON],
+  });
+
+  if (alerts.length === 0) {
+    return {
+      text: "No locations are overdue or due soon for stocktake today.",
+      suggestedActions: [],
+      actions: [],
+    };
+  }
+
+  const lines = alerts.slice(0, 5).map((alert, index) => {
+    const timing = describeStocktakeTiming(alert.daysUntilDue);
+    const path = alert.path ? ` (${alert.path})` : "";
+    return `${index + 1}. ${alert.location.name}${path} - ${timing}`;
+  });
+  const first = alerts[0];
+
+  return {
+    text: `Stocktake these first:\n${lines.join("\n")}\n\nMost urgent: ${first.location.name}. Open /stocktake/${first.location._id} to start.`,
+    suggestedActions: [],
+    actions: [],
+  };
+}
+
+function codePrefixFor(value) {
+  return String(value || "LOC")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 16);
+}
+
+async function buildStorageLocationNamingHelp(userId) {
+  await requirePermission(userId, "route:/locations");
+  const orgId = await getCallerOrgId(userId);
+  if (!orgId) throw new Meteor.Error("no-org", "Your account is not linked to an organisation.");
+
+  const storageUnits = await StorageUnits.find({ orgId }, { sort: { name: 1 } }).fetchAsync();
+  if (storageUnits.length === 0) {
+    return {
+      text: [
+        "Use names that tell staff exactly where to go.",
+        "Good patterns:",
+        "1. Aisle 1 Bay 01 - code A1-B01",
+        "2. Fridge 1 Shelf 01 - code F1-S01",
+        "3. Cabinet A Drawer 01 - code CA-D01",
+      ].join("\n"),
+      suggestedActions: [],
+      actions: [],
+    };
+  }
+
+  const locations = await StorageLocations.find({
+    orgId,
+    storageUnitId: { $in: storageUnits.map((unit) => unit._id) },
+  }).fetchAsync();
+  const locationsByUnit = new Map();
+  for (const location of locations) {
+    const existing = locationsByUnit.get(location.storageUnitId) || [];
+    existing.push(location);
+    locationsByUnit.set(location.storageUnitId, existing);
+  }
+
+  const suggestions = storageUnits.slice(0, 3).map((unit, index) => {
+    const nextNumber = (locationsByUnit.get(unit._id)?.length || 0) + 1;
+    const padded = String(nextNumber).padStart(2, "0");
+    const prefix = codePrefixFor(unit.name);
+    return `${index + 1}. ${unit.name} Bay ${padded} - code ${prefix}-${padded}`;
+  });
+
+  return {
+    text: [
+      "Try a consistent unit + bay pattern so labels sort cleanly.",
+      ...suggestions,
+      "Keep codes short, uppercase, and printed on the label.",
+    ].join("\n"),
+    suggestedActions: [],
+    actions: [],
+  };
 }
 
 // generateContent wants function declarations without our "type: function" wrapper.
@@ -812,7 +1107,34 @@ Meteor.methods({
       throw new Meteor.Error("empty-message", "Ask something first.");
     }
 
-    const action = buildShoppingListAction(input, pendingAction) || buildFloorMapAction(input);
+    if (pendingAction && AFFIRMATION.test(input)) {
+      const result = await runSuggestedAction(this.userId, pendingAction);
+      return {
+        ...result,
+        interactionId: previousInteractionId,
+        suggestedActions: [],
+        actions: [],
+      };
+    }
+
+    if (STOCKTAKE_RECOMMENDATION_REQUEST.test(input)) {
+      return {
+        ...(await buildStocktakeRecommendation(this.userId)),
+        interactionId: previousInteractionId,
+      };
+    }
+
+    if (STORAGE_LOCATION_NAMING_REQUEST.test(input)) {
+      return {
+        ...(await buildStorageLocationNamingHelp(this.userId)),
+        interactionId: previousInteractionId,
+      };
+    }
+
+    const action =
+      buildShoppingListAction(input, pendingAction) ||
+      buildPendingFloorMapAction(input, pendingAction) ||
+      buildFloorMapAction(input);
     if (action) {
       return {
         text: pendingAction
@@ -823,7 +1145,18 @@ Meteor.methods({
       };
     }
 
-    const model = getSetting("GEMINI_MODEL") || DEFAULT_MODEL;
+    const configStatus = getChatbotConfigStatus();
+    const model = configStatus.model;
+
+    if (!configStatus.hasApiKey) {
+      return {
+        text: MISSING_API_KEY_MESSAGE,
+        interactionId: previousInteractionId,
+        model,
+        suggestedActions: [],
+        actions: [],
+      };
+    }
 
     const userId = this.userId;
     const permissionNames = new Set();
@@ -890,21 +1223,7 @@ Meteor.methods({
   async "chatbot.confirmAction"({ action }) {
     check(action, actionPattern);
     await requirePermission(this.userId, "chatbot.chat");
-    if (
-      [
-        ACTION_TYPES.CREATE_FLOOR_MAP,
-        ACTION_TYPES.CREATE_STORAGE_UNIT,
-        ACTION_TYPES.MOVE_STORAGE_UNIT,
-        ACTION_TYPES.RESIZE_STORAGE_UNIT,
-        ACTION_TYPES.ASSIGN_STOCK_TO_UNIT,
-        ACTION_TYPES.OPEN_STORAGE_UNIT,
-        ACTION_TYPES.SHOW_LOW_STOCK_FLOOR_MAP,
-        ACTION_TYPES.SHOW_FLOOR_MAP_EDITOR,
-      ].includes(action.type)
-    ) {
-      return await confirmFloorMapAction(this.userId, action);
-    }
-    return await confirmAction(this.userId, action);
+    return await runSuggestedAction(this.userId, action);
   },
 
   "chatbot.configStatus"() {
