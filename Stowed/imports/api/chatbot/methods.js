@@ -7,7 +7,7 @@ import { getCallerOrgId, hasPermission, requirePermission } from "../userMethods
 import { buildToolDeclarations, callMethodAs, executeTool, TOOL_PERMISSIONS } from "./tools";
 import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../locations/collections";
 import { buildRectShape, getBoundingBox } from "../locations/shapeUtils";
-import { Products, ProductRecords } from "../products/collections";
+import { Products } from "../products/collections";
 import { ShoppingLists } from "../shoppingLists/collections";
 import { ADD_PRODUCT_MODES, LIST_FREQUENCIES, LIST_ORIGINS } from "../shoppingLists/constants";
 import { isLowStock, toItem } from "../shoppingLists/generation";
@@ -67,8 +67,8 @@ const actionPattern = {
 };
 const SYSTEM_INSTRUCTION = [
   "You are the assistant inside Stowed, an inventory app for shops and storerooms.",
-  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, and related workflows.",
-  "If the user asks for something outside Stowed's inventory scope, briefly say you can only help with Stowed inventory tasks.",
+  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, user accounts, and related workflows.",
+  "If the user asks for something outside Stowed's inventory and account-management scope, briefly say you can only help with Stowed tasks.",
   "Use the tools to look things up and to act for the user; never invent product or location ids.",
   "You can only use the tools you are given - they match the user's role. If asked for something outside them, say you can't do that with their account.",
   "To create, edit or delete a product: first call the tool WITHOUT confirmed (this only previews, nothing changes), then tell the user exactly what will change and end your message with: Reply CONFIRM to proceed.",
@@ -609,43 +609,42 @@ async function getTargetStorageUnit(orgId, unitName) {
   return await findOneByName(StorageUnits, orgId, unitName, "storage unit");
 }
 
-async function ensureStorageLocation(orgId, storageUnit) {
+async function ensureStorageLocation(userId, orgId, storageUnit) {
   const existing = await StorageLocations.findOneAsync(
     { orgId, storageUnitId: storageUnit._id },
     { sort: { createdAt: 1 } },
   );
   if (existing) return existing;
 
-  const now = new Date();
   const codeBase = storageUnit.name
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 24);
 
-  const locationId = await StorageLocations.insertAsync({
-    orgId,
+  const locationId = await callMethodAs(userId, "storageLocations.create", {
     storageUnitId: storageUnit._id,
     name: storageUnit.name,
     code: codeBase || "UNIT",
     imageUrl: "",
-    storedItems: [],
-    lastStocktakeAt: now,
-    createdAt: now,
-    updatedAt: now,
   });
 
   return await StorageLocations.findOneAsync(locationId);
 }
 
-async function syncProductTotal(productId, now) {
-  const records = await ProductRecords.find(
-    { productId },
-    { fields: { quantity: 1 } },
-  ).fetchAsync();
-  const totalQuantity = records.reduce((sum, record) => sum + (record.quantity || 0), 0);
-  await Products.updateAsync(productId, { $set: { totalQuantity, updatedAt: now } });
-  return totalQuantity;
+async function updateStorageUnitAs(userId, storageUnit, changes) {
+  await callMethodAs(userId, "storageUnits.update", {
+    storageUnitId: storageUnit._id,
+    floorMapId: storageUnit.floorMapId,
+    name: storageUnit.name,
+    type: storageUnit.type,
+    shape: storageUnit.shape,
+    offset: storageUnit.offset || { x: 0, y: 0 },
+    rotation: storageUnit.rotation || 0,
+    scale: storageUnit.scale || { x: 1, y: 1 },
+    ...(storageUnit.fill !== undefined ? { fill: storageUnit.fill } : {}),
+    ...changes,
+  });
 }
 
 async function confirmFloorMapAction(userId, action) {
@@ -713,6 +712,7 @@ async function confirmFloorMapAction(userId, action) {
       text: `Confirmed. I created floor map "${name}".`,
       url: `/floor-map/${floorMapId}`,
       openUrl: true,
+      floorMapId,
     };
   }
 
@@ -761,11 +761,8 @@ async function confirmFloorMapAction(userId, action) {
 
   if (action.type === ACTION_TYPES.MOVE_STORAGE_UNIT) {
     const storageUnit = await getTargetStorageUnit(orgId, action.payload?.unitName);
-    await StorageUnits.updateAsync(storageUnit._id, {
-      $set: {
-        offset: { x: Number(action.payload?.x), y: Number(action.payload?.y) },
-        updatedAt: new Date(),
-      },
+    await updateStorageUnitAs(userId, storageUnit, {
+      offset: { x: Number(action.payload?.x), y: Number(action.payload?.y) },
     });
     return {
       text: `Confirmed. I moved "${storageUnit.name}".`,
@@ -781,9 +778,7 @@ async function confirmFloorMapAction(userId, action) {
       x: bounds.width > 0 ? Number(action.payload?.width) / bounds.width : 1,
       y: bounds.height > 0 ? Number(action.payload?.height) / bounds.height : 1,
     };
-    await StorageUnits.updateAsync(storageUnit._id, {
-      $set: { scale, updatedAt: new Date() },
-    });
+    await updateStorageUnitAs(userId, storageUnit, { scale });
     return {
       text: `Confirmed. I resized "${storageUnit.name}".`,
       url: `/floor-map/${storageUnit.floorMapId}`,
@@ -802,26 +797,14 @@ async function confirmFloorMapAction(userId, action) {
     }
     const product = await findOneByName(Products, orgId, action.payload?.productName, "product");
     const storageUnit = await getTargetStorageUnit(orgId, action.payload?.unitName);
-    const location = await ensureStorageLocation(orgId, storageUnit);
-    const now = new Date();
-    const record = await ProductRecords.findOneAsync({
+    const location = await ensureStorageLocation(userId, orgId, storageUnit);
+    const { newTotal } = await callMethodAs(userId, "products.setStock", {
       productId: product._id,
       locationId: location._id,
+      quantity,
     });
-    if (record) {
-      await ProductRecords.updateAsync(record._id, { $set: { quantity, updatedAt: now } });
-    } else {
-      await ProductRecords.insertAsync({
-        productId: product._id,
-        locationId: location._id,
-        quantity,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
-    const totalQuantity = await syncProductTotal(product._id, now);
     return {
-      text: `Confirmed. I assigned ${quantity} of "${product.name}" to "${storageUnit.name}". Total stock is now ${totalQuantity}.`,
+      text: `Confirmed. I assigned ${quantity} of "${product.name}" to "${storageUnit.name}". Total stock is now ${newTotal}.`,
       url: `/locations/unit/${storageUnit._id}`,
       openUrl: true,
     };
@@ -932,6 +915,8 @@ const STOCKTAKE_RECOMMENDATION_REQUEST =
   /\b(?:what|which|where|show|list|tell|any|should|need)\b.*\bstock\s*take\b|\bstock\s*take\b.*\b(?:today|due|overdue|next|should|need)\b/i;
 const STORAGE_LOCATION_NAMING_REQUEST =
   /\b(?:help|suggest|name|naming|ideas|recommend)\b.*\bstorage\s+locations?\b|\bstorage\s+locations?\b.*\b(?:name|naming|ideas|suggest|recommend)\b/i;
+const ARCHIVE_SHOPPING_LIST_REQUEST =
+  /\b(?:archive|achive|achieve)\b.*\b(?:shopping|shoping|shaping)\s+lists?\b|\b(?:shopping|shoping|shaping)\s+lists?\b.*\b(?:archive|achive|achieve)\b/i;
 
 // True when the user's latest message is just a CONFIRM/yes replying to an
 // assistant message that asked them to confirm.
@@ -1048,6 +1033,17 @@ async function buildStorageLocationNamingHelp(userId) {
   };
 }
 
+async function buildArchiveShoppingListHelp(userId) {
+  await requirePermission(userId, "route:/lists");
+  return {
+    text: "Opening Lists. Choose the shopping list you want to archive, then use Archive on its detail page.",
+    url: "/lists",
+    openUrl: true,
+    suggestedActions: [],
+    actions: [],
+  };
+}
+
 // generateContent wants function declarations without our "type: function" wrapper.
 function toFunctionDeclarations(tools) {
   return tools.map(({ name, description, parameters }) => ({
@@ -1109,6 +1105,13 @@ Meteor.methods({
     if (STORAGE_LOCATION_NAMING_REQUEST.test(input)) {
       return {
         ...(await buildStorageLocationNamingHelp(this.userId)),
+        interactionId: previousInteractionId,
+      };
+    }
+
+    if (ARCHIVE_SHOPPING_LIST_REQUEST.test(input)) {
+      return {
+        ...(await buildArchiveShoppingListHelp(this.userId)),
         interactionId: previousInteractionId,
       };
     }

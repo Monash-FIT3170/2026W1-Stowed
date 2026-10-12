@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
+import { hasClientPermission } from "../../api/userMethods";
+import { useAuth } from "../../api/useAuth";
 import "./Chatbot.css";
 
 const SUGGESTED_PROMPTS = [
@@ -55,6 +57,22 @@ const NAVIGATION_COMMANDS = [
     label: "Settings",
     aliases: ["settings", "setting"],
   },
+  {
+    route: "/register",
+    label: "Create Account",
+    aliases: [
+      "create account",
+      "create an account",
+      "add account",
+      "new account",
+      "add user",
+      "new user",
+      "add team member",
+      "create team member",
+    ],
+    direct: true,
+    permission: "create-users",
+  },
 ];
 
 const NAVIGATION_VERBS = [
@@ -67,6 +85,8 @@ const NAVIGATION_VERBS = [
   "redirect to",
   "bring me to",
 ];
+const FLOOR_MAP_ACTION_HINTS =
+  /\b(low\s*stock|low-stock|highlight|editor|edit|save layout|save changes|layout changes)\b/i;
 
 function normalizeCommand(input) {
   return input
@@ -88,10 +108,19 @@ export function findNavigationCommand(input) {
   const hasNavigationVerb = NAVIGATION_VERBS.some(
     (verb) => normalized === verb || normalized.startsWith(`${verb} `),
   );
-  if (!hasNavigationVerb) return null;
+  if (!hasNavigationVerb) {
+    return NAVIGATION_COMMANDS.find(
+      (item) =>
+        item.direct &&
+        item.aliases.some((alias) => {
+          const normalizedAlias = normalizeCommand(alias);
+          return normalized === normalizedAlias || normalized.startsWith(`${normalizedAlias} `);
+        }),
+    );
+  }
 
-  return NAVIGATION_COMMANDS.find((command) =>
-    command.aliases.some((alias) => {
+  const command = NAVIGATION_COMMANDS.find((item) =>
+    item.aliases.some((alias) => {
       const normalizedAlias = normalizeCommand(alias);
       return (
         normalized === normalizedAlias ||
@@ -100,15 +129,18 @@ export function findNavigationCommand(input) {
       );
     }),
   );
+  if (command?.route === "/floor-map" && FLOOR_MAP_ACTION_HINTS.test(input)) return null;
+  return command;
 }
 
 export function Chatbot() {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hi, I can help with inventory, stocktakes, locations, lists, and QR codes.",
+      content: "Hi, I can help you manage your Stowed workspace.",
     },
   ]);
   const [draft, setDraft] = useState("");
@@ -144,6 +176,21 @@ export function Chatbot() {
 
     const navigationCommand = findNavigationCommand(content);
     if (navigationCommand) {
+      if (
+        navigationCommand.permission &&
+        !hasClientPermission(role, navigationCommand.permission)
+      ) {
+        setPendingAction(null);
+        setMessages([
+          ...nextMessages,
+          {
+            role: "assistant",
+            content: "Only an owner can create accounts for this organisation.",
+          },
+        ]);
+        inputRef.current?.focus();
+        return;
+      }
       navigate(navigationCommand.route);
       setPendingAction(null);
       setMessages([
