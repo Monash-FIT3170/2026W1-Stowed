@@ -3,6 +3,10 @@
 /* A column: the nav pins to the top and the routed page grows into the rest. */
 
 .customer-shell {
+  /* Height of the sticky CustomerNav, so anything else that sticks while
+     scrolling (the product gallery) can sit below it rather than under it. */
+  --customer-nav-height: 60px;
+
   display: flex;
   flex-direction: column;
   min-height: 100vh;

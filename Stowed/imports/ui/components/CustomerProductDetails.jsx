@@ -91,15 +91,21 @@ export function CustomerProductDetails({ product, mapData }) {
             <ul className="customer-detail-locations">
               {product.locations.map((loc, index) => (
                 <li key={loc.label} className="customer-detail-location">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="customer-detail-pin">
-                    <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
-                  </svg>
-                  <span className="customer-detail-location-label">{loc.label}</span>
-                  {/* Locations arrive fullest first, so the first is the
-                      likeliest place to find one on the shelf. */}
-                  {index === 0 && product.locations.length > 1 && (
-                    <span className="customer-detail-location-tag">Best place to look</span>
-                  )}
+                  {/* Same summary row the mapped locations use, so the plain
+                      list gets the same padding and alignment. */}
+                  <div className="customer-detail-location-summary">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="customer-detail-pin">
+                      <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
+                    </svg>
+                    <span className="customer-detail-location-text">
+                      <span className="customer-detail-location-label">{loc.label}</span>
+                    </span>
+                    {/* Locations arrive fullest first, so the first is the
+                        likeliest place to find one on the shelf. */}
+                    {index === 0 && product.locations.length > 1 && (
+                      <span className="customer-detail-location-tag">Best place to look</span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
