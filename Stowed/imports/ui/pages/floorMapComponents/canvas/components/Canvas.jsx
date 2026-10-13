@@ -295,7 +295,7 @@ export const Canvas = forwardRef(function Canvas(
               getGroupRef={getGroupRef}
               onUnitClick={
                 publicView
-                  ? () => {}
+                  ? (unit) => setSelectedStorageUnitId?.(unit._id || unit.id)
                   : (unit, e) => {
                       const unitId = unit._id || unit.id;
                       const isOnlySelectedUnit =
