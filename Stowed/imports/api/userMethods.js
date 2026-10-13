@@ -33,6 +33,7 @@ const PERMISSIONS = {
   "locations.manage": ROLES.ADMIN, // sites, floorMaps, storageUnits, storageLocations
   "locations.bulkGenerateCodes": ROLES.ADMIN,
   "settings.manage": ROLES.ADMIN,
+  "floorMapRoutes.generate": ROLES.STANDARD, // plan a picking route on a floor map
   "chatbot.chat": ROLES.STANDARD,
 
   // Routes

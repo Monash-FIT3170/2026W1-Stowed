@@ -4,14 +4,24 @@ import { CANVAS_CONFIG } from "./canvas/CanvasConfig";
 
 /**
  * Modal overlay for editing floor map properties (currently just its dimensions).
+ * In read-only mode the values are shown but cannot be changed or saved.
  *
  * @param {{ width: number, height: number }} floorSize - Current floor dimensions in pixels
  * @param {(config: { floorSize }) => boolean} onSave - Commit callback, returns false to keep the modal open
  * @param {() => void} onClose - Cancel / close callback
+ * @param {boolean} [isReadOnly=false] - Show the settings without allowing changes
+ * @param {string} [readOnlyMessage] - Explains why the settings can't be changed right now
  *
  * @returns {JSX.Element} Modal UI
  */
-export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose }) {
+export function FloorMapSettingsModal({
+  floorSize,
+  gridInterval,
+  onSave,
+  onClose,
+  isReadOnly = false,
+  readOnlyMessage,
+}) {
   const toMeters = (px) => {
     const m = Number(px) / CANVAS_CONFIG.PIXELS_PER_METER;
     return m > 0 && isFinite(m) ? m : 10;
@@ -56,6 +66,8 @@ export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose
           Floor Map Settings
         </h3>
 
+        {isReadOnly && <p style={modalStyles.helper}>{readOnlyMessage}</p>}
+
         {/* FLOOR DIMENSIONS */}
         <div style={modalStyles.field}>
           <label htmlFor="floor-map-width" style={modalStyles.label}>
@@ -70,6 +82,7 @@ export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose
             min={1}
             value={draft.widthMeters}
             onChange={handleChange}
+            disabled={isReadOnly}
           />
         </div>
 
@@ -85,17 +98,20 @@ export function FloorMapSettingsModal({ floorSize, gridInterval, onSave, onClose
             min={1}
             value={draft.heightMeters}
             onChange={handleChange}
+            disabled={isReadOnly}
           />
         </div>
 
         {/* ACTIONS */}
         <div style={modalStyles.actions}>
           <button onClick={onClose} style={modalStyles.buttonSecondary}>
-            Cancel
+            {isReadOnly ? "Close" : "Cancel"}
           </button>
-          <button onClick={handleSave} style={modalStyles.buttonPrimary}>
-            Save
-          </button>
+          {!isReadOnly && (
+            <button onClick={handleSave} style={modalStyles.buttonPrimary}>
+              Save
+            </button>
+          )}
         </div>
       </div>
     </div>

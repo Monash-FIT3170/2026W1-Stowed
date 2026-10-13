@@ -8,6 +8,7 @@ import {
   StorageUnitSchema,
   UnitShapeSchema,
   StorageLocationSchema,
+  FloorMapRouteSchema,
 } from "./schemas";
 
 /**
@@ -35,8 +36,14 @@ export const MapShapes = new Mongo.Collection("mapShapes");
  */
 export const StorageLocations = new Mongo.Collection("storageLocations");
 
+/**
+ * Stores the walkway route graph (nodes and links) for a FloorMap - one document per FloorMap.
+ */
+export const FloorMapRoutes = new Mongo.Collection("floorMapRoutes");
+
 Sites.attachSchema(SiteSchema);
 FloorMaps.attachSchema(FloorMapSchema);
 StorageUnits.attachSchema(StorageUnitSchema);
 MapShapes.attachSchema(UnitShapeSchema);
 StorageLocations.attachSchema(StorageLocationSchema);
+FloorMapRoutes.attachSchema(FloorMapRouteSchema);

@@ -1,14 +1,17 @@
 import { useRef, useEffect, useReducer, forwardRef, useImperativeHandle } from "react";
-import { Stage } from "react-konva";
+import { Stage, Layer, Rect, Circle, Group, Text, Line } from "react-konva";
 import Konva from "konva";
 import { useTracker } from "meteor/react-meteor-data";
 import { Meteor } from "meteor/meteor";
 
-import { useEditor } from "../editor/EditorContext";
+import { CANVAS_MODES, useEditor } from "../editor/EditorContext";
 import { canvasReducer, initialCanvasState } from "../editor/EditorReducer";
 import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
+import { useRouteHandlers } from "../hooks/UseRouteHandlers";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { COLOURS } from "../../FloorMapStyles";
+import { getStartingPoint } from "../routePoint";
 import {
   StorageLocations,
   StorageUnits,
@@ -22,6 +25,7 @@ import { TransformerLayer } from "./layers/TransformerLayer";
 import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
+import { RouteLayer } from "./layers/RouteLayer";
 import { HighlightLayer } from "./layers/HighlightLayer";
 import { FloorMapIcon } from "../../FloorMapIcon";
 
@@ -30,16 +34,29 @@ if (typeof window !== "undefined") Konva.pixelRatio = Math.min(window.devicePixe
 export const Canvas = forwardRef(function Canvas(
   {
     style,
-    isCanvasEditMode,
     selectedStorageUnitId,
     setSelectedStorageUnitId,
     setTooltip,
     publicView = false,
     highlightedUnitId,
+    startingPoint = null,
+    plannedRoute = null,
+    isSelectingStart = false,
+    onStartingPointSelect,
+    fitInsetRight = 0,
   },
   ref,
 ) {
-  const { units, commitUnits, floorSize, canvasSettings } = useEditor();
+  const {
+    units,
+    commitUnits,
+    floorSize,
+    canvasSettings,
+    canvasMode,
+    isCanvasEditMode,
+    walkwayNodes,
+    walkwayLinks,
+  } = useEditor();
 
   const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
     if (publicView) return { storageLocations: [], storageUnits: [], floorMaps: [], sites: [] };
@@ -55,10 +72,11 @@ export const Canvas = forwardRef(function Canvas(
 
   const width = floorSize.width;
   const height = floorSize.height;
+  const isPickingStart = isSelectingStart && canvasMode === CANVAS_MODES.VIEW;
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
   const snapInterval = canvasSettings?.snapInterval ?? CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL;
-  const showGrid = isCanvasEditMode ? (canvasSettings?.showGrid ?? true) : false;
+  const showGrid = canvasMode !== CANVAS_MODES.VIEW ? (canvasSettings?.showGrid ?? true) : false;
   const snapEnabled = canvasSettings?.snapToGrid ?? true;
   const gridSizePx = gridInterval * CANVAS_CONFIG.PIXELS_PER_METER;
   const snapSizePx = snapInterval * CANVAS_CONFIG.PIXELS_PER_METER;
@@ -112,13 +130,37 @@ export const Canvas = forwardRef(function Canvas(
     wrapperRef,
     clipboard,
     isCanvasEditMode,
+    fitInsetRight,
   });
+
+  const {
+    handlesClicks: routeHandlesClicks,
+    cursor: routeCursor,
+    previewNode,
+    pendingLinkNodeId,
+    selectedNodeId,
+    unavailableNodeIds,
+    linkPreviewEnd,
+    junctionPreview,
+    deleteTarget,
+    handleRouteMouseMove,
+    handleRouteMouseLeave,
+    handleRouteClick,
+  } = useRouteHandlers({ stageRef, snapEnabled, snapSizePx, width, height });
 
   useEffect(() => {
     if (!isCanvasEditMode) {
       dispatch({ type: CANVAS_ACTIONS.DESELECT_ALL });
     }
   }, [isCanvasEditMode]);
+
+  // Fit the map to the screen whenever the user switches mode
+  const prevCanvasModeRef = useRef(canvasMode);
+  useEffect(() => {
+    if (prevCanvasModeRef.current === canvasMode) return;
+    prevCanvasModeRef.current = canvasMode;
+    handleFitToScreen();
+  }, [canvasMode, handleFitToScreen]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -184,7 +226,8 @@ export const Canvas = forwardRef(function Canvas(
 
   function handleTouchEnd() {
     pinchDistanceRef.current = null;
-    stageRef.current?.draggable(true);
+    // Panning stays off while a starting point is being picked
+    stageRef.current?.draggable(!isPickingStart);
   }
 
   function handleStageActivate(event) {
@@ -253,6 +296,15 @@ export const Canvas = forwardRef(function Canvas(
     },
   }));
 
+  const handleMapClick = (event) => {
+    if (!isPickingStart) {
+      handleStageActivate(event);
+      return;
+    }
+    const point = getStartingPoint(stageRef.current, width, height);
+    if (point) onStartingPointSelect?.(point);
+  };
+
   return (
     <div
       ref={wrapperRef}
@@ -278,13 +330,19 @@ export const Canvas = forwardRef(function Canvas(
             onWheel={handleWheel}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={style}
-            draggable
+            style={
+              routeCursor
+                ? { ...style, cursor: routeCursor }
+                : { ...style, cursor: isPickingStart ? "crosshair" : style?.cursor }
+            }
+            draggable={!isPickingStart}
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
-            onClick={handleStageActivate}
-            onTap={handleStageActivate}
+            onClick={routeHandlesClicks ? handleRouteClick : handleMapClick}
+            onMouseMove={handleRouteMouseMove}
+            onMouseLeave={handleRouteMouseLeave}
+            onTap={handleMapClick}
           >
             <GridLayer width={width} height={height} gridSizePx={gridSizePx} showGrid={showGrid} />
 
@@ -307,6 +365,9 @@ export const Canvas = forwardRef(function Canvas(
               onDragMove={handleDragMove}
               onDragEnd={handleDragEnd}
               onTransformEnd={handleTransformEnd}
+              opacity={
+                canvasMode === CANVAS_MODES.ROUTE ? CANVAS_CONFIG.ROUTE_MODE_UNIT_OPACITY : 1
+              }
             />
 
             <TransformerLayer selectedIds={selectedIds} getGroupRef={getGroupRef} />
@@ -320,26 +381,127 @@ export const Canvas = forwardRef(function Canvas(
               snapSizePx={snapSizePx}
             />
 
-            {!publicView && (
-              <LowStockLayer
-                units={units}
-                isCanvasEditMode={isCanvasEditMode}
-                onHover={(data) => setTooltip?.(data)}
-                onHoverEnd={() => setTooltip?.(null)}
-                onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
-                selectedStorageUnitId={selectedStorageUnitId}
-              />
+            {canvasMode === CANVAS_MODES.VIEW && (
+              <>
+                {!publicView && (
+                  <LowStockLayer
+                    units={units}
+                    isCanvasEditMode={isCanvasEditMode}
+                    onHover={(data) => setTooltip?.(data)}
+                    onHoverEnd={() => setTooltip?.(null)}
+                    onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+                    selectedStorageUnitId={selectedStorageUnitId}
+                  />
+                )}
+
+                {!publicView && (
+                  <StocktakeAlertLayer
+                    units={units}
+                    storageLocations={storageLocations}
+                    storageUnits={storageUnits}
+                    floorMaps={floorMaps}
+                    sites={sites}
+                    isCanvasEditMode={isCanvasEditMode}
+                    onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+                  />
+                )}
+
+                {!isCanvasEditMode && (
+                  <Layer>
+                    {/* Intercept shelf/alert clicks only while choosing a start. */}
+                    {isPickingStart && (
+                      <Rect x={0} y={0} width={width} height={height} fill="transparent" />
+                    )}
+                    {/* Planned route: the path to walk, with numbered pick stops */}
+                    {plannedRoute && (
+                      <Group listening={false}>
+                        <Line
+                          points={plannedRoute.path.flatMap((p) => [
+                            p.x * CANVAS_CONFIG.PIXELS_PER_METER,
+                            p.y * CANVAS_CONFIG.PIXELS_PER_METER,
+                          ])}
+                          stroke={COLOURS.ACCENT}
+                          strokeWidth={4}
+                          strokeScaleEnabled={false}
+                          lineCap="round"
+                          lineJoin="round"
+                          dash={[10, 6]}
+                        />
+                        {plannedRoute.stops.map((stop, index) => (
+                          <Group
+                            key={stop.nodeId}
+                            x={stop.x * CANVAS_CONFIG.PIXELS_PER_METER}
+                            y={stop.y * CANVAS_CONFIG.PIXELS_PER_METER}
+                            scaleX={1 / scale}
+                            scaleY={1 / scale}
+                          >
+                            <Circle
+                              radius={11}
+                              fill="white"
+                              stroke={COLOURS.ACCENT}
+                              strokeWidth={3}
+                            />
+                            <Text
+                              x={-11}
+                              y={-6}
+                              width={22}
+                              text={String(index + 1)}
+                              align="center"
+                              fontSize={12}
+                              fontStyle="bold"
+                              fill={COLOURS.ACCENT}
+                            />
+                          </Group>
+                        ))}
+                      </Group>
+                    )}
+                    {startingPoint && (
+                      <Group
+                        x={startingPoint.x * CANVAS_CONFIG.PIXELS_PER_METER}
+                        y={startingPoint.y * CANVAS_CONFIG.PIXELS_PER_METER}
+                        scaleX={1 / scale}
+                        scaleY={1 / scale}
+                        listening={false}
+                      >
+                        <Circle radius={12} fill="#b5532a" stroke="white" strokeWidth={3} />
+                        <Circle radius={3} fill="white" />
+                        <Rect
+                          x={-23}
+                          y={17}
+                          width={46}
+                          height={23}
+                          fill="#b5532a"
+                          cornerRadius={5}
+                        />
+                        <Text
+                          x={-23}
+                          y={22}
+                          width={46}
+                          text="Start"
+                          align="center"
+                          fontSize={12}
+                          fontStyle="bold"
+                          fill="white"
+                        />
+                      </Group>
+                    )}
+                  </Layer>
+                )}
+              </>
             )}
 
-            {!publicView && (
-              <StocktakeAlertLayer
-                units={units}
-                storageLocations={storageLocations}
-                storageUnits={storageUnits}
-                floorMaps={floorMaps}
-                sites={sites}
-                isCanvasEditMode={isCanvasEditMode}
-                onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+            {canvasMode === CANVAS_MODES.ROUTE && (
+              <RouteLayer
+                nodes={walkwayNodes}
+                links={walkwayLinks}
+                previewNode={previewNode}
+                pendingLinkNodeId={pendingLinkNodeId}
+                selectedNodeId={selectedNodeId}
+                unavailableNodeIds={unavailableNodeIds}
+                linkPreviewEnd={linkPreviewEnd}
+                junctionPreview={junctionPreview}
+                deleteTarget={deleteTarget}
+                scale={scale}
               />
             )}
 

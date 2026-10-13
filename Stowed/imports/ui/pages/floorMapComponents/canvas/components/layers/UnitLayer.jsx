@@ -12,6 +12,8 @@ import { StorageUnit } from "../units/StorageUnit";
  * @param {(e, id: string) => void}                      onDragMove
  * @param {(e, id: string) => void}                      onDragEnd
  * @param {(e, unit) => void}                            onTransformEnd
+ * @param {number}                                       [opacity=1] - Opacity of the whole layer
+ * @param {boolean}                                      [interactive=true] - Whether units respond to pointer events
  *
  * @returns {JSX.Element}
  */
@@ -24,10 +26,11 @@ export function UnitLayer({
   onDragMove,
   onDragEnd,
   onTransformEnd,
+  opacity = 1,
   interactive = true,
 }) {
   return (
-    <Layer listening={interactive}>
+    <Layer opacity={opacity} listening={interactive}>
       {units.map((unit) => {
         const ref = getGroupRef(unit.id);
         return (
