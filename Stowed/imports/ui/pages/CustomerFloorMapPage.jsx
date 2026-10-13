@@ -1,15 +1,52 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites } from "/imports/api/locations/collections";
+import { FloorMaps, Sites, StorageUnits } from "/imports/api/locations/collections";
 import { getCustomerOrgCode } from "../customerSession";
 import { EditorProvider } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { MapSelectors, MapState } from "./floorMapComponents/MapControls";
 import { firstMapForSite, publicMaps, selectAvailableMap } from "./floorMapComponents/mapSelection";
+import { CustomerUnitPanel } from "./floorMapComponents/CustomerUnitPanel";
+import { CustomerMapSearch } from "./floorMapComponents/CustomerMapSearch";
+import { buildPlacements } from "./floorMapComponents/customerMapData";
 import "./FloorMapPage.css";
+import "./CustomerFloorMapPage.css";
 
 const STORAGE_KEY = "customerFloorMapId";
+
+/** How long the accent ring stays on a unit after "Show on map". */
+const HIGHLIGHT_MS = 2600;
+
+/**
+ * The shopper catalogue: products with the units and shelves they sit on, and
+ * a stock status in place of quantities. Fetched once - a shopper does not
+ * need the map to update live.
+ */
+function useCustomerCatalogue(orgCode) {
+  const [products, setProducts] = useState([]);
+  const [loadState, setLoadState] = useState("loading");
+
+  useEffect(() => {
+    if (!orgCode) return undefined;
+    let current = true;
+    Meteor.callAsync("customer.products.list", { orgCode })
+      .then((result) => {
+        if (!current) return;
+        setProducts(result);
+        setLoadState("ready");
+      })
+      .catch((err) => {
+        console.error("Failed to load the catalogue:", err);
+        if (current) setLoadState("error");
+      });
+    return () => {
+      current = false;
+    };
+  }, [orgCode]);
+
+  return { products, loadState };
+}
 
 export function CustomerFloorMapPage() {
   const orgCode = getCustomerOrgCode();
@@ -17,11 +54,22 @@ export function CustomerFloorMapPage() {
     window.localStorage.getItem(STORAGE_KEY),
   );
 
-  const { sites, floorMaps, locationsReady } = useTracker(() => {
+  const canvasRef = useRef(null);
+  const highlightTimer = useRef(null);
+  const [selectedUnitId, setSelectedUnitId] = useState(null);
+  const [highlightedUnitId, setHighlightedUnitId] = useState(null);
+  const [focusShelfName, setFocusShelfName] = useState(null);
+  const [focusNonce, setFocusNonce] = useState(0);
+
+  const { products, loadState } = useCustomerCatalogue(orgCode);
+  const placements = useMemo(() => buildPlacements(products), [products]);
+
+  const { sites, floorMaps, storageUnits, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.publicFloorMaps", orgCode ?? "");
     return {
       sites: Sites.find({}, { sort: { createdAt: 1 } }).fetch(),
       floorMaps: FloorMaps.find({}, { sort: { createdAt: 1 } }).fetch(),
+      storageUnits: StorageUnits.find({}, { fields: { floorMapId: 1, name: 1 } }).fetch(),
       locationsReady: handle.ready(),
     };
   }, [orgCode]);
@@ -31,16 +79,44 @@ export function CustomerFloorMapPage() {
   const currentFloorMap = selectAvailableMap(visibleMaps, selectedFloorMapId);
   const currentSite = visibleSites.find((site) => site._id === currentFloorMap?.siteId);
 
+  const currentMapId = currentFloorMap?._id;
+  const unitsOnMap = useMemo(
+    () => storageUnits.filter((unit) => unit.floorMapId === currentMapId),
+    [storageUnits, currentMapId],
+  );
+  const visibleUnitIds = useMemo(() => new Set(unitsOnMap.map((unit) => unit._id)), [unitsOnMap]);
+  const selectedUnit = unitsOnMap.find((unit) => unit._id === selectedUnitId) ?? null;
+
   useEffect(() => {
     if (locationsReady && currentFloorMap && currentFloorMap._id !== selectedFloorMapId) {
       window.localStorage.setItem(STORAGE_KEY, currentFloorMap._id);
     }
   }, [locationsReady, currentFloorMap, selectedFloorMapId]);
 
+  useEffect(() => () => clearTimeout(highlightTimer.current), []);
+
   function chooseMap(mapId) {
     if (!visibleMaps.some((map) => map._id === mapId)) return;
     setSelectedFloorMapId(mapId);
+    setSelectedUnitId(null);
+    setHighlightedUnitId(null);
     window.localStorage.setItem(STORAGE_KEY, mapId);
+  }
+
+  function openUnit(unitId, shelfName = null) {
+    setSelectedUnitId(unitId);
+    setFocusShelfName(shelfName);
+    setFocusNonce((n) => n + 1);
+  }
+
+  /** Pan to the unit holding a search hit, flash it, and open its shelf. */
+  function handleShowOnMap(placement) {
+    canvasRef.current?.focusUnit(placement.unitId);
+    openUnit(placement.unitId, placement.shelfName);
+
+    setHighlightedUnitId(placement.unitId);
+    clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightedUnitId(null), HIGHLIGHT_MS);
   }
 
   return (
@@ -53,38 +129,75 @@ export function CustomerFloorMapPage() {
           <p>Find where products are located.</p>
         </div>
         {locationsReady && currentFloorMap && (
-          <MapSelectors
-            context="public"
-            sites={visibleSites}
-            floorMaps={visibleMaps}
-            currentSite={currentSite}
-            currentFloorMap={currentFloorMap}
-            onSiteChange={(siteId) => {
-              const map = firstMapForSite(visibleMaps, siteId);
-              if (map) chooseMap(map._id);
-            }}
-            onFloorMapChange={chooseMap}
-          />
+          <div className="cfm-heading-tools">
+            <CustomerMapSearch
+              products={products}
+              placements={placements}
+              visibleUnitIds={visibleUnitIds}
+              loading={loadState === "loading"}
+              loadFailed={loadState === "error"}
+              onShowOnMap={handleShowOnMap}
+            />
+            <MapSelectors
+              context="public"
+              sites={visibleSites}
+              floorMaps={visibleMaps}
+              currentSite={currentSite}
+              currentFloorMap={currentFloorMap}
+              onSiteChange={(siteId) => {
+                const map = firstMapForSite(visibleMaps, siteId);
+                if (map) chooseMap(map._id);
+              }}
+              onFloorMapChange={chooseMap}
+            />
+          </div>
         )}
       </header>
-      <div className="floor-map-viewport customer-floor-map-viewport">
-        {!locationsReady ? (
-          <MapState loading title="Loading floor maps…" />
-        ) : !currentFloorMap ? (
-          <MapState
-            title="No public floor maps yet"
-            description="There is no map available for this location right now."
+
+      <div className="cfm-body">
+        <div className="floor-map-viewport customer-floor-map-viewport">
+          {!locationsReady ? (
+            <MapState loading title="Loading floor maps…" />
+          ) : !currentFloorMap ? (
+            <MapState
+              title="No public floor maps yet"
+              description="There is no map available for this location right now."
+            />
+          ) : (
+            <>
+              <EditorProvider
+                key={currentFloorMap._id}
+                floorMapId={currentFloorMap._id}
+                publicOrgCode={orgCode}
+                isCanvasEditMode={false}
+                setCanvasEditMode={() => {}}
+              >
+                <Canvas
+                  ref={canvasRef}
+                  isCanvasEditMode={false}
+                  publicView
+                  setSelectedStorageUnitId={(unitId) => openUnit(unitId)}
+                  highlightedUnitId={highlightedUnitId}
+                />
+              </EditorProvider>
+              {!selectedUnit && (
+                <p className="cfm-hint">Tap a storage unit to see what&apos;s inside.</p>
+              )}
+            </>
+          )}
+        </div>
+
+        {selectedUnit && (
+          <CustomerUnitPanel
+            unitId={selectedUnit._id}
+            unitName={selectedUnit.name}
+            placements={placements}
+            loading={loadState === "loading"}
+            loadFailed={loadState === "error"}
+            focusShelfName={focusShelfName}
+            focusNonce={focusNonce}
+            onClose={() => setSelectedUnitId(null)}
           />
-        ) : (
-          <EditorProvider
-            key={currentFloorMap._id}
-            floorMapId={currentFloorMap._id}
-            publicOrgCode={orgCode}
-            isCanvasEditMode={false}
-            setCanvasEditMode={() => {}}
-          >
-            <Canvas isCanvasEditMode={false} publicView />
-          </EditorProvider>
         )}
       </div>
     </section>
