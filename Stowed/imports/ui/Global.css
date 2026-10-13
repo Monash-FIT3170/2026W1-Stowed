@@ -611,6 +611,10 @@ select.form-input.selected {
   max-width: 420px;
   width: calc(100% - 48px);
   box-shadow: 0 10px 30px rgba(26, 26, 26, 0.12);
+  /* Tall modals scroll inside themselves instead of running off a short
+     screen (phone landscape, small laptop). No effect when they fit. */
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
 }
 
 .modal-title {
@@ -644,6 +648,14 @@ select.form-input.selected {
   display: inline-block;
 }
 
+/* -- Tablet/phone: modals sit above the floating dock (z-index 1200) -- */
+
+@media (max-width: 1024px) {
+  .modal-overlay {
+    z-index: 1300;
+  }
+}
+
 /* -- Phone: tighter page gutters so headers align with page content -- */
 
 @media (max-width: 768px) {
@@ -651,10 +663,28 @@ select.form-input.selected {
     padding: 16px 16px 4px;
   }
 
+  /* Keeps a gutter around modals whose inline width is 100% */
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .create-product-footer {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
   /* compact action button so it fits beside the title on phones */
   .header-top .btn-primary {
     padding: 7px 14px;
     font-size: 12px;
+  }
+}
+
+/* -- Phone: paired form fields stack instead of squeezing side by side -- */
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }
 

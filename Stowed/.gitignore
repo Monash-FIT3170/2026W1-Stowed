@@ -10,3 +10,9 @@ _build
 graphify-out/
 CLAUDE.md
 .claude/
+
+# Meteor custom local directory (METEOR_LOCAL_DIR)
+/Users/chuanhan/Library/Caches/Stowed/meteor-ui-check
+_build-meteor-ui-check
+*/build-assets-meteor-ui-check
+*/build-chunks-meteor-ui-check

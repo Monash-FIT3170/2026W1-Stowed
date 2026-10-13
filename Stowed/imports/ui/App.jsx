@@ -32,10 +32,12 @@ import { CustomerProductSearchPage } from "./pages/CustomerProductSearchPage";
 import { CustomerProductDetailPage } from "./pages/CustomerProductDetailPage";
 import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
 import { CustomerFloorMapPage } from "./pages/CustomerFloorMapPage";
+import { HomePage } from "./pages/HomePage";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { SettingsPage } from "./pages/SettingsPage";
+import { Tutorial } from "./tutorial/Tutorial";
 
 const LocationsPage = lazy(() =>
   import("./pages/LocationsPage").then((module) => ({
@@ -117,7 +119,7 @@ export function App() {
               />
               <Route
                 path="/"
-                element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />}
+                element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <HomePage />}
               />
               <Route
                 path="/dashboard"
@@ -403,6 +405,9 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          {/* After <main>, not between it and the rail: Sidebar.css offsets the
+              page with `.sidebar + .app-main`, which needs the two adjacent. */}
+          {isLoggedIn && <Tutorial userId={user._id} />}
           {isLoggedIn && hasClientPermission(role, "chatbot.chat") && <Chatbot />}
         </div>
       </BrowserRouter>

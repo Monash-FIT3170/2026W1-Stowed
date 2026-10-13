@@ -493,9 +493,14 @@
   /* .sidebar-top / .sidebar-nav are already display:contents (set once,
      for both orientations, in the general mobile block above). */
 
+  /* position: static hands the flyout menus' positioning up to .sidebar
+     itself (fixed, centred on screen), so every menu centres on the rail
+     instead of on its own button — a menu anchored to the top button ran
+     off the top of a short landscape phone screen. */
   .sidebar-section {
     flex: 0 0 auto;
     width: 100%;
+    position: static;
   }
 
   /* Text labels don't fit a 52px-wide rail — swap to a single symbol. */

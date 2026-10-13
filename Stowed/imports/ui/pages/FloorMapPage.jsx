@@ -8,8 +8,10 @@ import { FloorMaps, Sites, MapShapes } from "/imports/api/locations/collections"
 import { EditorProvider, useEditor } from "./floorMapComponents/canvas/editor/EditorContext";
 import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
+import { DeleteShapeModal } from "./floorMapComponents/DeleteShapeModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
+import { DeleteUnitModal } from "./floorMapComponents/DeleteUnitModal";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
@@ -24,7 +26,19 @@ import "./FloorMapPage.css";
 function MapTooltip({ tooltip }) {
   if (!tooltip) return null;
   const items = tooltip.items ?? [];
-  const lowItems = items.filter((item) => item.isLow);
+  // One entry per product, with the unit's locations listed under it, so a
+  // product low on two shelves of this unit is not shown twice.
+  const lowByProduct = new Map();
+  for (const item of items) {
+    if (!item.isLow) continue;
+    const entry = lowByProduct.get(item.product._id) ?? {
+      product: item.product,
+      locations: new Map(),
+    };
+    entry.locations.set(item.locationId, { name: item.locationName, quantity: item.quantity });
+    lowByProduct.set(item.product._id, entry);
+  }
+  const lowItems = [...lowByProduct.values()];
   const tone = lowItems.length ? "low" : items.length ? "ok" : "empty";
   return (
     <div
@@ -39,10 +53,14 @@ function MapTooltip({ tooltip }) {
       {lowItems.length ? (
         <>
           <span>Low stock products</span>
-          {lowItems.map((item) => (
-            <div key={item.locationId ?? item.product._id} className="floor-map-tooltip-item">
-              {item.product.name} · {item.quantity} left
-              <small>{item.locationName}</small>
+          {lowItems.map(({ product, locations }) => (
+            <div key={product._id} className="floor-map-tooltip-item">
+              {product.name} · {product.totalQuantity} left overall
+              {[...locations].map(([id, location]) => (
+                <small key={id}>
+                  {location.name}: {location.quantity} left
+                </small>
+              ))}
             </div>
           ))}
         </>
@@ -258,6 +276,8 @@ function FloorMapPageInner() {
   const [editingShape, setEditingShape] = useState(null);
   const [changingShape, setChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units");
+  const savingDialogRef = useRef(null);
+  const [isSavingLayout, setIsSavingLayout] = useState(false);
 
   const {
     activeTool,
@@ -279,7 +299,14 @@ function FloorMapPageInner() {
     setSelectedUnit,
     lowStockByUnitId,
     handleDeleteSelectedUnit,
+    unitPendingDelete,
+    setUnitPendingDelete,
+    unitIdsStagedForRemoval,
+    handleConfirmDeleteWithReassign,
     handleDeleteShape,
+    shapePendingDelete,
+    setShapePendingDelete,
+    handleConfirmDeleteShapeWithReassign,
     handleChangeShape,
   } = useEditor();
 
@@ -312,6 +339,36 @@ function FloorMapPageInner() {
   useEffect(() => {
     if (mobilePanelOpen) panelRef.current?.querySelector("button")?.focus();
   }, [mobilePanelOpen]);
+
+  /**
+   * Saves the layout behind a blocking "Saving layout…" dialog, so nothing can
+   * be edited mid-save. With leaveEditMode, a successful save also drops back
+   * to view mode; a failed one stays in edit mode so nothing is lost.
+   */
+  async function saveLayout(leaveEditMode = false) {
+    if (!canManage || isSavingLayout || savingDialogRef.current?.open) return;
+
+    setIsSavingLayout(true);
+    savingDialogRef.current.showModal();
+
+    try {
+      const saved = await handleSaveLayout({ showSuccessAlert: !leaveEditMode });
+      if (!saved) return;
+
+      if (leaveEditMode) {
+        selectUnit(null);
+        setMobilePanelOpen(false);
+        setTooltip(null);
+        setCanvasEditMode(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert(error.reason || "Failed to save layout. Please try again.");
+    } finally {
+      savingDialogRef.current.close();
+      setIsSavingLayout(false);
+    }
+  }
 
   useEffect(() => {
     if (stockPanelOpen && isMobile)
@@ -385,16 +442,16 @@ function FloorMapPageInner() {
   }
 
   function toggleMode() {
-    if (!canManage) return;
+    if (!canManage || isSavingLayout) return;
     if (isCanvasEditMode) {
-      selectUnit(null);
-      setMobilePanelOpen(false);
-      setTooltip(null);
-    } else if (isMobile) {
+      saveLayout(true);
+      return;
+    }
+    if (isMobile) {
       setMobileExpanded(false);
       setMobilePanelOpen(true);
     }
-    setCanvasEditMode(!isCanvasEditMode);
+    setCanvasEditMode(true);
   }
 
   function updateUnit(patch) {
@@ -431,13 +488,16 @@ function FloorMapPageInner() {
                 if (map) navigate(`/floor-map/${map._id}`);
               }}
               onFloorMapChange={(mapId) => navigate(`/floor-map/${mapId}`)}
+              disabled={editorVisible || isSavingLayout}
+              disabledTitle={editorVisible ? "Finish editing to switch maps" : undefined}
             />
           )}
         </div>
         <MapActions
           canManage={canManage}
           editing={editorVisible}
-          onSave={handleSaveLayout}
+          onSave={() => saveLayout()}
+          saving={isSavingLayout}
           onToggleMode={toggleMode}
           isMobile={isMobile}
           panelOpen={isMobile ? mobilePanelOpen : sidebarOpen}
@@ -566,12 +626,38 @@ function FloorMapPageInner() {
         />
       )}
       <MapTooltip tooltip={tooltip} />
+      <dialog
+        ref={savingDialogRef}
+        className="floor-map-saving-dialog"
+        aria-labelledby="saving-layout-message"
+        onCancel={(event) => event.preventDefault()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <p id="saving-layout-message" role="status">
+          Saving layout…
+        </p>
+      </dialog>
       {isFloorMapSettingsOpen && (
         <FloorMapSettingsModal
           floorSize={floorSize}
           gridInterval={canvasSettings.gridInterval}
           onSave={handleFloorMapSettingsSave}
           onClose={() => setFloorMapSettingsOpen(false)}
+        />
+      )}
+      {unitPendingDelete && (
+        <DeleteUnitModal
+          unit={unitPendingDelete}
+          excludedUnitIds={unitIdsStagedForRemoval}
+          onConfirm={handleConfirmDeleteWithReassign}
+          onClose={() => setUnitPendingDelete(null)}
+        />
+      )}
+      {shapePendingDelete && (
+        <DeleteShapeModal
+          shape={shapePendingDelete}
+          onConfirm={handleConfirmDeleteShapeWithReassign}
+          onClose={() => setShapePendingDelete(null)}
         />
       )}
       {isEditorSettingsOpen && (

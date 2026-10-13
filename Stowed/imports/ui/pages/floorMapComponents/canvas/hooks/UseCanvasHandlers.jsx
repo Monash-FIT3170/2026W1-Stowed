@@ -330,7 +330,7 @@ export function useCanvasHandlers({
     const snappedWPx = snapEnabled ? snapToGrid(rawWPx, snapSizePx) : rawWPx;
     const snappedHPx = snapEnabled ? snapToGrid(rawHPx, snapSizePx) : rawHPx;
 
-    const minPx = 0.5 * px;
+    const minPx = 0.1 * px;
     const finalWPx = Math.max(minPx, snappedWPx);
     const finalHPx = Math.max(minPx, snappedHPx);
 

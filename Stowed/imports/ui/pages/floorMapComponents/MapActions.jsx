@@ -4,6 +4,7 @@ export function MapActions({
   canManage,
   editing,
   onSave,
+  saving = false,
   onToggleMode,
   isMobile,
   panelOpen,
@@ -31,9 +32,10 @@ export function MapActions({
           type="button"
           className="btn-primary floor-map-save floor-map-action-save"
           onClick={onSave}
+          disabled={saving}
         >
           <FloorMapIcon name="save" />
-          <span>{isMobile ? "Save" : "Save layout"}</span>
+          <span>{saving ? "Saving…" : isMobile ? "Save" : "Save layout"}</span>
         </button>
       )}
       {editing && canManage && (
@@ -60,9 +62,11 @@ export function MapActions({
           type="button"
           className="floor-map-button floor-map-action-mode"
           onClick={onToggleMode}
+          disabled={saving}
         >
           <FloorMapIcon name={editing ? "check" : "edit"} />
-          <span>{editing ? (isMobile ? "Done" : "Done editing") : "Edit layout"}</span>
+          {/* Leaving edit mode saves first, so the label says so. */}
+          <span>{editing ? (isMobile ? "Done" : "Save & exit") : "Edit layout"}</span>
         </button>
       )}
       {editing && canManage && (

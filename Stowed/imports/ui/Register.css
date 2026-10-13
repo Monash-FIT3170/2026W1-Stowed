@@ -350,6 +350,13 @@
   color: #166534;
 }
 
+/* Tablet portrait: two columns leave each card ~340px — stack them */
+@media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .auth-page {
     padding: 18px;
