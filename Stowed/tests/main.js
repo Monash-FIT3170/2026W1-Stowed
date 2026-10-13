@@ -34,3 +34,4 @@ import "./scheduleMethods.test.js";
 import "./scheduleGeneration.test.js";
 import "./codeGenerationMethods.test.js";
 import "./customerCatalogue.test.js";
+import "./customerLocationPreview.test.js";
