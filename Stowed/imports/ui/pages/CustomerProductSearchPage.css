@@ -58,14 +58,11 @@
   gap: 14px;
 }
 
+/* The shell lives on the li, not the link: the card's clickable area and the
+   "Add to list" button are siblings, and the border has to enclose both. */
 .customer-product-card {
   display: flex;
   flex-direction: column;
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
   color: inherit;
   text-decoration: none;
 }
@@ -142,20 +139,33 @@
 
 .customer-product-grid > li {
   display: flex;
-}
-
-.customer-product-card {
-  flex: 1;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.04);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
-.customer-product-card:hover,
-.customer-product-card:focus-visible {
+/* focus-within so keyboard users get the same cue as the mouse, whether the
+   link or the button holds focus. */
+.customer-product-grid > li:hover,
+.customer-product-grid > li:focus-within {
   border-color: var(--accent-secondary);
   box-shadow: 0 4px 14px rgba(26, 26, 26, 0.08);
 }
+
+/* The link takes the slack so every button in a row sits on the same line,
+   however tall the names and meta above it are. */
+.customer-product-card {
+  flex: 1;
+}
+
+/* The add/remove control styles itself (ShoppingListControl.css); the card only
+   has to leave it the foot of the box. */
 
 /* -- Product detail -- */
 
