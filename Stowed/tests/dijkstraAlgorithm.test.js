@@ -260,7 +260,102 @@ describe('WeightedGraph', function () {
 
     const result3 = graph.dijkstra(3, [7, 8]);
     const exp3 = { waypoints: [3, 2, 1, 0, 9, 7], legDist: 14 };
-    assert.deepStrictEqual(result3, exp3, `R3 - Expected: ${exp3}\nbut got: ${result3}`);  });
+    assert.deepStrictEqual(result3, exp3, `R3 - Expected: ${exp3}\nbut got: ${result3}`);  
+  });
+
+  it('', () => {
+    /* Graph:
+      0 --(1)-- 1 --(2)-- 2 --(3)-- 3
+      |         |         |         |
+    (XX)      (XX)      (XX)      (XX)
+      |         |         |         |
+      4 --(1)-- 5 --(2)-- 6 --(3)-- 7
+      |         |         |         |
+    (XX)      (XX)      (XX)      (XX)
+      |         |         |         |
+      8 --(1)-- 9 --(2)--10 --(3)--11
+      |         |         |         |
+    (XX)      (XX)      (XX)      (XX)
+      |         |         |         |
+     12 --(1)-- 13--(2)--14 --(3)-- 15
+      |         |         |         |
+    (XX)      (XX)      (XX)      (XX)
+      |         |         |         |
+     16 --(1)-- 17--(2)--18 --(3)-- 19
+    
+    Input:
+      - start: 3
+      - finish: [1, 11, 8, 17]
+    Expected output:
+    [
+      [3, 2, 1],
+      [1, 0, 4, 8],
+      [8, 9, 10, 11],
+      [11, 10, 9, 13, 17]
+    ]
+    */
+    const graph = new WeightedGraph();
+    graph.addVertex(0, { x: 0, y: 0 });
+    graph.addVertex(1, { x: 1, y: 0 });
+    graph.addVertex(2, { x: 3, y: 0 });
+    graph.addVertex(3, { x: 6, y: 0 });
+    graph.addVertex(4, { x: 0, y: 10 });
+    graph.addVertex(5, { x: 2, y: 11 });
+    graph.addVertex(6, { x: 5, y: 12 });
+    graph.addVertex(7, { x: 9, y: 13 });
+    graph.addVertex(8, { x: 0, y: 21 });
+    graph.addVertex(9, { x: 3, y: 23 });
+    graph.addVertex(10, { x: 7, y: 25 });
+    graph.addVertex(11, { x: 12, y: 27 });
+    graph.addVertex(12, { x: 0, y: 33 });
+    graph.addVertex(13, { x: 4, y: 36 });
+    graph.addVertex(14, { x: 9, y: 39 });
+    graph.addVertex(15, { x: 15, y: 42 });
+    graph.addVertex(16, { x: 0, y: 46 });
+    graph.addVertex(17, { x: 5, y: 50 });
+    graph.addVertex(18, { x: 11, y: 54 });
+    graph.addVertex(19, { x: 18, y: 58 });
+    graph.addEdge(0, 1, 1);
+    graph.addEdge(0, 4, 10);
+    graph.addEdge(1, 2, 2);
+    graph.addEdge(1, 5, 11);
+    graph.addEdge(2, 3, 3);
+    graph.addEdge(2, 6, 12);
+    graph.addEdge(3, 7, 13);
+    graph.addEdge(4, 5, 2);
+    graph.addEdge(4, 8, 11);
+    graph.addEdge(5, 6, 3);
+    graph.addEdge(5, 9, 12);
+    graph.addEdge(6, 7, 4);
+    graph.addEdge(6, 10, 13);
+    graph.addEdge(7, 11, 14);
+    graph.addEdge(8, 9, 3);
+    graph.addEdge(8, 12, 12);
+    graph.addEdge(9, 10, 4);
+    graph.addEdge(9, 13, 13);
+    graph.addEdge(10, 11, 5);
+    graph.addEdge(10, 14, 14);
+    graph.addEdge(11, 15, 15);
+    graph.addEdge(12, 13, 4);
+    graph.addEdge(12, 16, 13);
+    graph.addEdge(13, 14, 5);
+    graph.addEdge(13, 17, 14);
+    graph.addEdge(14, 15, 6);
+    graph.addEdge(14, 18, 15);
+    graph.addEdge(15, 19, 16);
+    graph.addEdge(16, 17, 5);
+    graph.addEdge(17, 18, 6);
+    graph.addEdge(18, 19, 7);
+
+    const result = graph.dijkstraAll(3, [1, 11, 8, 17]);
+    const exp = [
+      { waypoints: [3, 2, 1], legDist: 5 },
+      { waypoints: [1, 0, 4, 8], legDist: 22 },
+      { waypoints: [8, 9, 10, 11], legDist: 12 },
+      { waypoints: [11, 10, 9, 13, 17], legDist: 38 },
+    ];
+    assert.deepStrictEqual(result, exp, `Expected: ${exp}\nbut got: ${result}`);
+  });
 });
 
 describe('WeightedGraph.fromRoute', function () {

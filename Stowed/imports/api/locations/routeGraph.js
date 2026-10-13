@@ -120,7 +120,6 @@ export function getProductAccessNodeIds(nodes, links) {
   return accessIds;
 }
 
-
 /**
  * Find the distance between two cartesian coordinates
  * 
