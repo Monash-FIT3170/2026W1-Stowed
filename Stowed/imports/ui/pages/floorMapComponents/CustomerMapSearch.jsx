@@ -91,7 +91,9 @@ export function CustomerMapSearch({
           {loading ? (
             <p className="cfm-empty small">Loading…</p>
           ) : loadFailed ? (
-            <p className="cfm-empty small">Products couldn&apos;t be loaded. Refresh to try again.</p>
+            <p className="cfm-empty small">
+              Products couldn&apos;t be loaded. Refresh to try again.
+            </p>
           ) : results.length === 0 ? (
             <p className="cfm-empty small">No products match “{trimmed}”.</p>
           ) : (
