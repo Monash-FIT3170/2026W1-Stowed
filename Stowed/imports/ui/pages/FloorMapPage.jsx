@@ -26,7 +26,7 @@ import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
 import { ProductNodeLocationsModal } from "./floorMapComponents/ProductNodeLocationsModal";
 import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
-import { DownloadIcon, MapIcon, SaveIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
+import { DownloadIcon, MapIcon, RouteIcon, SaveIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
 import { MapRouteInputs } from "./floorMapComponents/MapRouteInputs";
 import {
   buttonStyles,
@@ -349,19 +349,26 @@ function FloorMapPageInner() {
               onSave={handleSaveRoute}
             />
           )}
+
+          {/* PLAN ROUTE - highlighted while picking a starting point */}
+          {isViewMode && (
+            <button
+              type="button"
+              onClick={handleSelectStart}
+              disabled={!mapReady}
+              aria-label="Plan route"
+              title="Plan route"
+              style={{
+                ...statusBarStyles.iconButton(isSelectingStart || isRouteModalOpen),
+                opacity: mapReady ? 1 : 0.5,
+                cursor: mapReady ? "pointer" : "not-allowed",
+              }}
+            >
+              <RouteIcon size={14} />
+            </button>
+          )}
         </div>
 
-
-        {isViewMode && (
-          <button
-            type="button"
-            onClick={handleSelectStart}
-            disabled={!mapReady}
-            style={statusBarStyles.modeButton(false, !mapReady)}
-          >
-            Plan Route
-          </button>
-        )}
         <div style={statusBarStyles.group}>
           {/* MODE SWITCHER */}
           <div role="group" aria-label="Floor map mode" style={statusBarStyles.modeGroup}>
