@@ -341,11 +341,7 @@ function FloorMapPageInner() {
               fontFamily: "inherit",
             }}
           >
-            {isSavingLayout
-              ? "Saving…"
-              : isCanvasEditMode
-                ? "Save & exit edit mode"
-                : "View mode"}
+            {isSavingLayout ? "Saving…" : isCanvasEditMode ? "Save & exit edit mode" : "View mode"}
           </button>
         </div>
       </div>

@@ -52,9 +52,9 @@ function normalizeFloorSize(floorSize) {
   const looksLikeMeters = width <= 100 && height <= 100;
   return looksLikeMeters
     ? {
-      width: width * CANVAS_CONFIG.PIXELS_PER_METER,
-      height: height * CANVAS_CONFIG.PIXELS_PER_METER,
-    }
+        width: width * CANVAS_CONFIG.PIXELS_PER_METER,
+        height: height * CANVAS_CONFIG.PIXELS_PER_METER,
+      }
     : { width, height };
 }
 
