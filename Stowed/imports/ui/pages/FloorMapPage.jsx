@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
 import {
@@ -17,6 +17,7 @@ import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { FloorMaps, Sites, StorageUnits, MapShapes } from "/imports/api/locations/collections";
+import { Products } from "/imports/api/products/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -26,6 +27,8 @@ import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
 import { ProductNodeLocationsModal } from "./floorMapComponents/ProductNodeLocationsModal";
 import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
 import { DownloadIcon, MapIcon, SaveIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
+import { MapRouteInputs } from "./floorMapComponents/MapRouteInputs";
+import { buttonStyles } from "./floorMapComponents/FloorMapStyles";
 import {
   buttonStyles,
   COLLAPSED_SIDEBAR_WIDTH_PX,
@@ -128,6 +131,18 @@ function FloorMapPageInner() {
   const [editingShape, setEditingShape] = useState(null);
   const [isChangingShape, setIsChangingShape] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState("units"); // "units" | "templates"
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [startingPoint, setStartingPoint] = useState(null);
+  const [isSelectingStart, setIsSelectingStart] = useState(false);
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+
+  const { products, productsReady } = useTracker(() => {
+    const handle = Meteor.subscribe("products");
+    return {
+      products: Products.find({}, { sort: { name: 1 } }).fetch(),
+      productsReady: handle.ready(),
+    };
+  }, []);
 
   // The product node whose accessible storage locations are being chosen, if any
   const editingProductNodeData = editingProductNode
@@ -167,10 +182,12 @@ function FloorMapPageInner() {
 
   const handleCanvasModeChange = (nextMode) => {
     if (nextMode === canvasMode) return;
+    setIsSelectingStart(false);
     setSelectedStorageUnitId(null);
     setSelectedUnit(null);
     setIsStockPanelOpen(false);
     setTooltip(null);
+    setIsRouteModalOpen(false);
 
     setCanvasMode(nextMode);
   };
@@ -190,6 +207,64 @@ function FloorMapPageInner() {
   const currentFloorMap = floorMaps.find((f) => f._id === floorMapId) ?? floorMaps[0];
   const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
   const siteFloorMaps = currentSite ? floorMaps.filter((f) => f.siteId === currentSite._id) : [];
+  const mapReady = locationsReady && !!currentFloorMap;
+
+  // A different floor or floor size needs a new route and starting point.
+  useEffect(() => {
+    setSelectedProductIds([]);
+    setStartingPoint(null);
+    setIsSelectingStart(false);
+    setIsRouteModalOpen(false);
+  }, [currentFloorMap?._id, floorSize.width, floorSize.height]);
+
+  useEffect(() => {
+    if (!isSelectingStart && !isRouteModalOpen) return;
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsSelectingStart(false);
+        setIsRouteModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isSelectingStart, isRouteModalOpen]);
+  
+  const handleSelectStart = () => {
+    // Close modal so the user can interact with the canvas
+    setIsRouteModalOpen(false);
+
+    setSelectedStorageUnitId(null);
+    setSelectedUnit(null);
+    setIsStockPanelOpen(false);
+    setTooltip(null);
+
+    // Start selecting a point on the map
+    setIsSelectingStart(true);
+  };
+
+  const handleStartingPointSelect = (point) => {
+    // Save the point selected on the canvas
+    setStartingPoint(point);
+
+    // Stop selecting
+    setIsSelectingStart(false);
+
+    // Open route planning modal
+    setIsRouteModalOpen(true);
+  };
+
+
+  const handleAddProduct = (productId) => {
+    if (!products.some((product) => product._id === productId)) return;
+    setSelectedProductIds((previous) =>
+      previous.includes(productId) ? previous : [...previous, productId],
+    );
+  };
 
   return (
     <div
@@ -275,6 +350,25 @@ function FloorMapPageInner() {
           )}
         </div>
 
+
+          {!isCanvasEditMode && (
+            <button
+              type="button"
+              onClick={ 
+                  handleSelectStart
+              }
+                
+              
+              disabled={!mapReady}
+              style={{
+              ...statusBarButtonStyle,
+              opacity: mapReady ? 1 : 0.5,
+              cursor: mapReady ? "pointer" : "not-allowed",
+              }}
+            >
+              Plan Route
+            </button>
+          )}
         <div style={statusBarStyles.group}>
           {/* MODE SWITCHER */}
           <div role="group" aria-label="Floor map mode" style={statusBarStyles.modeGroup}>
@@ -341,6 +435,22 @@ function FloorMapPageInner() {
           position: "relative",
         }}
       >
+
+        {isSelectingStart && !isCanvasEditMode && (
+          <div className="map-route-prompt" role="status">
+            <span>
+              Click a point on the floor map to set your starting point.
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setIsSelectingStart(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         {/* CANVAS - only render once data is ready */}
         <div
           style={{
@@ -362,6 +472,9 @@ function FloorMapPageInner() {
               setTooltip={setTooltip}
               fitInsetRight={viewFitInsetRight}
               lowStockByUnitId={lowStockByUnitId}
+              startingPoint={startingPoint}
+              isSelectingStart={isSelectingStart && mapReady && !isCanvasEditMode}
+              onStartingPointSelect={handleStartingPointSelect}
             />
           )}
         </div>
@@ -726,6 +839,65 @@ function FloorMapPageInner() {
         />
       )}
 
+      {/* ROUTE PLANNING MODAL */}
+      {isRouteModalOpen && !isCanvasEditMode && (
+        <div
+          className="map-route-modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsRouteModalOpen(false);
+            }
+          }}
+        >
+          <div
+            className="map-route-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="map-route-modal-title"
+            style={{
+              background: COLOURS.CARD_BG,
+              color: COLOURS.TEXT_PRIMARY,
+              border: `1px solid ${COLOURS.CARD_BORDER}`,
+            }}
+          >
+            <div className="map-route-modal__header">
+              <h2 id="map-route-modal-title">Plan Route</h2>
+
+              <button
+                type="button"
+                autoFocus
+                className="map-route-modal__close"
+                aria-label="Close route planner"
+                onClick={() => setIsRouteModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <MapRouteInputs
+              key={currentFloorMap?._id ?? "default"}
+              products={products}
+              productsReady={productsReady}
+              selectedProductIds={selectedProductIds}
+              onAddProduct={handleAddProduct}
+              onRemoveProduct={(productId) =>
+                setSelectedProductIds((previous) =>
+                  previous.filter((id) => id !== productId)
+                )
+              }
+              startingPoint={startingPoint}
+              isSelectingStart={isSelectingStart && mapReady}
+              onSelectStart={handleSelectStart}
+              onCancelSelectStart={() => setIsSelectingStart(false)}
+              onClearStart={() => {
+                setStartingPoint(null);
+                handleSelectStart();
+              }}
+              mapReady={mapReady}
+            />
+          </div>
+          </div>
+        )}
       {/* PRODUCT NODE STORAGE LOCATIONS MODAL - on placement, or when a product node is clicked */}
       {editingProductNodeData && (
         <ProductNodeLocationsModal
