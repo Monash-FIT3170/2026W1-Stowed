@@ -370,6 +370,80 @@ Meteor.methods({
     await StorageUnits.removeAsync(storageUnitId);
   },
 
+  /**
+   * Moves every StorageLocation in a StorageUnit to its chosen destination unit,
+   * then deletes the emptied StorageUnit. Destinations may be in any site of the org.
+   */
+  async "storageUnits.deleteWithReassign"({ storageUnitId, assignments }) {
+    check(storageUnitId, String);
+    check(assignments, [{ storageLocationId: String, targetUnitId: String }]);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
+    if (!storageUnit) {
+      throw new Meteor.Error("storage-unit-not-found", "No storage unit found with that ID.");
+    }
+
+    const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
+
+    const locations = await StorageLocations.find({ storageUnitId }).fetchAsync();
+    const assignmentByLocationId = new Map(
+      assignments.map((assignment) => [assignment.storageLocationId, assignment.targetUnitId]),
+    );
+
+    for (const location of locations) {
+      if (!assignmentByLocationId.has(location._id)) {
+        throw new Meteor.Error(
+          "missing-destination",
+          "Every storage location needs a destination storage unit.",
+        );
+      }
+    }
+
+    const targetUnitIds = new Set(
+      locations.map((location) => assignmentByLocationId.get(location._id)),
+    );
+
+    for (const targetUnitId of targetUnitIds) {
+      if (targetUnitId === storageUnitId) {
+        throw new Meteor.Error(
+          "invalid-destination",
+          "Choose a different storage unit to move locations to.",
+        );
+      }
+
+      const targetUnit = await StorageUnits.findOneAsync(targetUnitId);
+      if (!targetUnit) {
+        throw new Meteor.Error("invalid-storage-unit", "Destination storage unit does not exist.");
+      }
+
+      const targetFloorMap = await FloorMaps.findOneAsync(targetUnit.floorMapId);
+      if (!targetFloorMap) {
+        throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+      }
+
+      await assertOrgAccess(Sites, targetFloorMap.siteId, this.userId);
+    }
+
+    const now = new Date();
+    for (const location of locations) {
+      await StorageLocations.updateAsync(location._id, {
+        $set: { storageUnitId: assignmentByLocationId.get(location._id), updatedAt: now },
+      });
+    }
+
+    await StorageUnits.removeAsync(storageUnitId);
+  },
+
   async "storageUnits.bulkGenerateCodes"({ unitIds }) {
     check(unitIds, [String]);
 
@@ -606,6 +680,75 @@ Meteor.methods({
     }
 
     await MapShapes.removeAsync({ shapeId: shape.shapeId });
+  },
+
+  async "mapShapes.deleteWithReassign"({ shapeId, assignments }) {
+    check(shapeId, Number);
+    check(assignments, [{ storageUnitId: String, targetShapeId: Number }]);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    const orgId = await getCallerOrgId(this.userId);
+
+    const shape = await MapShapes.findOneAsync({ shapeId, orgId });
+    if (!shape) {
+      throw new Meteor.Error("shape-not-found", "No shape found with that ID.");
+    }
+
+    const orgFloorMapIds = (await FloorMaps.find({ orgId }).fetchAsync()).map((f) => f._id);
+    const units = await StorageUnits.find({
+      "shape.shapeId": shapeId,
+      floorMapId: { $in: orgFloorMapIds },
+    }).fetchAsync();
+
+    const targetByUnitId = new Map(assignments.map((a) => [a.storageUnitId, a.targetShapeId]));
+
+    for (const unit of units) {
+      if (!targetByUnitId.has(unit._id)) {
+        throw new Meteor.Error(
+          "missing-destination",
+          "Every storage unit using this shape needs a replacement shape.",
+        );
+      }
+    }
+
+    const targetShapes = new Map();
+    for (const targetShapeId of new Set(units.map((u) => targetByUnitId.get(u._id)))) {
+      if (targetShapeId === shapeId) {
+        throw new Meteor.Error("invalid-destination", "Choose a different shape to move units to.");
+      }
+      const target = await MapShapes.findOneAsync({ shapeId: targetShapeId, orgId });
+      if (!target) {
+        throw new Meteor.Error("invalid-shape", "Replacement shape does not exist.");
+      }
+      targetShapes.set(targetShapeId, target);
+    }
+
+    const now = new Date();
+    for (const unit of units) {
+      const target = targetShapes.get(targetByUnitId.get(unit._id));
+      const minX = Math.min(...target.points.map((p) => p.x));
+      const minY = Math.min(...target.points.map((p) => p.y));
+
+      await StorageUnits.updateAsync(unit._id, {
+        $set: {
+          shape: {
+            orgId,
+            shapeId: target.shapeId,
+            name: target.name,
+            gridReference: target.gridReference,
+            points: target.points.map((p) => ({ x: p.x - minX, y: p.y - minY })),
+          },
+          updatedAt: now,
+        },
+      });
+    }
+
+    await MapShapes.removeAsync({ shapeId, orgId });
   },
 
   /**
