@@ -1,0 +1,85 @@
+/* CustomerProductModal.css */
+
+/* .modal-overlay and .modal come from Global.css; these widen the shared box
+   for a two-column product layout and let a tall product scroll inside it. */
+
+.customer-modal-overlay {
+  /* The shared overlay centres its child, which would crop a tall dialog on a
+     short window. Scrolling the overlay keeps the whole thing reachable. */
+  overflow-y: auto;
+  padding: 24px 16px;
+  align-items: flex-start;
+}
+
+.customer-modal {
+  position: relative;
+  max-width: 880px;
+  width: 100%;
+  padding: 0;
+  margin: auto;
+}
+
+.customer-modal-body {
+  padding: 24px;
+  /* The dialog never grows past the window; the content scrolls instead. */
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+}
+
+/* -- Close -- */
+
+/* Floats over the gallery rather than taking a row of its own, so the product
+   starts at the top of the dialog the way it does on the detail page. */
+.customer-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.customer-modal-close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.customer-modal-close:hover {
+  background: var(--input-bg);
+  border-color: var(--accent-secondary);
+}
+
+.customer-modal-close:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+/* The detail page gives the name room for a back bar above it; in the dialog
+   the close button sits there instead, so the heading starts higher. */
+.customer-modal .customer-detail-layout {
+  margin-top: 0;
+}
+
+@media (max-width: 768px) {
+  .customer-modal-overlay {
+    padding: 12px;
+  }
+
+  .customer-modal-body {
+    padding: 16px;
+    max-height: calc(100vh - 48px);
+  }
+}

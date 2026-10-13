@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
+import { useSearchParams } from "react-router-dom";
 import { FloorMaps, Sites, StorageUnits } from "/imports/api/locations/collections";
 import { getCustomerOrgCode } from "../customerSession";
 import { EditorProvider } from "./floorMapComponents/canvas/editor/EditorContext";
@@ -48,12 +49,24 @@ function useCustomerCatalogue(orgCode) {
   return { products, loadState };
 }
 
+export function publicHighlightedUnitId(unitId, floorMapId, units) {
+  return units.some((unit) => unit._id === unitId && unit.floorMapId === floorMapId)
+    ? unitId
+    : null;
+}
+
+export function selectCustomerFloorMap(visibleMaps, selectedFloorMapId, requestedMapId) {
+  return selectAvailableMap(visibleMaps, requestedMapId ?? selectedFloorMapId);
+}
+
 export function CustomerFloorMapPage() {
   const orgCode = getCustomerOrgCode();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedMapId = searchParams.get("map");
+  const requestedUnitId = searchParams.get("unit");
   const [selectedFloorMapId, setSelectedFloorMapId] = useState(() =>
     window.localStorage.getItem(STORAGE_KEY),
   );
-
   const canvasRef = useRef(null);
   const highlightTimer = useRef(null);
   const [selectedUnitId, setSelectedUnitId] = useState(null);
@@ -76,8 +89,11 @@ export function CustomerFloorMapPage() {
 
   const visibleMaps = orgCode ? publicMaps(floorMaps) : [];
   const visibleSites = sites.filter((site) => visibleMaps.some((map) => map.siteId === site._id));
-  const currentFloorMap = selectAvailableMap(visibleMaps, selectedFloorMapId);
+  const currentFloorMap = selectCustomerFloorMap(visibleMaps, selectedFloorMapId, requestedMapId);
   const currentSite = visibleSites.find((site) => site._id === currentFloorMap?.siteId);
+  // A deep link (?unit=, from a product's "Open in floor map") keeps its unit
+  // highlighted; a "Show on map" flash takes over while it runs.
+  const linkedUnitId = publicHighlightedUnitId(requestedUnitId, currentFloorMap?._id, storageUnits);
 
   const currentMapId = currentFloorMap?._id;
   const unitsOnMap = useMemo(
@@ -101,6 +117,7 @@ export function CustomerFloorMapPage() {
     setSelectedUnitId(null);
     setHighlightedUnitId(null);
     window.localStorage.setItem(STORAGE_KEY, mapId);
+    if (requestedMapId || requestedUnitId) setSearchParams({}, { replace: true });
   }
 
   function openUnit(unitId, shelfName = null) {
@@ -150,6 +167,13 @@ export function CustomerFloorMapPage() {
               }}
               onFloorMapChange={chooseMap}
             />
+            <button
+              type="button"
+              className="floor-map-button"
+              onClick={() => canvasRef.current?.exportPng()}
+            >
+              Export as PNG
+            </button>
           </div>
         )}
       </header>
@@ -177,7 +201,7 @@ export function CustomerFloorMapPage() {
                   isCanvasEditMode={false}
                   publicView
                   setSelectedStorageUnitId={(unitId) => openUnit(unitId)}
-                  highlightedUnitId={highlightedUnitId}
+                  highlightedUnitId={highlightedUnitId ?? linkedUnitId}
                 />
               </EditorProvider>
               {!selectedUnit && (

@@ -18,6 +18,7 @@ export function MapSelectors({
           value={currentSite?._id ?? ""}
           onChange={(event) => onSiteChange(event.target.value)}
           aria-label="Select site"
+          title={currentSite?.name}
         >
           {sites.map((site) => (
             <option key={site._id} value={site._id}>
@@ -33,6 +34,7 @@ export function MapSelectors({
             value={currentFloorMap?._id ?? ""}
             onChange={(event) => onFloorMapChange(event.target.value)}
             aria-label="Select floor map"
+            title={currentFloorMap?.name}
           >
             {siteMaps.map((map) => (
               <option key={map._id} value={map._id}>

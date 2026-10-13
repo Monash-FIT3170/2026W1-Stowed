@@ -1,4 +1,5 @@
 import { Meteor } from "meteor/meteor";
+import { clearShoppingList } from "./customerShoppingList";
 
 /**
  * Customer session
@@ -61,8 +62,11 @@ export function endStaffSession() {
  */
 export async function startCustomerSession(orgCode) {
   // Dropped before the lookup, so a failed or abandoned attempt can never fall
-  // back to whatever organisation an earlier visit left behind.
+  // back to whatever organisation an earlier visit left behind. The shopping
+  // list goes with it: its product ids belong to the organisation it was built
+  // in and mean nothing in another one.
   clearCustomerOrgCode();
+  clearShoppingList();
 
   // Logging out before the lookup, not after, so an unknown code still leaves
   // the staff session closed rather than half-abandoned.
