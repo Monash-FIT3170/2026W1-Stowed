@@ -19,8 +19,7 @@ function useStockedProducts(floorMapId) {
     const productsHandle = Meteor.subscribe("products");
     const recordsHandle = Meteor.subscribe("productRecords");
 
-    const loading =
-      !locationsHandle.ready() || !productsHandle.ready() || !recordsHandle.ready();
+    const loading = !locationsHandle.ready() || !productsHandle.ready() || !recordsHandle.ready();
 
     if (!floorMapId) return { entries: [], loading };
 

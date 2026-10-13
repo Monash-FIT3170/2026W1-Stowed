@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
 import { useSearchParams } from "react-router-dom";
@@ -30,6 +30,7 @@ export function CustomerFloorMapPage() {
   const [selectedFloorMapId, setSelectedFloorMapId] = useState(() =>
     window.localStorage.getItem(STORAGE_KEY),
   );
+  const canvasRef = useRef(null);
 
   const { sites, floorMaps, storageUnits, locationsReady } = useTracker(() => {
     const handle = Meteor.subscribe("locations.publicFloorMaps", orgCode ?? "");
@@ -74,18 +75,30 @@ export function CustomerFloorMapPage() {
           <p>Find where products are located.</p>
         </div>
         {locationsReady && currentFloorMap && (
-          <MapSelectors
-            context="public"
-            sites={visibleSites}
-            floorMaps={visibleMaps}
-            currentSite={currentSite}
-            currentFloorMap={currentFloorMap}
-            onSiteChange={(siteId) => {
-              const map = firstMapForSite(visibleMaps, siteId);
-              if (map) chooseMap(map._id);
-            }}
-            onFloorMapChange={chooseMap}
-          />
+          <div className="customer-floor-map-controls">
+            <>
+              <button
+                type="button"
+                className="floor-map-button"
+                onClick={() => canvasRef.current?.exportPng()}
+              >
+                Export as PNG
+              </button>
+
+              <MapSelectors
+                context="public"
+                sites={visibleSites}
+                floorMaps={visibleMaps}
+                currentSite={currentSite}
+                currentFloorMap={currentFloorMap}
+                onSiteChange={(siteId) => {
+                  const map = firstMapForSite(visibleMaps, siteId);
+                  if (map) chooseMap(map._id);
+                }}
+                onFloorMapChange={chooseMap}
+              />
+            </>
+          </div>
         )}
       </header>
       <div className="floor-map-viewport customer-floor-map-viewport">
@@ -104,7 +117,7 @@ export function CustomerFloorMapPage() {
             isCanvasEditMode={false}
             setCanvasEditMode={() => {}}
           >
-            <Canvas isCanvasEditMode={false} publicView highlightedUnitId={highlightedUnitId} />
+            <Canvas ref={canvasRef} isCanvasEditMode={false} publicView highlightedUnitId={highlightedUnitId} />
           </EditorProvider>
         )}
       </div>
