@@ -305,6 +305,13 @@ export function Chatbot() {
     sendMessage();
   }
 
+  function handleComposerKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
   function handlePromptClick(prompt) {
     sendMessage(prompt);
     inputRef.current?.focus();
@@ -403,6 +410,7 @@ export function Chatbot() {
               ref={inputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleComposerKeyDown}
               placeholder="Ask Stowed..."
               rows={2}
             />
