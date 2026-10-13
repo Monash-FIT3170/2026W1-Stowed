@@ -120,6 +120,36 @@ export function getProductAccessNodeIds(nodes, links) {
   return accessIds;
 }
 
+
+/**
+ * Find the distance between two cartesian coordinates
+ * 
+ * @param {{x: number, y: number}}} p1 
+ * @param {{x: number, y: number}}} p2 
+ * 
+ * @returns {number} the distance between the two points
+ */
+export function cartDistance(p1, p2) {
+  return ((p2.x-p1.x)**2 + (p2.y-p1.y)**2) ** (1/2);
+}
+
+/**
+ * Find the nearest node to some location on the map (not necessary at any node).
+ * Return the distance between the location and the nearest node
+ * 
+ * @param {WalkwayNode[]} nodes 
+ * @param {{x: number, y: number}} pos 
+ * 
+ * @returns {{node: WalkwayNode, dist: number}} the cartesian distance from the location to the nearest node
+ */
+export function findNearestNode(nodes, pos) {
+  if (nodes.length === 0) throw new Error(`List of nodes was empty`);
+  const dist = nodes.map((n) => ({node: n, dist: cartDistance(n, pos)}));
+  const minDist = dist.reduce((acc, x) => (acc<x.dist) ? acc : x.dist, dist[0].dist);
+  const minNode = dist.find((x) => x.dist === minDist);
+  return minNode;
+}
+
 /**
  * Splits a link in two by inserting a new walkway node at `point`, which should lie on the link.
  * The original link A-B is replaced by A-J and J-B, where J is the new node.
