@@ -2,6 +2,7 @@
  * Global canvas configuration constants
  */
 export const CANVAS_CONFIG = {
+  DEFAULT_FLOOR_SIZE: { width: 500, height: 500 },
   METERS_PER_CELL: 1,
   DEFAULT_SNAP_INTERVAL: 0.1,
   PIXELS_PER_METER: 50,

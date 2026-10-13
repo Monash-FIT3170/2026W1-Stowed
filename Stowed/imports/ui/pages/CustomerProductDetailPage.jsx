@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { FloorMaps, Sites, StorageUnits } from "/imports/api/locations/collections";
 import { getCustomerOrgCode } from "../customerSession";
 import { StatusBadge } from "../components/StatusBadge";
 import { ProductThumbnail } from "./InventoryListPage";
 import { currency } from "./shoppingListHelpers";
+import { CustomerLocations } from "./CustomerLocations";
 import "../Global.css";
 import "./CustomerProductSearchPage.css";
 
@@ -28,6 +31,15 @@ export function CustomerProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   // Bumped by Try again to fetch the product once more.
   const [reloadCount, setReloadCount] = useState(0);
+  const { floorMaps, sites, storageUnits, mapsReady } = useTracker(() => {
+    const handle = Meteor.subscribe("locations.publicFloorMaps", orgCode ?? "");
+    return {
+      floorMaps: FloorMaps.find().fetch(),
+      sites: Sites.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      mapsReady: handle.ready(),
+    };
+  }, [orgCode]);
 
   useEffect(() => {
     let current = true;
@@ -186,21 +198,13 @@ export function CustomerProductDetailPage() {
           <section className="customer-detail-section">
             <h2>Where to find it</h2>
             {product.locations.length > 0 ? (
-              <ul className="customer-detail-locations">
-                {product.locations.map((loc, index) => (
-                  <li key={loc.label} className="customer-detail-location">
-                    <svg aria-hidden="true" viewBox="0 0 24 24" className="customer-detail-pin">
-                      <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
-                    </svg>
-                    <span className="customer-detail-location-label">{loc.label}</span>
-                    {/* Locations arrive fullest first, so the first is the
-                        likeliest place to find one on the shelf. */}
-                    {index === 0 && product.locations.length > 1 && (
-                      <span className="customer-detail-location-tag">Best place to look</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <CustomerLocations
+                locations={product.locations}
+                floorMaps={floorMaps}
+                storageUnits={storageUnits}
+                sites={sites}
+                mapsReady={mapsReady}
+              />
             ) : (
               <p className="customer-detail-muted">
                 Ask a staff member and they&apos;ll help you find it.
