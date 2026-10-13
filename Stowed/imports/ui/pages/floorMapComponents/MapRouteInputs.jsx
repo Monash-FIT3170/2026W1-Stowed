@@ -12,6 +12,9 @@ export function MapRouteInputs({
   onSelectStart,
   onClearStart,
   mapReady = false,
+  onGenerateRoute,
+  isGeneratingRoute = false,
+  routeError = null,
 }) {
   const [showScanPlaceholder, setShowScanPlaceholder] = useState(false);
 
@@ -120,10 +123,17 @@ export function MapRouteInputs({
         <button
           type="button"
           className="btn-primary"
-          onClick={() => {}}
+          disabled={!mapReady || !startingPoint || selectedProductIds.length === 0 || isGeneratingRoute}
+          onClick={onGenerateRoute}
         >
-          Generate Route
+          {isGeneratingRoute ? "Generating..." : "Generate Route"}
         </button>
+
+        {routeError && (
+          <p className="map-route-compact__hint" role="alert">
+            {routeError}
+          </p>
+        )}
 
       </div>
 

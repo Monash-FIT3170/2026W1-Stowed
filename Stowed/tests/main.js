@@ -34,3 +34,4 @@ import "./scheduleMethods.test.js";
 import "./scheduleGeneration.test.js";
 import "./codeGenerationMethods.test.js";
 import "./dijkstraAlgorithm.test.js";
+import "./routePlanning.test.js";

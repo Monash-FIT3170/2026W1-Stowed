@@ -134,6 +134,10 @@ function FloorMapPageInner() {
   const [startingPoint, setStartingPoint] = useState(null);
   const [isSelectingStart, setIsSelectingStart] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+  // Result of floorMapRoutes.generate, drawn on the view map
+  const [plannedRoute, setPlannedRoute] = useState(null);
+  const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
+  const [routeError, setRouteError] = useState(null);
 
   const { products, productsReady } = useTracker(() => {
     const handle = Meteor.subscribe("products");
@@ -216,6 +220,8 @@ function FloorMapPageInner() {
     setStartingPoint(null);
     setIsSelectingStart(false);
     setIsRouteModalOpen(false);
+    setPlannedRoute(null);
+    setRouteError(null);
   }, [currentFloorMap?._id, floorSize.width, floorSize.height]);
 
   useEffect(() => {
@@ -259,6 +265,33 @@ function FloorMapPageInner() {
     setIsRouteModalOpen(true);
   };
 
+
+  const handleGenerateRoute = async () => {
+    if (!currentFloorMap || !startingPoint || selectedProductIds.length === 0) return;
+    setIsGeneratingRoute(true);
+    setRouteError(null);
+    try {
+      const route = await Meteor.callAsync("floorMapRoutes.generate", {
+        floorMapId: currentFloorMap._id,
+        start: startingPoint,
+        productIds: selectedProductIds,
+      });
+      if (route.stops.length === 0) {
+        setPlannedRoute(null);
+        setRouteError("None of the selected products can be reached from the walkways on this floor.");
+        return;
+      }
+      setPlannedRoute(route);
+      setIsRouteModalOpen(false);
+    } catch (error) {
+      setRouteError(error.reason || error.message || "Could not generate a route.");
+    } finally {
+      setIsGeneratingRoute(false);
+    }
+  };
+
+  const productName = (productId) =>
+    products.find((product) => product._id === productId)?.name ?? "Unknown product";
 
   const handleAddProduct = (productId) => {
     if (!products.some((product) => product._id === productId)) return;
@@ -451,6 +484,22 @@ function FloorMapPageInner() {
           </div>
         )}
 
+        {/* PLANNED ROUTE SUMMARY */}
+        {plannedRoute && isViewMode && !isSelectingStart && (
+          <div className="map-route-prompt" role="status">
+            <span>
+              {plannedRoute.stops.length} {plannedRoute.stops.length === 1 ? "stop" : "stops"} ·{" "}
+              {plannedRoute.distance.toFixed(1)} m
+              {plannedRoute.unreachableProductIds.length > 0 &&
+                ` · Couldn't reach: ${plannedRoute.unreachableProductIds.map(productName).join(", ")}`}
+            </span>
+
+            <button type="button" onClick={() => setPlannedRoute(null)}>
+              Clear
+            </button>
+          </div>
+        )}
+
         {/* CANVAS - only render once data is ready */}
         <div
           style={{
@@ -472,7 +521,9 @@ function FloorMapPageInner() {
               setTooltip={setTooltip}
               fitInsetRight={viewFitInsetRight}
               lowStockByUnitId={lowStockByUnitId}
-              startingPoint={startingPoint}
+              // Only mark the start while planning in the modal or when a route is drawn
+              startingPoint={plannedRoute || isRouteModalOpen ? startingPoint : null}
+              plannedRoute={plannedRoute}
               isSelectingStart={isSelectingStart && mapReady && isViewMode}
               onStartingPointSelect={handleStartingPointSelect}
             />
@@ -894,6 +945,9 @@ function FloorMapPageInner() {
                 handleSelectStart();
               }}
               mapReady={mapReady}
+              onGenerateRoute={handleGenerateRoute}
+              isGeneratingRoute={isGeneratingRoute}
+              routeError={routeError}
             />
           </div>
           </div>

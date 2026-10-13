@@ -1,5 +1,5 @@
 import { useRef, useEffect, useReducer, forwardRef, useImperativeHandle } from "react";
-import { Stage, Layer, Rect, Circle, Group, Text } from "react-konva";
+import { Stage, Layer, Rect, Circle, Group, Text, Line } from "react-konva";
 import Konva from "konva";
 import { useTracker } from "meteor/react-meteor-data";
 import { Meteor } from "meteor/meteor";
@@ -10,6 +10,7 @@ import { CANVAS_ACTIONS } from "../editor/Actions";
 import { useCanvasHandlers } from "../hooks/UseCanvasHandlers";
 import { useRouteHandlers } from "../hooks/UseRouteHandlers";
 import { CANVAS_CONFIG } from "../CanvasConfig";
+import { COLOURS } from "../../FloorMapStyles";
 import { getStartingPoint } from "../routePoint";
 import {
   StorageLocations,
@@ -36,6 +37,7 @@ export const Canvas = forwardRef(function Canvas(
     setSelectedStorageUnitId,
     setTooltip,
     startingPoint = null,
+    plannedRoute = null,
     isSelectingStart = false,
     onStartingPointSelect,
     fitInsetRight = 0 
@@ -304,6 +306,44 @@ export const Canvas = forwardRef(function Canvas(
                     {/* Intercept shelf/alert clicks only while choosing a start. */}
                     {isPickingStart && (
                       <Rect x={0} y={0} width={width} height={height} fill="transparent" />
+                    )}
+                    {/* Planned route: the path to walk, with numbered pick stops */}
+                    {plannedRoute && (
+                      <Group listening={false}>
+                        <Line
+                          points={plannedRoute.path.flatMap((p) => [
+                            p.x * CANVAS_CONFIG.PIXELS_PER_METER,
+                            p.y * CANVAS_CONFIG.PIXELS_PER_METER,
+                          ])}
+                          stroke={COLOURS.ACCENT}
+                          strokeWidth={4}
+                          strokeScaleEnabled={false}
+                          lineCap="round"
+                          lineJoin="round"
+                          dash={[10, 6]}
+                        />
+                        {plannedRoute.stops.map((stop, index) => (
+                          <Group
+                            key={stop.nodeId}
+                            x={stop.x * CANVAS_CONFIG.PIXELS_PER_METER}
+                            y={stop.y * CANVAS_CONFIG.PIXELS_PER_METER}
+                            scaleX={1 / scale}
+                            scaleY={1 / scale}
+                          >
+                            <Circle radius={11} fill="white" stroke={COLOURS.ACCENT} strokeWidth={3} />
+                            <Text
+                              x={-11}
+                              y={-6}
+                              width={22}
+                              text={String(index + 1)}
+                              align="center"
+                              fontSize={12}
+                              fontStyle="bold"
+                              fill={COLOURS.ACCENT}
+                            />
+                          </Group>
+                        ))}
+                      </Group>
                     )}
                     {startingPoint && (
                       <Group
