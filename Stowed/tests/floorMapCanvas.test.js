@@ -264,6 +264,25 @@ describe("Floor map canvas", function () {
 
       assert.strictEqual(React.Children.toArray(layer.props.children).length, 0);
     });
+
+    it("disables unit interactions in a read-only preview", function () {
+      const layer = UnitLayer({
+        units: [unit],
+        selectedIds: new Set(),
+        isCanvasEditMode: false,
+        getGroupRef: () => ({ current: null }),
+        onUnitClick: () => {},
+        onDragMove: () => {},
+        onDragEnd: () => {},
+        onTransformEnd: () => {},
+        interactive: false,
+      });
+      assert.strictEqual(layer.props.listening, false);
+      assert.strictEqual(
+        React.Children.toArray(layer.props.children)[0].props.isCanvasEditMode,
+        false,
+      );
+    });
   });
 
   describe("drag-and-drop preview", function () {
