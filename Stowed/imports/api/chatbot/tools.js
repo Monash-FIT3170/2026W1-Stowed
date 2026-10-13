@@ -31,6 +31,7 @@ export const NAVIGATION_PAGES = {
   qr_codes: { path: () => "/qr-codes", permission: "route:/qr-codes" },
   forecast: { path: () => "/forecast", permission: "route:/forecast" },
   alerts: { path: () => "/alerts", permission: "route:/alerts" },
+  create_account: { path: () => "/register", permission: "create-users" },
   accounts: { path: () => "/accounts", permission: "route:/accounts" },
   settings: { path: () => "/settings", permission: "route:/settings" },
 };
@@ -224,7 +225,7 @@ export function clearPendingActions() {
 
 // Runs an existing Meteor method as `userId`, so its own permission and
 // organisation checks apply to the chatbot exactly as they do to the UI.
-function callMethodAs(userId, name, params) {
+export function callMethodAs(userId, name, params) {
   return Meteor.server.method_handlers[name].call({ userId }, params);
 }
 

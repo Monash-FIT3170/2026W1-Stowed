@@ -6,7 +6,7 @@ import { Canvas } from "./floorMapComponents/canvas/components/Canvas";
 import { FloorMapSettingsModal } from "./floorMapComponents/FloorMapSettingsModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
 import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
@@ -772,9 +772,11 @@ function FloorMapPageInner() {
 
 export function FloorMapPage() {
   const { floorMapId } = useParams();
+  const [searchParams] = useSearchParams();
   // Owned here (outside the remounted EditorProvider) so edit/view mode
   // persists when switching between floor maps / warehouses.
-  const [isCanvasEditMode, setCanvasEditMode] = useState(false);
+  const [isCanvasEditMode, setCanvasEditMode] = useState(() => searchParams.get("edit") === "1");
+
   return (
     <EditorProvider
       key={floorMapId ?? "default"}

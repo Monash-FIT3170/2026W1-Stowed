@@ -1,7 +1,7 @@
 .chatbot {
   position: fixed;
   right: 22px;
-  bottom: 22px;
+  bottom: 54px;
   z-index: 1000;
   font-family:
     Inter,
@@ -107,6 +107,65 @@
   overflow-wrap: anywhere;
 }
 
+.chatbot-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.chatbot-action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--input-bg);
+}
+
+.chatbot-action-title {
+  color: var(--text-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chatbot-action-summary {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.chatbot-action-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chatbot-action-buttons button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text-dark);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chatbot-action-buttons button:first-child {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+  color: var(--card-bg);
+}
+
+.chatbot-action-buttons button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .chatbot-prompts {
   display: flex;
   gap: 7px;
@@ -164,7 +223,8 @@
 .chatbot-composer button:focus-visible,
 .chatbot-launcher:focus-visible,
 .chatbot-close:focus-visible,
-.chatbot-prompts button:focus-visible {
+.chatbot-prompts button:focus-visible,
+.chatbot-action-buttons button:focus-visible {
   outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
@@ -210,7 +270,7 @@
 @media (max-width: 720px) {
   .chatbot {
     right: 12px;
-    bottom: 76px;
+    bottom: 108px;
   }
 
   .chatbot-panel {
