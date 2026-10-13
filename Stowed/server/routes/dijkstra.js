@@ -1,0 +1,268 @@
+/**
+ * Greedy Approach:
+ * Iteratively find the nearest remaining product to be stocked
+ * (not optimal but will keep implementation simple and bug free
+ * + stakes are low for sub-optimal path finding).
+ * 
+ * Why Dijkstra's and not A*?
+ * A* requires that we already know our two endpoints
+ * However, we want to find a route for multiple waypoints at once without
+ * necessarily knowing which order they should be in
+ * Dijkstra's therefore allows us to find the nearest location of any matching
+ * product. 
+ */
+
+import { isProductNode } from "/imports/api/locations/routeGraph";
+
+export {Node, PriorityQueue, WeightedGraph};
+
+// code below copied from: https://gist.github.com/Prottoy2938/66849e04b0bac459606059f5f9f3aa1a
+
+//helper class for PriorityQueue
+class Node {
+  constructor(val, priority) {
+    this.val = val;
+    this.priority = priority;
+  }
+
+  toString() {
+    return `V-${this.val} (P${this.priority})`;
+  }
+}
+
+class PriorityQueue {
+  constructor() {
+    this.values = [];
+  }
+  enqueue(val, priority) {
+    const newNode = new Node(val, priority);
+    this.values.push(newNode);
+    this.bubbleUp();
+  }
+  bubbleUp() {
+    let idx = this.values.length - 1;
+    const element = this.values[idx];
+    while (idx > 0) {
+      let parentIdx = Math.floor((idx - 1) / 2);
+      let parent = this.values[parentIdx];
+      if (element.priority >= parent.priority) break;
+      this.values[parentIdx] = element;
+      this.values[idx] = parent;
+      idx = parentIdx;
+    }
+  }
+  dequeue() {
+    const min = this.values[0];
+    const end = this.values.pop();
+    if (this.values.length > 0) {
+      this.values[0] = end;
+      this.sinkDown();
+    }
+    return min;
+  }
+  sinkDown() {
+    let idx = 0;
+    const length = this.values.length;
+    const element = this.values[0];
+    while (true) {
+      let leftChildIdx = 2 * idx + 1;
+      let rightChildIdx = 2 * idx + 2;
+      let leftChild, rightChild;
+      let swap = null;
+
+      if (leftChildIdx < length) {
+        leftChild = this.values[leftChildIdx];
+        if (leftChild.priority < element.priority) {
+          swap = leftChildIdx;
+        }
+      }
+      if (rightChildIdx < length) {
+        rightChild = this.values[rightChildIdx];
+        if (
+          (swap === null && rightChild.priority < element.priority) ||
+          (swap !== null && rightChild.priority < leftChild.priority)
+        ) {
+          swap = rightChildIdx;
+        }
+      }
+      if (swap === null) break;
+      this.values[idx] = this.values[swap];
+      this.values[swap] = element;
+      idx = swap;
+    }
+  }
+  isEmpty() {
+    return this.values.length === 0;
+  }
+}
+
+/**
+ * The following class has been modified from what is at
+ * https://gist.github.com/Prottoy2938/66849e04b0bac459606059f5f9f3aa1a
+ * Key changes include:
+ * - changing the `adjacencyList` from string keys (dictionary) to integer strings (list)
+ * - adding the `coordMap` attribute to track where graph nodes are located on
+ *     the floor map
+ * - updating `dijkstra()` method to handle multiple possible endpoints to stop at
+ * - adding `fromRoute()` to build a graph from a saved FloorMapRoute document
+ */
+class WeightedGraph {
+  constructor() {
+    this.adjacencyList = [];
+    this.coordMap = [];
+    // the saved route node at each index (only set by `fromRoute()`)
+    this.routeNodes = [];
+    this.indexByNodeId = new Map();
+  }
+
+  /**
+   * Build a graph from a saved FloorMapRoute document (see FloorMapRouteSchema).
+   * Route nodes have string ids, so each node is given the index of its position
+   * in `route.nodes`. Links don't store a weight, so each edge is weighted by
+   * the straight line distance (in metres) between its two nodes.
+   *
+   * @param {{nodes: Object[], links: Object[]}} route the saved route graph
+   * @returns {WeightedGraph} the graph, with `routeNodes` and `indexByNodeId` filled in
+   */
+  static fromRoute(route) {
+    const graph = new WeightedGraph();
+    route.nodes.forEach((node, index) => {
+      graph.addVertex(index, { x: node.x, y: node.y });
+      graph.routeNodes[index] = node;
+      graph.indexByNodeId.set(node.id, index);
+    });
+    for (const link of route.links) {
+      const from = graph.indexOf(link.fromId);
+      const to = graph.indexOf(link.toId);
+      const weight = Math.hypot(
+        graph.coordMap[from].x - graph.coordMap[to].x,
+        graph.coordMap[from].y - graph.coordMap[to].y,
+      );
+      graph.addEdge(from, to, weight);
+    }
+    return graph;
+  }
+
+  /**
+   * Get the index of a saved route node
+   *
+   * @param {string} nodeId the route node's id
+   * @returns {number} the node's index in the graph
+   */
+  indexOf(nodeId) {
+    const index = this.indexByNodeId.get(nodeId);
+    if (index === undefined) throw new Error(`Route node "${nodeId}" is not in the graph.`);
+    return index;
+  }
+
+  /**
+   * Find the product nodes a storage location can be picked from, for use as
+   * the `finish` list of `dijkstra()`
+   *
+   * @param {string} storageLocationId the storage location holding the product
+   * @returns {number[]} indices of the product nodes giving access to the location
+   */
+  productNodesFor(storageLocationId) {
+    const indices = [];
+    this.routeNodes.forEach((node, index) => {
+      if (isProductNode(node) && node.storageLocationIds?.includes(storageLocationId)) {
+        indices.push(index);
+      }
+    });
+    return indices;
+  }
+  /**
+   * Add a node to the graph
+   * 
+   * @param {number} vertex the index/id of the node
+   * @param {*} coord some (x, y) coordinate object
+   */
+  addVertex(vertex, coord) {
+    if (!this.adjacencyList[vertex]) this.adjacencyList[vertex] = [];
+    else throw new Error(`Node with index ${vertex} already existed in the graph.`);
+    this.coordMap[vertex] = coord;
+  }
+  /**
+   * Connect two nodes with a weighted edge
+   * 
+   * @param {number} vertex1 one endpoint of the edge
+   * @param {number} vertex2 the other endpoint of the edge
+   * @param {number} weight the weight (distance) between the endpoints
+   */
+  addEdge(vertex1, vertex2, weight) {
+    this.adjacencyList[vertex1].push({ node: vertex2, weight });
+    this.adjacencyList[vertex2].push({ node: vertex1, weight });
+  }
+  
+  /**
+   * Run Dijkstra's algorithm with multiple endpoints
+   * 
+   * @param {number} start the starting location/node
+   * @param {number[]} finish a list of possible destinations to end at
+   * @returns {{waypoints: number[], legDist: number}} the path to take and the distance of that path
+   */
+  dijkstra(start, finish) {
+    const nodes = new PriorityQueue();
+    const distances = [];
+    const previous = [];
+    const path = []; // to return at end
+    let smallest;
+    // build up initial state
+    for (let vertex = 0; vertex < this.adjacencyList.length; vertex++) {
+      if (this.adjacencyList[vertex] === undefined) {
+        throw new Error(`Undefined node found in WeightedGraph at index ${vertex}.`
+          + "Cannot complete dijkstra's algorithm with undefined nodes.");
+      } else if (vertex === start) {
+        distances[vertex] = 0;
+        nodes.enqueue(vertex, 0);
+      } else {
+        distances[vertex] = Infinity;
+        nodes.enqueue(vertex, Infinity);
+      }
+      previous[vertex] = null;
+    }
+    // confirm start node was found
+    if (nodes.isEmpty()) throw new Error("Couldn't find the starting "
+      + `index ${start} in graph of size [0..${this.adjacencyList.length - 1}] nodes`);
+
+    // as long as there is something to visit
+    while (nodes.values.length) {
+      smallest = nodes.dequeue().val;
+      const reachable = distances[smallest] !== Infinity
+      if (finish.includes(smallest) && reachable) {
+        // WE ARE DONE
+        // BUILD UP PATH TO RETURN AT END
+        path.push(smallest);
+        while (previous[smallest] !== null) {
+          smallest = previous[smallest];
+          path.push(smallest);
+        }
+        break;
+      }
+      if (reachable) {
+        for (let neighbour = 0; neighbour < this.adjacencyList[smallest].length; neighbour++) {
+          // find neighbouring node
+          const edge = this.adjacencyList[smallest][neighbour];
+          // calculate new distance to neighbouring node
+          const candidate = distances[smallest] + edge.weight;
+          const nextNeighbor = edge.node;
+          if (candidate < distances[nextNeighbor]) {
+            // updating new smallest distance to neighbour
+            distances[nextNeighbor] = candidate;
+            // updating previous - How we got to neighbour
+            previous[nextNeighbor] = smallest;
+            // enqueue in priority queue with new priority
+            nodes.enqueue(nextNeighbor, candidate);
+          }
+        }
+      }
+    }
+    const dist = distances[path[0]];
+    const reachable = dist !== Infinity;
+    const findsTarget = finish.includes(path[0]);
+    if (!reachable || !findsTarget) throw new Error("Dijkstra's algorithm could not "
+      + `find a path from node ${start} to any of nodes [${finish.join(", ")}].`);
+    const journey = path.reverse();
+    return {waypoints: journey, legDist: dist};
+  }
+}

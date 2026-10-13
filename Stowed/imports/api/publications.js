@@ -6,6 +6,7 @@ import {
   MapShapes,
   StorageUnits,
   StorageLocations,
+  FloorMapRoutes,
 } from "./locations/collections";
 import { ProductActivities, Products, ProductRecords } from "./products/collections";
 import { ProductCategories } from "./categories/collections.js";
@@ -26,6 +27,7 @@ Meteor.publish("locations.all", async function () {
     StorageUnits.find({ orgId }),
     StorageLocations.find({ orgId }),
     MapShapes.find({ orgId }),
+    FloorMapRoutes.find({ orgId }),
   ];
 });
 

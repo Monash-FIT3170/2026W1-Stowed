@@ -22,6 +22,7 @@ import { CANVAS_CONFIG } from "../CanvasConfig";
  * @param {number}      width           - Floor width in pixels
  * @param {number}      height          - Floor height in pixel.
  * @param {React.Ref}   wrapperRef
+ * @param {number}      [fitInsetRight=0] - Pixels on the right to leave empty when fitting to screen
  *
  * @returns {{ getGroupRef, handleDragOver, handleDragLeave, handleDrop,
  *             handleUnitClick, handleStageClick, handleDragMove, handleDragEnd,
@@ -43,6 +44,7 @@ export function useCanvasHandlers({
   wrapperRef,
   clipboard,
   isCanvasEditMode,
+  fitInsetRight = 0,
 }) {
   const { setSelectedUnit, setIsPanelOpen } = useEditor();
 
@@ -477,9 +479,12 @@ export function useCanvasHandlers({
     const stage = stageRef.current;
     if (!stage) return;
 
-    const displayW = stage.width();
-    const displayH = stage.height();
-    if (!displayW || !displayH || !width || !height) return;
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    // fitInsetRight leaves room as if a sidebar were open, so view mode fits the map to the
+    // same area as edit/route mode and switching modes doesn't change the zoom
+    const displayW = (rect?.width || stage.width()) - fitInsetRight;
+    const displayH = rect?.height || stage.height();
+    if (displayW <= 0 || !displayH || !width || !height) return;
 
     const PADDING = 0.9;
     const newScale = clampScale(Math.min(displayW / width, displayH / height) * PADDING);

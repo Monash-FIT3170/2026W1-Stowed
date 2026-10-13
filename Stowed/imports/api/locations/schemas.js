@@ -295,3 +295,81 @@ export const StorageLocationSchema = new SimpleSchema({
     type: Date,
   },
 });
+
+/**
+ * Schema for a FloorMapRoute - the walkway graph used for product routing.
+ * There is at most one route document per FloorMap. Node positions are in metres,
+ * matching storage unit placement. Links are undirected.
+ */
+export const FloorMapRouteSchema = new SimpleSchema({
+  orgId: {
+    type: String,
+  },
+
+  floorMapId: {
+    type: String,
+  },
+
+  nodes: {
+    type: Array,
+    defaultValue: [],
+  },
+  "nodes.$": Object,
+  "nodes.$.id": {
+    type: String,
+    min: 1,
+    max: 100,
+  },
+  "nodes.$.x": {
+    type: Number,
+    min: 0,
+  },
+  "nodes.$.y": {
+    type: Number,
+    min: 0,
+  },
+  // Missing on routes saved before node types existed - treated as "walkway"
+  "nodes.$.type": {
+    type: String,
+    allowedValues: ["walkway", "product"],
+    optional: true,
+  },
+  // Set only on product nodes: the storage unit whose side the node sits on
+  "nodes.$.storageUnitId": {
+    type: String,
+    optional: true,
+  },
+  // Set only on product nodes: the storage locations (in storageUnitId) reachable from the node
+  "nodes.$.storageLocationIds": {
+    type: Array,
+    optional: true,
+  },
+  "nodes.$.storageLocationIds.$": {
+    type: String,
+  },
+
+  links: {
+    type: Array,
+    defaultValue: [],
+  },
+  "links.$": Object,
+  "links.$.id": {
+    type: String,
+    min: 1,
+    max: 100,
+  },
+  "links.$.fromId": {
+    type: String,
+  },
+  "links.$.toId": {
+    type: String,
+  },
+
+  createdAt: {
+    type: Date,
+  },
+
+  updatedAt: {
+    type: Date,
+  },
+});
