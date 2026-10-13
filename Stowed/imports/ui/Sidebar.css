@@ -255,7 +255,11 @@
   background: var(--bg-primary);
 }
 
-.app-main.with-sidebar {
+/* The offset follows the sidebar actually being in the DOM, rather than a flag
+   passed down from App: only routes that render the staff rail reclaim the
+   200px, so the customer area needs no say in the matter. */
+
+.sidebar + .app-main {
   margin-left: 200px;
 }
 
@@ -284,7 +288,7 @@
 /* ------------------------------------------------------------------ */
 
 @media (max-width: 1024px) {
-  .app-main.with-sidebar {
+  .sidebar + .app-main {
     margin-left: 0;
     padding-bottom: 96px; /* clearance for the floating dock */
   }
@@ -458,7 +462,7 @@
 /* ------------------------------------------------------------------ */
 
 @media (max-width: 1024px) and (orientation: landscape) {
-  .app-main.with-sidebar {
+  .sidebar + .app-main {
     padding-bottom: 0;
     padding-right: calc(76px + env(safe-area-inset-right));
   }
