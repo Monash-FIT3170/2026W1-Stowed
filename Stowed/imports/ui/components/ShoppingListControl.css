@@ -42,6 +42,7 @@
   font: inherit;
   font-size: 16px;
   line-height: 1;
+  min-height: 36px;
   padding: 7px 0;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -118,4 +119,11 @@
 
 .slc-step.will-remove:hover:not(:disabled) {
   background: rgba(204, 0, 0, 0.06);
+}
+
+/* A finger needs a bigger target than a cursor. */
+@media (pointer: coarse) {
+  .slc-step {
+    min-height: 44px;
+  }
 }

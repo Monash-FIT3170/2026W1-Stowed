@@ -180,7 +180,10 @@ export function CustomerShoppingListPage() {
                       onChange={setEntries}
                     />
                   </span>
-                  <span className="shopping-list-location">
+                  <span
+                    className="shopping-list-location"
+                    title={product.locations.map((loc) => loc.label).join(", ") || undefined}
+                  >
                     {locationLabel}
                     {rest.length > 0 && (
                       <span className="shopping-list-location-more"> +{rest.length} more</span>

@@ -27,8 +27,9 @@
 
 .customer-search-selects {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 220px));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  max-width: 720px;
 }
 
 .customer-search-select {
@@ -39,8 +40,9 @@
   color: var(--text-muted);
 }
 
+/* background-color, not the shorthand, so the shared chevron survives. */
 .customer-search-select .form-input {
-  background: var(--card-bg);
+  background-color: var(--card-bg);
 }
 
 .customer-search-count {
@@ -85,16 +87,24 @@
   padding: 12px 14px 14px;
 }
 
+/* Two lines at most, so one long name cannot stretch its whole grid row; the
+   full name is in the title attribute and on the detail page. */
 .customer-product-name {
   margin: 4px 0 0;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-dark);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .customer-product-meta,
 .customer-product-location {
   margin: 0;
+  overflow-wrap: anywhere;
   font-size: 12px;
   color: var(--text-muted);
 }
@@ -228,7 +238,7 @@
 
 .customer-detail-gallery {
   position: sticky;
-  top: 24px;
+  top: calc(var(--customer-nav-height, 0px) + 16px);
 }
 
 .customer-detail-image {

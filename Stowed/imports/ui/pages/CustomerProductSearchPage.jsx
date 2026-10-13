@@ -184,7 +184,7 @@ export function CustomerProductSearchPage() {
             <select
               value={categoryId}
               onChange={(e) => updateParams({ category: e.target.value })}
-              className="form-input"
+              className={`form-input${categoryId ? " selected" : ""}`}
             >
               <option value="">All categories</option>
               {categories.map((cat) => (
@@ -200,7 +200,7 @@ export function CustomerProductSearchPage() {
             <select
               value={unitId}
               onChange={(e) => updateParams({ unit: e.target.value })}
-              className="form-input"
+              className={`form-input${unitId ? " selected" : ""}`}
             >
               <option value="">Anywhere in store</option>
               {units.map((unit) => (
@@ -220,7 +220,7 @@ export function CustomerProductSearchPage() {
                   sort: e.target.value === DEFAULT_CUSTOMER_SORT ? "" : e.target.value,
                 })
               }
-              className="form-input"
+              className="form-input selected"
             >
               {CUSTOMER_SORTS.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -279,7 +279,9 @@ export function CustomerProductSearchPage() {
                   </div>
                   <div className="customer-product-body">
                     <StatusBadge status={product.stockStatus} />
-                    <h2 className="customer-product-name">{product.name}</h2>
+                    <h2 className="customer-product-name" title={product.name}>
+                      {product.name}
+                    </h2>
                     {(product.brand || product.categoryName) && (
                       <p className="customer-product-meta">
                         {[product.brand, product.categoryName].filter(Boolean).join(" · ")}
