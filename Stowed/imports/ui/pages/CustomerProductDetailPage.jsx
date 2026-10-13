@@ -4,10 +4,7 @@ import { useTracker } from "meteor/react-meteor-data";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { FloorMaps, Sites, StorageUnits } from "/imports/api/locations/collections";
 import { getCustomerOrgCode } from "../customerSession";
-import { StatusBadge } from "../components/StatusBadge";
-import { ProductThumbnail } from "./InventoryListPage";
-import { currency } from "./shoppingListHelpers";
-import { CustomerLocations } from "./CustomerLocations";
+import { CustomerProductDetails } from "../components/CustomerProductDetails";
 import "../Global.css";
 import "./CustomerProductSearchPage.css";
 
@@ -17,6 +14,9 @@ import "./CustomerProductSearchPage.css";
  * only, and built from the same whitelisted shape as the search results - the
  * server scopes the lookup to the visitor's organisation, so an id from another
  * store reads as not found.
+ *
+ * This page is the fetch and the chrome; the product itself is rendered by
+ * CustomerProductDetails, shared with the shopping list's "More info" modal.
  */
 
 const SEARCH_PATH = "/customer/search";
@@ -28,7 +28,6 @@ export function CustomerProductDetailPage() {
   const location = useLocation();
   const [product, setProduct] = useState(null);
   const [loadState, setLoadState] = useState("loading");
-  const [selectedImage, setSelectedImage] = useState(0);
   // Bumped by Try again to fetch the product once more.
   const [reloadCount, setReloadCount] = useState(0);
   const { floorMaps, sites, storageUnits, mapsReady } = useTracker(() => {
@@ -47,7 +46,6 @@ export function CustomerProductDetailPage() {
       .then((result) => {
         if (!current) return;
         setProduct(result);
-        setSelectedImage(0);
         setLoadState("ready");
       })
       .catch((err) => {
@@ -121,7 +119,6 @@ export function CustomerProductDetailPage() {
     );
   }
 
-  const { images } = product;
   const categorySearch = product.categoryId
     ? `${SEARCH_PATH}?category=${encodeURIComponent(product.categoryId)}`
     : null;
@@ -143,76 +140,10 @@ export function CustomerProductDetailPage() {
         </>,
       )}
 
-      <article className="customer-detail-layout">
-        <div className="customer-detail-gallery">
-          <div className="customer-detail-image">
-            {/* Keyed on the image, so a picture that fails to load does not
-                leave its fallback stuck in place for the next one chosen. */}
-            <ProductThumbnail
-              key={images[selectedImage] ?? "none"}
-              images={images.slice(selectedImage, selectedImage + 1)}
-              name={product.name}
-            />
-          </div>
-          {images.length > 1 && (
-            <div className="customer-detail-thumbs">
-              {images.map((src, index) => (
-                <button
-                  key={src}
-                  type="button"
-                  className={`customer-detail-thumb${index === selectedImage ? " active" : ""}`}
-                  onClick={() => setSelectedImage(index)}
-                  aria-label={`Show image ${index + 1} of ${images.length}`}
-                  aria-pressed={index === selectedImage}
-                >
-                  <img src={src} alt="" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="customer-detail-info">
-          {product.brand && <p className="customer-detail-brand">{product.brand}</p>}
-          <h1 className="customer-detail-name">{product.name}</h1>
-          {product.categoryName && categorySearch && (
-            <Link to={categorySearch} className="customer-detail-category">
-              {product.categoryName}
-            </Link>
-          )}
-
-          <div className="customer-detail-price-row">
-            <p className="customer-detail-price">
-              {product.price != null ? currency(product.price) : "Price on request"}
-            </p>
-            <StatusBadge status={product.stockStatus} />
-          </div>
-
-          {product.description && (
-            <section className="customer-detail-section">
-              <h2>About this product</h2>
-              <p>{product.description}</p>
-            </section>
-          )}
-
-          <section className="customer-detail-section">
-            <h2>Where to find it</h2>
-            {product.locations.length > 0 ? (
-              <CustomerLocations
-                locations={product.locations}
-                floorMaps={floorMaps}
-                storageUnits={storageUnits}
-                sites={sites}
-                mapsReady={mapsReady}
-              />
-            ) : (
-              <p className="customer-detail-muted">
-                Ask a staff member and they&apos;ll help you find it.
-              </p>
-            )}
-          </section>
-        </div>
-      </article>
+      <CustomerProductDetails
+        product={product}
+        mapData={{ floorMaps, storageUnits, sites, mapsReady }}
+      />
     </div>
   );
 }
