@@ -107,7 +107,10 @@ if (Meteor.isServer) {
         result.stops.map((stop) => stop.nodeId),
         ["P1"],
       );
-      assert.deepStrictEqual(result.unreachableProductIds.sort(), ["prod-isolated", "prod-missing"]);
+      assert.deepStrictEqual(result.unreachableProductIds.sort(), [
+        "prod-isolated",
+        "prod-missing",
+      ]);
     });
 
     it("returns an empty route when nothing can be picked", function () {

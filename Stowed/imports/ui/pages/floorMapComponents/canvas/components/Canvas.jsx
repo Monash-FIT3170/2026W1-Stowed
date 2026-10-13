@@ -330,7 +330,11 @@ export const Canvas = forwardRef(function Canvas(
             onWheel={handleWheel}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            style={routeCursor ? { ...style, cursor: routeCursor } : { ...style, cursor: isPickingStart ? "crosshair" : style?.cursor }}
+            style={
+              routeCursor
+                ? { ...style, cursor: routeCursor }
+                : { ...style, cursor: isPickingStart ? "crosshair" : style?.cursor }
+            }
             draggable={!isPickingStart}
             x={stagePos.x}
             y={stagePos.y}
@@ -431,7 +435,12 @@ export const Canvas = forwardRef(function Canvas(
                             scaleX={1 / scale}
                             scaleY={1 / scale}
                           >
-                            <Circle radius={11} fill="white" stroke={COLOURS.ACCENT} strokeWidth={3} />
+                            <Circle
+                              radius={11}
+                              fill="white"
+                              stroke={COLOURS.ACCENT}
+                              strokeWidth={3}
+                            />
                             <Text
                               x={-11}
                               y={-6}
@@ -456,7 +465,14 @@ export const Canvas = forwardRef(function Canvas(
                       >
                         <Circle radius={12} fill="#b5532a" stroke="white" strokeWidth={3} />
                         <Circle radius={3} fill="white" />
-                        <Rect x={-23} y={17} width={46} height={23} fill="#b5532a" cornerRadius={5} />
+                        <Rect
+                          x={-23}
+                          y={17}
+                          width={46}
+                          height={23}
+                          fill="#b5532a"
+                          cornerRadius={5}
+                        />
                         <Text
                           x={-23}
                           y={22}

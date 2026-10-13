@@ -3,18 +3,18 @@
  * Iteratively find the nearest remaining product to be stocked
  * (not optimal but will keep implementation simple and bug free
  * + stakes are low for sub-optimal path finding).
- * 
+ *
  * Why Dijkstra's and not A*?
  * A* requires that we already know our two endpoints
  * However, we want to find a route for multiple waypoints at once without
  * necessarily knowing which order they should be in
  * Dijkstra's therefore allows us to find the nearest location of any matching
- * product. 
+ * product.
  */
 
 import { isProductNode } from "/imports/api/locations/routeGraph";
 
-export {Node, PriorityQueue, WeightedGraph};
+export { Node, PriorityQueue, WeightedGraph };
 
 // code below copied from: https://gist.github.com/Prottoy2938/66849e04b0bac459606059f5f9f3aa1a
 
@@ -173,7 +173,7 @@ class WeightedGraph {
   }
   /**
    * Add a node to the graph
-   * 
+   *
    * @param {number} vertex the index/id of the node
    * @param {*} coord some (x, y) coordinate object
    */
@@ -184,7 +184,7 @@ class WeightedGraph {
   }
   /**
    * Connect two nodes with a weighted edge
-   * 
+   *
    * @param {number} vertex1 one endpoint of the edge
    * @param {number} vertex2 the other endpoint of the edge
    * @param {number} weight the weight (distance) between the endpoints
@@ -193,10 +193,10 @@ class WeightedGraph {
     this.adjacencyList[vertex1].push({ node: vertex2, weight });
     this.adjacencyList[vertex2].push({ node: vertex1, weight });
   }
-  
+
   /**
    * Run Dijkstra's algorithm with multiple endpoints
-   * 
+   *
    * @param {number} start the starting location/node
    * @param {number[]} finish a list of possible destinations to end at
    * @returns {{waypoints: number[], legDist: number}} the path to take and the distance of that path
@@ -210,8 +210,10 @@ class WeightedGraph {
     // build up initial state
     for (let vertex = 0; vertex < this.adjacencyList.length; vertex++) {
       if (this.adjacencyList[vertex] === undefined) {
-        throw new Error(`Undefined node found in WeightedGraph at index ${vertex}.`
-          + "Cannot complete dijkstra's algorithm with undefined nodes.");
+        throw new Error(
+          `Undefined node found in WeightedGraph at index ${vertex}.` +
+            "Cannot complete dijkstra's algorithm with undefined nodes.",
+        );
       } else if (vertex === start) {
         distances[vertex] = 0;
         nodes.enqueue(vertex, 0);
@@ -222,13 +224,16 @@ class WeightedGraph {
       previous[vertex] = null;
     }
     // confirm start node was found
-    if (nodes.isEmpty()) throw new Error("Couldn't find the starting "
-      + `index ${start} in graph of size [0..${this.adjacencyList.length - 1}] nodes`);
+    if (nodes.isEmpty())
+      throw new Error(
+        "Couldn't find the starting " +
+          `index ${start} in graph of size [0..${this.adjacencyList.length - 1}] nodes`,
+      );
 
     // as long as there is something to visit
     while (nodes.values.length) {
       smallest = nodes.dequeue().val;
-      const reachable = distances[smallest] !== Infinity
+      const reachable = distances[smallest] !== Infinity;
       if (finish.includes(smallest) && reachable) {
         // WE ARE DONE
         // BUILD UP PATH TO RETURN AT END
@@ -260,9 +265,12 @@ class WeightedGraph {
     const dist = distances[path[0]];
     const reachable = dist !== Infinity;
     const findsTarget = finish.includes(path[0]);
-    if (!reachable || !findsTarget) throw new Error("Dijkstra's algorithm could not "
-      + `find a path from node ${start} to any of nodes [${finish.join(", ")}].`);
+    if (!reachable || !findsTarget)
+      throw new Error(
+        "Dijkstra's algorithm could not " +
+          `find a path from node ${start} to any of nodes [${finish.join(", ")}].`,
+      );
     const journey = path.reverse();
-    return {waypoints: journey, legDist: dist};
+    return { waypoints: journey, legDist: dist };
   }
 }

@@ -28,7 +28,13 @@ import { CustomShapesPanel } from "./floorMapComponents/CustomShapesPanel";
 import { RouteToolbar } from "./floorMapComponents/RouteToolbar";
 import { ProductNodeLocationsModal } from "./floorMapComponents/ProductNodeLocationsModal";
 import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
-import { DownloadIcon, MapIcon, RouteIcon, SaveIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
+import {
+  DownloadIcon,
+  MapIcon,
+  RouteIcon,
+  SaveIcon,
+  SettingsIcon,
+} from "./floorMapComponents/FloorMapIcons";
 import { MapRouteInputs } from "./floorMapComponents/MapRouteInputs";
 import { MapState } from "./floorMapComponents/MapControls";
 import { FloorMapIcon } from "./floorMapComponents/FloorMapIcon";
@@ -424,7 +430,7 @@ function FloorMapPageInner() {
       window.removeEventListener("keydown", handleEscape);
     };
   }, [isSelectingStart, isRouteModalOpen]);
-  
+
   const handleSelectStart = () => {
     // Close modal so the user can interact with the canvas
     setIsRouteModalOpen(false);
@@ -449,7 +455,6 @@ function FloorMapPageInner() {
     setIsRouteModalOpen(true);
   };
 
-
   const handleGenerateRoute = async () => {
     if (!currentFloorMap || !startingPoint || selectedProductIds.length === 0) return;
     setIsGeneratingRoute(true);
@@ -462,7 +467,9 @@ function FloorMapPageInner() {
       });
       if (route.stops.length === 0) {
         setPlannedRoute(null);
-        setRouteError("None of the selected products can be reached from the walkways on this floor.");
+        setRouteError(
+          "None of the selected products can be reached from the walkways on this floor.",
+        );
         return;
       }
       setPlannedRoute(route);
@@ -596,9 +603,7 @@ function FloorMapPageInner() {
         ) : selectedUnit ? (
           <>
             {/* SETTINGS for the selected storage unit */}
-            <div
-              style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}
-            >
+            <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
               <UnitDetailsPanel
                 unit={selectedUnit}
                 onRename={(name) => updateSelectedUnit({ name })}
@@ -606,9 +611,7 @@ function FloorMapPageInner() {
               />
             </div>
             <div style={{ height: "1px", background: COLOURS.CARD_BORDER }} />
-            <div
-              style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}
-            >
+            <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
               {selectedUnit._id ? (
                 <StorageLocationPanel storageUnitId={selectedStorageUnitId} />
               ) : (
@@ -661,8 +664,8 @@ function FloorMapPageInner() {
                     padding: "8px 0",
                   }}
                 >
-                  No storage units on this floor map yet. Drag a shape from the
-                  Templates tab onto the canvas to create one.
+                  No storage units on this floor map yet. Drag a shape from the Templates tab onto
+                  the canvas to create one.
                 </div>
               ) : (
                 units.map((unit) => (
@@ -678,9 +681,7 @@ function FloorMapPageInner() {
         ) : (
           <>
             {/* TEMPLATES TAB - reusable shape templates, draggable onto the canvas */}
-            <div
-              style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}
-            >
+            <div style={{ padding: "12px", boxSizing: "border-box", overflow: "hidden" }}>
               <CustomShapesPanel
                 mapShapes={mapShapes}
                 activeTool={activeTool}
@@ -867,7 +868,9 @@ function FloorMapPageInner() {
             <button
               type="button"
               onClick={() =>
-                navigate(currentFloorMap ? `/floor-map/${currentFloorMap._id}/detail` : "/floor-map")
+                navigate(
+                  currentFloorMap ? `/floor-map/${currentFloorMap._id}/detail` : "/floor-map",
+                )
               }
               aria-label="Detailed view"
               title="Detailed view"
@@ -922,17 +925,11 @@ function FloorMapPageInner() {
           position: "relative",
         }}
       >
-
         {isSelectingStart && isViewMode && (
           <div className="map-route-prompt" role="status">
-            <span>
-              Click a point on the floor map to set your starting point.
-            </span>
+            <span>Click a point on the floor map to set your starting point.</span>
 
-            <button
-              type="button"
-              onClick={() => setIsSelectingStart(false)}
-            >
+            <button type="button" onClick={() => setIsSelectingStart(false)}>
               Cancel
             </button>
           </div>
@@ -1193,9 +1190,7 @@ function FloorMapPageInner() {
               selectedProductIds={selectedProductIds}
               onAddProduct={handleAddProduct}
               onRemoveProduct={(productId) =>
-                setSelectedProductIds((previous) =>
-                  previous.filter((id) => id !== productId)
-                )
+                setSelectedProductIds((previous) => previous.filter((id) => id !== productId))
               }
               startingPoint={startingPoint}
               isSelectingStart={isSelectingStart && mapReady}
@@ -1211,8 +1206,8 @@ function FloorMapPageInner() {
               routeError={routeError}
             />
           </div>
-          </div>
-        )}
+        </div>
+      )}
       {/* PRODUCT NODE STORAGE LOCATIONS MODAL - on placement, or when a product node is clicked */}
       {editingProductNodeData && (
         <ProductNodeLocationsModal

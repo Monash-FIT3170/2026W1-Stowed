@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 export function MapRouteInputs({
@@ -10,7 +9,6 @@ export function MapRouteInputs({
   startingPoint = null,
   isSelectingStart = false,
   onSelectStart,
-  onClearStart,
   mapReady = false,
   onGenerateRoute,
   isGeneratingRoute = false,
@@ -19,15 +17,11 @@ export function MapRouteInputs({
   const [showScanPlaceholder, setShowScanPlaceholder] = useState(false);
 
   const selectedIds = new Set(selectedProductIds);
-  const availableProducts = products.filter(
-    (product) => !selectedIds.has(product._id)
-  );
+  const availableProducts = products.filter((product) => !selectedIds.has(product._id));
 
   const productLabel = (product) => {
     const name = product.name || product.sku || product._id;
-    return product.name && product.sku
-      ? `${name} (${product.sku})`
-      : name;
+    return product.name && product.sku ? `${name} (${product.sku})` : name;
   };
 
   const productPlaceholder = !productsReady
@@ -44,7 +38,6 @@ export function MapRouteInputs({
 
   return (
     <section className="map-route-compact" aria-label="Route planning inputs">
-
       {/* PRODUCTS */}
       <div className="map-route-compact__field">
         <div className="map-route-compact__label-row">
@@ -75,9 +68,7 @@ export function MapRouteInputs({
         {selectedProductIds.length > 0 && (
           <ul className="map-route-compact__products">
             {selectedProductIds.map((productId) => {
-              const product = products.find(
-                (entry) => entry._id === productId
-              );
+              const product = products.find((entry) => entry._id === productId);
               const label = product ? productLabel(product) : productId;
 
               return (
@@ -102,9 +93,7 @@ export function MapRouteInputs({
         <label>Starting Point</label>
 
         <div className="map-route-compact__start">
-          <span className="map-route-compact__coordinates">
-            {startCoordinates}
-          </span>
+          <span className="map-route-compact__coordinates">{startCoordinates}</span>
 
           <button
             type="button"
@@ -123,7 +112,9 @@ export function MapRouteInputs({
         <button
           type="button"
           className="btn-primary"
-          disabled={!mapReady || !startingPoint || selectedProductIds.length === 0 || isGeneratingRoute}
+          disabled={
+            !mapReady || !startingPoint || selectedProductIds.length === 0 || isGeneratingRoute
+          }
           onClick={onGenerateRoute}
         >
           {isGeneratingRoute ? "Generating..." : "Generate Route"}
@@ -134,7 +125,6 @@ export function MapRouteInputs({
             {routeError}
           </p>
         )}
-
       </div>
 
       {/* SCAN PRODUCTS */}
@@ -149,12 +139,9 @@ export function MapRouteInputs({
         </button>
 
         {showScanPlaceholder && (
-          <p className="map-route-compact__hint">
-            Camera scanning is not available yet.
-          </p>
+          <p className="map-route-compact__hint">Camera scanning is not available yet.</p>
         )}
       </div>
-
     </section>
   );
 }

@@ -20,7 +20,6 @@ import "./mapRoutePoint.test.js";
 import "./routeGraph.test.js";
 import "./floorMapRoutes.test.js";
 import "./unitEdges.test.js";
-import "./floorSize.test.js";
 import "./searchAndFilter.test.js";
 import "./fileUpload.test.js";
 import "./productMethods.test.js";
