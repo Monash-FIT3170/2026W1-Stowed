@@ -171,6 +171,7 @@ class WeightedGraph {
     });
     return indices;
   }
+
   /**
    * Add a node to the graph
    * 
@@ -182,6 +183,7 @@ class WeightedGraph {
     else throw new Error(`Node with index ${vertex} already existed in the graph.`);
     this.coordMap[vertex] = coord;
   }
+
   /**
    * Connect two nodes with a weighted edge
    * 
@@ -264,5 +266,34 @@ class WeightedGraph {
       + `find a path from node ${start} to any of nodes [${finish.join(", ")}].`);
     const journey = path.reverse();
     return {waypoints: journey, legDist: dist};
+  }
+
+  /**
+   * Run Dijkstra's algorithm until all endpoints have been reached
+   * 
+   * @param {number} start the starting location/node
+   * @param {number[]} finish a list of eventual destinations/waypoints
+   * @returns {{waypoints: number[], legDist: number}[]} the path to take and the distance of that path
+   */
+  dijkstraAll(start, finish) {
+    const totalRoute = []; // list of legs/segments
+    const remEnds = finish; // points to hit
+    let s = start; // rolling starting point
+    while (!remEnds.isEmpty()) {
+      // do one iteration of dijkstra's
+      const segment = this.dijkstra(s, finish);
+      // get end point of this segment
+      s = segment.waypoints.at(-1);
+
+      // validate
+      if (!s) throw new Error(`Couldn't find the finishing point of the returned routed. WP:${segment.waypoints}, D:${segment.dist}`);
+
+      // remove covered endpoint from the list of remaining points
+      const endInd = remEnds.indexOf(s);
+      remEnds.splice(endInd, 1);
+      // add path to output list
+      totalRoute.push(segment);
+    }
+    return totalRoute
   }
 }
