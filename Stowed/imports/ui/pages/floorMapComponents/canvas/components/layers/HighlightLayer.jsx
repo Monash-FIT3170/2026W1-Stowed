@@ -33,13 +33,7 @@ export function HighlightLayer({ units, highlightedUnitId }) {
   return (
     <Layer listening={false}>
       {isDrawnShape(unit) ? (
-        <Line
-          x={unit.x * px}
-          y={unit.y * px}
-          points={flattenPoints(unit)}
-          closed
-          {...outline}
-        />
+        <Line x={unit.x * px} y={unit.y * px} points={flattenPoints(unit)} closed {...outline} />
       ) : (
         <Rect
           x={unit.x * px}

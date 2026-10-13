@@ -316,14 +316,18 @@
   min-width: 130px;
   max-width: min(240px, 100%);
   height: 36px;
-  padding: 0 32px 0 10px;
+  padding: 0 34px 0 10px;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  background: var(--input-bg);
+  appearance: none;
+  background: var(--input-bg) var(--select-chevron) no-repeat right 12px center / 12px 12px;
   color: var(--text-dark);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .floor-map-button,
 .floor-map-icon-button,
@@ -809,6 +813,20 @@
   margin: 5px 0 0;
   color: var(--tag-text);
   font-size: 14px;
+}
+.customer-floor-map-controls {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .customer-floor-map-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
 }
 .customer-floor-map-viewport {
   border: 1px solid var(--border-light);
