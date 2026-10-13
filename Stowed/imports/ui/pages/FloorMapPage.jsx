@@ -359,7 +359,11 @@ function FloorMapPageInner() {
           {!isCanvasEditMode && (
             <button
               type="button"
-              onClick={handleSelectStart}
+              onClick={ 
+                  handleSelectStart
+              }
+                
+              
               disabled={!mapReady}
               style={{
               ...statusBarButtonStyle,
