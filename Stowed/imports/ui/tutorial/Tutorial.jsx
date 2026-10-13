@@ -8,23 +8,63 @@ import {
   markPageSeen,
   markTourSeen,
 } from "./tutorialStorage";
+import { BREAKPOINTS, matchesMediaQuery, maxWidth } from "../hooks/deviceDimension";
 import "./Tutorial.css";
 
 const POPOVER_WIDTH = 300;
 const GAP = 14;
+// Starting guess for a step popover's height until it has been measured. Only
+// used for phone/tablet placement; laptop placement never reads it.
+const POPOVER_HEIGHT_ESTIMATE = 200;
+// Set on a collapsed dock menu so CSS shows it while its link is the current
+// step (phone/tablet only — see Tutorial.css).
+const FORCE_OPEN_ATTR = "data-tutorial-open";
+// Same width as the dock's @media (max-width: 1024px) in Sidebar.css.
+const DOCK_QUERY = maxWidth(BREAKPOINTS.desktop);
 
-/* Finds the sidebar link for a step. Returns null when the link isn't
+/* Finds the visible sidebar link for a step. Returns null when the link isn't
    rendered for this role, or is hidden inside a collapsed dock menu. */
 function findTarget(to) {
-  const el = document.querySelector(`.sidebar a[href="${to}"]`);
-  if (!el) return null;
-  const rect = el.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0 ? el : null;
+  const matches = document.querySelectorAll(`.sidebar a[href="${to}"]`);
+  for (const el of matches) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) return el;
+  }
+  return null;
+}
+
+/* Phone/tablet: the dock menu (Workspace / Tools / Account) holding a link. */
+function findDockMenu(to) {
+  const link = document.querySelector(`.sidebar .sidebar-section-links a[href="${to}"]`);
+  return link ? link.closest(".sidebar-section-links") : null;
+}
+
+/* Phone/tablet (dock layout): above the open dock menu when it fits, else to
+   its left (landscape side rail), else to its right, else below. Always kept
+   on screen. `anchor` is the open dock menu's box, or the link itself. */
+function getDockPopoverPosition(rect, anchor, height) {
+  const maxTop = window.innerHeight - height - GAP;
+  const clampTop = (top) => Math.max(GAP, Math.min(top, maxTop));
+  const centredLeft = Math.min(
+    Math.max(GAP, rect.left + rect.width / 2 - POPOVER_WIDTH / 2),
+    window.innerWidth - POPOVER_WIDTH - GAP,
+  );
+  if (anchor.top - GAP - height >= GAP) {
+    return { bottom: window.innerHeight - anchor.top + GAP, left: centredLeft };
+  }
+  if (anchor.left - GAP - POPOVER_WIDTH >= GAP) {
+    return { top: clampTop(rect.top - 8), left: anchor.left - GAP - POPOVER_WIDTH };
+  }
+  if (anchor.right + GAP + POPOVER_WIDTH <= window.innerWidth - GAP) {
+    return { top: clampTop(rect.top - 8), left: anchor.right + GAP };
+  }
+  return { top: clampTop(rect.bottom + GAP), left: centredLeft };
 }
 
 /* Puts the popover to the right of the link (laptop sidebar), or above it
-   when there's no room (phone/tablet dock along the bottom). */
-function getPopoverPosition(rect) {
+   when there's no room. Phone/tablet use the dock placement above. */
+function getPopoverPosition(rect, anchor = rect, height = POPOVER_HEIGHT_ESTIMATE) {
+  if (matchesMediaQuery(DOCK_QUERY)) return getDockPopoverPosition(rect, anchor, height);
   if (rect.right + GAP + POPOVER_WIDTH < window.innerWidth) {
     return { top: Math.max(GAP, rect.top - 8), left: rect.right + GAP };
   }
@@ -52,7 +92,11 @@ function SidebarTour({ onFinish }) {
   // -1 is the centred welcome card shown before the first popover.
   const [index, setIndex] = useState(-1);
   const [rect, setRect] = useState(null);
+  // Box of the dock menu the link sits in (phone/tablet), for placing the popover.
+  const [anchor, setAnchor] = useState(null);
   const nextRef = useRef(null);
+  const popoverRef = useRef(null);
+  const [popoverHeight, setPopoverHeight] = useState(POPOVER_HEIGHT_ESTIMATE);
 
   const step = steps[index];
   const isLast = index === steps.length - 1;
@@ -71,9 +115,28 @@ function SidebarTour({ onFinish }) {
 
   useLayoutEffect(() => {
     if (!step) return undefined;
+    // Phone/tablet: the link lives in a collapsed dock menu, so open that menu
+    // for this step. On a laptop every link is already visible and this never
+    // runs. Re-checked on resize so rotating or resizing across 1024px works.
+    let forcedMenu = null;
+    const releaseMenu = () => {
+      forcedMenu?.removeAttribute(FORCE_OPEN_ATTR);
+      forcedMenu = null;
+    };
     const measure = () => {
-      const target = findTarget(step.to);
+      releaseMenu();
+      let target = findTarget(step.to);
+      if (!target) {
+        const menu = findDockMenu(step.to);
+        if (menu) {
+          menu.setAttribute(FORCE_OPEN_ATTR, "");
+          forcedMenu = menu;
+          target = findTarget(step.to);
+        }
+      }
+      const menuBox = forcedMenu ? forcedMenu.getBoundingClientRect() : null;
       setRect(target ? target.getBoundingClientRect() : null);
+      setAnchor(target && menuBox ? menuBox : null);
     };
     measure();
     window.addEventListener("resize", measure);
@@ -81,12 +144,20 @@ function SidebarTour({ onFinish }) {
     return () => {
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
+      releaseMenu();
     };
   }, [step]);
 
   useEffect(() => {
     nextRef.current?.focus();
   }, [index]);
+
+  // Real popover height (text length varies per step) so phone/tablet
+  // placement keeps the whole card on screen.
+  useLayoutEffect(() => {
+    const height = popoverRef.current?.offsetHeight;
+    if (height && height !== popoverHeight) setPopoverHeight(height);
+  }, [index, popoverHeight]);
 
   useEscape(onFinish);
 
@@ -123,7 +194,7 @@ function SidebarTour({ onFinish }) {
 
   // Link isn't visible (e.g. inside a closed dock menu): centre the card instead.
   const position = rect
-    ? getPopoverPosition(rect)
+    ? getPopoverPosition(rect, anchor ?? rect, popoverHeight)
     : { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
 
   return (
@@ -142,6 +213,7 @@ function SidebarTour({ onFinish }) {
         <div className="tutorial-backdrop" />
       )}
       <div
+        ref={popoverRef}
         className="tutorial-popover"
         role="dialog"
         aria-labelledby="tour-step-title"
