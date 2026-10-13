@@ -1,0 +1,7 @@
+.location-map-preview {
+  width: 100%;
+  overflow: hidden;
+  background: var(--input-bg);
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}

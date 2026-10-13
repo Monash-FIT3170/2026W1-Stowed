@@ -30,12 +30,20 @@ function renderLogin() {
 }
 
 describe("Authentication - Login", function () {
-  it("renders login fields and submit action", function () {
+  // The login is two stages on one card: the organisation code comes first,
+  // with a choice to browse as a guest or log in, and the account fields only
+  // appear once the visitor chooses to log in.
+  it("opens on the organisation stage with guest and log in choices", function () {
     const html = renderLogin();
     assert.ok(html.includes("Organisation Code"));
-    assert.ok(html.includes("Email or Username"));
-    assert.ok(html.includes("Password"));
-    assert.ok(html.includes("Log In"));
+    assert.ok(html.includes("Continue as guest"));
+    assert.ok(html.includes("Log in"));
+  });
+
+  it("keeps the account fields hidden until the organisation stage is passed", function () {
+    const html = renderLogin();
+    assert.ok(!html.includes('id="login"'));
+    assert.ok(!html.includes('id="password"'));
   });
 
   it("links to registration", function () {

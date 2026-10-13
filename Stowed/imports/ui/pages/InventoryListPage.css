@@ -325,6 +325,16 @@
   outline-offset: 2px;
 }
 
+/* Small laptop / tablet landscape: same columns, lower minimums so the row
+   fits instead of pushing the last column out of the card. Widths only
+   change where the regular minimums would have overflowed. */
+@media (min-width: 901px) and (max-width: 1119px) {
+  .inventory-list-container {
+    --inventory-grid: 44px minmax(100px, 2.2fr) minmax(72px, 1.3fr) minmax(90px, 1.6fr)
+      minmax(50px, 0.8fr) minmax(84px, 1.1fr) 96px 82px;
+  }
+}
+
 @media (max-width: 900px) {
   .inventory-list-container {
     padding: 0;

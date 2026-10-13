@@ -332,7 +332,7 @@ export function useCanvasHandlers({
     const snappedWPx = snapEnabled ? snapToGrid(rawWPx, snapSizePx) : rawWPx;
     const snappedHPx = snapEnabled ? snapToGrid(rawHPx, snapSizePx) : rawHPx;
 
-    const minPx = 0.5 * px;
+    const minPx = 0.1 * px;
     const finalWPx = Math.max(minPx, snappedWPx);
     const finalHPx = Math.max(minPx, snappedHPx);
 
@@ -443,6 +443,7 @@ export function useCanvasHandlers({
       x: mouse.x - mouseLoc.x * newScale,
       y: mouse.y - mouseLoc.y * newScale,
     });
+    dispatch({ type: CANVAS_ACTIONS.SET_STAGE_POS, payload: stage.position() });
   }
 
   // Zooms toward the centre of the visible canvas (as opposed to handleWheel,

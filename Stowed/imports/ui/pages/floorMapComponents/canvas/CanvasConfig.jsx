@@ -2,11 +2,12 @@
  * Global canvas configuration constants
  */
 export const CANVAS_CONFIG = {
+  DEFAULT_FLOOR_SIZE: { width: 500, height: 500 },
   METERS_PER_CELL: 1,
   DEFAULT_SNAP_INTERVAL: 0.1,
   PIXELS_PER_METER: 50,
   GRID_SIZE: 50 * 1,
-  MIN_SCALE: 0.2,
+  MIN_SCALE: 0.05,
   MAX_SCALE: 4,
   WALKWAY_NODE_RADIUS_PX: 6,
   WALKWAY_LINK_WIDTH_PX: 3,

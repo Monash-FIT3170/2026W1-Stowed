@@ -26,21 +26,24 @@ import { GhostLayer } from "./layers/GhostLayer";
 import { LowStockLayer } from "./layers/LowStockLayer";
 import { StocktakeAlertLayer } from "./layers/StocktakeAlertLayer";
 import { RouteLayer } from "./layers/RouteLayer";
+import { HighlightLayer } from "./layers/HighlightLayer";
+import { FloorMapIcon } from "../../FloorMapIcon";
 
-if (typeof window !== "undefined") {
-  Konva.pixelRatio = Math.max(window.devicePixelRatio || 1, 3);
-}
+if (typeof window !== "undefined") Konva.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
 export const Canvas = forwardRef(function Canvas(
   {
     style,
+    selectedStorageUnitId,
     setSelectedStorageUnitId,
     setTooltip,
+    publicView = false,
+    highlightedUnitId,
     startingPoint = null,
     plannedRoute = null,
     isSelectingStart = false,
     onStartingPointSelect,
-    fitInsetRight = 0 
+    fitInsetRight = 0,
   },
   ref,
 ) {
@@ -56,6 +59,7 @@ export const Canvas = forwardRef(function Canvas(
   } = useEditor();
 
   const { storageLocations, storageUnits, floorMaps, sites } = useTracker(() => {
+    if (publicView) return { storageLocations: [], storageUnits: [], floorMaps: [], sites: [] };
     Meteor.subscribe("locations.all");
 
     return {
@@ -64,7 +68,7 @@ export const Canvas = forwardRef(function Canvas(
       floorMaps: FloorMaps.find().fetch(),
       sites: Sites.find().fetch(),
     };
-  });
+  }, [publicView]);
 
   const width = floorSize.width;
   const height = floorSize.height;
@@ -81,9 +85,16 @@ export const Canvas = forwardRef(function Canvas(
   const wrapperRef = useRef(null);
   const containerRef = useRef(null);
   const groupRefs = useRef({});
+  const pinchDistanceRef = useRef(null);
+  const measuredFloorSizeRef = useRef(null);
 
   const [state, dispatch] = useReducer(canvasReducer, initialCanvasState);
   const { selectedIds, ghostUnit, dragOffsets, scale, stagePos, displaySize, clipboard } = state;
+  const visibleSelectedIds = isCanvasEditMode
+    ? selectedStorageUnitId && !selectedIds.has(selectedStorageUnitId)
+      ? new Set([selectedStorageUnitId])
+      : selectedIds
+    : new Set(selectedStorageUnitId ? [selectedStorageUnitId] : []);
 
   const {
     getGroupRef,
@@ -157,16 +168,14 @@ export const Canvas = forwardRef(function Canvas(
 
     function measure() {
       const { width, height } = el.getBoundingClientRect();
-      if (width === 0 || height === 0) return; // guard - never dispatch zero dimensions
+      if (width === 0 || height === 0) return;
+      const reset =
+        measuredFloorSizeRef.current?.width !== floorSize.width ||
+        measuredFloorSizeRef.current?.height !== floorSize.height;
+      measuredFloorSizeRef.current = floorSize;
       dispatch({
-        type: CANVAS_ACTIONS.SET_DISPLAY_SIZE,
-        payload: { width, height },
-      });
-      const centeredX = (width - floorSize.width * scale) / 2;
-      const centeredY = (height - floorSize.height * scale) / 2;
-      dispatch({
-        type: CANVAS_ACTIONS.SET_STAGE_POS,
-        payload: { x: centeredX, y: centeredY },
+        type: CANVAS_ACTIONS.RESIZE_VIEWPORT,
+        payload: { displaySize: { width, height }, floorSize, reset },
       });
     }
 
@@ -174,7 +183,59 @@ export const Canvas = forwardRef(function Canvas(
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [floorSize.width, floorSize.height, scale]);
+  }, [floorSize]);
+
+  function handleTouchMove(event) {
+    const touches = event.evt.touches;
+    const stage = stageRef.current;
+    if (!stage || touches.length !== 2) return;
+    event.evt.preventDefault();
+    stage.stopDrag();
+    event.target.stopDrag();
+    stage.draggable(false);
+    const box = stage.container().getBoundingClientRect();
+    const center = {
+      x: (touches[0].clientX + touches[1].clientX) / 2 - box.left,
+      y: (touches[0].clientY + touches[1].clientY) / 2 - box.top,
+    };
+    const distance = Math.hypot(
+      touches[0].clientX - touches[1].clientX,
+      touches[0].clientY - touches[1].clientY,
+    );
+    if (pinchDistanceRef.current) {
+      const oldScale = stage.scaleX();
+      const nextScale = Math.min(
+        CANVAS_CONFIG.MAX_SCALE,
+        Math.max(CANVAS_CONFIG.MIN_SCALE, (oldScale * distance) / pinchDistanceRef.current),
+      );
+      const world = { x: (center.x - stage.x()) / oldScale, y: (center.y - stage.y()) / oldScale };
+      const nextPosition = {
+        x: center.x - world.x * nextScale,
+        y: center.y - world.y * nextScale,
+      };
+      stage.scale({ x: nextScale, y: nextScale });
+      stage.position(nextPosition);
+      dispatch({ type: CANVAS_ACTIONS.SET_SCALE, payload: { scale: nextScale } });
+      dispatch({
+        type: CANVAS_ACTIONS.SET_STAGE_POS,
+        payload: nextPosition,
+      });
+    }
+    pinchDistanceRef.current = distance;
+  }
+
+  function handleTouchEnd() {
+    pinchDistanceRef.current = null;
+    // Panning stays off while a starting point is being picked
+    stageRef.current?.draggable(!isPickingStart);
+  }
+
+  function handleStageActivate(event) {
+    handleStageClick(event);
+    if (isCanvasEditMode && event.target === event.target.getStage()) {
+      setSelectedStorageUnitId?.(null);
+    }
+  }
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -200,6 +261,27 @@ export const Canvas = forwardRef(function Canvas(
   }, [handleCopy, handlePaste, handleDuplicate, handleDelete]);
 
   useImperativeHandle(ref, () => ({
+    /**
+     * Pans the stage so `unitId` sits in the middle of the viewport, leaving
+     * the zoom level alone - changing scale here would be undone by the
+     * re-centring effect above, which fires whenever scale changes.
+     */
+    focusUnit(unitId) {
+      const unit = units.find((candidate) => (candidate._id || candidate.id) === unitId);
+      if (!unit || !displaySize.width || !displaySize.height) return;
+
+      const px = CANVAS_CONFIG.PIXELS_PER_METER;
+      const centreX = (unit.x + unit.width / 2) * px;
+      const centreY = (unit.y + unit.height / 2) * px;
+
+      dispatch({
+        type: CANVAS_ACTIONS.SET_STAGE_POS,
+        payload: {
+          x: displaySize.width / 2 - centreX * scale,
+          y: displaySize.height / 2 - centreY * scale,
+        },
+      });
+    },
     exportPng() {
       const stage = stageRef.current;
       if (!stage) return;
@@ -216,7 +298,7 @@ export const Canvas = forwardRef(function Canvas(
 
   const handleMapClick = (event) => {
     if (!isPickingStart) {
-      handleStageClick(event);
+      handleStageActivate(event);
       return;
     }
     const point = getStartingPoint(stageRef.current, width, height);
@@ -226,12 +308,17 @@ export const Canvas = forwardRef(function Canvas(
   return (
     <div
       ref={wrapperRef}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      style={{ width: "100%", height: "100%", position: "relative" }}
+      className="floor-map-canvas"
+      onDrop={isCanvasEditMode ? handleDrop : undefined}
+      onDragOver={isCanvasEditMode ? handleDragOver : undefined}
+      onDragLeave={isCanvasEditMode ? handleDragLeave : undefined}
+      aria-label={
+        publicView
+          ? "Public floor map. Drag to move around; pinch or use the controls to zoom."
+          : "Floor map canvas. Drag to move around; use the controls to zoom."
+      }
     >
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
+      <div ref={containerRef} className="floor-map-canvas-stage">
         {/* Only mount Stage once we have real pixel dimensions */}
         {displaySize.width > 0 && displaySize.height > 0 && (
           <Stage
@@ -241,6 +328,8 @@ export const Canvas = forwardRef(function Canvas(
             scaleX={scale}
             scaleY={scale}
             onWheel={handleWheel}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             style={routeCursor ? { ...style, cursor: routeCursor } : { ...style, cursor: isPickingStart ? "crosshair" : style?.cursor }}
             draggable={!isPickingStart}
             x={stagePos.x}
@@ -255,13 +344,20 @@ export const Canvas = forwardRef(function Canvas(
 
             <UnitLayer
               units={units}
-              selectedIds={selectedIds}
+              selectedIds={visibleSelectedIds}
               isCanvasEditMode={isCanvasEditMode}
               getGroupRef={getGroupRef}
-              onUnitClick={(unit, e) => {
-                setSelectedStorageUnitId?.(unit._id || unit.id);
-                handleUnitClick(unit, e);
-              }}
+              onUnitClick={
+                publicView
+                  ? (unit) => setSelectedStorageUnitId?.(unit._id || unit.id)
+                  : (unit, e) => {
+                      const unitId = unit._id || unit.id;
+                      const isOnlySelectedUnit =
+                        isCanvasEditMode && selectedIds.size === 1 && selectedIds.has(unitId);
+                      setSelectedStorageUnitId?.(isOnlySelectedUnit ? null : unitId);
+                      handleUnitClick(unit, e);
+                    }
+              }
               onDragMove={handleDragMove}
               onDragEnd={handleDragEnd}
               onTransformEnd={handleTransformEnd}
@@ -283,23 +379,28 @@ export const Canvas = forwardRef(function Canvas(
 
             {canvasMode === CANVAS_MODES.VIEW && (
               <>
-                <LowStockLayer
-                  units={units}
-                  isCanvasEditMode={isCanvasEditMode}
-                  onHover={(data) => setTooltip?.(data)}
-                  onHoverEnd={() => setTooltip?.(null)}
-                  onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
-                />
+                {!publicView && (
+                  <LowStockLayer
+                    units={units}
+                    isCanvasEditMode={isCanvasEditMode}
+                    onHover={(data) => setTooltip?.(data)}
+                    onHoverEnd={() => setTooltip?.(null)}
+                    onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+                    selectedStorageUnitId={selectedStorageUnitId}
+                  />
+                )}
 
-                <StocktakeAlertLayer
-                  units={units}
-                  storageLocations={storageLocations}
-                  storageUnits={storageUnits}
-                  floorMaps={floorMaps}
-                  sites={sites}
-                  isCanvasEditMode={isCanvasEditMode}
-                  onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
-                />
+                {!publicView && (
+                  <StocktakeAlertLayer
+                    units={units}
+                    storageLocations={storageLocations}
+                    storageUnits={storageUnits}
+                    floorMaps={floorMaps}
+                    sites={sites}
+                    isCanvasEditMode={isCanvasEditMode}
+                    onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+                  />
+                )}
 
                 {!isCanvasEditMode && (
                   <Layer>
@@ -387,46 +488,24 @@ export const Canvas = forwardRef(function Canvas(
                 scale={scale}
               />
             )}
+
+            <HighlightLayer units={units} highlightedUnitId={highlightedUnitId} />
           </Stage>
         )}
       </div>
 
       {/* ZOOM CONTROLS - floating over the bottom-right of the canvas */}
-      <div
-        style={{
-          position: "absolute",
-          right: 16,
-          bottom: 16,
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          background: "var(--card-bg)",
-          border: "1px solid var(--border-light)",
-          borderRadius: 10,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-          padding: 4,
-          zIndex: 50,
-        }}
-      >
+      <div className="floor-map-zoom" role="group" aria-label="Map zoom controls">
         <button
           type="button"
           onClick={handleZoomOut}
           aria-label="Zoom out"
           title="Zoom out"
-          style={zoomButtonStyle}
+          className="floor-map-zoom-button"
         >
-          −
+          <FloorMapIcon name="minus" />
         </button>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--text-muted)",
-            minWidth: 38,
-            textAlign: "center",
-            userSelect: "none",
-          }}
-        >
+        <span className="floor-map-zoom-value" aria-live="polite">
           {Math.round(scale * 100)}%
         </span>
         <button
@@ -434,34 +513,22 @@ export const Canvas = forwardRef(function Canvas(
           onClick={handleZoomIn}
           aria-label="Zoom in"
           title="Zoom in"
-          style={zoomButtonStyle}
+          className="floor-map-zoom-button"
         >
-          +
+          <FloorMapIcon name="plus" />
         </button>
-        <div style={{ width: 1, height: 20, background: "var(--border-light)", margin: "0 2px" }} />
+        <span className="floor-map-zoom-divider" aria-hidden="true" />
         <button
           type="button"
           onClick={handleFitToScreen}
           aria-label="Fit to screen"
           title="Fit to screen"
-          style={{ ...zoomButtonStyle, width: "auto", padding: "0 10px", fontSize: 11 }}
+          className="floor-map-zoom-button floor-map-zoom-fit"
         >
-          Fit
+          <FloorMapIcon name="fit" />
+          <span>Fit</span>
         </button>
       </div>
     </div>
   );
 });
-
-const zoomButtonStyle = {
-  width: 26,
-  height: 26,
-  border: "none",
-  background: "transparent",
-  borderRadius: 6,
-  cursor: "pointer",
-  fontSize: 16,
-  lineHeight: 1,
-  color: "var(--text-dark)",
-  fontFamily: "inherit",
-};

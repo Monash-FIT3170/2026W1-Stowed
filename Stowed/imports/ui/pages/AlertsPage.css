@@ -1,6 +1,17 @@
 /* Stocktake alerts list. Colours follow the StatusBadge palette so an overdue
    alert reads the same as a low stock badge elsewhere in the app. */
 
+/* Was an inline style — moved here so the phone rule below can override it */
+.alerts-body {
+  padding: 0 28px 48px;
+}
+
+@media (max-width: 768px) {
+  .alerts-body {
+    padding: 0 16px 32px;
+  }
+}
+
 .alerts-summary {
   display: flex;
   gap: 18px;

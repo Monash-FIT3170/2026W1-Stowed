@@ -145,8 +145,8 @@ export function QRCodesPage() {
         </p>
       </div>
 
-      <div style={{ padding: "16px 28px 48px" }}>
-        <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+      <div className="qr-codes-body">
+        <div className="qr-codes-tabs">
           <button
             className={tab === "products" ? "btn-primary" : "btn-secondary"}
             onClick={() => setTab("products")}
@@ -161,7 +161,7 @@ export function QRCodesPage() {
           </button>
 
           {tab === "products" && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "auto" }}>
+            <div className="qr-codes-tools">
               {!bulkMode && (
                 <select
                   className="form-input"
@@ -189,7 +189,7 @@ export function QRCodesPage() {
             </div>
           )}
           {tab === "units" && (
-            <div style={{ marginLeft: "auto" }}>
+            <div className="qr-codes-tools">
               <button
                 className={unitBulkMode ? "bulk-generate-toggle active" : "bulk-generate-toggle"}
                 onClick={() => setUnitBulkMode(!unitBulkMode)}
