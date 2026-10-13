@@ -66,7 +66,7 @@ export const Canvas = forwardRef(function Canvas(
 
   const width = floorSize.width;
   const height = floorSize.height;
-  const isPickingStart = isSelectingStart && !isCanvasEditMode;
+  const isPickingStart = isSelectingStart && canvasMode === CANVAS_MODES.VIEW;
 
   const gridInterval = canvasSettings?.gridInterval ?? CANVAS_CONFIG.METERS_PER_CELL;
   const snapInterval = canvasSettings?.snapInterval ?? CANVAS_CONFIG.DEFAULT_SNAP_INTERVAL;
@@ -239,8 +239,8 @@ export const Canvas = forwardRef(function Canvas(
             scaleX={scale}
             scaleY={scale}
             onWheel={handleWheel}
-            style={routeCursor ? { ...style, cursor: routeCursor } : { ...style, cursor: isPickingStart ? "crosshair" : style }}
-            draggable{!isPickingStart}
+            style={routeCursor ? { ...style, cursor: routeCursor } : { ...style, cursor: isPickingStart ? "crosshair" : style?.cursor }}
+            draggable={!isPickingStart}
             x={stagePos.x}
             y={stagePos.y}
             onDragEnd={handleDragEndGrid}
@@ -289,47 +289,47 @@ export const Canvas = forwardRef(function Canvas(
                   onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
                 />
 
-            <StocktakeAlertLayer
-              units={units}
-              storageLocations={storageLocations}
-              storageUnits={storageUnits}
-              floorMaps={floorMaps}
-              sites={sites}
-              isCanvasEditMode={isCanvasEditMode}
-              onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
-            />
+                <StocktakeAlertLayer
+                  units={units}
+                  storageLocations={storageLocations}
+                  storageUnits={storageUnits}
+                  floorMaps={floorMaps}
+                  sites={sites}
+                  isCanvasEditMode={isCanvasEditMode}
+                  onUnitClick={(unitId) => setSelectedStorageUnitId?.(unitId)}
+                />
 
-            {!isCanvasEditMode && (
-              <Layer>
-                {/* Intercept shelf/alert clicks only while choosing a start. */}
-                {isPickingStart && (
-                  <Rect x={0} y={0} width={width} height={height} fill="transparent" />
+                {!isCanvasEditMode && (
+                  <Layer>
+                    {/* Intercept shelf/alert clicks only while choosing a start. */}
+                    {isPickingStart && (
+                      <Rect x={0} y={0} width={width} height={height} fill="transparent" />
+                    )}
+                    {startingPoint && (
+                      <Group
+                        x={startingPoint.x * CANVAS_CONFIG.PIXELS_PER_METER}
+                        y={startingPoint.y * CANVAS_CONFIG.PIXELS_PER_METER}
+                        scaleX={1 / scale}
+                        scaleY={1 / scale}
+                        listening={false}
+                      >
+                        <Circle radius={12} fill="#b5532a" stroke="white" strokeWidth={3} />
+                        <Circle radius={3} fill="white" />
+                        <Rect x={-23} y={17} width={46} height={23} fill="#b5532a" cornerRadius={5} />
+                        <Text
+                          x={-23}
+                          y={22}
+                          width={46}
+                          text="Start"
+                          align="center"
+                          fontSize={12}
+                          fontStyle="bold"
+                          fill="white"
+                        />
+                      </Group>
+                    )}
+                  </Layer>
                 )}
-                {startingPoint && (
-                  <Group
-                    x={startingPoint.x * CANVAS_CONFIG.PIXELS_PER_METER}
-                    y={startingPoint.y * CANVAS_CONFIG.PIXELS_PER_METER}
-                    scaleX={1 / scale}
-                    scaleY={1 / scale}
-                    listening={false}
-                  >
-                    <Circle radius={12} fill="#b5532a" stroke="white" strokeWidth={3} />
-                    <Circle radius={3} fill="white" />
-                    <Rect x={-23} y={17} width={46} height={23} fill="#b5532a" cornerRadius={5} />
-                    <Text
-                      x={-23}
-                      y={22}
-                      width={46}
-                      text="Start"
-                      align="center"
-                      fontSize={12}
-                      fontStyle="bold"
-                      fill="white"
-                    />
-                  </Group>
-                )}
-              </Layer>
-
               </>
             )}
 

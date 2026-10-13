@@ -28,7 +28,6 @@ import { ProductNodeLocationsModal } from "./floorMapComponents/ProductNodeLocat
 import { CollapsedSidebar, SidebarCollapseButton } from "./floorMapComponents/SidebarControls";
 import { DownloadIcon, MapIcon, SaveIcon, SettingsIcon } from "./floorMapComponents/FloorMapIcons";
 import { MapRouteInputs } from "./floorMapComponents/MapRouteInputs";
-import { buttonStyles } from "./floorMapComponents/FloorMapStyles";
 import {
   buttonStyles,
   COLLAPSED_SIDEBAR_WIDTH_PX,
@@ -208,6 +207,8 @@ function FloorMapPageInner() {
   const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
   const siteFloorMaps = currentSite ? floorMaps.filter((f) => f.siteId === currentSite._id) : [];
   const mapReady = locationsReady && !!currentFloorMap;
+  // Route planning (picking a start point) is a view mode feature; route mode clicks edit walkways
+  const isViewMode = canvasMode === CANVAS_MODES.VIEW;
 
   // A different floor or floor size needs a new route and starting point.
   useEffect(() => {
@@ -351,24 +352,16 @@ function FloorMapPageInner() {
         </div>
 
 
-          {!isCanvasEditMode && (
-            <button
-              type="button"
-              onClick={ 
-                  handleSelectStart
-              }
-                
-              
-              disabled={!mapReady}
-              style={{
-              ...statusBarButtonStyle,
-              opacity: mapReady ? 1 : 0.5,
-              cursor: mapReady ? "pointer" : "not-allowed",
-              }}
-            >
-              Plan Route
-            </button>
-          )}
+        {isViewMode && (
+          <button
+            type="button"
+            onClick={handleSelectStart}
+            disabled={!mapReady}
+            style={statusBarStyles.modeButton(false, !mapReady)}
+          >
+            Plan Route
+          </button>
+        )}
         <div style={statusBarStyles.group}>
           {/* MODE SWITCHER */}
           <div role="group" aria-label="Floor map mode" style={statusBarStyles.modeGroup}>
@@ -436,7 +429,7 @@ function FloorMapPageInner() {
         }}
       >
 
-        {isSelectingStart && !isCanvasEditMode && (
+        {isSelectingStart && isViewMode && (
           <div className="map-route-prompt" role="status">
             <span>
               Click a point on the floor map to set your starting point.
@@ -473,7 +466,7 @@ function FloorMapPageInner() {
               fitInsetRight={viewFitInsetRight}
               lowStockByUnitId={lowStockByUnitId}
               startingPoint={startingPoint}
-              isSelectingStart={isSelectingStart && mapReady && !isCanvasEditMode}
+              isSelectingStart={isSelectingStart && mapReady && isViewMode}
               onStartingPointSelect={handleStartingPointSelect}
             />
           )}
@@ -840,7 +833,7 @@ function FloorMapPageInner() {
       )}
 
       {/* ROUTE PLANNING MODAL */}
-      {isRouteModalOpen && !isCanvasEditMode && (
+      {isRouteModalOpen && isViewMode && (
         <div
           className="map-route-modal-backdrop"
           onMouseDown={(event) => {
