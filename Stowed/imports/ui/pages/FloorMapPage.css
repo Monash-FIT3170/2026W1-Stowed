@@ -810,6 +810,20 @@
   color: var(--tag-text);
   font-size: 14px;
 }
+.customer-floor-map-controls {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .customer-floor-map-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+}
 .customer-floor-map-viewport {
   border: 1px solid var(--border-light);
   border-radius: 12px;

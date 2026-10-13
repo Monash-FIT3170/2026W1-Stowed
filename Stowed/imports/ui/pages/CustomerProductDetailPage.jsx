@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Meteor } from "meteor/meteor";
+import { useTracker } from "meteor/react-meteor-data";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { FloorMaps, Sites, StorageUnits } from "/imports/api/locations/collections";
 import { getCustomerOrgCode } from "../customerSession";
 import { CustomerProductDetails } from "../components/CustomerProductDetails";
 import "../Global.css";
@@ -28,6 +30,15 @@ export function CustomerProductDetailPage() {
   const [loadState, setLoadState] = useState("loading");
   // Bumped by Try again to fetch the product once more.
   const [reloadCount, setReloadCount] = useState(0);
+  const { floorMaps, sites, storageUnits, mapsReady } = useTracker(() => {
+    const handle = Meteor.subscribe("locations.publicFloorMaps", orgCode ?? "");
+    return {
+      floorMaps: FloorMaps.find().fetch(),
+      sites: Sites.find().fetch(),
+      storageUnits: StorageUnits.find().fetch(),
+      mapsReady: handle.ready(),
+    };
+  }, [orgCode]);
 
   useEffect(() => {
     let current = true;
@@ -129,7 +140,10 @@ export function CustomerProductDetailPage() {
         </>,
       )}
 
-      <CustomerProductDetails product={product} />
+      <CustomerProductDetails
+        product={product}
+        mapData={{ floorMaps, storageUnits, sites, mapsReady }}
+      />
     </div>
   );
 }

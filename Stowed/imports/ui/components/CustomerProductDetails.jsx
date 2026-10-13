@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { StatusBadge } from "./StatusBadge";
 import { ProductThumbnail } from "../pages/InventoryListPage";
 import { currency } from "../pages/shoppingListHelpers";
+import { CustomerLocations } from "../pages/CustomerLocations";
 import "../pages/CustomerProductSearchPage.css";
 
 /**
@@ -13,11 +14,15 @@ import "../pages/CustomerProductSearchPage.css";
  * "More info" modal, so the two can never drift into showing different things
  * about the same product. The surrounding chrome - breadcrumbs on the page, a
  * dialog around the modal - stays with each caller.
+ *
+ * `mapData` ({ floorMaps, storageUnits, sites, mapsReady }) is optional: where
+ * the caller has subscribed to the public floor maps, each location gets a map
+ * preview; without it, locations are listed as plain labels.
  */
 
 const SEARCH_PATH = "/customer/search";
 
-export function CustomerProductDetails({ product }) {
+export function CustomerProductDetails({ product, mapData }) {
   const [selectedImage, setSelectedImage] = useState(0);
 
   const { images } = product;
@@ -80,7 +85,9 @@ export function CustomerProductDetails({ product }) {
 
         <section className="customer-detail-section">
           <h2>Where to find it</h2>
-          {product.locations.length > 0 ? (
+          {product.locations.length > 0 && mapData ? (
+            <CustomerLocations locations={product.locations} {...mapData} />
+          ) : product.locations.length > 0 ? (
             <ul className="customer-detail-locations">
               {product.locations.map((loc, index) => (
                 <li key={loc.label} className="customer-detail-location">
