@@ -46,7 +46,7 @@ export const TOOL_PERMISSIONS = [
 ];
 
 // Tools that change data. These go through the confirm-first gate below.
-const MUTATING_TOOLS = new Set(["createProduct", "updateProduct", "deleteProduct"]);
+const MUTATING_TOOLS = new Set(["createProduct", "updateProduct", "deleteProduct", "createUser"]);
 
 const PRODUCT_FIELD_PROPERTIES = {
   name: { type: "string", description: "Product name." },
@@ -154,6 +154,30 @@ export function buildToolDeclarations(can) {
         type: "object",
         properties: { productId: { type: "string" }, confirmed: { type: "boolean" } },
         required: ["productId"],
+      },
+    });
+  }
+
+  // only owners hold "create-users", so admins and standard staff never see this tool
+  if (can("create-users")) {
+    tools.push({
+      type: "function",
+      name: "createUser",
+      description:
+        "Create one staff account in the user's organisation. Call once per person. The new user gets an email to set their own password. Needs user confirmation first.",
+      parameters: {
+        type: "object",
+        properties: {
+          username: { type: "string", description: "Login name, no spaces." },
+          email: { type: "string" },
+          role: {
+            type: "string",
+            enum: ["standard", "admin"],
+            description: "Defaults to standard.",
+          },
+          confirmed: { type: "boolean" },
+        },
+        required: ["username", "email"],
       },
     });
   }
