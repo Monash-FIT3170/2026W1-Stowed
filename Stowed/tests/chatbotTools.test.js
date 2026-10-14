@@ -56,6 +56,21 @@ describe("Chatbot tool declarations", function () {
     assert.ok(!pagesFor(ROLES.ADMIN).includes("accounts"));
     assert.ok(pagesFor(ROLES.OWNER).includes("accounts"));
   });
+
+  it("gives only an owner the createUser tool", function () {
+    assert.ok(!names(toolsFor(ROLES.STANDARD)).includes("createUser"));
+    assert.ok(!names(toolsFor(ROLES.ADMIN)).includes("createUser"));
+    assert.ok(names(toolsFor(ROLES.OWNER)).includes("createUser"));
+  });
+
+  it("never asks for a password and only allows standard or admin roles", function () {
+    const createUser = toolsFor(ROLES.OWNER).find((tool) => tool.name === "createUser");
+    const properties = createUser.parameters.properties;
+
+    assert.ok(!("password" in properties));
+    assert.deepStrictEqual(properties.role.enum, ["standard", "admin"]);
+    assert.deepStrictEqual(createUser.parameters.required, ["username", "email"]);
+  });
 });
 
 describeServer("Chatbot tool execution", function () {
