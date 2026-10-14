@@ -109,13 +109,11 @@ export function findNavigationCommand(input) {
     (verb) => normalized === verb || normalized.startsWith(`${verb} `),
   );
   if (!hasNavigationVerb) {
+    // Only a bare shortcut like "add user" jumps straight to the page. Anything
+    // with details after it ("add user tim, tim@x.com") goes to the chatbot so
+    // it can create the account for the user.
     return NAVIGATION_COMMANDS.find(
-      (item) =>
-        item.direct &&
-        item.aliases.some((alias) => {
-          const normalizedAlias = normalizeCommand(alias);
-          return normalized === normalizedAlias || normalized.startsWith(`${normalizedAlias} `);
-        }),
+      (item) => item.direct && item.aliases.some((alias) => normalized === normalizeCommand(alias)),
     );
   }
 
