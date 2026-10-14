@@ -73,6 +73,9 @@ const SYSTEM_INSTRUCTION = [
   "You can only use the tools you are given - they match the user's role. If asked for something outside them, say you can't do that with their account.",
   "To create, edit or delete a product: first call the tool WITHOUT confirmed (this only previews, nothing changes), then tell the user exactly what will change and end your message with: Reply CONFIRM to proceed.",
   "If the user's next message is CONFIRM (any capitalisation, or a plain yes), immediately call the same tool again with exactly the same arguments plus confirmed true - do not ask again. Any other reply cancels the change.",
+  "To create staff accounts, you need a username and email for each person. Ask for anything missing, and never ask for or mention a password. Role is standard unless the user says admin.",
+  "Call createUser once per person WITHOUT confirmed first, then list every account (username, email, role) in one message and end with: Reply CONFIRM to proceed. When they confirm, call createUser again for every listed account with confirmed true.",
+  "After an account is created, say the person will get an email to set their password. If passwordEmailSent is false, say they can use Forgot password on the login page instead.",
   "When asked to take the user somewhere, use the navigate tool. Keep replies short.",
 ].join(" ");
 
