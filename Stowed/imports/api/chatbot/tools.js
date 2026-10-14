@@ -3,6 +3,7 @@ import { Products, ProductRecords } from "../products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { ProductCategories } from "../categories/collections";
 import { getCallerOrgId, assertOrgAccess, hasPermission } from "../userMethods";
+import { ROLES } from "../roles";
 
 const SEARCH_LIMIT = 15;
 const SEARCH_FETCH_LIMIT = 200;
@@ -377,6 +378,29 @@ async function deleteProduct({ userId, args }) {
   return { status: "deleted", productId: args.productId };
 }
 
+// users.create needs a password, but the chatbot never asks for one in chat.
+// The account gets a random throwaway password the user never sees.
+function makeTempPassword() {
+  const bytes = new Uint8Array(18);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function createUser({ userId, args }) {
+  const { username, email, role } = withoutConfirmed(args);
+  const roleName = role === "admin" ? "admin" : "standard";
+
+  // users.create re-checks the owner permission, the organisation and
+  // duplicate emails / usernames, so the chatbot gets the same rules as the UI.
+  const newUserId = await callMethodAs(userId, "users.create", {
+    username: String(username).trim(),
+    email: String(email).trim().toLowerCase(),
+    password: makeTempPassword(),
+    role: roleName === "admin" ? ROLES.ADMIN : ROLES.STANDARD,
+  });
+  return { status: "created", userId: newUserId, username, email, role: roleName };
+}
+
 async function navigate({ userId, args, actions }) {
   const page = NAVIGATION_PAGES[args.page];
   if (!page || !(await hasPermission(userId, page.permission))) {
@@ -399,6 +423,7 @@ const EXECUTORS = {
   createProduct,
   updateProduct,
   deleteProduct,
+  createUser,
   navigate,
 };
 
