@@ -1,4 +1,5 @@
 import { Meteor } from "meteor/meteor";
+import { Accounts } from "meteor/accounts-base";
 import { Products, ProductRecords } from "../products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { ProductCategories } from "../categories/collections";
@@ -398,7 +399,28 @@ async function createUser({ userId, args }) {
     password: makeTempPassword(),
     role: roleName === "admin" ? ROLES.ADMIN : ROLES.STANDARD,
   });
-  return { status: "created", userId: newUserId, username, email, role: roleName };
+
+  // Send the reset password email so the new user picks their own password.
+  // The account already exists at this point, so a failed email is reported
+  // back instead of failing the whole action.
+  let passwordEmailSent = false;
+  if (Meteor.isServer) {
+    try {
+      await Accounts.sendResetPasswordEmail(newUserId);
+      passwordEmailSent = true;
+    } catch (error) {
+      console.error("chatbot createUser: reset email failed:", error);
+    }
+  }
+
+  return {
+    status: "created",
+    userId: newUserId,
+    username,
+    email,
+    role: roleName,
+    passwordEmailSent,
+  };
 }
 
 async function navigate({ userId, args, actions }) {
