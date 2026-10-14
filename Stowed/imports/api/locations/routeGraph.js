@@ -1,5 +1,7 @@
 // imports/api/locations/routeGraph.js
 
+import { WeightedGraph } from "../../../server/routes/dijkstra";
+
 /**
  * Helpers for the walkway route graph, shared by the floor map editor (client)
  * and the route save method (server). Links are undirected, so A-B and B-A are the same link.
@@ -307,4 +309,34 @@ export function removeNodes(nodes, links, shouldRemove) {
     nodes: nodes.filter((node) => !removedIds.has(node.id)),
     links: links.filter((link) => !removedIds.has(link.fromId) && !removedIds.has(link.toId)),
   };
+}
+
+/**
+ * Convert a walkway map into a weighted graph for Dijkstra's
+ * 
+ * @param {WalkwayNode[]} nodes the list of nodes
+ * @param {WalkwayLink[]} links the list of edges
+ * 
+ * @returns {WeightedGraph} a graph to run Dijkstra's algorith on
+ */
+export function toWeightedGraph(nodes, links) {
+  const g = new WeightedGraph();
+
+  for (let n = 0; n < nodes.length; n++) {
+    g.addVertex(n, {x: nodes[n].x, y: nodes[n].y});
+  }
+
+  for (let e = 0; e < links.length; e++) {
+    // get indices of nodes in node list
+    const ind1 = nodes.findIndex((n) => n.id === links[e].toId);
+    const ind2 = nodes.findIndex((n) => n.id === links[e].fromId);
+
+    // get weight (cartesian distance)
+    const weight = cartDistance(nodes[ind1], nodes[ind2]);
+
+    // add edge to graph
+    g.addEdge(ind1, ind2, weight);
+  }
+  
+  return g;
 }
