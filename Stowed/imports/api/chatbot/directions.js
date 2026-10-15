@@ -13,6 +13,7 @@ const MATCH_LIMIT = 8;
 export const DIRECTIONS_CHOICE_KINDS = {
   PRODUCTS: "directions-products",
   FLOOR: "directions-floor",
+  SITE: "directions-site",
 };
 
 function escapeRegex(value) {
@@ -117,12 +118,30 @@ async function findFloorAvailability(orgId, productIds) {
 const floorLabel = ({ floorMap, site }) =>
   site ? `${site.name} – ${floorMap.name}` : floorMap.name;
 
+function makeChoice(kind, { prompt, multiSelect, options, context }) {
+  return { type: "choice", id: makeChoiceId(kind), kind, prompt, multiSelect, options, context };
+}
+
+function productsBySite(availability) {
+  const bySite = new Map();
+  for (const entry of availability.values()) {
+    const siteId = entry.floorMap.siteId;
+    if (!bySite.has(siteId)) bySite.set(siteId, { site: entry.site, productIds: new Set() });
+    entry.productIds.forEach((id) => bySite.get(siteId).productIds.add(id));
+  }
+  return bySite;
+}
+
 /**
  * Works out what to do for a "directions to a product" request. Either it has everything it needs
  * and returns a `directions` action for the client to open, or it returns the next question as a
  * `choice` action (so answers are clicks, never free text), or it explains why it can't.
  *
- * @param {{ userId: string, productQueries?: string[], productIds?: string[], floorMapId?: string }} params
+ * Order of questions: which site (only when the matching products are stocked at more than one),
+ * then which products (only when a name matches several), then which floor (only when several
+ * floors cover the products equally well).
+ *
+ * @param {{ userId: string, productQueries?: string[], productIds?: string[], floorMapId?: string, siteId?: string }} params
  * @returns {Promise<{ status: string, message: string, actions: Object[] }>}
  */
 export async function resolveDirections({
@@ -130,6 +149,7 @@ export async function resolveDirections({
   productQueries = [],
   productIds = [],
   floorMapId,
+  siteId,
 }) {
   const orgId = await getCallerOrgId(userId);
 
@@ -139,46 +159,89 @@ export async function resolveDirections({
     known.forEach((product) => resolved.set(product._id, product));
   }
 
-  const ambiguous = [];
+  const ambiguousGroups = [];
   const notFound = [];
   for (const query of productQueries) {
     const matches = await findProductMatches(orgId, query);
     if (matches.length === 0) notFound.push(query);
     else if (matches.length === 1) resolved.set(matches[0]._id, matches[0]);
-    else ambiguous.push(...matches);
+    else ambiguousGroups.push({ query, matches });
   }
 
-  if (ambiguous.length > 0) {
-    const options = [...new Map(ambiguous.map((product) => [product._id, product])).values()]
-      .filter((product) => !resolved.has(product._id))
-      .map((product) => ({
-        value: product._id,
-        label: product.name,
-        detail: [product.brand, product.sku].filter(Boolean).join(" · "),
-      }));
-    return {
-      status: "choice_shown",
-      message: "A few products match. Tick every one you want directions to.",
-      actions: [
-        {
-          type: "choice",
-          id: makeChoiceId(DIRECTIONS_CHOICE_KINDS.PRODUCTS),
-          kind: DIRECTIONS_CHOICE_KINDS.PRODUCTS,
-          prompt: "Which products do you want directions to?",
-          multiSelect: true,
-          options,
-          context: { productIds: [...resolved.keys()] },
-        },
-      ],
-    };
+  let preferredSiteId = siteId;
+  const notStockedHere = [];
+
+  if (ambiguousGroups.length > 0) {
+    const pool = new Map(resolved);
+    ambiguousGroups.forEach(({ matches }) =>
+      matches.forEach((product) => pool.set(product._id, product)),
+    );
+    const poolAvailability = await findFloorAvailability(orgId, [...pool.keys()]);
+    const siteStock = productsBySite(poolAvailability);
+
+    if (!preferredSiteId && siteStock.size > 1) {
+      return {
+        status: "choice_shown",
+        message: "Those are stocked at more than one site. Which site are you at?",
+        actions: [
+          makeChoice(DIRECTIONS_CHOICE_KINDS.SITE, {
+            prompt: "Which site are you at?",
+            multiSelect: false,
+            options: [...siteStock.entries()].map(([id, { site, productIds: ids }]) => ({
+              value: id,
+              label: site?.name ?? "Unknown site",
+              detail: `${ids.size} matching product${ids.size === 1 ? "" : "s"} in stock`,
+            })),
+            context: {
+              productIds: [...resolved.keys()],
+              productQueries: ambiguousGroups.map((group) => group.query),
+            },
+          }),
+        ],
+      };
+    }
+    if (!preferredSiteId && siteStock.size === 1) preferredSiteId = [...siteStock.keys()][0];
+
+    const allowed = preferredSiteId
+      ? (siteStock.get(preferredSiteId)?.productIds ?? new Set())
+      : new Set();
+    const options = [];
+    for (const { query, matches } of ambiguousGroups) {
+      const here = matches.filter((product) => allowed.has(product._id));
+      if (here.length === 0) notStockedHere.push(query);
+      else if (here.length === 1) resolved.set(here[0]._id, here[0]);
+      else options.push(...here);
+    }
+
+    if (options.length > 0) {
+      return {
+        status: "choice_shown",
+        message: "A few products match. Tick every one you want directions to.",
+        actions: [
+          makeChoice(DIRECTIONS_CHOICE_KINDS.PRODUCTS, {
+            prompt: "Which products do you want directions to?",
+            multiSelect: true,
+            options: [...new Map(options.map((product) => [product._id, product])).values()]
+              .filter((product) => !resolved.has(product._id))
+              .map((product) => ({
+                value: product._id,
+                label: product.name,
+                detail: [product.brand, product.sku].filter(Boolean).join(" · "),
+              })),
+            context: { productIds: [...resolved.keys()], siteId: preferredSiteId },
+          }),
+        ],
+      };
+    }
   }
 
   if (resolved.size === 0) {
+    const unknown = [...notFound, ...notStockedHere];
     return {
-      status: notFound.length > 0 ? "not_found" : "need_products",
+      status: unknown.length > 0 ? "not_found" : "need_products",
       message:
-        notFound.length > 0
-          ? `I couldn't find a product matching ${notFound.map((name) => `"${name}"`).join(", ")}. Ask the user what the product is called.`
+        unknown.length > 0
+          ? `I couldn't find ${unknown.map((name) => `"${name}"`).join(", ")} in stock anywhere with a route. Ask the user what the product is called.`
           : "Ask the user which product (or products) they want directions to.",
       actions: [],
     };
@@ -194,13 +257,21 @@ export async function resolveDirections({
     };
   }
 
-  const mostCovered = Math.max(...[...availability.values()].map((entry) => entry.productIds.size));
-  let candidates = [...availability.values()].filter(
-    (entry) => entry.productIds.size === mostCovered,
-  );
+  const bySize = (a, b) => b.productIds.size - a.productIds.size;
+  const maxCoverage = (entries) => Math.max(...entries.map((entry) => entry.productIds.size));
+  const entries = [...availability.values()];
 
-  const allCandidates = candidates;
-  const chosen = floorMapId && candidates.find((entry) => entry.floorMap._id === floorMapId);
+  // Prefer the site the user said they are at, if it has any of the products
+  const inSite = preferredSiteId
+    ? entries.filter((entry) => entry.floorMap.siteId === preferredSiteId)
+    : [];
+  const pool = inSite.length > 0 ? inSite : entries;
+  const best = maxCoverage(pool);
+  let candidates = pool.filter((entry) => entry.productIds.size === best);
+  // Anywhere that covers at least as much can be switched to from the map
+  const switchable = entries.filter((entry) => entry.productIds.size >= best).sort(bySize);
+
+  const chosen = floorMapId && switchable.find((entry) => entry.floorMap._id === floorMapId);
   if (chosen) candidates = [chosen];
 
   if (candidates.length > 1) {
@@ -208,10 +279,7 @@ export async function resolveDirections({
       status: "choice_shown",
       message: "That's stocked on more than one floor. Which floor are you on?",
       actions: [
-        {
-          type: "choice",
-          id: makeChoiceId(DIRECTIONS_CHOICE_KINDS.FLOOR),
-          kind: DIRECTIONS_CHOICE_KINDS.FLOOR,
+        makeChoice(DIRECTIONS_CHOICE_KINDS.FLOOR, {
           prompt: "Which floor are you on?",
           multiSelect: false,
           options: candidates.map((entry) => ({
@@ -219,8 +287,8 @@ export async function resolveDirections({
             label: floorLabel(entry),
             detail: `${entry.productIds.size} of ${resolved.size} product${resolved.size === 1 ? "" : "s"} in stock here`,
           })),
-          context: { productIds: [...resolved.keys()] },
-        },
+          context: { productIds: [...resolved.keys()], siteId: preferredSiteId },
+        }),
       ],
     };
   }
@@ -231,7 +299,7 @@ export async function resolveDirections({
   const productNames = Object.fromEntries(
     [...resolved.values()].map((product) => [product._id, product.name]),
   );
-  const floors = allCandidates.map((other) => ({
+  const floors = switchable.map((other) => ({
     floorMapId: other.floorMap._id,
     floorName: other.floorMap.name,
     siteName: other.site?.name ?? "",
@@ -244,6 +312,9 @@ export async function resolveDirections({
       `Opening the ${floorLabel(entry)} map. Click where you are standing and I'll draw the shortest route.` +
       (missing.length > 0
         ? ` Note: ${missing.map((product) => product.name).join(", ")} isn't in stock on this floor.`
+        : "") +
+      (notStockedHere.length > 0
+        ? ` Nothing matching ${notStockedHere.map((name) => `"${name}"`).join(", ")} is in stock at this site.`
         : ""),
     actions: [
       {

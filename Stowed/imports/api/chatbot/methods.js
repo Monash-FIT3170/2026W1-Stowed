@@ -915,14 +915,25 @@ const selectionPattern = {
 };
 
 async function answerDirectionsSelection(userId, selection) {
-  const contextIds = Array.isArray(selection.context?.productIds)
-    ? selection.context.productIds.filter((id) => typeof id === "string")
-    : [];
+  const context = selection.context ?? {};
+  const strings = (value) =>
+    Array.isArray(value) ? value.filter((entry) => typeof entry === "string") : [];
+  const contextIds = strings(context.productIds);
+  const siteId = typeof context.siteId === "string" ? context.siteId : undefined;
 
+  if (selection.kind === DIRECTIONS_CHOICE_KINDS.SITE) {
+    return await resolveDirections({
+      userId,
+      productIds: contextIds,
+      productQueries: strings(context.productQueries),
+      siteId: selection.values[0],
+    });
+  }
   if (selection.kind === DIRECTIONS_CHOICE_KINDS.PRODUCTS) {
     return await resolveDirections({
       userId,
       productIds: [...new Set([...contextIds, ...selection.values])],
+      siteId,
     });
   }
   if (selection.kind === DIRECTIONS_CHOICE_KINDS.FLOOR) {
@@ -930,6 +941,7 @@ async function answerDirectionsSelection(userId, selection) {
       userId,
       productIds: contextIds,
       floorMapId: selection.values[0],
+      siteId,
     });
   }
   return null;
