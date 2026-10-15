@@ -33,7 +33,7 @@ export function SettingsPage() {
     <div className="product-detail-container">
       <div className="product-detail-header">
         <div className="breadcrumb">
-          <span className="breadcrumb-link">Account</span>
+          <span className="breadcrumb-link">Organisation</span>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">Settings</span>
         </div>
