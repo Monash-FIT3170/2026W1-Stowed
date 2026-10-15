@@ -44,6 +44,7 @@ export const Canvas = forwardRef(function Canvas(
     isSelectingStart = false,
     onStartingPointSelect,
     fitInsetRight = 0,
+    focusRequest = null,
   },
   ref,
 ) {
@@ -260,6 +261,25 @@ export const Canvas = forwardRef(function Canvas(
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleCopy, handlePaste, handleDuplicate, handleDelete]);
 
+  /** A unit's centre in stage pixels at scale 1, or null if it isn't loaded. */
+  function unitCentre(unitId) {
+    const unit = units.find((candidate) => (candidate._id || candidate.id) === unitId);
+    if (!unit) return null;
+    const px = CANVAS_CONFIG.PIXELS_PER_METER;
+    return { x: (unit.x + unit.width / 2) * px, y: (unit.y + unit.height / 2) * px };
+  }
+
+  // A focus request can arrive before this map's units have loaded (the page
+  // has just switched maps), so it waits for the unit and runs once per nonce.
+  const handledFocusNonceRef = useRef(null);
+  useEffect(() => {
+    if (!focusRequest || handledFocusNonceRef.current === focusRequest.nonce) return;
+    const centre = unitCentre(focusRequest.unitId);
+    if (!centre) return;
+    handledFocusNonceRef.current = focusRequest.nonce;
+    dispatch({ type: CANVAS_ACTIONS.CENTRE_ON, payload: centre });
+  });
+
   useImperativeHandle(ref, () => ({
     /**
      * Pans the stage so `unitId` sits in the middle of the viewport, leaving
@@ -267,20 +287,8 @@ export const Canvas = forwardRef(function Canvas(
      * re-centring effect above, which fires whenever scale changes.
      */
     focusUnit(unitId) {
-      const unit = units.find((candidate) => (candidate._id || candidate.id) === unitId);
-      if (!unit || !displaySize.width || !displaySize.height) return;
-
-      const px = CANVAS_CONFIG.PIXELS_PER_METER;
-      const centreX = (unit.x + unit.width / 2) * px;
-      const centreY = (unit.y + unit.height / 2) * px;
-
-      dispatch({
-        type: CANVAS_ACTIONS.SET_STAGE_POS,
-        payload: {
-          x: displaySize.width / 2 - centreX * scale,
-          y: displaySize.height / 2 - centreY * scale,
-        },
-      });
+      const centre = unitCentre(unitId);
+      if (centre) dispatch({ type: CANVAS_ACTIONS.CENTRE_ON, payload: centre });
     },
     exportPng() {
       const stage = stageRef.current;

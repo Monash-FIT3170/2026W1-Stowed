@@ -9,7 +9,25 @@ export const initialCanvasState = {
   stagePos: { x: 0, y: 0 },
   displaySize: { width: 0, height: 0 },
   clipboard: [],
+  // A CENTRE_ON that arrived before the viewport was measured, applied on the
+  // first RESIZE_VIEWPORT so it is not lost.
+  pendingCentre: null,
 };
+
+/**
+ * Pans so `point` (stage pixels at scale 1) sits mid-viewport, at the scale the
+ * reducer holds *now*. Done here rather than in the component so a centre that
+ * lands in the same batch as a refit uses the refitted scale, not a stale one.
+ */
+function centreOn(state, point) {
+  const { width, height } = state.displaySize;
+  if (!width || !height) return { ...state, pendingCentre: point };
+  return {
+    ...state,
+    pendingCentre: null,
+    stagePos: { x: width / 2 - point.x * state.scale, y: height / 2 - point.y * state.scale },
+  };
+}
 
 /**
  * Reducer for transient canvas UI state. Does not touch persistent unit data
@@ -29,6 +47,7 @@ export const initialCanvasState = {
  * // SET_SCALE           - updates the stage zoom level.
  * // SET_STAGE_POS       - persists the stage pan position after a stage drag ends.
  * // SET_DISPLAY_SIZE    - stores the measured pixel size of the canvas container.
+ * // CENTRE_ON           - pans so a stage point sits mid-viewport (kept until measured).
  */
 export function canvasReducer(state, action) {
   switch (action.type) {
@@ -61,13 +80,18 @@ export function canvasReducer(state, action) {
     case CANVAS_ACTIONS.SET_DISPLAY_SIZE:
       return { ...state, displaySize: action.payload };
 
-    case CANVAS_ACTIONS.RESIZE_VIEWPORT:
-      return resizeViewport(
+    case CANVAS_ACTIONS.RESIZE_VIEWPORT: {
+      const next = resizeViewport(
         state,
         action.payload.displaySize,
         action.payload.floorSize,
         action.payload.reset,
       );
+      return state.pendingCentre ? centreOn(next, state.pendingCentre) : next;
+    }
+
+    case CANVAS_ACTIONS.CENTRE_ON:
+      return centreOn(state, action.payload);
 
     case CANVAS_ACTIONS.COPY_UNITS:
       return { ...state, clipboard: action.payload.units };

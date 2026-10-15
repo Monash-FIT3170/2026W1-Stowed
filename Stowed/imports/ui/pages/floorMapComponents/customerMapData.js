@@ -60,3 +60,50 @@ export function groupUnitByShelf(placements, unitId) {
     }))
     .sort((a, b) => a.shelfName.localeCompare(b.shelfName));
 }
+
+/**
+ * Where each storage unit on a public map can be shown: its map, and a label
+ * naming that map for results that are not on the one being viewed. The
+ * site is named only when it has more than one public map, where the map
+ * name alone could be ambiguous across sites.
+ *
+ * @returns {Map<string, { floorMapId: string, mapLabel: string }>}
+ */
+export function buildUnitMaps(storageUnits, visibleMaps, visibleSites) {
+  const mapsById = new Map(visibleMaps.map((map) => [map._id, map]));
+  const sitesById = new Map(visibleSites.map((site) => [site._id, site]));
+  const mapsPerSite = new Map();
+  for (const map of visibleMaps) {
+    mapsPerSite.set(map.siteId, (mapsPerSite.get(map.siteId) ?? 0) + 1);
+  }
+
+  const unitMaps = new Map();
+  for (const unit of storageUnits) {
+    const map = mapsById.get(unit.floorMapId);
+    if (!map) continue;
+    const siteName = sitesById.get(map.siteId)?.name;
+    const mapLabel =
+      siteName && mapsPerSite.get(map.siteId) > 1 ? `${siteName} · ${map.name}` : map.name;
+    unitMaps.set(unit._id, { floorMapId: map._id, mapLabel });
+  }
+  return unitMaps;
+}
+
+/**
+ * Orders map-search rows: on the map being viewed first, then on another
+ * public map, then nowhere a shopper can be shown; within each, by product
+ * name then location label.
+ */
+export function rankSearchRows(rows, currentMapId, unitMaps) {
+  const tier = (row) => {
+    const map = unitMaps.get(row.unitId);
+    if (!map) return 2;
+    return map.floorMapId === currentMapId ? 0 : 1;
+  };
+  return [...rows].sort(
+    (a, b) =>
+      tier(a) - tier(b) ||
+      (a.product.name || "").localeCompare(b.product.name || "") ||
+      a.label.localeCompare(b.label),
+  );
+}

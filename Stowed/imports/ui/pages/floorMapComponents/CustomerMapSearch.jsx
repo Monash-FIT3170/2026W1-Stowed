@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { searchProducts } from "/imports/api/products/filters";
 import { CUSTOMER_SEARCH_FIELDS } from "/imports/api/customer/catalogue";
 import { StatusBadge } from "../../components/StatusBadge";
+import { rankSearchRows } from "./customerMapData";
 
 const MAX_RESULTS = 30;
 
@@ -9,21 +10,23 @@ const MAX_RESULTS = 30;
  * Product search for the customer floor map, over the same fields as the
  * customer search page (name, brand, description, category).
  *
- * Results are one row per shelf a product sits on. "Show on map" is offered
- * only for units on the map being viewed; a unit on a private or different map
- * still shows its label, so a shopper learns where it is without that map
- * being exposed.
+ * Results are one row per shelf a product sits on. Any shelf on a public map
+ * can be shown: on this map it pans there, on another it switches maps first.
+ * A unit on a private map still shows its label, so a shopper learns where it
+ * is without that map being exposed.
  *
  * @param {Array} products - Customer products from customer.products.list.
  * @param {Array} placements - From buildPlacements(products).
- * @param {Set<string>} visibleUnitIds - Units drawn on the current map.
+ * @param {string} currentMapId - The map being viewed.
+ * @param {Map<string, { floorMapId: string, mapLabel: string }>} unitMaps - From buildUnitMaps.
  * @param {boolean} loading
  * @param {(placement: object) => void} onShowOnMap
  */
 export function CustomerMapSearch({
   products,
   placements,
-  visibleUnitIds,
+  currentMapId,
+  unitMaps,
   loading,
   loadFailed = false,
   onShowOnMap,
@@ -48,16 +51,8 @@ export function CustomerMapSearch({
       }
     }
 
-    return rows
-      .sort(
-        (a, b) =>
-          // Rows that can be shown on this map come first.
-          Number(visibleUnitIds.has(b.unitId)) - Number(visibleUnitIds.has(a.unitId)) ||
-          (a.product.name || "").localeCompare(b.product.name || "") ||
-          a.label.localeCompare(b.label),
-      )
-      .slice(0, MAX_RESULTS);
-  }, [products, placements, visibleUnitIds, trimmed]);
+    return rankSearchRows(rows, currentMapId, unitMaps).slice(0, MAX_RESULTS);
+  }, [products, placements, currentMapId, unitMaps, trimmed]);
 
   return (
     <div className="cfm-search">
@@ -99,19 +94,21 @@ export function CustomerMapSearch({
           ) : (
             <ul className="cfm-result-list">
               {results.map((row) => {
-                const onThisMap = visibleUnitIds.has(row.unitId);
+                const map = unitMaps.get(row.unitId);
+                const onThisMap = map?.floorMapId === currentMapId;
                 return (
                   <li key={row.key} className="cfm-result">
                     <div className="cfm-result-text">
                       <span className="cfm-result-name">{row.product.name}</span>
                       <span className="cfm-result-path">
                         {row.label || "Location not listed"}
-                        {row.label && !onThisMap ? " · not on this map" : ""}
+                        {row.label && map && !onThisMap ? ` · ${map.mapLabel}` : ""}
+                        {row.label && !map ? " · ask staff for directions" : ""}
                       </span>
                     </div>
                     <div className="cfm-result-side">
                       <StatusBadge status={row.product.stockStatus} />
-                      {onThisMap && (
+                      {map && (
                         <button
                           type="button"
                           className="cfm-show-btn"
@@ -120,7 +117,7 @@ export function CustomerMapSearch({
                             setQuery("");
                           }}
                         >
-                          Show on map
+                          {onThisMap ? "Show on map" : `Go to ${map.mapLabel}`}
                         </button>
                       )}
                     </div>
