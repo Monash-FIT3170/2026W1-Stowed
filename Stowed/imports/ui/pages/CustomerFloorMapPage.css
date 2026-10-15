@@ -152,8 +152,27 @@
   cursor: pointer;
 }
 
-.cfm-show-btn:hover {
-  opacity: 0.9;
+/* The pill is a label inside a clickable row now, so the row carries the
+   hover and keyboard-highlight states. */
+.cfm-result.is-actionable {
+  cursor: pointer;
+}
+
+.cfm-result.is-actionable:hover,
+.cfm-result.is-active {
+  background: var(--bg-orange);
+  box-shadow: inset 0 0 0 1px var(--accent-secondary);
+}
+
+.cfm-result[aria-disabled="true"] {
+  cursor: default;
+}
+
+.cfm-results-more {
+  margin: 6px 4px 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
 }
 
 /* -- UNIT PANEL -- */
