@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
 import { hasClientPermission } from "../../api/userMethods";
@@ -188,6 +188,7 @@ export function Chatbot() {
   const [pendingAction, setPendingAction] = useState(null);
   const [directionsRequest, setDirectionsRequest] = useState(null);
   const inputRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   const canSend = draft.trim().length > 0 && !isSending;
 
@@ -198,6 +199,11 @@ export function Chatbot() {
       ),
     [messages],
   );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
+  }, [isOpen, visibleMessages, isSending]);
 
   function openChat() {
     setIsOpen(true);
@@ -455,6 +461,7 @@ export function Chatbot() {
                 <div className="chatbot-body">Thinking...</div>
               </article>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {messages.length === 1 && (
