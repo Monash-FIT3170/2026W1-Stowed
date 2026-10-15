@@ -74,7 +74,7 @@ export function CustomerMapSearch({
   useEffect(() => {
     if (!showResults) return undefined;
     function onPointerDown(event) {
-      if (!wrapperRef.current?.contains(event.target)) setOpen(false);
+      if (!wrapperRef.current?.contains(event.target)) close();
     }
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
@@ -87,6 +87,12 @@ export function CustomerMapSearch({
       .getElementById(`${idPrefix}-option-${activeIndex}`)
       ?.scrollIntoView?.({ block: "nearest" });
   }, [activeIndex, idPrefix]);
+
+  /** Closing also drops the highlight, so reopening never shows a stale row. */
+  function close() {
+    setOpen(false);
+    setActiveIndex(-1);
+  }
 
   function pick(row) {
     if (!canShow(row)) return;
@@ -107,7 +113,10 @@ export function CustomerMapSearch({
 
   function onKeyDown(event) {
     if (event.key === "Escape") {
-      if (showResults) setOpen(false);
+      // A search input clears itself on Escape by default; the first press
+      // should only close the results, and a second one clears.
+      event.preventDefault();
+      if (showResults) close();
       else setQuery("");
       return;
     }
@@ -238,7 +247,8 @@ export function SearchResultRow({ id, row, map, currentMapId, active, onPick, on
         <StatusBadge status={row.product.stockStatus} />
         {map && (
           <span className="cfm-show-btn" aria-hidden="true">
-            {onThisMap ? "Show on map" : `Go to ${map.mapLabel}`}
+            {/* The path above already names the other map, so the pill stays short. */}
+            {onThisMap ? "Show on map" : "Go to map"}
           </span>
         )}
       </div>

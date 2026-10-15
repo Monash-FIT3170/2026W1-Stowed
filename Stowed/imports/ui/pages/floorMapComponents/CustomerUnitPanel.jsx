@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../../components/StatusBadge";
+import { ShoppingListControl } from "../../components/ShoppingListControl";
 import { groupUnitByShelf } from "./customerMapData";
 
 /**
@@ -116,11 +117,18 @@ export function CustomerUnitPanel({
                   {isOpen && (
                     <ul className="cfm-product-list">
                       {products.map((product) => (
-                        <li key={product._id}>
+                        <li key={product._id} className="cfm-product-row">
                           <Link className="cfm-product" to={`/customer/search/${product._id}`}>
                             <span className="cfm-product-name">{product.name}</span>
                             <StatusBadge status={product.stockStatus} />
                           </Link>
+                          {/* A sibling of the link, not inside it: a button
+                              within a link would navigate on every press. */}
+                          <ShoppingListControl
+                            productId={product._id}
+                            productName={product.name}
+                            variant="compact"
+                          />
                         </li>
                       ))}
                     </ul>
