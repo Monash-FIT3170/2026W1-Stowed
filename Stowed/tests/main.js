@@ -41,3 +41,4 @@ import "./dijkstraAlgorithm.test.js";
 import "./routePlanning.test.js";
 import "./customerCatalogue.test.js";
 import "./customerLocationPreview.test.js";
+import "./customerFloorMap.test.js";
