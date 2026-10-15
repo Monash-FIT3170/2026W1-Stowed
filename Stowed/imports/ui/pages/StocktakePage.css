@@ -256,3 +256,14 @@
   flex: 1 1 260px;
   max-width: 360px;
 }
+
+/* Phone: body gutter matches the 16px page header used elsewhere */
+@media (max-width: 768px) {
+  .stocktake-page {
+    padding: 16px;
+  }
+
+  .stocktake-header-actions {
+    flex-wrap: wrap;
+  }
+}

@@ -37,6 +37,10 @@
   --bg-green: #d6efe8;
   --bg-orange: #fae0d6;
   --bg-yellow: #fdf3d6;
+
+  /* Dropdown chevron, drawn by the page rather than the browser so every
+     select has the same arrow and the same gap from its right edge. */
+  --select-chevron: url("data:image/svg+xml,%3Csvg viewBox='0 0 12 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%235c4f3f' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 body {
@@ -413,6 +417,15 @@ textarea.form-input {
 
 select.form-input {
   color: var(--text-muted);
+  appearance: none;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 12px;
+  padding-right: 36px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 select.form-input.selected {
@@ -598,6 +611,10 @@ select.form-input.selected {
   max-width: 420px;
   width: calc(100% - 48px);
   box-shadow: 0 10px 30px rgba(26, 26, 26, 0.12);
+  /* Tall modals scroll inside themselves instead of running off a short
+     screen (phone landscape, small laptop). No effect when they fit. */
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
 }
 
 .modal-title {
@@ -631,6 +648,14 @@ select.form-input.selected {
   display: inline-block;
 }
 
+/* -- Tablet/phone: modals sit above the floating dock (z-index 1200) -- */
+
+@media (max-width: 1024px) {
+  .modal-overlay {
+    z-index: 1300;
+  }
+}
+
 /* -- Phone: tighter page gutters so headers align with page content -- */
 
 @media (max-width: 768px) {
@@ -638,10 +663,28 @@ select.form-input.selected {
     padding: 16px 16px 4px;
   }
 
+  /* Keeps a gutter around modals whose inline width is 100% */
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .create-product-footer {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
   /* compact action button so it fits beside the title on phones */
   .header-top .btn-primary {
     padding: 7px 14px;
     font-size: 12px;
+  }
+}
+
+/* -- Phone: paired form fields stack instead of squeezing side by side -- */
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }
 

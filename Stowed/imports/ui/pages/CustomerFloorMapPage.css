@@ -1,0 +1,362 @@
+/* Customer floor map: unit panel and product search.
+   Prefixed cfm- so nothing collides with the staff floor map classes. */
+
+.cfm-heading-tools {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.cfm-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+}
+
+.cfm-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 7px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(43, 31, 26, 0.08);
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* -- SEARCH -- */
+.cfm-search {
+  position: relative;
+  width: 300px;
+}
+
+.cfm-search-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.cfm-search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cfm-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font: inherit;
+  font-size: 14px;
+}
+
+.cfm-search-clear {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Results float over the map so the heading keeps its height */
+.cfm-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  max-height: min(360px, 60vh);
+  margin-top: 6px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--card-bg);
+  box-shadow: 0 10px 24px rgba(43, 31, 26, 0.16);
+}
+
+.cfm-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cfm-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--input-bg);
+}
+
+.cfm-result-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cfm-result-name {
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cfm-result-path {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.cfm-result-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.cfm-show-btn {
+  padding: 5px 11px;
+  border: 1px solid var(--accent-primary);
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cfm-show-btn:hover {
+  opacity: 0.9;
+}
+
+/* -- UNIT PANEL -- */
+.cfm-panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 320px;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: 0 3px 12px rgba(43, 31, 26, 0.06);
+}
+
+.cfm-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.cfm-panel-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.cfm-panel-title {
+  margin: 2px 0;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.cfm-panel-meta {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.cfm-close {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cfm-close:hover {
+  background: var(--bg-primary);
+}
+
+.cfm-panel-body {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.cfm-shelf-list,
+.cfm-product-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cfm-shelf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cfm-shelf {
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+.cfm-shelf.open {
+  border-color: var(--accent-primary);
+}
+
+.cfm-shelf-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 11px;
+  border: 0;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cfm-shelf-toggle:hover {
+  background: var(--bg-primary);
+}
+
+.cfm-caret {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.cfm-shelf-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cfm-shelf-count {
+  flex-shrink: 0;
+  min-width: 22px;
+  padding: 1px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--card-bg);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cfm-product-list {
+  padding: 4px 6px 6px;
+  background: var(--card-bg);
+}
+
+.cfm-product {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border-light);
+  border-radius: 6px;
+  color: var(--text-dark);
+  text-decoration: none;
+}
+
+.cfm-product-list li:last-child .cfm-product {
+  border-bottom: 0;
+}
+
+.cfm-product:hover {
+  background: var(--input-bg);
+}
+
+.cfm-product:hover .cfm-product-name {
+  text-decoration: underline;
+}
+
+.cfm-product-name {
+  min-width: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.cfm-product > :last-child {
+  flex-shrink: 0;
+}
+
+.cfm-empty {
+  margin: 0;
+  padding: 20px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.cfm-empty.small {
+  padding: 10px 0;
+  font-size: 12px;
+}
+
+/* -- PHONES AND TABLETS: panel drops below the map -- */
+@media (max-width: 1024px) {
+  .cfm-heading-tools {
+    width: 100%;
+  }
+
+  .cfm-search {
+    width: 100%;
+  }
+
+  .cfm-body {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cfm-panel {
+    width: auto;
+    max-height: 45%;
+  }
+}

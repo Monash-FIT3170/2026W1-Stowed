@@ -1,0 +1,110 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { StatusBadge } from "../../components/StatusBadge";
+import { groupUnitByShelf } from "./customerMapData";
+
+/**
+ * Shopper-facing version of the staff LocationProductsPanel: the shelves in a
+ * storage unit and what is on each. Shows stock status rather than counts, and
+ * links products to the customer product page instead of staff pages.
+ *
+ * Only shelves holding stock appear - the catalogue lists where a product is,
+ * so an empty shelf has nothing to report.
+ *
+ * @param {string} unitId
+ * @param {string} unitName
+ * @param {Array} placements - From buildPlacements.
+ * @param {boolean} loading
+ * @param {boolean} loadFailed - The catalogue request errored.
+ * @param {string|null} focusShelfName - Expanded automatically, used by search.
+ * @param {number} focusNonce - Bumped per search hit so re-picking a result re-expands it.
+ * @param {() => void} onClose
+ */
+export function CustomerUnitPanel({
+  unitId,
+  unitName,
+  placements,
+  loading,
+  loadFailed = false,
+  focusShelfName,
+  focusNonce = 0,
+  onClose,
+}) {
+  const shelves = groupUnitByShelf(placements, unitId);
+  const [expanded, setExpanded] = useState(focusShelfName ?? null);
+
+  // Re-seed during render, not in an effect: a new unit or a new search hit
+  // decides which shelf starts open.
+  const focusKey = `${unitId}|${focusShelfName ?? ""}|${focusNonce}`;
+  const [lastFocusKey, setLastFocusKey] = useState(focusKey);
+  if (focusKey !== lastFocusKey) {
+    setLastFocusKey(focusKey);
+    setExpanded(focusShelfName ?? null);
+  }
+
+  const productCount = shelves.reduce((sum, shelf) => sum + shelf.products.length, 0);
+
+  return (
+    <aside className="cfm-panel" aria-label={`Products in ${unitName || "this unit"}`}>
+      <div className="cfm-panel-header">
+        <div>
+          <span className="cfm-panel-label">Storage unit</span>
+          <h2 className="cfm-panel-title">{unitName || "Unnamed unit"}</h2>
+          {!loading && !loadFailed && (
+            <span className="cfm-panel-meta">
+              {productCount} product{productCount === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+        <button type="button" className="cfm-close" onClick={onClose} aria-label="Close panel">
+          ✕
+        </button>
+      </div>
+
+      <div className="cfm-panel-body">
+        {loading ? (
+          <p className="cfm-empty">Loading…</p>
+        ) : loadFailed ? (
+          <p className="cfm-empty">Products couldn&apos;t be loaded. Refresh to try again.</p>
+        ) : shelves.length === 0 ? (
+          <p className="cfm-empty">No products are listed in this unit.</p>
+        ) : (
+          <ul className="cfm-shelf-list">
+            {shelves.map(({ shelfName, products }) => {
+              const isOpen = expanded === shelfName;
+              return (
+                <li key={shelfName || "_unit"} className={`cfm-shelf${isOpen ? " open" : ""}`}>
+                  <button
+                    type="button"
+                    className="cfm-shelf-toggle"
+                    aria-expanded={isOpen}
+                    onClick={() => setExpanded(isOpen ? null : shelfName)}
+                  >
+                    <span className="cfm-caret" aria-hidden="true">
+                      {isOpen ? "▾" : "▸"}
+                    </span>
+                    <span className="cfm-shelf-name">{shelfName || "General"}</span>
+                    <span className="cfm-shelf-count">{products.length}</span>
+                  </button>
+
+                  {isOpen && (
+                    <ul className="cfm-product-list">
+                      {products.map((product) => (
+                        <li key={product._id}>
+                          <Link className="cfm-product" to={`/customer/search/${product._id}`}>
+                            <span className="cfm-product-name">{product.name}</span>
+                            <StatusBadge status={product.stockStatus} />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </aside>
+  );
+}

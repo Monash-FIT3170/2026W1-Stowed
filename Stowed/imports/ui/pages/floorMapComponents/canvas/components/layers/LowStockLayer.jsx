@@ -4,9 +4,63 @@ import { CANVAS_CONFIG } from "../../CanvasConfig";
 import { COLOURS } from "../../../FloorMapStyles";
 import { flattenPoints, isDrawnShape } from "../units/StorageUnit";
 
-export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanvasEditMode }) {
-  const { lowStockByUnitId, setSelectedUnit, setIsPanelOpen } = useEditor();
+export function buildLowStockOverlay({
+  unit,
+  fill,
+  selected,
+  onMouseEnter,
+  onMouseMove,
+  onMouseLeave,
+  onActivate,
+}) {
   const px = CANVAS_CONFIG.PIXELS_PER_METER;
+  const interactionProps = {
+    listening: true,
+    onMouseEnter,
+    onMouseMove,
+    onMouseLeave,
+    onClick: onActivate,
+    onTap: onActivate,
+  };
+
+  return isDrawnShape(unit) ? (
+    <Line
+      key={unit._id || unit.id}
+      x={unit.x * px}
+      y={unit.y * px}
+      points={flattenPoints(unit)}
+      closed
+      fill={fill}
+      stroke={selected ? COLOURS.ACCENT : undefined}
+      strokeWidth={selected ? 3 : 0}
+      cornerRadius={4}
+      {...interactionProps}
+    />
+  ) : (
+    <Rect
+      key={unit._id || unit.id}
+      x={unit.x * px}
+      y={unit.y * px}
+      width={unit.width * px}
+      height={unit.height * px}
+      fill={fill}
+      stroke={selected ? COLOURS.ACCENT : undefined}
+      strokeWidth={selected ? 3 : 0}
+      cornerRadius={4}
+      {...interactionProps}
+    />
+  );
+}
+
+export function LowStockLayer({
+  units,
+  onHover,
+  onHoverEnd,
+  onUnitClick,
+  isCanvasEditMode,
+  selectedStorageUnitId,
+}) {
+  const { lowStockByUnitId, setSelectedUnit, setIsPanelOpen } = useEditor();
 
   if (isCanvasEditMode) return null;
 
@@ -29,8 +83,7 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
             : hasLowStock
               ? COLOURS.OVER_RED
               : COLOURS.OVER_GREEN;
-
-        const isDrawn = isDrawnShape(unit);
+        const selected = selectedStorageUnitId === (unit._id || unit.id);
 
         // define common actions for single source of truth
         const mouseOnAction = (e) => {
@@ -69,41 +122,15 @@ export function LowStockLayer({ units, onHover, onHoverEnd, onUnitClick, isCanva
           onUnitClick?.(unit._id || unit.id, unitWithItems);
         };
 
-        if (isDrawn) {
-          return (
-            <Line
-              key={unit._id || unit.id}
-              x={unit.x * px}
-              y={unit.y * px}
-              points={flattenPoints(unit)}
-              closed
-              fill={fill}
-              cornerRadius={4}
-              listening={true}
-              onMouseEnter={mouseOnAction}
-              onMouseMove={mouseMoveAction}
-              onMouseLeave={mouseOffAction}
-              onClick={clickAction}
-            />
-          );
-        } else {
-          return (
-            <Rect
-              key={unit._id || unit.id}
-              x={unit.x * px}
-              y={unit.y * px}
-              width={unit.width * px}
-              height={unit.height * px}
-              fill={fill}
-              cornerRadius={4}
-              listening={true}
-              onMouseEnter={mouseOnAction}
-              onMouseMove={mouseMoveAction}
-              onMouseLeave={mouseOffAction}
-              onClick={clickAction}
-            />
-          );
-        }
+        return buildLowStockOverlay({
+          unit,
+          fill,
+          selected,
+          onMouseEnter: mouseOnAction,
+          onMouseMove: mouseMoveAction,
+          onMouseLeave: mouseOffAction,
+          onActivate: clickAction,
+        });
       })}
     </Layer>
   );
