@@ -39,6 +39,7 @@ export function StorageUnit({
       y={unit.y * px}
       draggable={canMove}
       onClick={onSelect}
+      onTap={onSelect}
       onDragMove={onDragMove}
       onDragEnd={onDragEnd}
       onTransformEnd={onTransformEnd}

@@ -58,7 +58,7 @@ export function ShareEmailModal({ list, onClose }) {
   return (
     <div className="modal-overlay" role="presentation">
       <div
-        className="modal"
+        className="modal share-email-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-email-modal-title"

@@ -78,6 +78,28 @@ function mergeAssignments(assignments) {
   }));
 }
 
+// Friendly errors for negative values; the schema would otherwise reject them
+// with a generic validation message.
+function assertNonNegativeProductFields({
+  totalQuantity,
+  reorderAt,
+  unitCost,
+  purchaseCost,
+  assignments,
+}) {
+  if (totalQuantity < 0) throw new Meteor.Error("invalid-quantity", "Stock can't be negative.");
+  if (reorderAt != null && reorderAt < 0) {
+    throw new Meteor.Error("invalid-quantity", "Reorder level can't be negative.");
+  }
+  if (unitCost < 0) throw new Meteor.Error("invalid-price", "Sell price can't be negative.");
+  if (purchaseCost < 0) {
+    throw new Meteor.Error("invalid-price", "Purchase price can't be negative.");
+  }
+  if (assignments.some((a) => a.quantity < 0)) {
+    throw new Meteor.Error("invalid-quantity", "Location quantities can't be negative.");
+  }
+}
+
 Meteor.methods({
   /**
    * Creates a new Product along with its location assignments (ProductRecords).
@@ -112,6 +134,13 @@ Meteor.methods({
     check(totalQuantity, Match.Integer);
     check(reorderAt, Match.Maybe(Match.Integer));
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
+    assertNonNegativeProductFields({
+      totalQuantity,
+      reorderAt,
+      unitCost,
+      purchaseCost,
+      assignments,
+    });
 
     if (!this.userId) {
       throw new Meteor.Error("not-authorised", "You must be logged in.");
@@ -226,6 +255,13 @@ Meteor.methods({
     check(qrCode, Match.Maybe(String));
     check(totalQuantity, Match.Integer);
     check(assignments, [{ locationId: String, quantity: Match.Integer }]);
+    assertNonNegativeProductFields({
+      totalQuantity,
+      reorderAt,
+      unitCost,
+      purchaseCost,
+      assignments,
+    });
 
     await assertOrgAccess(Products, productId, this.userId);
     await requirePermission(this.userId, "products.update");
