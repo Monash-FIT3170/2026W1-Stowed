@@ -8,6 +8,7 @@ import { buildToolDeclarations, callMethodAs, executeTool, TOOL_PERMISSIONS } fr
 import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../locations/collections";
 import { buildRectShape, getBoundingBox } from "../locations/shapeUtils";
 import { Products } from "../products/collections";
+import { DIRECTIONS_CHOICE_KINDS, resolveDirections } from "./directions";
 import { ShoppingLists } from "../shoppingLists/collections";
 import { ADD_PRODUCT_MODES, LIST_FREQUENCIES, LIST_ORIGINS } from "../shoppingLists/constants";
 import { isLowStock, toItem } from "../shoppingLists/generation";
@@ -74,6 +75,7 @@ const SYSTEM_INSTRUCTION = [
   "To create, edit or delete a product: first call the tool WITHOUT confirmed (this only previews, nothing changes), then tell the user exactly what will change and end your message with: Reply CONFIRM to proceed.",
   "If the user's next message is CONFIRM (any capitalisation, or a plain yes), immediately call the same tool again with exactly the same arguments plus confirmed true - do not ask again. Any other reply cancels the change.",
   "When asked to take the user somewhere, use the navigate tool. Keep replies short.",
+  "When the user asks where a product is, how to get to it, or for directions, call getDirections with the product names they said. It asks any follow-up questions itself with on-screen choices, so never ask the user to type ids or pick from a list in text.",
 ].join(" ");
 
 let aiClient = null;
@@ -906,6 +908,33 @@ async function runSuggestedAction(userId, action) {
   return await confirmAction(userId, action);
 }
 
+const selectionPattern = {
+  kind: String,
+  values: [String],
+  context: Match.Optional(Object),
+};
+
+async function answerDirectionsSelection(userId, selection) {
+  const contextIds = Array.isArray(selection.context?.productIds)
+    ? selection.context.productIds.filter((id) => typeof id === "string")
+    : [];
+
+  if (selection.kind === DIRECTIONS_CHOICE_KINDS.PRODUCTS) {
+    return await resolveDirections({
+      userId,
+      productIds: [...new Set([...contextIds, ...selection.values])],
+    });
+  }
+  if (selection.kind === DIRECTIONS_CHOICE_KINDS.FLOOR) {
+    return await resolveDirections({
+      userId,
+      productIds: contextIds,
+      floorMapId: selection.values[0],
+    });
+  }
+  return null;
+}
+
 function toGeminiContents(messages) {
   return messages
     .slice(-MAX_MESSAGES)
@@ -1079,6 +1108,7 @@ Meteor.methods({
         role: Match.Where((value) => value === "user" || value === "assistant"),
         content: String,
         actions: Match.Optional([actionPattern]),
+        selection: Match.Optional(selectionPattern),
       },
     ]);
     check(previousInteractionId, Match.Maybe(String));
@@ -1089,6 +1119,20 @@ Meteor.methods({
     const input = getLatestUserInput(messages);
     if (!input) {
       throw new Meteor.Error("empty-message", "Ask something first.");
+    }
+
+    const latestMessage = messages.at(-1);
+    if (latestMessage?.role === "user" && latestMessage.selection) {
+      await requirePermission(this.userId, "floorMapRoutes.generate");
+      const answer = await answerDirectionsSelection(this.userId, latestMessage.selection);
+      if (answer) {
+        return {
+          text: answer.message,
+          interactionId: previousInteractionId,
+          suggestedActions: [],
+          actions: answer.actions,
+        };
+      }
     }
 
     if (pendingAction && AFFIRMATION.test(input)) {

@@ -3,6 +3,7 @@ import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
 import { hasClientPermission } from "../../api/userMethods";
 import { useAuth } from "../../api/useAuth";
+import { DirectionsModal } from "./DirectionsModal";
 import "./Chatbot.css";
 
 const SUGGESTED_PROMPTS = [
@@ -133,6 +134,43 @@ export function findNavigationCommand(input) {
   return command;
 }
 
+function ChoicePrompt({ choice, disabled, onSubmit }) {
+  const [picked, setPicked] = useState([]);
+
+  function toggle(value) {
+    setPicked((current) =>
+      choice.multiSelect
+        ? current.includes(value)
+          ? current.filter((entry) => entry !== value)
+          : [...current, value]
+        : [value],
+    );
+  }
+
+  return (
+    <fieldset className="chatbot-choice" disabled={disabled}>
+      <legend>{choice.prompt}</legend>
+      {choice.options.map((option) => (
+        <label className="chatbot-choice-option" key={option.value}>
+          <input
+            type={choice.multiSelect ? "checkbox" : "radio"}
+            name={choice.id}
+            checked={picked.includes(option.value)}
+            onChange={() => toggle(option.value)}
+          />
+          <span>
+            {option.label}
+            {option.detail && <small>{option.detail}</small>}
+          </span>
+        </label>
+      ))}
+      <button type="button" disabled={picked.length === 0} onClick={() => onSubmit(choice, picked)}>
+        {choice.multiSelect ? "Continue" : "Select"}
+      </button>
+    </fieldset>
+  );
+}
+
 export function Chatbot() {
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -148,6 +186,7 @@ export function Chatbot() {
   const [error, setError] = useState("");
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
+  const [directionsRequest, setDirectionsRequest] = useState(null);
   const inputRef = useRef(null);
 
   const canSend = draft.trim().length > 0 && !isSending;
@@ -165,16 +204,19 @@ export function Chatbot() {
     window.setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  function sendMessage(text = draft) {
+  function sendMessage(text = draft, selection = null) {
     const content = text.trim();
     if (!content || isSending) return;
 
-    const nextMessages = [...messages, { role: "user", content }];
+    const nextMessages = [
+      ...messages,
+      { role: "user", content, ...(selection ? { selection } : {}) },
+    ];
     setMessages(nextMessages);
     setDraft("");
     setError("");
 
-    const navigationCommand = findNavigationCommand(content);
+    const navigationCommand = selection ? null : findNavigationCommand(content);
     if (navigationCommand) {
       if (
         navigationCommand.permission &&
@@ -208,7 +250,16 @@ export function Chatbot() {
 
     Meteor.call(
       "chatbot.chat",
-      { messages: nextMessages, previousInteractionId, pendingAction },
+      {
+        messages: nextMessages.map(({ role, content: text, actions, selection: picked }) => ({
+          role,
+          content: text,
+          ...(actions ? { actions } : {}),
+          ...(picked ? { selection: picked } : {}),
+        })),
+        previousInteractionId,
+        pendingAction,
+      },
       (callError, result) => {
         setIsSending(false);
 
@@ -236,7 +287,9 @@ export function Chatbot() {
         // The server only returns paths the user's role is allowed to open.
         result?.actions?.forEach((action) => {
           if (action.type === "navigate" && action.path.startsWith("/")) navigate(action.path);
+          if (action.type === "directions") setDirectionsRequest(action);
         });
+        const choice = result?.actions?.find((action) => action.type === "choice") || null;
 
         setMessages((current) => [
           ...current,
@@ -244,10 +297,18 @@ export function Chatbot() {
             role: "assistant",
             content: result?.text || "I could not generate a response this time.",
             actions: result?.suggestedActions || [],
+            ...(choice ? { choice } : {}),
           },
         ]);
       },
     );
+  }
+
+  function submitChoice(choice, values) {
+    const labels = choice.options
+      .filter((option) => values.includes(option.value))
+      .map((option) => option.label);
+    sendMessage(labels.join(", "), { kind: choice.kind, values, context: choice.context });
   }
 
   function confirmAction(action) {
@@ -345,6 +406,14 @@ export function Chatbot() {
                   {message.role === "assistant" ? "Chatbot" : "You"}
                 </div>
                 {message.content && <div className="chatbot-body">{message.content}</div>}
+                {message.choice && (
+                  <ChoicePrompt
+                    key={message.choice.id}
+                    choice={message.choice}
+                    disabled={isSending || message !== visibleMessages.at(-1)}
+                    onSubmit={submitChoice}
+                  />
+                )}
                 {message.actions?.length > 0 && (
                   <div className="chatbot-actions">
                     {message.actions.map((action) => (
@@ -419,6 +488,10 @@ export function Chatbot() {
             </button>
           </form>
         </section>
+      )}
+
+      {directionsRequest && (
+        <DirectionsModal request={directionsRequest} onClose={() => setDirectionsRequest(null)} />
       )}
 
       <button
