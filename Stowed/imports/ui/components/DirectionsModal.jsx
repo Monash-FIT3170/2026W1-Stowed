@@ -8,7 +8,14 @@ import "./DirectionsModal.css";
 const noop = () => {};
 
 export function DirectionsModal({ request, onClose }) {
-  const { floorMapId, floorName, siteName, productIds, productNames } = request;
+  const { productNames, floors = [] } = request;
+  const [activeFloor, setActiveFloor] = useState({
+    floorMapId: request.floorMapId,
+    floorName: request.floorName,
+    siteName: request.siteName,
+    productIds: request.productIds,
+  });
+  const { floorMapId, floorName, siteName, productIds } = activeFloor;
   const [startingPoint, setStartingPoint] = useState(null);
   const [isSelectingStart, setIsSelectingStart] = useState(true);
   const [route, setRoute] = useState(null);
@@ -47,6 +54,17 @@ export function DirectionsModal({ request, onClose }) {
     }
   }
 
+  function handleChangeFloor(event) {
+    const next = floors.find((floor) => floor.floorMapId === event.target.value);
+    if (!next) return;
+    setActiveFloor(next);
+    setStartingPoint(null);
+    setRoute(null);
+    setError("");
+    setIsPlanning(false);
+    setIsSelectingStart(true);
+  }
+
   function handleChangeLocation() {
     setRoute(null);
     setError("");
@@ -78,6 +96,20 @@ export function DirectionsModal({ request, onClose }) {
             ×
           </button>
         </header>
+
+        {floors.length > 1 && (
+          <label className="directions-modal__floor">
+            <span>Site / floor</span>
+            <select value={floorMapId} onChange={handleChangeFloor}>
+              {floors.map((floor) => (
+                <option key={floor.floorMapId} value={floor.floorMapId}>
+                  {[floor.siteName, floor.floorName].filter(Boolean).join(" – ")} (
+                  {floor.productIds.length} of {Object.keys(productNames).length} in stock)
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div className={`directions-modal__status${error ? " is-error" : ""}`} role="status">
           <span>{status}</span>

@@ -227,7 +227,17 @@ export async function resolveDirections({
   const [entry] = candidates;
   const pickable = [...entry.productIds];
   const missing = [...resolved.values()].filter((product) => !entry.productIds.has(product._id));
-  const productNames = Object.fromEntries(pickable.map((id) => [id, resolved.get(id).name]));
+  const productNames = Object.fromEntries(
+    [...resolved.values()].map((product) => [product._id, product.name]),
+  );
+  const floors = [...availability.values()]
+    .sort((a, b) => b.productIds.size - a.productIds.size)
+    .map((other) => ({
+      floorMapId: other.floorMap._id,
+      floorName: other.floorMap.name,
+      siteName: other.site?.name ?? "",
+      productIds: [...other.productIds],
+    }));
 
   return {
     status: "directions_opened",
@@ -244,6 +254,7 @@ export async function resolveDirections({
         siteName: entry.site?.name ?? "",
         productIds: pickable,
         productNames,
+        floors,
       },
     ],
   };
