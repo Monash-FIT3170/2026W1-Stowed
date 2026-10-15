@@ -734,6 +734,10 @@ export const locationPanelStyles = {
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   addButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
     padding: "8px 10px",
     borderRadius: "999px",
     border: `1px dashed ${COLOURS.BUTTON_BORDER}`,
@@ -770,6 +774,9 @@ export const locationPanelStyles = {
     color: COLOURS.TEXT_MUTED,
   },
   deleteButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "5px",
     border: "none",
     background: "transparent",
     color: COLOURS.ACCENT,
@@ -790,7 +797,7 @@ export const modalStyles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1000,
+    zIndex: 1300,
   },
 
   modal: {
@@ -798,6 +805,10 @@ export const modalStyles = {
     padding: "16px",
     borderRadius: "13px",
     width: "280px",
+    maxWidth: "calc(100vw - 32px)",
+    maxHeight: "calc(100dvh - 32px)",
+    overflowY: "auto",
+    boxSizing: "border-box",
     boxShadow: "0 16px 32px rgba(26, 26, 26, 0.2)",
     display: "flex",
     flexDirection: "column",

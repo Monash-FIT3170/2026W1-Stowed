@@ -25,7 +25,7 @@ export function TransformerLayer({ selectedIds, getGroupRef }) {
         keepRatio={false}
         boundBoxFunc={(oldBox, newBox) => {
           // Dissallow making storage units smaller than 0.5m
-          const minPx = 0.5 * CANVAS_CONFIG.PIXELS_PER_METER;
+          const minPx = 0.1 * CANVAS_CONFIG.PIXELS_PER_METER;
           if (newBox.width < minPx || newBox.height < minPx) return oldBox;
           return newBox;
         }}

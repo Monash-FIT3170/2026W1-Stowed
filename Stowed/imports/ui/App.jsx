@@ -1,6 +1,7 @@
-import { lazy } from "react";
+import { lazy, useState } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ToastProvider } from "./components/Toast";
+import { Chatbot } from "./components/Chatbot";
 import { Sidebar } from "./Sidebar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EditProductPage } from "./pages/EditProductPage";
@@ -11,6 +12,7 @@ import { QRCodesPage } from "./pages/QRCodesPage";
 import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
+import { FloorMapDetailPage } from "./pages/FloorMapDetailPage";
 import { InventoryListPage } from "./pages/InventoryListPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { StorageUnitDetailPage } from "./pages/StorageUnitDetailPage";
@@ -20,11 +22,22 @@ import { ScanUpdatePage } from "./pages/ScanUpdatePage";
 import { StocktakePage } from "./pages/StocktakePage";
 import { LocationDetailPage } from "./pages/LocationDetailPage";
 import { Register } from "./Register";
+import { VerifyEmail } from "./VerifyEmail";
+import { ForgotPassword } from "./ForgotPassword";
+import { ResetPassword } from "./ResetPassword";
 import { Login } from "./Login";
+import { OrgGatewayPage } from "./pages/OrgGatewayPage";
+import { CustomerLayout } from "./components/CustomerLayout";
+import { CustomerProductSearchPage } from "./pages/CustomerProductSearchPage";
+import { CustomerProductDetailPage } from "./pages/CustomerProductDetailPage";
+import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
+import { CustomerFloorMapPage } from "./pages/CustomerFloorMapPage";
+import { HomePage } from "./pages/HomePage";
 import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { SettingsPage } from "./pages/SettingsPage";
+import { Tutorial } from "./tutorial/Tutorial";
 
 const LocationsPage = lazy(() =>
   import("./pages/LocationsPage").then((module) => ({
@@ -40,7 +53,16 @@ export function App() {
     };
   });
 
-  if (loggingIn) {
+  // Blank the app only while a login token from a previous visit is being
+  // resumed on page load, so a logged-in user's deep link is not bounced through
+  // /login to /dashboard before the session is known. Once that first check has
+  // settled the gate stays open: a later loggingIn - a submit from the login
+  // form - must not unmount the form mid-attempt, or its stage, fields and
+  // error message are lost with it.
+  const [resumed, setResumed] = useState(false);
+  if (!loggingIn && !resumed) setResumed(true);
+
+  if (loggingIn && !resumed) {
     return null;
   }
 
@@ -61,20 +83,43 @@ export function App() {
             overflow: "hidden",
           }}
         >
-          {isLoggedIn && <Sidebar />}
-          {/* Layout is in Sidebar.css, not inline: a media query cannot override
-              an inline style, so the dock could never reclaim this margin. */}
-          <main className={`app-main${isLoggedIn ? " with-sidebar" : ""}`}>
+          {/* Chrome is routed too: the customer area brings its own nav, so the
+              staff rail must not follow a logged-in owner into /customer or the
+              /org gateway. Layout is in Sidebar.css, not inline: a media query
+              cannot override an inline style, so the dock could never reclaim
+              the margin the rail takes. */}
+          <Routes>
+            <Route path="/org/:orgCode" element={null} />
+            <Route path="/customer/*" element={null} />
+            <Route path="*" element={isLoggedIn ? <Sidebar /> : null} />
+          </Routes>
+          <main className="app-main">
             <Routes>
               {/* public routes */}
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email/:token" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              {/* Customer entry point: stores the org, then redirects to /customer */}
+              <Route path="/org/:orgCode" element={<OrgGatewayPage />} />
+              {/* One layout for the whole customer area: the nav is mounted by
+                  CustomerLayout and the pages swap through its Outlet, so it
+                  survives every click within /customer. */}
+              <Route path="/customer" element={<CustomerLayout />}>
+                {/* Product search is the customer home: every way in lands on /customer. */}
+                <Route index element={<Navigate to="search" replace />} />
+                <Route path="search" element={<CustomerProductSearchPage />} />
+                <Route path="search/:productId" element={<CustomerProductDetailPage />} />
+                <Route path="lists" element={<CustomerShoppingListPage />} />
+                <Route path="floor-map" element={<CustomerFloorMapPage />} />
+              </Route>
               <Route
                 path="/login"
                 element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />}
               />
               <Route
                 path="/"
-                element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />}
+                element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <HomePage />}
               />
               <Route
                 path="/dashboard"
@@ -120,6 +165,20 @@ export function App() {
                   isLoggedIn ? (
                     hasClientPermission(role, "route:/floor-map") ? (
                       <FloorMapPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+              <Route
+                path="/floor-map/:floorMapId/detail"
+                element={
+                  isLoggedIn ? (
+                    hasClientPermission(role, "route:/floor-map") ? (
+                      <FloorMapDetailPage />
                     ) : (
                       <Navigate to="/" replace />
                     )
@@ -346,6 +405,10 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          {/* After <main>, not between it and the rail: Sidebar.css offsets the
+              page with `.sidebar + .app-main`, which needs the two adjacent. */}
+          {isLoggedIn && <Tutorial userId={user._id} />}
+          {isLoggedIn && hasClientPermission(role, "chatbot.chat") && <Chatbot />}
         </div>
       </BrowserRouter>
     </ToastProvider>

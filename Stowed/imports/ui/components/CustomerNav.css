@@ -1,0 +1,109 @@
+/* CustomerNav.css */
+
+/* A horizontal bar rather than the staff rail: a customer is browsing, not
+   working through a tool list, and the wordmark reads the same as the one in
+   the sidebar so the two areas still look like one product. */
+
+.customer-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 14px 24px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.customer-nav-logo {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text-dark);
+  font-style: italic;
+  line-height: 1.1;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.customer-nav-logo-dot {
+  color: var(--accent-primary);
+  font-style: italic;
+}
+
+/* -- Links -- */
+
+.customer-nav-links {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+  /* The row scrolls rather than wrapping, so the bar keeps its height and the
+     logo stays put on a narrow phone. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.customer-nav-links::-webkit-scrollbar {
+  display: none;
+}
+
+.customer-nav-link {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.customer-nav-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-dark);
+}
+
+.customer-nav-link.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .customer-nav {
+    gap: 14px;
+    padding: 12px 16px;
+  }
+
+  .customer-nav-logo {
+    font-size: 22px;
+  }
+
+  .customer-nav-link {
+    padding: 7px 11px;
+    font-size: 13px;
+  }
+}
+
+/* On a phone the three links do not fit beside the logo, and a row that
+   scrolls with its scrollbar hidden just looks cut off. They drop to a row of
+   their own instead, sharing the width so every one is always visible. */
+@media (max-width: 480px) {
+  .customer-nav {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .customer-nav-links {
+    width: 100%;
+  }
+
+  .customer-nav-link {
+    flex: 1;
+    text-align: center;
+    padding: 8px 6px;
+  }
+}
