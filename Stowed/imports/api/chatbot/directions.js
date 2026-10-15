@@ -199,6 +199,7 @@ export async function resolveDirections({
     (entry) => entry.productIds.size === mostCovered,
   );
 
+  const allCandidates = candidates;
   const chosen = floorMapId && candidates.find((entry) => entry.floorMap._id === floorMapId);
   if (chosen) candidates = [chosen];
 
@@ -230,14 +231,12 @@ export async function resolveDirections({
   const productNames = Object.fromEntries(
     [...resolved.values()].map((product) => [product._id, product.name]),
   );
-  const floors = [...availability.values()]
-    .sort((a, b) => b.productIds.size - a.productIds.size)
-    .map((other) => ({
-      floorMapId: other.floorMap._id,
-      floorName: other.floorMap.name,
-      siteName: other.site?.name ?? "",
-      productIds: [...other.productIds],
-    }));
+  const floors = allCandidates.map((other) => ({
+    floorMapId: other.floorMap._id,
+    floorName: other.floorMap.name,
+    siteName: other.site?.name ?? "",
+    productIds: [...other.productIds],
+  }));
 
   return {
     status: "directions_opened",
