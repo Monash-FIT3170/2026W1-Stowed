@@ -1,8 +1,7 @@
-/* ViewAccountsPage Styles — tokens, breadcrumb, search bar, modal live in Global.css */
+/* AccountsSection Styles — tokens, breadcrumb, search bar, modal live in Global.css */
 
 .view-accounts-container {
   padding: 0;
-  max-width: 900px;
 }
 
 /* Accounts have no product photos, so this table gets its own look:
@@ -144,4 +143,9 @@
     padding: 5px 12px;
     font-size: 12px;
   }
+}
+
+/* Inside the settings page the page gutter already comes from .settings-wrap */
+.view-accounts-container .inventory-list-body {
+  padding: 0;
 }

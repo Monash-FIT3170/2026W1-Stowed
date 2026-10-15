@@ -4,7 +4,6 @@ import { logoutUser } from "/imports/api/userMethods";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
-import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
 import { AccessibilityWidget } from "./accessibility/AccessibilityWidget";
 import "./Global.css";
@@ -152,12 +151,7 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  const ALL_ACCOUNT_LINKS = [];
-  if (role >= ROLES.OWNER) {
-    ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
-  }
-  ALL_ACCOUNT_LINKS.push({ to: "/settings", label: "Settings" });
-  const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
+  const ACCOUNT_LINKS = [{ to: "/settings", label: "Settings" }].filter((link) =>
     hasClientPermission(role, `route:${link.to}`),
   );
 

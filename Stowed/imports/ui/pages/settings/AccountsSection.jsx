@@ -1,15 +1,18 @@
 import { useState, useMemo } from "react";
 import { useTracker } from "meteor/react-meteor-data";
 import { Meteor } from "meteor/meteor";
-import "../Global.css";
-import "./InventoryListPage.css";
-import "./ViewAccounts.css";
+import "../../Global.css";
+import "../InventoryListPage.css";
+import "./AccountsSection.css";
 import { ROLES } from "/imports/api/roles";
 import { useAuth } from "/imports/api/useAuth";
 import { hasClientPermission } from "/imports/api/userMethods";
-import { CreateAccountModal } from "../components/CreateAccountModal";
+import { CreateAccountModal } from "../../components/CreateAccountModal";
 
-export function ViewAccounts() {
+/**
+ * Settings section (owners only): list, search, create and delete accounts.
+ */
+export function AccountsSection() {
   const [deleting, setDeleting] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
@@ -68,21 +71,19 @@ export function ViewAccounts() {
   };
 
   return (
-    <div className="view-accounts-container">
-      <div className="product-detail-header">
-        <div className="breadcrumb">
-          <span className="breadcrumb-current">All accounts</span>
+    <section id="accounts" className="settings-section view-accounts-container">
+      <div className="settings-section-header">
+        <div>
+          <h2 className="settings-section-title">Account Management</h2>
+          <p className="settings-section-desc">
+            Add team members, see their roles, and remove access when needed.
+          </p>
         </div>
-        <div className="header-top">
-          <h1 className="header-title">
-            Manage <em>Accounts</em>
-          </h1>
-          {canCreateUsers && (
-            <button onClick={() => setShowCreateModal(true)} className="btn-primary">
-              + Create Account
-            </button>
-          )}
-        </div>
+        {canCreateUsers && (
+          <button onClick={() => setShowCreateModal(true)} className="btn-primary">
+            + Create Account
+          </button>
+        )}
       </div>
 
       <div className="inventory-list-body">
@@ -171,6 +172,6 @@ export function ViewAccounts() {
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

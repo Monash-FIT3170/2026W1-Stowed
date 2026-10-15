@@ -270,3 +270,67 @@
     padding: 16px;
   }
 }
+
+/* Sections of the merged settings page: org details, accounts, import/export */
+.settings-jump-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.settings-jump-nav a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.settings-jump-nav a:hover {
+  border-color: var(--border-subtle);
+}
+
+.settings-section {
+  scroll-margin-top: 16px;
+}
+
+.settings-section + .settings-section {
+  margin-top: 40px;
+}
+
+.settings-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-section-title {
+  margin: 0 0 4px 0;
+  font-size: 22px;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--text-primary);
+}
+
+.settings-section-desc {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.settings-section .tools-card > .export-format-list:first-child {
+  margin-top: 0;
+}
+
+.org-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.org-link {
+  word-break: break-all;
+}

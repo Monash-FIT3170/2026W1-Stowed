@@ -42,7 +42,7 @@ export const SIDEBAR_TOUR_STEPS = [
   {
     to: "/settings",
     title: "Settings",
-    body: "Manage your preferences and import or export your data.",
+    body: "Your organisation's details, team accounts, and data import and export, all in one place.",
   },
 ];
 
@@ -112,19 +112,13 @@ export const PAGE_INTROS = {
       "Count stock to keep your numbers accurate.",
     ],
   },
-  "/register": {
-    title: "Create Account",
-    points: [
-      "Add a new team member to your organisation.",
-      "Pick their role to control what they can see and change.",
-    ],
-  },
-  "/accounts": {
-    title: "Manage Accounts",
-    points: ["See everyone in your organisation.", "Change roles or remove access when needed."],
-  },
   "/settings": {
     title: "Settings",
-    points: ["Update your preferences.", "Import products in bulk, or export your data."],
+    points: [
+      "See your organisation's name, code and customer link.",
+      "Owners can add team members and manage their roles.",
+      "Import products in bulk, or export your data.",
+      "Replay this tutorial any time from Organisation details.",
+    ],
   },
 };
