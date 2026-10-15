@@ -100,6 +100,16 @@ export function CustomerFloorMapPage() {
   // highlighted; a "Show on map" flash takes over while it runs.
   const linkedUnitId = publicHighlightedUnitId(requestedUnitId, currentFloorMap?._id, storageUnits);
 
+  // Arriving by that link should also open the unit and bring it into view, not
+  // just ring it. Done during render (once per linked unit) rather than in an
+  // effect, so the panel is open on the first paint that can show it.
+  const [handledLinkUnitId, setHandledLinkUnitId] = useState(null);
+  if (linkedUnitId && linkedUnitId !== handledLinkUnitId) {
+    setHandledLinkUnitId(linkedUnitId);
+    openUnit(linkedUnitId);
+    setFocusRequest({ unitId: linkedUnitId, nonce: `link:${linkedUnitId}` });
+  }
+
   const currentMapId = currentFloorMap?._id;
   const unitsOnMap = useMemo(
     () => storageUnits.filter((unit) => unit.floorMapId === currentMapId),
