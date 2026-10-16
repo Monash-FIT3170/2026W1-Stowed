@@ -21,6 +21,31 @@
   width: 104px;
 }
 
+/* "compact": sized to sit at the end of a list line. It is either the add
+   button or, once the item is on the list, a narrower stepper - both kept
+   to about the same width so the line does not jump when one becomes the
+   other. */
+.slc-compact {
+  flex-shrink: 0;
+}
+
+.slc-compact .slc-action {
+  padding: 4px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.slc-compact .slc-stepper {
+  width: 88px;
+  grid-template-columns: 28px 1fr 28px;
+}
+
+.slc-compact .slc-step {
+  min-height: 28px;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
 /* -- Stepper -- */
 
 /* One pill split into three, so minus, number and plus read as a single
@@ -123,7 +148,8 @@
 
 /* A finger needs a bigger target than a cursor. */
 @media (pointer: coarse) {
-  .slc-step {
+  .slc-step,
+  .slc-compact .slc-step {
     min-height: 44px;
   }
 }

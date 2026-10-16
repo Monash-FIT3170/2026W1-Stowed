@@ -10,7 +10,7 @@ import { MapSelectors, MapState } from "./floorMapComponents/MapControls";
 import { firstMapForSite, publicMaps, selectAvailableMap } from "./floorMapComponents/mapSelection";
 import { CustomerUnitPanel } from "./floorMapComponents/CustomerUnitPanel";
 import { CustomerMapSearch } from "./floorMapComponents/CustomerMapSearch";
-import { buildPlacements } from "./floorMapComponents/customerMapData";
+import { buildPlacements, buildUnitMaps } from "./floorMapComponents/customerMapData";
 import "./FloorMapPage.css";
 import "./CustomerFloorMapPage.css";
 
@@ -73,6 +73,8 @@ export function CustomerFloorMapPage() {
   const [highlightedUnitId, setHighlightedUnitId] = useState(null);
   const [focusShelfName, setFocusShelfName] = useState(null);
   const [focusNonce, setFocusNonce] = useState(0);
+  // Pans the canvas to a unit; held by the canvas until that map has loaded.
+  const [focusRequest, setFocusRequest] = useState(null);
 
   const { products, loadState } = useCustomerCatalogue(orgCode);
   const placements = useMemo(() => buildPlacements(products), [products]);
@@ -87,20 +89,36 @@ export function CustomerFloorMapPage() {
     };
   }, [orgCode]);
 
-  const visibleMaps = orgCode ? publicMaps(floorMaps) : [];
-  const visibleSites = sites.filter((site) => visibleMaps.some((map) => map.siteId === site._id));
+  const visibleMaps = useMemo(() => (orgCode ? publicMaps(floorMaps) : []), [orgCode, floorMaps]);
+  const visibleSites = useMemo(
+    () => sites.filter((site) => visibleMaps.some((map) => map.siteId === site._id)),
+    [sites, visibleMaps],
+  );
   const currentFloorMap = selectCustomerFloorMap(visibleMaps, selectedFloorMapId, requestedMapId);
   const currentSite = visibleSites.find((site) => site._id === currentFloorMap?.siteId);
   // A deep link (?unit=, from a product's "Open in floor map") keeps its unit
   // highlighted; a "Show on map" flash takes over while it runs.
   const linkedUnitId = publicHighlightedUnitId(requestedUnitId, currentFloorMap?._id, storageUnits);
 
+  // Arriving by that link should also open the unit and bring it into view, not
+  // just ring it. Done during render (once per linked unit) rather than in an
+  // effect, so the panel is open on the first paint that can show it.
+  const [handledLinkUnitId, setHandledLinkUnitId] = useState(null);
+  if (linkedUnitId && linkedUnitId !== handledLinkUnitId) {
+    setHandledLinkUnitId(linkedUnitId);
+    openUnit(linkedUnitId);
+    setFocusRequest({ unitId: linkedUnitId, nonce: `link:${linkedUnitId}` });
+  }
+
   const currentMapId = currentFloorMap?._id;
   const unitsOnMap = useMemo(
     () => storageUnits.filter((unit) => unit.floorMapId === currentMapId),
     [storageUnits, currentMapId],
   );
-  const visibleUnitIds = useMemo(() => new Set(unitsOnMap.map((unit) => unit._id)), [unitsOnMap]);
+  const unitMaps = useMemo(
+    () => buildUnitMaps(storageUnits, visibleMaps, visibleSites),
+    [storageUnits, visibleMaps, visibleSites],
+  );
   const selectedUnit = unitsOnMap.find((unit) => unit._id === selectedUnitId) ?? null;
 
   useEffect(() => {
@@ -126,10 +144,17 @@ export function CustomerFloorMapPage() {
     setFocusNonce((n) => n + 1);
   }
 
-  /** Pan to the unit holding a search hit, flash it, and open its shelf. */
+  /**
+   * Pan to the unit holding a search hit, flash it, and open its shelf -
+   * switching to that unit's map first when it is on another one.
+   */
   function handleShowOnMap(placement) {
-    canvasRef.current?.focusUnit(placement.unitId);
+    const target = unitMaps.get(placement.unitId);
+    if (!target) return;
+    // chooseMap clears the selection, so it runs before the unit is opened.
+    if (target.floorMapId !== currentMapId) chooseMap(target.floorMapId);
     openUnit(placement.unitId, placement.shelfName);
+    setFocusRequest({ unitId: placement.unitId, nonce: Date.now() });
 
     setHighlightedUnitId(placement.unitId);
     clearTimeout(highlightTimer.current);
@@ -150,7 +175,8 @@ export function CustomerFloorMapPage() {
             <CustomerMapSearch
               products={products}
               placements={placements}
-              visibleUnitIds={visibleUnitIds}
+              currentMapId={currentMapId}
+              unitMaps={unitMaps}
               loading={loadState === "loading"}
               loadFailed={loadState === "error"}
               onShowOnMap={handleShowOnMap}
@@ -202,6 +228,7 @@ export function CustomerFloorMapPage() {
                   publicView
                   setSelectedStorageUnitId={(unitId) => openUnit(unitId)}
                   highlightedUnitId={highlightedUnitId ?? linkedUnitId}
+                  focusRequest={focusRequest}
                 />
               </EditorProvider>
               {!selectedUnit && (
