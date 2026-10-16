@@ -33,7 +33,6 @@ import { CustomerProductDetailPage } from "./pages/CustomerProductDetailPage";
 import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
 import { CustomerFloorMapPage } from "./pages/CustomerFloorMapPage";
 import { HomePage } from "./pages/HomePage";
-import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -374,20 +373,8 @@ export function App() {
                   )
                 }
               />
-              <Route
-                path="/accounts"
-                element={
-                  isLoggedIn ? (
-                    hasClientPermission(role, "route:/accounts") ? (
-                      <ViewAccounts />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )
-                  ) : (
-                    <Navigate to="/login" replace />
-                  )
-                }
-              />
+              {/* account management now lives in a section of the settings page */}
+              <Route path="/accounts" element={<Navigate to="/settings#accounts" replace />} />
               <Route
                 path="/settings"
                 element={

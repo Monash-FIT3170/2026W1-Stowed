@@ -42,3 +42,4 @@ import "./routePlanning.test.js";
 import "./customerCatalogue.test.js";
 import "./customerLocationPreview.test.js";
 import "./customerFloorMap.test.js";
+import "./tutorialContent.test.js";
