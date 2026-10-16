@@ -14,6 +14,7 @@ import {
 import { ProductRecords } from "/imports/api/products/collections";
 import { isImageFile, uploadImageToServer } from "/imports/api/upload";
 import { useToast } from "../components/Toast";
+import { LocationHierarchy } from "./locationComponents/LocationHierarchy";
 import {
   DEFAULT_STOCKTAKE_INTERVAL_DAYS,
   getLocationStocktakeStatus,
@@ -28,11 +29,12 @@ const TABS = {
   LOCATIONS: "locations",
   FLOOR_MAPS: "floor-maps",
   SITES: "sites",
+  HIERARCHY: "hierarchy",
 };
 
 const EMPTY_FORMS = {
   location: { storageUnitId: "", name: "", code: "", imageUrl: "" },
-  floorMap: { siteId: "", name: "", imageUrl: "" },
+  floorMap: { siteId: "", name: "", imageUrl: "", isPrivate: false },
   site: {
     name: "",
     description: "",
@@ -200,6 +202,7 @@ export function LocationsPage() {
   }
 
   function openCreate() {
+    if (activeTab === TABS.HIERARCHY) return;
     setEditing(null);
     setFormMode(activeTab);
     if (activeTab === TABS.LOCATIONS) {
@@ -222,7 +225,12 @@ export function LocationsPage() {
         imageUrl: record.imageUrl ?? "",
       });
     } else if (type === TABS.FLOOR_MAPS) {
-      setForm({ siteId: record.siteId, name: record.name, imageUrl: record.imageUrl ?? "" });
+      setForm({
+        siteId: record.siteId,
+        name: record.name,
+        imageUrl: record.imageUrl ?? "",
+        isPrivate: record.isPrivate ?? false,
+      });
     } else {
       setForm({
         name: record.name,
@@ -266,6 +274,7 @@ export function LocationsPage() {
             siteId: form.siteId,
             name: form.name.trim(),
             imageUrl: form.imageUrl.trim(),
+            isPrivate: form.isPrivate,
             floorSize: editing.floorSize ?? {},
             settings: editing.settings ?? {},
           });
@@ -274,6 +283,7 @@ export function LocationsPage() {
             siteId: form.siteId,
             name: form.name.trim(),
             imageUrl: form.imageUrl.trim(),
+            isPrivate: form.isPrivate,
           });
         }
       } else {
@@ -350,6 +360,7 @@ export function LocationsPage() {
     { id: TABS.LOCATIONS, label: "Storage Locations", count: storageLocations.length },
     { id: TABS.FLOOR_MAPS, label: "Floor Maps", count: floorMaps.length },
     { id: TABS.SITES, label: "Sites", count: sites.length },
+    { id: TABS.HIERARCHY, label: "Hierarchy", count: sites.length },
   ];
   const primaryLabel = {
     [TABS.LOCATIONS]: "Add location",
@@ -372,7 +383,7 @@ export function LocationsPage() {
               Browse storage locations and manage your organisation’s physical structure.
             </p>
           </div>
-          {canManage && (
+          {canManage && activeTab !== TABS.HIERARCHY && (
             <button type="button" className="btn-primary" onClick={openCreate}>
               + {primaryLabel}
             </button>
@@ -692,6 +703,16 @@ export function LocationsPage() {
             )}
           </div>
         )}
+
+        {activeTab === TABS.HIERARCHY && (
+          <LocationHierarchy
+            sites={sites}
+            floorMaps={floorMaps}
+            storageUnits={storageUnits}
+            storageLocations={storageLocations}
+            loading={loading}
+          />
+        )}
       </div>
 
       {formMode && (
@@ -787,6 +808,25 @@ export function LocationsPage() {
                     }
                     placeholder="Optional"
                   />
+                </FormField>
+                {/* toggle to make floor map private/public */}
+                <FormField label="Make floor map private">
+                  <div className="locations-toggle-field">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={form.isPrivate}
+                      className={`locations-toggle ${form.isPrivate ? "active" : ""}`}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          isPrivate: !current.isPrivate,
+                        }))
+                      }
+                    >
+                      <span className="locations-toggle-knob" />
+                    </button>
+                  </div>
                 </FormField>
               </>
             )}

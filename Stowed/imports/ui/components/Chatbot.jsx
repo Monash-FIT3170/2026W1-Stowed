@@ -438,6 +438,13 @@ function ChatbotSession() {
     sendMessage();
   }
 
+  function handleComposerKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
   function handlePromptClick(prompt) {
     sendMessage(prompt);
     inputRef.current?.focus();
@@ -679,6 +686,23 @@ function ChatbotSession() {
               </form>
             </div>
           </div>
+          )}
+
+          {error && <div className="chatbot-error">{error}</div>}
+
+          <form className="chatbot-composer" onSubmit={handleSubmit}>
+            <textarea
+              ref={inputRef}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleComposerKeyDown}
+              placeholder="Ask Stowed..."
+              rows={2}
+            />
+            <button type="submit" disabled={!canSend} aria-label="Send message">
+              Send
+            </button>
+          </form>
         </section>
       )}
 

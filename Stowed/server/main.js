@@ -30,14 +30,17 @@ import "/imports/api/schedules/methods";
 import "/imports/api/locations/methods";
 import "/imports/api/chatbot/methods";
 import "/imports/api/chatbot/history";
+import "/imports/api/customer/methods";
 import "/imports/api/publications";
 import "/imports/api/userMethods";
 import { ROLES } from "/imports/api/roles";
 import "/imports/api/upload.js";
 import "/imports/api/bulkImport";
+import "./routes/methods";
 import { Sites, StorageUnits } from "/imports/api/locations/collections";
 import { ProductActivities, Products } from "/imports/api/products/collections";
 import { seedDatabase, resetDatabase } from "./seed";
+import { removeLegacyUserEmailIndex } from "./userIndexMigration";
 import "./accounts";
 
 // Mark every pre-existing storage unit as already having its QR code generated,
@@ -51,6 +54,7 @@ async function backfillUnitCodes() {
 }
 
 Meteor.startup(async () => {
+  await removeLegacyUserEmailIndex(Meteor.users.rawCollection());
   await Sites.rawCollection().createIndex({ orgId: 1 });
   await Products.rawCollection().createIndex({ orgId: 1 });
   await ProductActivities.rawCollection().createIndex({ orgId: 1, createdAt: -1 });

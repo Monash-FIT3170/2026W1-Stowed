@@ -1,7 +1,9 @@
 import assert from "assert";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MemoryRouter } from "react-router-dom";
+import { createRoot } from "react-dom/client";
+import { act } from "react-dom/test-utils";
+import { MemoryRouter, StaticRouter } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { AlertsPage } from "../imports/ui/pages/AlertsPage";
 import { ForecastPage } from "../imports/ui/pages/ForecastPage";
@@ -10,6 +12,8 @@ import { QRCodesPage } from "../imports/ui/pages/QRCodesPage";
 import { DashboardPage } from "../imports/ui/pages/DashboardPage";
 import { InventoryListPage } from "../imports/ui/pages/InventoryListPage";
 import { LocationsPage } from "../imports/ui/pages/LocationsPage";
+import { LocationHierarchy } from "../imports/ui/pages/locationComponents/LocationHierarchy";
+import { buildLocationHierarchy } from "../imports/ui/pages/locationComponents/buildLocationHierarchy";
 import { ProductActivities, Products, ProductRecords } from "../imports/api/products/collections";
 import { ProductCategories } from "../imports/api/categories/collections";
 import {
@@ -66,6 +70,98 @@ function anchorWithClass(html, className) {
   const match = html.match(new RegExp(`<a[^>]*class="${className}"[^>]*>`));
   return match ? match[0] : "";
 }
+
+describe("location hierarchy construction", function () {
+  it("sorts every level, calculates counts, and omits orphaned children", function () {
+    const hierarchy = buildLocationHierarchy(
+      [
+        { _id: "site-z", name: "Zed Campus" },
+        { _id: "site-a", name: "Clayton Campus" },
+      ],
+      [
+        { _id: "floor-z", siteId: "site-a", name: "Upper Floor" },
+        { _id: "orphan-floor", siteId: "missing-site", name: "Orphan Floor" },
+        { _id: "floor-a", siteId: "site-a", name: "Ground Floor" },
+      ],
+      [
+        { _id: "unit-z", floorMapId: "floor-a", name: "Rack B" },
+        { _id: "unit-a", floorMapId: "floor-a", name: "Cabinet A" },
+        { _id: "orphan-unit", floorMapId: "missing-floor", name: "Orphan Unit" },
+      ],
+      [
+        { _id: "loc-z", storageUnitId: "unit-a", name: "Shelf B" },
+        { _id: "loc-a", storageUnitId: "unit-a", name: "Shelf A1" },
+        { _id: "orphan-location", storageUnitId: "missing-unit", name: "Orphan Location" },
+      ],
+    );
+
+    assert.deepStrictEqual(
+      hierarchy.map(({ site }) => site.name),
+      ["Clayton Campus", "Zed Campus"],
+    );
+    assert.deepStrictEqual(
+      hierarchy[0].floors.map(({ floorMap }) => floorMap.name),
+      ["Ground Floor", "Upper Floor"],
+    );
+    assert.deepStrictEqual(
+      hierarchy[0].floors[0].units.map(({ unit }) => unit.name),
+      ["Cabinet A", "Rack B"],
+    );
+    assert.deepStrictEqual(
+      hierarchy[0].floors[0].units[0].locations.map(({ name }) => name),
+      ["Shelf A1", "Shelf B"],
+    );
+    assert.deepStrictEqual(
+      [hierarchy[0].floorCount, hierarchy[0].unitCount, hierarchy[0].locationCount],
+      [2, 2, 2],
+    );
+    assert.deepStrictEqual(
+      [hierarchy[1].floorCount, hierarchy[1].unitCount, hierarchy[1].locationCount],
+      [0, 0, 0],
+    );
+  });
+
+  it("leaves empty parent levels intact", function () {
+    const hierarchy = buildLocationHierarchy(
+      [{ _id: "site-1", name: "Clayton" }],
+      [{ _id: "floor-1", siteId: "site-1", name: "Ground Floor" }],
+      [{ _id: "unit-1", floorMapId: "floor-1", name: "Cabinet A" }],
+      [],
+    );
+    assert.strictEqual(hierarchy[0].floors[0].units[0].locationCount, 0);
+    assert.deepStrictEqual(hierarchy[0].floors[0].units[0].locations, []);
+  });
+
+  it("renders collapsed sites and a clear empty hierarchy state", function () {
+    const props = {
+      sites: [{ _id: "site-1", name: "Clayton Campus" }],
+      floorMaps: [{ _id: "floor-1", siteId: "site-1", name: "Ground Floor" }],
+      storageUnits: [],
+      storageLocations: [],
+      loading: false,
+    };
+    const html = renderToStaticMarkup(
+      React.createElement(
+        StaticRouter,
+        { location: "/" },
+        React.createElement(LocationHierarchy, props),
+      ),
+    );
+    assert.ok(html.includes("Clayton Campus"));
+    assert.ok(html.includes("1 floor · 0 units · 0 locations"));
+    assert.ok(html.includes('aria-expanded="false"'));
+    assert.ok(!html.includes("Ground Floor"));
+
+    const emptyHtml = renderToStaticMarkup(
+      React.createElement(
+        StaticRouter,
+        { location: "/" },
+        React.createElement(LocationHierarchy, { ...props, sites: [] }),
+      ),
+    );
+    assert.ok(emptyHtml.includes("No location hierarchy yet."));
+  });
+});
 
 describe("page rendering", function () {
   it("renders static tools and workspace pages", function () {
@@ -133,6 +229,7 @@ describe("page rendering", function () {
         assert.ok(html.includes("Storage Locations"));
         assert.ok(html.includes("Floor Maps"));
         assert.ok(html.includes("Sites"));
+        assert.ok(html.includes("Hierarchy"));
         assert.ok(html.includes("Shelf 1"));
         assert.ok(html.includes("SC-A1"));
         assert.ok(html.includes("Clayton › Ground Floor › Cabinet A"));
@@ -144,6 +241,115 @@ describe("page rendering", function () {
         restoreFloorMaps();
         restoreSites();
         restoreMeteor();
+      }
+    });
+
+    it("selects the hierarchy URL without an add action for admin or standard users", function () {
+      const restoreSites = stubCollectionFind(Sites, [{ _id: "site-1", name: "Clayton" }]);
+      const restoreFloorMaps = stubCollectionFind(FloorMaps, []);
+      const restoreUnits = stubCollectionFind(StorageUnits, []);
+      const restoreLocations = stubCollectionFind(StorageLocations, []);
+      const restoreRecords = stubCollectionFind(ProductRecords, []);
+
+      try {
+        for (const role of [ROLES.ADMIN, ROLES.STANDARD]) {
+          const restoreMeteor = stubMeteor({ role });
+          try {
+            const html = renderWithRouter(
+              React.createElement(LocationsPage),
+              "/locations?tab=hierarchy",
+            );
+            assert.match(html, /<button[^>]*aria-selected="true"[^>]*>Hierarchy/);
+            assert.ok(html.includes("Clayton"));
+            assert.ok(!html.includes("+ Add hierarchy"));
+            assert.ok(!html.includes("+ Add site"));
+            assert.ok(!html.includes("+ Add location"));
+          } finally {
+            restoreMeteor();
+          }
+        }
+
+        const restoreMeteor = stubMeteor({ role: ROLES.ADMIN });
+        try {
+          for (const tab of ["floor-maps", "sites", "invalid"]) {
+            const html = renderWithRouter(
+              React.createElement(LocationsPage),
+              `/locations?tab=${tab}`,
+            );
+            const label =
+              tab === "floor-maps" ? "Floor Maps" : tab === "sites" ? "Sites" : "Storage Locations";
+            assert.match(html, new RegExp(`<button[^>]*aria-selected="true"[^>]*>${label}`));
+          }
+        } finally {
+          restoreMeteor();
+        }
+      } finally {
+        restoreRecords();
+        restoreLocations();
+        restoreUnits();
+        restoreFloorMaps();
+        restoreSites();
+      }
+    });
+
+    it("expands hierarchy branches independently and shows navigation and empty states", function () {
+      const container = globalThis.document.createElement("div");
+      globalThis.document.body.appendChild(container);
+      const root = createRoot(container);
+      try {
+        act(() => {
+          root.render(
+            React.createElement(
+              MemoryRouter,
+              null,
+              React.createElement(LocationHierarchy, {
+                sites: [
+                  { _id: "site-1", name: "Clayton Campus" },
+                  { _id: "site-2", name: "Caulfield Campus" },
+                ],
+                floorMaps: [
+                  { _id: "floor-1", siteId: "site-1", name: "Ground Floor" },
+                  { _id: "floor-2", siteId: "site-1", name: "Empty Floor" },
+                ],
+                storageUnits: [
+                  { _id: "unit-1", floorMapId: "floor-1", name: "Cabinet A" },
+                  { _id: "unit-2", floorMapId: "floor-1", name: "Empty Cabinet" },
+                ],
+                storageLocations: [
+                  { _id: "loc-1", storageUnitId: "unit-1", name: "Shelf A1", code: "A1" },
+                ],
+                loading: false,
+              }),
+            ),
+          );
+        });
+
+        const toggle = (level, id) =>
+          container.querySelector(`[aria-controls="location-hierarchy-${level}-${id}"]`);
+        const click = (button) =>
+          act(() => button.dispatchEvent(new globalThis.MouseEvent("click", { bubbles: true })));
+
+        assert.strictEqual(toggle("site", "site-1").getAttribute("aria-expanded"), "false");
+        click(toggle("site", "site-1"));
+        assert.strictEqual(toggle("site", "site-1").getAttribute("aria-expanded"), "true");
+        assert.ok(container.textContent.includes("Ground Floor"));
+        assert.ok(container.textContent.includes("Empty Floor"));
+        click(toggle("site", "site-2"));
+        assert.strictEqual(toggle("site", "site-1").getAttribute("aria-expanded"), "true");
+        assert.ok(container.textContent.includes("No floors in this site"));
+        click(toggle("floor", "floor-1"));
+        click(toggle("unit", "unit-1"));
+        assert.ok(container.textContent.includes("Shelf A1"));
+        assert.ok(container.querySelector('a[href="/floor-map/floor-1"]'));
+        assert.ok(container.querySelector('a[href="/locations/unit/unit-1"]'));
+        assert.ok(container.querySelector('a[href="/locations/loc-1"]'));
+        click(toggle("unit", "unit-2"));
+        assert.ok(container.textContent.includes("No storage locations in this unit"));
+        click(toggle("floor", "floor-2"));
+        assert.ok(container.textContent.includes("No storage units on this floor"));
+      } finally {
+        act(() => root.unmount());
+        container.remove();
       }
     });
 

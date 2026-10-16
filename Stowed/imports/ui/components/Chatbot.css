@@ -300,9 +300,8 @@
   display: flex;
   gap: 7px;
   flex-wrap: wrap;
-  padding: 10px 12px;
-  border-top: 1px solid var(--border-light);
-  background: var(--card-bg);
+  padding: 0 14px 12px;
+  background: var(--bg-primary);
 }
 
 .chatbot-prompts button {
@@ -404,10 +403,12 @@
   display: block;
 }
 
-@media (max-width: 720px) {
+/* Tablet/phone: the floating dock (Sidebar.css) sits along the bottom up to
+   1024px, so the launcher rides above it instead of hiding underneath. */
+@media (max-width: 1024px) {
   .chatbot {
     right: 12px;
-    bottom: 108px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
   }
 
   .chatbot-panel {
@@ -501,4 +502,15 @@
   display: block;
   margin-top: 4px;
   color: var(--text-muted);
+/* Landscape: the dock is a capsule on the right edge instead, so the
+   launcher moves back down and sits to the left of it. */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .chatbot {
+    right: calc(76px + env(safe-area-inset-right));
+    bottom: 12px;
+  }
+
+  .chatbot-panel {
+    height: min(520px, calc(100vh - 90px));
+  }
 }

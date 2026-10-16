@@ -1,9 +1,20 @@
 // imports/api/locations/methods.js
 
 import { Meteor } from "meteor/meteor";
-import { check } from "meteor/check";
+import { check, Match } from "meteor/check";
 
-import { Sites, FloorMaps, StorageUnits, MapShapes, StorageLocations } from "./collections";
+import {
+  Sites,
+  FloorMaps,
+  StorageUnits,
+  MapShapes,
+  StorageLocations,
+  FloorMapRoutes,
+} from "./collections";
+import { validateRouteGraph, removeNodes } from "./routeGraph";
+import { getFloorSizeInMetres } from "./shapeUtils";
+// Plain constants shared with the floor map canvas (canvas pixels per metre)
+import { CANVAS_CONFIG } from "/imports/ui/pages/floorMapComponents/canvas/CanvasConfig";
 import { ProductRecords } from "../products/collections";
 import { getCallerOrgId, assertOrgAccess, requirePermission } from "../userMethods";
 import { DEFAULT_STOCKTAKE_INTERVAL_DAYS, isValidStocktakeInterval } from "./stocktake";
@@ -174,6 +185,7 @@ Meteor.methods({
     floorMapId,
     siteId,
     name,
+    isPrivate = false,
     imageUrl = "",
     floorSize = {},
     settings = {},
@@ -181,6 +193,7 @@ Meteor.methods({
     check(floorMapId, String);
     check(siteId, String);
     check(name, String);
+    check(isPrivate, Boolean);
     check(imageUrl, String);
     check(floorSize, Object);
     check(settings, Object);
@@ -200,6 +213,7 @@ Meteor.methods({
       $set: {
         siteId,
         name,
+        isPrivate,
         imageUrl,
         floorSize,
         settings,
@@ -231,6 +245,82 @@ Meteor.methods({
     }
 
     await FloorMaps.removeAsync(floorMapId);
+    await FloorMapRoutes.removeAsync({ floorMapId });
+  },
+
+  /**
+   * Saves the walkway route graph for a FloorMap, replacing any previously saved route.
+   * The whole graph is written at once so links can never refer to unsaved nodes.
+   */
+  async "floorMapRoutes.save"({ floorMapId, nodes, links }) {
+    check(floorMapId, String);
+    check(nodes, [
+      {
+        id: String,
+        x: Number,
+        y: Number,
+        type: Match.Maybe(String),
+        storageUnitId: Match.Maybe(String),
+        storageLocationIds: Match.Maybe([String]),
+      },
+    ]);
+    check(links, [{ id: String, fromId: String, toId: String }]);
+
+    await assertOrgAccess(FloorMaps, floorMapId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
+
+    const floorMap = await FloorMaps.findOneAsync(floorMapId);
+    const floorSize = getFloorSizeInMetres(floorMap.floorSize, CANVAS_CONFIG.PIXELS_PER_METER);
+    const problem = validateRouteGraph(nodes, links, floorSize);
+    if (problem) {
+      throw new Meteor.Error("invalid-route", problem);
+    }
+
+    // Product nodes must sit on storage units belonging to this floor map
+    const storageUnitIds = [...new Set(nodes.map((n) => n.storageUnitId).filter(Boolean))];
+    if (storageUnitIds.length > 0) {
+      const foundCount = await StorageUnits.find({
+        _id: { $in: storageUnitIds },
+        floorMapId,
+      }).countAsync();
+      if (foundCount !== storageUnitIds.length) {
+        throw new Meteor.Error(
+          "invalid-route",
+          "A product node is attached to a storage unit that is not on this floor map.",
+        );
+      }
+    }
+
+    // Each product node may only give access to storage locations inside its own unit
+    const locationIds = [...new Set(nodes.flatMap((n) => n.storageLocationIds ?? []))];
+    if (locationIds.length > 0) {
+      const locations = await StorageLocations.find(
+        { _id: { $in: locationIds } },
+        { fields: { storageUnitId: 1 } },
+      ).fetchAsync();
+      const unitIdByLocationId = new Map(locations.map((l) => [l._id, l.storageUnitId]));
+      const hasForeignLocation = nodes.some((node) =>
+        (node.storageLocationIds ?? []).some(
+          (locationId) => unitIdByLocationId.get(locationId) !== node.storageUnitId,
+        ),
+      );
+      if (hasForeignLocation) {
+        throw new Meteor.Error(
+          "invalid-route",
+          "A product node lists a storage location that is not in its storage unit.",
+        );
+      }
+    }
+
+    const orgId = await getCallerOrgId(this.userId);
+    const now = new Date();
+    await FloorMapRoutes.upsertAsync(
+      { floorMapId },
+      {
+        $set: { nodes, links, updatedAt: now },
+        $setOnInsert: { orgId, floorMapId, createdAt: now },
+      },
+    );
   },
 
   /**
@@ -365,6 +455,93 @@ Meteor.methods({
         "storage-unit-not-empty",
         "Delete the storage locations before deleting this storage unit.",
       );
+    }
+
+    await StorageUnits.removeAsync(storageUnitId);
+
+    // Product nodes on this unit's sides (and their links) no longer have anywhere to sit
+    const route = await FloorMapRoutes.findOneAsync({ floorMapId: storageUnit.floorMapId });
+    if (route?.nodes.some((node) => node.storageUnitId === storageUnitId)) {
+      const { nodes, links } = removeNodes(
+        route.nodes,
+        route.links,
+        (node) => node.storageUnitId === storageUnitId,
+      );
+      await FloorMapRoutes.updateAsync(route._id, {
+        $set: { nodes, links, updatedAt: new Date() },
+      });
+    }
+  },
+
+  /**
+   * Moves every StorageLocation in a StorageUnit to its chosen destination unit,
+   * then deletes the emptied StorageUnit. Destinations may be in any site of the org.
+   */
+  async "storageUnits.deleteWithReassign"({ storageUnitId, assignments }) {
+    check(storageUnitId, String);
+    check(assignments, [{ storageLocationId: String, targetUnitId: String }]);
+
+    if (!this.userId && !Meteor.isDevelopment) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    }
+
+    const storageUnit = await StorageUnits.findOneAsync(storageUnitId);
+    if (!storageUnit) {
+      throw new Meteor.Error("storage-unit-not-found", "No storage unit found with that ID.");
+    }
+
+    const floorMap = await FloorMaps.findOneAsync(storageUnit.floorMapId);
+    if (!floorMap) {
+      throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+    }
+
+    await assertOrgAccess(Sites, floorMap.siteId, this.userId);
+    await requirePermission(this.userId, "locations.manage");
+
+    const locations = await StorageLocations.find({ storageUnitId }).fetchAsync();
+    const assignmentByLocationId = new Map(
+      assignments.map((assignment) => [assignment.storageLocationId, assignment.targetUnitId]),
+    );
+
+    for (const location of locations) {
+      if (!assignmentByLocationId.has(location._id)) {
+        throw new Meteor.Error(
+          "missing-destination",
+          "Every storage location needs a destination storage unit.",
+        );
+      }
+    }
+
+    const targetUnitIds = new Set(
+      locations.map((location) => assignmentByLocationId.get(location._id)),
+    );
+
+    for (const targetUnitId of targetUnitIds) {
+      if (targetUnitId === storageUnitId) {
+        throw new Meteor.Error(
+          "invalid-destination",
+          "Choose a different storage unit to move locations to.",
+        );
+      }
+
+      const targetUnit = await StorageUnits.findOneAsync(targetUnitId);
+      if (!targetUnit) {
+        throw new Meteor.Error("invalid-storage-unit", "Destination storage unit does not exist.");
+      }
+
+      const targetFloorMap = await FloorMaps.findOneAsync(targetUnit.floorMapId);
+      if (!targetFloorMap) {
+        throw new Meteor.Error("invalid-floor-map", "Floor map does not exist.");
+      }
+
+      await assertOrgAccess(Sites, targetFloorMap.siteId, this.userId);
+    }
+
+    const now = new Date();
+    for (const location of locations) {
+      await StorageLocations.updateAsync(location._id, {
+        $set: { storageUnitId: assignmentByLocationId.get(location._id), updatedAt: now },
+      });
     }
 
     await StorageUnits.removeAsync(storageUnitId);
@@ -608,6 +785,75 @@ Meteor.methods({
     await MapShapes.removeAsync({ shapeId: shape.shapeId });
   },
 
+  async "mapShapes.deleteWithReassign"({ shapeId, assignments }) {
+    check(shapeId, Number);
+    check(assignments, [{ storageUnitId: String, targetShapeId: Number }]);
+
+    if (!this.userId) {
+      throw new Meteor.Error("not-authorised", "You must be logged in.");
+    } else if (!Meteor.isDevelopment) {
+      await requirePermission(this.userId, "locations.manage");
+    }
+
+    const orgId = await getCallerOrgId(this.userId);
+
+    const shape = await MapShapes.findOneAsync({ shapeId, orgId });
+    if (!shape) {
+      throw new Meteor.Error("shape-not-found", "No shape found with that ID.");
+    }
+
+    const orgFloorMapIds = (await FloorMaps.find({ orgId }).fetchAsync()).map((f) => f._id);
+    const units = await StorageUnits.find({
+      "shape.shapeId": shapeId,
+      floorMapId: { $in: orgFloorMapIds },
+    }).fetchAsync();
+
+    const targetByUnitId = new Map(assignments.map((a) => [a.storageUnitId, a.targetShapeId]));
+
+    for (const unit of units) {
+      if (!targetByUnitId.has(unit._id)) {
+        throw new Meteor.Error(
+          "missing-destination",
+          "Every storage unit using this shape needs a replacement shape.",
+        );
+      }
+    }
+
+    const targetShapes = new Map();
+    for (const targetShapeId of new Set(units.map((u) => targetByUnitId.get(u._id)))) {
+      if (targetShapeId === shapeId) {
+        throw new Meteor.Error("invalid-destination", "Choose a different shape to move units to.");
+      }
+      const target = await MapShapes.findOneAsync({ shapeId: targetShapeId, orgId });
+      if (!target) {
+        throw new Meteor.Error("invalid-shape", "Replacement shape does not exist.");
+      }
+      targetShapes.set(targetShapeId, target);
+    }
+
+    const now = new Date();
+    for (const unit of units) {
+      const target = targetShapes.get(targetByUnitId.get(unit._id));
+      const minX = Math.min(...target.points.map((p) => p.x));
+      const minY = Math.min(...target.points.map((p) => p.y));
+
+      await StorageUnits.updateAsync(unit._id, {
+        $set: {
+          shape: {
+            orgId,
+            shapeId: target.shapeId,
+            name: target.name,
+            gridReference: target.gridReference,
+            points: target.points.map((p) => ({ x: p.x - minX, y: p.y - minY })),
+          },
+          updatedAt: now,
+        },
+      });
+    }
+
+    await MapShapes.removeAsync({ shapeId, orgId });
+  },
+
   /**
    * Creates a new StorageLocation under an existing StorageUnit.
    */
@@ -747,6 +993,21 @@ Meteor.methods({
     }
 
     await StorageLocations.removeAsync(storageLocationId);
+
+    // Product nodes on this unit no longer give access to the deleted location
+    const route = await FloorMapRoutes.findOneAsync({ floorMapId: storageUnit.floorMapId });
+    const listsLocation = (node) => node.storageLocationIds?.includes(storageLocationId);
+    if (route?.nodes.some(listsLocation)) {
+      const nodes = route.nodes.map((node) =>
+        listsLocation(node)
+          ? {
+              ...node,
+              storageLocationIds: node.storageLocationIds.filter((id) => id !== storageLocationId),
+            }
+          : node,
+      );
+      await FloorMapRoutes.updateAsync(route._id, { $set: { nodes, updatedAt: new Date() } });
+    }
   },
 
   /**
