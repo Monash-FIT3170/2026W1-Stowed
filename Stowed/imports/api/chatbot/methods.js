@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getCallerOrgId, hasPermission, requirePermission } from "../userMethods";
 import { buildToolDeclarations, callMethodAs, executeTool, TOOL_PERMISSIONS } from "./tools";
+import { permissionForAction } from "./actionPermissions";
 import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../locations/collections";
 import { buildRectShape, getBoundingBox } from "../locations/shapeUtils";
 import { Products } from "../products/collections";
@@ -26,8 +27,8 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 256;
 const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
 const MISSING_API_KEY_MESSAGE =
-  "The AI Assistant needs a Gemini API key before it can answer that. Start Meteor with --settings settings.json, or set GEMINI_API_KEY in your environment.";
-const ACTION_TYPES = {
+  "The AI Assistant needs a Gemini API key before it can answer that. Add GEMINI_API_KEY to your .env file (or settings.json) and restart Meteor.";
+export const ACTION_TYPES = {
   CREATE_SHOPPING_LIST: "createShoppingList",
   CREATE_LOW_STOCK_LIST: "createLowStockShoppingList",
   CREATE_SITE: "createSite",
@@ -67,8 +68,9 @@ const actionPattern = {
 };
 const SYSTEM_INSTRUCTION = [
   "You are the assistant inside Stowed, an inventory app for shops and storerooms.",
-  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, user accounts, and related workflows.",
-  "If the user asks for something outside Stowed's inventory and account-management scope, briefly say you can only help with Stowed tasks.",
+  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, and related workflows.",
+  "If the user asks for something outside Stowed's inventory scope, briefly say you can only help with Stowed tasks.",
+  "You cannot create, edit or delete user accounts. If asked, say only an owner can manage accounts, from the Accounts page.",
   "Use the tools to look things up and to act for the user; never invent product or location ids.",
   "You can only use the tools you are given - they match the user's role. If asked for something outside them, say you can't do that with their account.",
   "To create, edit or delete a product: first call the tool WITHOUT confirmed (this only previews, nothing changes), then tell the user exactly what will change and end your message with: Reply CONFIRM to proceed.",
@@ -117,7 +119,7 @@ function getAiClient() {
   if (!apiKey) {
     throw new Meteor.Error(
       "gemini-not-configured",
-      "Gemini API key is not configured. Start Meteor with --settings settings.json or set GEMINI_API_KEY.",
+      "Gemini API key is not configured. Add GEMINI_API_KEY to your .env file (or settings.json) and restart Meteor.",
     );
   }
 
@@ -899,7 +901,16 @@ async function confirmAction(userId, action) {
   };
 }
 
+// Every suggested action maps to the permission the app itself requires; unknown
+// types are refused. Runs before anything else so each action goes through one check.
+async function requireActionPermission(userId, action) {
+  const permission = permissionForAction(action.type);
+  if (!permission) throw new Meteor.Error("forbidden", "That action isn't available.");
+  await requirePermission(userId, permission);
+}
+
 async function runSuggestedAction(userId, action) {
+  await requireActionPermission(userId, action);
   if (FLOOR_MAP_ACTION_TYPES.has(action.type)) {
     return await confirmFloorMapAction(userId, action);
   }
@@ -1127,6 +1138,15 @@ Meteor.methods({
       buildPendingFloorMapAction(input, pendingAction) ||
       buildFloorMapAction(input);
     if (action) {
+      const requiredPermission = permissionForAction(action.type);
+      if (!requiredPermission || !(await hasPermission(this.userId, requiredPermission))) {
+        return {
+          text: "Your account role doesn't allow that. Ask an admin or owner to do it.",
+          interactionId: previousInteractionId,
+          suggestedActions: [],
+        };
+      }
+
       return {
         text: pendingAction
           ? "I updated the pending action. Confirm it when it looks right, or keep describing changes."
