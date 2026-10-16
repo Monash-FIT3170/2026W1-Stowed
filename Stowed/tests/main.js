@@ -38,6 +38,7 @@ import "./scheduleMethods.test.js";
 import "./scheduleGeneration.test.js";
 import "./codeGenerationMethods.test.js";
 import "./chatbotTools.test.js";
+import "./chatbotHistory.test.js";
 import "./dijkstraAlgorithm.test.js";
 import "./routePlanning.test.js";
 import "./customerCatalogue.test.js";
