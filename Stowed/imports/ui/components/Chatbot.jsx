@@ -381,7 +381,7 @@ export function Chatbot() {
             )}
           </div>
 
-          {messages.length === 1 && (
+          {!isSending && !pendingAction && (
             <div className="chatbot-prompts">
               {SUGGESTED_PROMPTS.map((prompt) => (
                 <button
