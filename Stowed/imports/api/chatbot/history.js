@@ -18,7 +18,13 @@ Meteor.startup(async () => {
 });
 
 Meteor.methods({
-  async "chatbot.history.save"({ conversationId, messages, previousInteractionId, pendingAction }) {
+  async "chatbot.history.save"({
+    conversationId,
+    messages,
+    previousInteractionId,
+    pendingAction,
+    activeTask,
+  }) {
     const scope = await historyScope(this.userId);
     check(conversationId, String);
     check(messages, [
@@ -30,6 +36,7 @@ Meteor.methods({
     ]);
     check(previousInteractionId, Match.Maybe(String));
     check(pendingAction, Match.Maybe(Object));
+    check(activeTask, Match.Maybe(Match.OneOf("createFloorMap")));
     if (
       !/^[a-zA-Z0-9_-]{1,80}$/.test(conversationId) ||
       messages.length > 1000 ||
@@ -54,6 +61,7 @@ Meteor.methods({
           messages,
           previousInteractionId: previousInteractionId || null,
           pendingAction: pendingAction || null,
+          activeTask: activeTask || null,
           updatedAt: now,
         },
         $setOnInsert: { createdAt: now },

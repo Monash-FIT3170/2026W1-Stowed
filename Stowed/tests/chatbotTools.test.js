@@ -11,6 +11,7 @@ import {
 } from "../imports/api/locations/collections";
 import { hasClientPermission } from "../imports/api/userMethods";
 import { ROLES } from "../imports/api/roles";
+import { SUGGESTED_PROMPTS, getPromptHelp } from "../imports/api/chatbot/prompts";
 import "../imports/api/products/methods";
 import {
   buildToolDeclarations,
@@ -32,6 +33,24 @@ const OTHER_PRODUCT = "chatbot-test-other-product";
 const names = (tools) => tools.map((tool) => tool.name).sort();
 const toolsFor = (role) =>
   buildToolDeclarations((permission) => hasClientPermission(role, permission));
+
+describe("Chatbot prompt guide", function () {
+  it("includes Help alongside the initial prompts and documents each option", function () {
+    assert.strictEqual(SUGGESTED_PROMPTS.length, 4);
+    assert.ok(SUGGESTED_PROMPTS.includes("Help"));
+    const guide = getPromptHelp();
+    for (const prompt of SUGGESTED_PROMPTS) assert.ok(guide.includes(prompt));
+    for (const group of [
+      "Shopping lists",
+      "Sites and floor maps",
+      "Products",
+      "Open a page",
+      "Continue or cancel a task",
+    ]) {
+      assert.ok(guide.includes(group));
+    }
+  });
+});
 
 describe("Chatbot tool declarations", function () {
   it("gives a standard user read tools and navigation but no write tools", function () {
@@ -403,6 +422,125 @@ describeServer("Chatbot tool execution", function () {
     assert.ok(result.text.includes("Shelf A Bay 02"));
     assert.ok(result.text.includes("SHELF-A-02"));
     assert.deepStrictEqual(result.suggestedActions, []);
+  });
+
+  it("returns the prompt guide locally without starting an action", async function () {
+    for (const content of ["Help", "help!", "Show all prompts", "What can you do?"]) {
+      const result = await callChatbot(STANDARD_ID, {
+        messages: [{ role: "user", content }],
+        previousInteractionId: null,
+        pendingAction: null,
+      });
+      assert.strictEqual(result.text, getPromptHelp());
+      assert.deepStrictEqual(result.suggestedActions, []);
+      assert.deepStrictEqual(result.actions, []);
+      assert.strictEqual(result.activeTask, undefined);
+    }
+  });
+
+  it("preserves the pending action when help is requested", async function () {
+    const action = {
+      id: "help-pending-floor-map",
+      type: "createFloorMap",
+      title: "Create floor map",
+      summary: 'Create a floor map named "H3".',
+      confirmLabel: "Create",
+      payload: { name: "H3", siteName: "Site" },
+    };
+    const result = await callChatbot(ADMIN_ID, {
+      messages: [{ role: "user", content: "Help" }],
+      previousInteractionId: "keep-interaction",
+      pendingAction: action,
+    });
+    assert.strictEqual(result.text, getPromptHelp());
+    assert.deepStrictEqual(result.suggestedActions, [action]);
+    assert.strictEqual(result.interactionId, "keep-interaction");
+  });
+
+  it("shows a floor-map example using an existing site without proposing a blank map", async function () {
+    const before = await FloorMaps.find({ orgId: ORG }).countAsync();
+    const result = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "create floor map" }],
+    });
+    assert.ok(result.text.includes('Create a floor map named "H3" in site "Site".'));
+    assert.ok(result.text.includes("confirm before creating"));
+    assert.strictEqual(result.activeTask, "createFloorMap");
+    assert.deepStrictEqual(result.suggestedActions, []);
+    assert.strictEqual(await FloorMaps.find({ orgId: ORG }).countAsync(), before);
+  });
+
+  it("explains that a site must be created first when there are no sites", async function () {
+    await Meteor.users.updateAsync(ADMIN_ID, { $set: { "profile.organisationId": OTHER_ORG } });
+    try {
+      const result = await callChatbot(ADMIN_ID, {
+        previousInteractionId: null,
+        pendingAction: null,
+        messages: [{ role: "user", content: "Please create a floor map" }],
+      });
+      assert.ok(result.text.includes('Create a site named "Harbour"'));
+      assert.strictEqual(result.activeTask, "createFloorMap");
+      assert.deepStrictEqual(result.suggestedActions, []);
+    } finally {
+      await Meteor.users.updateAsync(ADMIN_ID, { $set: { "profile.organisationId": ORG } });
+    }
+  });
+
+  it("keeps the map name and site from a complete floor-map request", async function () {
+    for (const input of [
+      'Create a floor map named "H3" in Harbour',
+      'Create a floor map named "H3" in site "Harbour".',
+      'Create a floor map named "H3" for site Harbour',
+    ]) {
+      const result = await callChatbot(ADMIN_ID, {
+        previousInteractionId: null,
+        pendingAction: null,
+        messages: [{ role: "user", content: input }],
+      });
+      const action = result.suggestedActions[0];
+      assert.strictEqual(action.payload.name, "H3");
+      assert.strictEqual(action.payload.siteName, "Harbour");
+      assert.ok(action.summary.includes('site "Harbour"'));
+    }
+  });
+
+  it("updates a pending floor map's name and site and creates it under that site", async function () {
+    const pendingAction = {
+      id: "chatbot-test-floor-map-action",
+      type: "createFloorMap",
+      title: "Create floor map",
+      summary: 'Create a floor map named "New floor map".',
+      confirmLabel: "Create",
+      payload: { name: "New floor map" },
+    };
+    const result = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction,
+      messages: [{ role: "user", content: 'Create a floor map named "H3" in site "Site"' }],
+    });
+    const action = result.suggestedActions[0];
+    assert.strictEqual(action.payload.name, "H3");
+    assert.strictEqual(action.payload.siteName, "Site");
+    assert.strictEqual(result.activeTask, undefined);
+    const siteOnly = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: action,
+      messages: [{ role: "user", content: 'in site "Site"' }],
+    });
+    assert.strictEqual(siteOnly.suggestedActions[0].payload.name, "H3");
+    const confirmed = await Meteor.server.method_handlers["chatbot.confirmAction"].call(
+      { userId: ADMIN_ID },
+      { action },
+    );
+    try {
+      const map = await FloorMaps.findOneAsync(confirmed.floorMapId);
+      assert.strictEqual(confirmed.activeTask, undefined);
+      assert.strictEqual(map.name, "H3");
+      assert.strictEqual(map.siteId, SITE);
+    } finally {
+      await FloorMaps.removeAsync(confirmed.floorMapId);
+    }
   });
 
   it("creates a site through the local action flow without an AI API key", async function () {

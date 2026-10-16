@@ -4,13 +4,10 @@ import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
 import { hasClientPermission } from "../../api/userMethods";
 import { useAuth } from "../../api/useAuth";
+import { SUGGESTED_PROMPTS, getPromptHelp } from "../../api/chatbot/prompts";
+import { ChatbotPromptExamples } from "./ChatbotPromptExamples";
 import "./Chatbot.css";
 
-const SUGGESTED_PROMPTS = [
-  "What should I stocktake today?",
-  "Help me name storage locations.",
-  "Make a low-stock checklist.",
-];
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
 const NAVIGATION_COMMANDS = [
   {
@@ -165,11 +162,12 @@ function ChatbotSession() {
   const [error, setError] = useState("");
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
+  const [activeTask, setActiveTask] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (isSending || messages.length < 2) return;
-    const snapshot = { conversationId, messages, previousInteractionId, pendingAction };
+    const snapshot = { conversationId, messages, previousInteractionId, pendingAction, activeTask };
     const serialized = JSON.stringify(snapshot);
     if (savedSnapshot.current === serialized) return;
     const revision = ++saveRevision.current;
@@ -185,7 +183,15 @@ function ChatbotSession() {
       .catch(() => {
         if (saveRevision.current === revision) setSaveStatus("error");
       });
-  }, [conversationId, messages, previousInteractionId, pendingAction, isSending, saveAttempt]);
+  }, [
+    conversationId,
+    messages,
+    previousInteractionId,
+    pendingAction,
+    activeTask,
+    isSending,
+    saveAttempt,
+  ]);
 
   useEffect(() => {
     const container = messagesRef.current;
@@ -222,12 +228,14 @@ function ChatbotSession() {
         messages: conversation.messages,
         previousInteractionId: conversation.previousInteractionId,
         pendingAction: conversation.pendingAction,
+        activeTask: conversation.activeTask || null,
       };
       savedSnapshot.current = JSON.stringify(snapshot);
       setConversationId(snapshot.conversationId);
       setMessages(snapshot.messages);
       setPreviousInteractionId(snapshot.previousInteractionId);
       setPendingAction(snapshot.pendingAction);
+      setActiveTask(snapshot.activeTask);
       setSaveStatus("saved");
       setDraft("");
       setError("");
@@ -248,6 +256,7 @@ function ChatbotSession() {
     setMessages(INITIAL_MESSAGES);
     setPreviousInteractionId(null);
     setPendingAction(null);
+    setActiveTask(null);
     setDraft("");
     setError("");
     setSaveStatus("");
@@ -273,6 +282,15 @@ function ChatbotSession() {
   function sendMessage(text = draft) {
     const content = text.trim();
     if (!content || isSending) return;
+    if (
+      activeTask &&
+      !pendingAction &&
+      /^(?:cancel(?: task)?|never\s*mind|stop)[.!?]*$/i.test(content)
+    ) {
+      cancelAction({ title: "Create floor map" });
+      setDraft("");
+      return;
+    }
 
     const nextMessages = [...messages, { role: "user", content }];
     setMessages(nextMessages);
@@ -286,6 +304,7 @@ function ChatbotSession() {
         !hasClientPermission(role, navigationCommand.permission)
       ) {
         setPendingAction(null);
+        setActiveTask(null);
         setMessages([
           ...nextMessages,
           {
@@ -298,6 +317,7 @@ function ChatbotSession() {
       }
       navigate(navigationCommand.route);
       setPendingAction(null);
+      setActiveTask(null);
       setMessages([
         ...nextMessages,
         {
@@ -333,6 +353,11 @@ function ChatbotSession() {
 
         const nextAction = result?.suggestedActions?.[0] || null;
         setPendingAction(nextAction);
+        setActiveTask(
+          (current) =>
+            result?.activeTask ||
+            (nextAction || result?.openUrl || result?.actions?.length ? null : current),
+        );
 
         if (result?.openUrl && result?.url) {
           navigate(result.url);
@@ -374,6 +399,7 @@ function ChatbotSession() {
       }
 
       setPendingAction(null);
+      setActiveTask(null);
       if (result?.openUrl && result?.url) {
         navigate(result.url);
       }
@@ -391,7 +417,9 @@ function ChatbotSession() {
   }
 
   function cancelAction(action) {
+    setError("");
     setPendingAction(null);
+    setActiveTask(null);
     setMessages((current) => [
       ...current,
       { role: "user", content: `Cancel: ${action.title}` },
@@ -535,7 +563,17 @@ function ChatbotSession() {
                     <div className="chatbot-label">
                       {message.role === "assistant" ? "Chatbot" : "You"}
                     </div>
-                    {message.content && <div className="chatbot-body">{message.content}</div>}
+                    {message.role === "assistant" && message.content === getPromptHelp() ? (
+                      <ChatbotPromptExamples
+                        disabled={isSending}
+                        onSelect={(prompt) => {
+                          setDraft(prompt);
+                          inputRef.current?.focus();
+                        }}
+                      />
+                    ) : (
+                      message.content && <div className="chatbot-body">{message.content}</div>
+                    )}
                     {message.actions?.length > 0 && (
                       <div className="chatbot-actions">
                         {message.actions.map((action) => (
@@ -579,7 +617,7 @@ function ChatbotSession() {
                 )}
               </div>
 
-              {!isSending && !pendingAction && (
+              {!isSending && !pendingAction && !activeTask && (
                 <div className="chatbot-prompts">
                   {SUGGESTED_PROMPTS.map((prompt) => (
                     <button
@@ -591,6 +629,19 @@ function ChatbotSession() {
                       {prompt}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {activeTask === "createFloorMap" && !pendingAction && (
+                <div className="chatbot-task-status">
+                  <span>Creating a floor map — waiting for your map name and site.</span>
+                  <button
+                    type="button"
+                    disabled={isSending}
+                    onClick={() => cancelAction({ title: "Create floor map" })}
+                  >
+                    Cancel task
+                  </button>
                 </div>
               )}
 

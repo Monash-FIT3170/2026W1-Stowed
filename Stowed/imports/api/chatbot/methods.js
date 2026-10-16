@@ -9,6 +9,7 @@ import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../locations/c
 import { buildRectShape, getBoundingBox } from "../locations/shapeUtils";
 import { Products } from "../products/collections";
 import { ShoppingLists } from "../shoppingLists/collections";
+import { getPromptHelp } from "./prompts";
 import { ADD_PRODUCT_MODES, LIST_FREQUENCIES, LIST_ORIGINS } from "../shoppingLists/constants";
 import { isLowStock, toItem } from "../shoppingLists/generation";
 import {
@@ -300,17 +301,23 @@ function floorMapNameFrom(input) {
 }
 
 function siteNameFrom(input) {
+  const cleanSiteName = (value) =>
+    value
+      ?.replace(/[?.!]+$/, "")
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .trim() || null;
   const withLabel = input.match(
     /\b(?:for|on|in|at)\s+(?:the\s+)?(?:site|warehouse)\s+(.{2,100}?)(?=\s+(?:called|named|title(?:d)?|with (?:the )?name)\b|[?.!]*$)/i,
   );
-  if (withLabel) return withLabel[1].replace(/[?.!]+$/, "").trim();
+  if (withLabel) return cleanSiteName(withLabel[1]);
 
   const withoutLabel = input.match(
     /\b(?:for|on|in|at)\s+(.{2,100}?)(?=\s+(?:called|named|title(?:d)?|with (?:the )?name)\b|[?.!]*$)/i,
   );
-  if (withoutLabel) return withoutLabel[1].replace(/[?.!]+$/, "").trim();
+  if (withoutLabel) return cleanSiteName(withoutLabel[1]);
 
-  return valueAfter(input, ["site", "warehouse"]);
+  return cleanSiteName(valueAfter(input, ["site", "warehouse"]));
 }
 
 function unitNameFrom(input) {
@@ -510,7 +517,15 @@ export function buildPendingFloorMapAction(input, previousAction) {
   if (!previousAction || !FLOOR_MAP_ACTION_TYPES.has(previousAction.type)) return null;
 
   const payload = { ...previousAction.payload };
-  const nextName = extractPendingActionName(input, null);
+  const nextName =
+    extractPendingActionName(input, null) ||
+    (previousAction.type === ACTION_TYPES.CREATE_FLOOR_MAP && /\b(named|called)\b/i.test(input)
+      ? extractName(input, null)
+      : null);
+  if (previousAction.type === ACTION_TYPES.CREATE_FLOOR_MAP) {
+    const siteName = siteNameFrom(input);
+    if (siteName) payload.siteName = siteName;
+  }
   if (nextName) {
     if (
       previousAction.type === ACTION_TYPES.CREATE_SITE ||
@@ -1091,6 +1106,19 @@ Meteor.methods({
       throw new Meteor.Error("empty-message", "Ask something first.");
     }
 
+    if (
+      /^(?:help|(?:show|list)(?: me)?(?: all)?(?: the)? prompts|what can you do)[?.!]*$/i.test(
+        input,
+      )
+    ) {
+      return {
+        text: getPromptHelp(),
+        interactionId: previousInteractionId,
+        suggestedActions: pendingAction ? [pendingAction] : [],
+        actions: [],
+      };
+    }
+
     if (pendingAction && AFFIRMATION.test(input)) {
       const result = await runSuggestedAction(this.userId, pendingAction);
       return {
@@ -1119,6 +1147,32 @@ Meteor.methods({
       return {
         ...(await buildArchiveShoppingListHelp(this.userId)),
         interactionId: previousInteractionId,
+      };
+    }
+
+    if (
+      /^(?:please\s+)?(?:create|make|add|build)(?:\s+(?:me|a|new|the))*\s+(?:floor\s*map|floormap)[.!?]*$/i.test(
+        input,
+      )
+    ) {
+      const orgId = await getCallerOrgId(this.userId);
+      const sites = orgId
+        ? await Sites.find({ orgId }, { sort: { name: 1 }, limit: 5 }).fetchAsync()
+        : [];
+      const exampleSite = sites[0]?.name || "Harbour";
+      return {
+        text: [
+          "To create a floor map, provide a map name and the site it belongs to.",
+          `Example: Create a floor map named "H3" in site ${JSON.stringify(exampleSite)}.`,
+          sites.length
+            ? `Available sites: ${sites.map((site) => JSON.stringify(site.name)).join(", ")}.`
+            : 'Create a site first, for example: Create a site named "Harbour".',
+          "Replace H3 with your map name and use an existing site name. I’ll show the details for you to confirm before creating it.",
+        ].join("\n\n"),
+        interactionId: previousInteractionId,
+        activeTask: "createFloorMap",
+        suggestedActions: [],
+        actions: [],
       };
     }
 
