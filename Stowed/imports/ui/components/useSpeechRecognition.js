@@ -49,6 +49,7 @@ export function useSpeechRecognition({ onResult, lang = "en-AU" } = {}) {
     };
 
     recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return;
       recognitionRef.current = null;
       setIsListening(false);
     };
@@ -64,7 +65,11 @@ export function useSpeechRecognition({ onResult, lang = "en-AU" } = {}) {
   }
 
   function abort() {
-    recognitionRef.current?.abort();
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+    recognitionRef.current = null;
+    setIsListening(false);
+    recognition.abort();
   }
 
   return { isSupported, isListening, error, start, stop, abort };
