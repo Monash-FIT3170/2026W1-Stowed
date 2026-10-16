@@ -17,6 +17,7 @@ import {
   executeTool,
   clearPendingActions,
 } from "../imports/api/chatbot/tools";
+import { ACTION_PERMISSIONS, permissionForAction } from "../imports/api/chatbot/actionPermissions";
 import { describeServer } from "./serverOnly";
 
 const ORG = "chatbot-test-org";
@@ -55,6 +56,68 @@ describe("Chatbot tool declarations", function () {
     assert.ok(pagesFor(ROLES.ADMIN).includes("add_product"));
     assert.ok(!pagesFor(ROLES.ADMIN).includes("accounts"));
     assert.ok(pagesFor(ROLES.OWNER).includes("accounts"));
+  });
+});
+
+describe("Chatbot action permissions", function () {
+  const can = (role, type) => hasClientPermission(role, permissionForAction(type));
+  const locationActions = [
+    "createSite",
+    "createFloorMap",
+    "createStorageUnit",
+    "createStorageLocation",
+    "moveStorageUnit",
+    "resizeStorageUnit",
+    "showFloorMapEditor",
+  ];
+
+  it("maps every action to a permission the app actually defines", function () {
+    // OWNER holds every permission, so a typo'd permission name would fail here.
+    for (const [type, permission] of Object.entries(ACTION_PERMISSIONS)) {
+      assert.ok(permission, `${type} has no permission`);
+      assert.ok(hasClientPermission(ROLES.OWNER, permission), `${type} -> unknown "${permission}"`);
+    }
+  });
+
+  it("refuses unknown action types", function () {
+    assert.strictEqual(permissionForAction("deleteEverything"), undefined);
+  });
+
+  it("stops standard users changing locations or the floor map", function () {
+    for (const type of locationActions) {
+      assert.strictEqual(can(ROLES.STANDARD, type), false, `standard should not ${type}`);
+    }
+  });
+
+  it("still lets standard users do staff-level actions", function () {
+    for (const type of [
+      "createShoppingList",
+      "createLowStockShoppingList",
+      "assignStockToUnit",
+      "openStorageUnit",
+      "showLowStockFloorMap",
+    ]) {
+      assert.strictEqual(can(ROLES.STANDARD, type), true, `standard should be able to ${type}`);
+    }
+  });
+
+  it("lets admins run every action", function () {
+    for (const type of Object.keys(ACTION_PERMISSIONS)) {
+      assert.strictEqual(can(ROLES.ADMIN, type), true, `admin should be able to ${type}`);
+    }
+  });
+
+  it("only offers account pages to owners", function () {
+    const pagesFor = (role) =>
+      buildToolDeclarations((permission) => hasClientPermission(role, permission)).find(
+        (tool) => tool.name === "navigate",
+      ).parameters.properties.page.enum;
+
+    for (const page of ["create_account", "accounts"]) {
+      assert.ok(!pagesFor(ROLES.STANDARD).includes(page), `standard got ${page}`);
+      assert.ok(!pagesFor(ROLES.ADMIN).includes(page), `admin got ${page}`);
+      assert.ok(pagesFor(ROLES.OWNER).includes(page), `owner missing ${page}`);
+    }
   });
 });
 
@@ -498,5 +561,37 @@ describeServer("Chatbot tool execution", function () {
     const list = await ShoppingLists.findOneAsync({ orgId: ORG, name: "Typed Confirm List" });
     assert.ok(list);
     assert.strictEqual(result.listId, list._id);
+  });
+
+  it("does not offer a standard user location changes", async function () {
+    const result = await callChatbot(STANDARD_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "create site" }],
+    });
+
+    assert.deepStrictEqual(result.suggestedActions, []);
+    assert.ok(result.text.includes("role doesn't allow"));
+  });
+
+  it("blocks a standard user confirming a location change directly", async function () {
+    const action = {
+      id: "chatbot-test-forged-site",
+      type: "createSite",
+      title: "Create site",
+      summary: 'Create a site named "Forged Site".',
+      confirmLabel: "Create",
+      payload: { name: "Forged Site" },
+    };
+
+    await assert.rejects(
+      () =>
+        Meteor.server.method_handlers["chatbot.confirmAction"].call(
+          { userId: STANDARD_ID },
+          { action },
+        ),
+      (error) => error.error === "forbidden",
+    );
+    assert.strictEqual(await Sites.find({ name: "Forged Site" }).countAsync(), 0);
   });
 });
