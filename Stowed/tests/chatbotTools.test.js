@@ -24,6 +24,7 @@ const ORG = "chatbot-test-org";
 const OTHER_ORG = "chatbot-test-other-org";
 const STANDARD_ID = "chatbot-test-standard";
 const ADMIN_ID = "chatbot-test-admin";
+const OWNER_ID = "chatbot-test-owner";
 const SITE = "chatbot-test-site";
 const FLOOR_MAP = "chatbot-test-floormap";
 const UNIT = "chatbot-test-unit";
@@ -56,6 +57,21 @@ describe("Chatbot tool declarations", function () {
     assert.ok(pagesFor(ROLES.ADMIN).includes("add_product"));
     assert.ok(!pagesFor(ROLES.ADMIN).includes("accounts"));
     assert.ok(pagesFor(ROLES.OWNER).includes("accounts"));
+  });
+
+  it("gives only an owner the createUser tool", function () {
+    assert.ok(!names(toolsFor(ROLES.STANDARD)).includes("createUser"));
+    assert.ok(!names(toolsFor(ROLES.ADMIN)).includes("createUser"));
+    assert.ok(names(toolsFor(ROLES.OWNER)).includes("createUser"));
+  });
+
+  it("never asks for a password and only allows standard or admin roles", function () {
+    const createUser = toolsFor(ROLES.OWNER).find((tool) => tool.name === "createUser");
+    const properties = createUser.parameters.properties;
+
+    assert.ok(!("password" in properties));
+    assert.deepStrictEqual(properties.role.enum, ["standard", "admin"]);
+    assert.deepStrictEqual(createUser.parameters.required, ["username", "email"]);
   });
 });
 
@@ -124,6 +140,7 @@ describe("Chatbot action permissions", function () {
 describeServer("Chatbot tool execution", function () {
   const standardAllowed = new Set(names(toolsFor(ROLES.STANDARD)));
   const adminAllowed = new Set(names(toolsFor(ROLES.ADMIN)));
+  const ownerAllowed = new Set(names(toolsFor(ROLES.OWNER)));
   let turn = 0;
 
   const run = (userId, allowed, toolName, args, actions = []) =>
@@ -133,6 +150,8 @@ describeServer("Chatbot tool execution", function () {
 
   async function cleanup() {
     await Meteor.users.removeAsync({ _id: { $in: [STANDARD_ID, ADMIN_ID] } });
+    // also clears the owner and any accounts the createUser tests made
+    await Meteor.users.removeAsync({ "profile.organisationId": ORG });
     await Organisations.removeAsync({ _id: { $in: [ORG, OTHER_ORG] } });
     await ShoppingLists.removeAsync({ orgId: ORG });
     await Sites.removeAsync({ orgId: ORG });
@@ -161,6 +180,7 @@ describeServer("Chatbot tool execution", function () {
     for (const [_id, role] of [
       [STANDARD_ID, ROLES.STANDARD],
       [ADMIN_ID, ROLES.ADMIN],
+      [OWNER_ID, ROLES.OWNER],
     ]) {
       await Meteor.users.insertAsync({
         _id,
@@ -563,6 +583,65 @@ describeServer("Chatbot tool execution", function () {
     assert.strictEqual(result.listId, list._id);
   });
 
+  it("does not create an account until the owner confirms on a later turn", async function () {
+    const args = { username: "chat-new-staff", email: "Chat-New-Staff@Test.com" };
+
+    const proposed = await run(OWNER_ID, ownerAllowed, "createUser", args);
+    assert.strictEqual(proposed.status, "confirmation_required");
+
+    // Model tries to self-confirm within the same turn: still blocked.
+    const sameTurn = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.strictEqual(sameTurn.status, "confirmation_required");
+    assert.strictEqual(
+      await Meteor.users.find({ username: `${ORG}~chat-new-staff` }).countAsync(),
+      0,
+    );
+
+    turn += 1;
+    const created = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.strictEqual(created.status, "created");
+    assert.strictEqual(typeof created.passwordEmailSent, "boolean");
+    assert.ok(!("password" in created));
+
+    const user = await Meteor.users.findOneAsync(created.userId);
+    assert.strictEqual(user.username, `${ORG}~chat-new-staff`);
+    assert.strictEqual(user.emails[0].address, "chat-new-staff@test.com");
+    assert.strictEqual(user.profile.organisationId, ORG);
+    assert.strictEqual(user.profile.role, ROLES.STANDARD);
+  });
+
+  it("creates an admin account when the role is admin", async function () {
+    const args = { username: "chat-new-admin", email: "chat-new-admin@test.com", role: "admin" };
+    await run(OWNER_ID, ownerAllowed, "createUser", args);
+
+    turn += 1;
+    const created = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.strictEqual(created.role, "admin");
+    const user = await Meteor.users.findOneAsync(created.userId);
+    assert.strictEqual(user.profile.role, ROLES.ADMIN);
+  });
+
+  it("returns an error instead of creating a duplicate email", async function () {
+    const args = { username: "chat-duplicate", email: `${STANDARD_ID}@test.com` };
+    await run(OWNER_ID, ownerAllowed, "createUser", args);
+
+    turn += 1;
+    const result = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.ok(result.error);
+    assert.strictEqual(
+      await Meteor.users.find({ username: `${ORG}~chat-duplicate` }).countAsync(),
+      0,
+    );
+  });
+
+  it("refuses createUser for an admin", async function () {
+    const result = await run(ADMIN_ID, adminAllowed, "createUser", {
+      username: "chat-sneaky",
+      email: "chat-sneaky@test.com",
+      confirmed: true,
+    });
+    assert.ok(result.error);
+    assert.strictEqual(await Meteor.users.find({ username: `${ORG}~chat-sneaky` }).countAsync(), 0);
   it("does not offer a standard user location changes", async function () {
     const result = await callChatbot(STANDARD_ID, {
       previousInteractionId: null,

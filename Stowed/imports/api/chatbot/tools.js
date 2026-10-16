@@ -1,8 +1,10 @@
 import { Meteor } from "meteor/meteor";
+import { Accounts } from "meteor/accounts-base";
 import { Products, ProductRecords } from "../products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { ProductCategories } from "../categories/collections";
 import { getCallerOrgId, assertOrgAccess, hasPermission } from "../userMethods";
+import { ROLES } from "../roles";
 
 const SEARCH_LIMIT = 15;
 const SEARCH_FETCH_LIMIT = 200;
@@ -46,7 +48,7 @@ export const TOOL_PERMISSIONS = [
 ];
 
 // Tools that change data. These go through the confirm-first gate below.
-const MUTATING_TOOLS = new Set(["createProduct", "updateProduct", "deleteProduct"]);
+const MUTATING_TOOLS = new Set(["createProduct", "updateProduct", "deleteProduct", "createUser"]);
 
 const PRODUCT_FIELD_PROPERTIES = {
   name: { type: "string", description: "Product name." },
@@ -154,6 +156,30 @@ export function buildToolDeclarations(can) {
         type: "object",
         properties: { productId: { type: "string" }, confirmed: { type: "boolean" } },
         required: ["productId"],
+      },
+    });
+  }
+
+  // only owners hold "create-users", so admins and standard staff never see this tool
+  if (can("create-users")) {
+    tools.push({
+      type: "function",
+      name: "createUser",
+      description:
+        "Create one staff account in the user's organisation. Call once per person. The new user gets an email to set their own password. Needs user confirmation first.",
+      parameters: {
+        type: "object",
+        properties: {
+          username: { type: "string", description: "Login name, no spaces." },
+          email: { type: "string" },
+          role: {
+            type: "string",
+            enum: ["standard", "admin"],
+            description: "Defaults to standard.",
+          },
+          confirmed: { type: "boolean" },
+        },
+        required: ["username", "email"],
       },
     });
   }
@@ -353,6 +379,50 @@ async function deleteProduct({ userId, args }) {
   return { status: "deleted", productId: args.productId };
 }
 
+// users.create needs a password, but the chatbot never asks for one in chat.
+// The account gets a random throwaway password the user never sees.
+function makeTempPassword() {
+  const bytes = new Uint8Array(18);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function createUser({ userId, args }) {
+  const { username, email, role } = withoutConfirmed(args);
+  const roleName = role === "admin" ? "admin" : "standard";
+
+  // users.create re-checks the owner permission, the organisation and
+  // duplicate emails / usernames, so the chatbot gets the same rules as the UI.
+  const newUserId = await callMethodAs(userId, "users.create", {
+    username: String(username).trim(),
+    email: String(email).trim().toLowerCase(),
+    password: makeTempPassword(),
+    role: roleName === "admin" ? ROLES.ADMIN : ROLES.STANDARD,
+  });
+
+  // Send the reset password email so the new user picks their own password.
+  // The account already exists at this point, so a failed email is reported
+  // back instead of failing the whole action.
+  let passwordEmailSent = false;
+  if (Meteor.isServer) {
+    try {
+      await Accounts.sendResetPasswordEmail(newUserId);
+      passwordEmailSent = true;
+    } catch (error) {
+      console.error("chatbot createUser: reset email failed:", error);
+    }
+  }
+
+  return {
+    status: "created",
+    userId: newUserId,
+    username,
+    email,
+    role: roleName,
+    passwordEmailSent,
+  };
+}
+
 async function navigate({ userId, args, actions }) {
   const page = NAVIGATION_PAGES[args.page];
   if (!page || !(await hasPermission(userId, page.permission))) {
@@ -375,6 +445,7 @@ const EXECUTORS = {
   createProduct,
   updateProduct,
   deleteProduct,
+  createUser,
   navigate,
 };
 
