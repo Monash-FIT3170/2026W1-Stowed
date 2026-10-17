@@ -35,11 +35,17 @@ function renderWithoutLayoutEffectWarning(element) {
 
 function captureHook(useHook, options) {
   let api;
-  function Probe() {
-    api = useHook(options);
+  function Probe({ onRender }) {
+    onRender(useHook(options));
     return null;
   }
-  renderWithoutLayoutEffectWarning(React.createElement(Probe));
+  renderWithoutLayoutEffectWarning(
+    React.createElement(Probe, {
+      onRender: (value) => {
+        api = value;
+      },
+    }),
+  );
   return api;
 }
 

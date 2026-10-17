@@ -227,12 +227,7 @@ function ChatbotSession({ initialOpen }) {
       }),
   });
 
-  const {
-    isSupported: canSpeak,
-    isSpeaking,
-    speak,
-    cancel: cancelSpeech,
-  } = useSpeechSynthesis();
+  const { isSupported: canSpeak, isSpeaking, speak, cancel: cancelSpeech } = useSpeechSynthesis();
 
   async function showHistory(loadMore = false) {
     setHistoryOpen(true);

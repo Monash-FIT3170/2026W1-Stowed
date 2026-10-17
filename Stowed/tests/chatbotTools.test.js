@@ -781,7 +781,7 @@ describeServer("Chatbot tool execution", function () {
     assert.ok(result.error);
     assert.strictEqual(await Meteor.users.find({ username: `${ORG}~chat-sneaky` }).countAsync(), 0);
   });
-  
+
   it("does not offer a standard user location changes", async function () {
     const result = await callChatbot(STANDARD_ID, {
       previousInteractionId: null,
