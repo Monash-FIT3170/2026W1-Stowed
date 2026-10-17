@@ -416,6 +416,77 @@
   }
 }
 
+.chatbot-composer .chatbot-mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: flex-end;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--border-subtle, #d9cfc0);
+  border-radius: 999px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-dark, #1a1a1a);
+  cursor: pointer;
+}
+
+.chatbot-composer .chatbot-mic:hover {
+  border-color: var(--accent-secondary, #e89b6f);
+}
+
+.chatbot-composer .chatbot-mic.listening {
+  border-color: var(--accent-primary, #b5532a);
+  background: var(--accent-primary, #b5532a);
+  color: #ffffff;
+  animation: chatbot-mic-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes chatbot-mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(181, 83, 42, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(181, 83, 42, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatbot-composer .chatbot-mic.listening {
+    animation: none;
+  }
+}
+
+.chatbot-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatbot-handsfree {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--cream);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chatbot-handsfree.active {
+  background: var(--accent-primary);
+  color: var(--card-bg);
+}
+
+.chatbot-handsfree:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
 .chatbot-task-status {
   display: flex;
   align-items: center;
@@ -502,6 +573,8 @@
   display: block;
   margin-top: 4px;
   color: var(--text-muted);
+}
+
 /* Landscape: the dock is a capsule on the right edge instead, so the
    launcher moves back down and sits to the left of it. */
 @media (max-width: 1024px) and (orientation: landscape) {
