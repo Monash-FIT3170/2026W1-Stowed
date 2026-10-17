@@ -573,6 +573,8 @@
   display: block;
   margin-top: 4px;
   color: var(--text-muted);
+}
+
 /* Landscape: the dock is a capsule on the right edge instead, so the
    launcher moves back down and sits to the left of it. */
 @media (max-width: 1024px) and (orientation: landscape) {
