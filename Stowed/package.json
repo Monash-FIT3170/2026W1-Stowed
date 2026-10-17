@@ -4,6 +4,8 @@
   "scripts": {
     "start": "meteor run --settings settings.json",
     "test": "meteor test --once --driver-package meteortesting:mocha",
+    "test:ci": "TEST_CLIENT=0 meteor test --once --driver-package meteortesting:mocha",
+    "test:floor-map": "TEST_CLIENT=0 MOCHA_GREP='^Floor map ' meteor test --once --driver-package meteortesting:mocha",
     "test-app": "TEST_WATCH=1 meteor test --full-app --driver-package meteortesting:mocha",
     "visualize": "meteor --production --extra-packages bundle-visualizer",
     "lint": "eslint .",

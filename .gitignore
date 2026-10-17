@@ -4,3 +4,4 @@ _build
 */build-assets
 */build-chunks
 .rsdoctor
+.DS_Store
