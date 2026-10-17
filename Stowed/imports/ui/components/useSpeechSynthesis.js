@@ -5,7 +5,7 @@ function getSynth() {
   return window.speechSynthesis || null;
 }
 
-function pickVoice(voices, lang) {
+export function pickVoice(voices, lang) {
   return (
     voices.find((voice) => voice.lang === lang) ||
     voices.find((voice) => voice.lang?.startsWith(lang.split("-")[0])) ||

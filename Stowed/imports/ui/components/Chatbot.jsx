@@ -8,17 +8,10 @@ import { SUGGESTED_PROMPTS, getPromptHelp } from "../../api/chatbot/prompts";
 import { ChatbotPromptExamples } from "./ChatbotPromptExamples";
 import { useSpeechRecognition } from "./useSpeechRecognition";
 import { useSpeechSynthesis } from "./useSpeechSynthesis";
+import { handleSpeechResult, speakHandsFreeReply } from "./voiceHelpers";
 import "./Chatbot.css";
 
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
-
-function toSpeakable(text) {
-  return text
-    .replace(/https?:\/\/\S+/g, "the link")
-    .replace(/[*_#`]/g, "")
-    .trim();
-}
-
 const NAVIGATION_COMMANDS = [
   {
     route: "/qr-codes",
@@ -143,15 +136,20 @@ const INITIAL_MESSAGES = [
   { role: "assistant", content: "Hi, I can help you manage your Stowed workspace." },
 ];
 
-export function Chatbot() {
+export function Chatbot({ initialOpen = false } = {}) {
   const { user } = useAuth();
-  return <ChatbotSession key={`${user?._id}:${user?.profile?.organisationId}`} />;
+  return (
+    <ChatbotSession
+      key={`${user?._id}:${user?.profile?.organisationId}`}
+      initialOpen={initialOpen}
+    />
+  );
 }
 
-function ChatbotSession() {
+function ChatbotSession({ initialOpen }) {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [conversationId, setConversationId] = useState(() => Random.id());
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -174,7 +172,7 @@ function ChatbotSession() {
   const [isHandsFree, setIsHandsFree] = useState(false);
   const inputRef = useRef(null);
   const draftBeforeVoiceRef = useRef("");
-  const isOpenRef = useRef(false);
+  const isOpenRef = useRef(initialOpen);
   const handsFreeRef = useRef(false);
 
   useEffect(() => {
@@ -218,15 +216,15 @@ function ChatbotSession() {
     stop: stopListening,
     abort: abortListening,
   } = useSpeechRecognition({
-    onResult: (transcript, isFinal) => {
-      const base = draftBeforeVoiceRef.current;
-      const text = base ? `${base} ${transcript}` : transcript;
-      if (isFinal && handsFreeRef.current) {
-        sendMessage(text);
-        return;
-      }
-      setDraft(text);
-    },
+    onResult: (transcript, isFinal) =>
+      handleSpeechResult({
+        base: draftBeforeVoiceRef.current,
+        transcript,
+        isFinal,
+        handsFree: handsFreeRef.current,
+        send: sendMessage,
+        setDraft,
+      }),
   });
 
   const {
@@ -360,12 +358,12 @@ function ChatbotSession() {
   }
 
   function replyAloud(text) {
-    if (!handsFreeRef.current || !isOpenRef.current) return;
-    if (canSpeak && text) {
-      speak(toSpeakable(text), { onEnd: resumeHandsFree });
-      return;
-    }
-    resumeHandsFree();
+    speakHandsFreeReply(text, {
+      isActive: () => handsFreeRef.current && isOpenRef.current,
+      canSpeak,
+      speak,
+      resume: resumeHandsFree,
+    });
   }
 
   function sendMessage(text = draft) {

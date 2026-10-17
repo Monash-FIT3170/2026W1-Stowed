@@ -8,6 +8,11 @@ const ERROR_MESSAGES = {
   network: "Voice input needs an internet connection.",
 };
 
+export function getVoiceErrorMessage(code) {
+  if (code === "aborted") return null;
+  return ERROR_MESSAGES[code] || "Voice input stopped unexpectedly.";
+}
+
 function getRecognitionClass() {
   if (typeof window === "undefined") return null;
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -44,8 +49,8 @@ export function useSpeechRecognition({ onResult, lang = "en-AU" } = {}) {
     };
 
     recognition.onerror = (event) => {
-      if (event.error === "aborted") return;
-      setError(ERROR_MESSAGES[event.error] || "Voice input stopped unexpectedly.");
+      const message = getVoiceErrorMessage(event.error);
+      if (message) setError(message);
     };
 
     recognition.onend = () => {
