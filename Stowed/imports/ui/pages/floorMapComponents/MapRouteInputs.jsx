@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MapRouteScanModal } from "./MapRouteScanModal";
 
 export function MapRouteInputs({
   products = [],
@@ -14,7 +15,7 @@ export function MapRouteInputs({
   isGeneratingRoute = false,
   routeError = null,
 }) {
-  const [showScanPlaceholder, setShowScanPlaceholder] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const selectedIds = new Set(selectedProductIds);
   const availableProducts = products.filter((product) => !selectedIds.has(product._id));
@@ -132,14 +133,19 @@ export function MapRouteInputs({
         <button
           type="button"
           className="btn-secondary"
-          aria-expanded={showScanPlaceholder}
-          onClick={() => setShowScanPlaceholder((previous) => !previous)}
+          disabled={!productsReady}
+          onClick={() => setShowScanner(true)}
         >
           Scan Products
         </button>
 
-        {showScanPlaceholder && (
-          <p className="map-route-compact__hint">Camera scanning is not available yet.</p>
+        {showScanner && (
+          <MapRouteScanModal
+            products={products}
+            selectedProductIds={selectedProductIds}
+            onAddProduct={onAddProduct}
+            onClose={() => setShowScanner(false)}
+          />
         )}
       </div>
     </section>
