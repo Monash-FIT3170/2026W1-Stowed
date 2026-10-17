@@ -7,9 +7,18 @@ import { useAuth } from "../../api/useAuth";
 import { SUGGESTED_PROMPTS, getPromptHelp } from "../../api/chatbot/prompts";
 import { ChatbotPromptExamples } from "./ChatbotPromptExamples";
 import { useSpeechRecognition } from "./useSpeechRecognition";
+import { useSpeechSynthesis } from "./useSpeechSynthesis";
 import "./Chatbot.css";
 
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
+
+function toSpeakable(text) {
+  return text
+    .replace(/https?:\/\/\S+/g, "the link")
+    .replace(/[*_#`]/g, "")
+    .trim();
+}
+
 const NAVIGATION_COMMANDS = [
   {
     route: "/qr-codes",
@@ -220,6 +229,13 @@ function ChatbotSession() {
     },
   });
 
+  const {
+    isSupported: canSpeak,
+    isSpeaking,
+    speak,
+    cancel: cancelSpeech,
+  } = useSpeechSynthesis();
+
   async function showHistory(loadMore = false) {
     setHistoryOpen(true);
     setHistoryLoading(true);
@@ -305,6 +321,7 @@ function ChatbotSession() {
   function closeChat() {
     isOpenRef.current = false;
     abortListening();
+    cancelSpeech();
     setIsOpen(false);
   }
 
@@ -313,6 +330,7 @@ function ChatbotSession() {
       stopListening();
       return;
     }
+    cancelSpeech();
     draftBeforeVoiceRef.current = draft.trim();
     startListening();
   }
@@ -324,6 +342,7 @@ function ChatbotSession() {
 
     if (!next) {
       abortListening();
+      cancelSpeech();
       return;
     }
 
@@ -340,6 +359,15 @@ function ChatbotSession() {
     }
   }
 
+  function replyAloud(text) {
+    if (!handsFreeRef.current || !isOpenRef.current) return;
+    if (canSpeak && text) {
+      speak(toSpeakable(text), { onEnd: resumeHandsFree });
+      return;
+    }
+    resumeHandsFree();
+  }
+
   function sendMessage(text = draft) {
     const content = text.trim();
     if (!content || isSending) return;
@@ -350,10 +378,12 @@ function ChatbotSession() {
     ) {
       cancelAction({ title: "Create floor map" });
       setDraft("");
+      replyAloud("Cancelled. Nothing was changed.");
       return;
     }
 
     abortListening();
+    cancelSpeech();
 
     const nextMessages = [...messages, { role: "user", content }];
     setMessages(nextMessages);
@@ -366,31 +396,21 @@ function ChatbotSession() {
         navigationCommand.permission &&
         !hasClientPermission(role, navigationCommand.permission)
       ) {
+        const deniedText = "Only an owner can create accounts for this organisation.";
         setPendingAction(null);
         setActiveTask(null);
-        setMessages([
-          ...nextMessages,
-          {
-            role: "assistant",
-            content: "Only an owner can create accounts for this organisation.",
-          },
-        ]);
+        setMessages([...nextMessages, { role: "assistant", content: deniedText }]);
         inputRef.current?.focus();
-        resumeHandsFree();
+        replyAloud(deniedText);
         return;
       }
+      const openedText = `Opened ${navigationCommand.label}.`;
       navigate(navigationCommand.route);
       setPendingAction(null);
       setActiveTask(null);
-      setMessages([
-        ...nextMessages,
-        {
-          role: "assistant",
-          content: `Opened ${navigationCommand.label}.`,
-        },
-      ]);
+      setMessages([...nextMessages, { role: "assistant", content: openedText }]);
       inputRef.current?.focus();
-      resumeHandsFree();
+      replyAloud(openedText);
       return;
     }
 
@@ -433,16 +453,17 @@ function ChatbotSession() {
           if (action.type === "navigate" && action.path.startsWith("/")) navigate(action.path);
         });
 
+        const replyText = result?.text || "I could not generate a response this time.";
         setMessages((current) => [
           ...current,
           {
             role: "assistant",
-            content: result?.text || "I could not generate a response this time.",
+            content: replyText,
             actions: result?.suggestedActions || [],
           },
         ]);
 
-        resumeHandsFree();
+        replyAloud(replyText);
       },
     );
   }
@@ -450,6 +471,7 @@ function ChatbotSession() {
   function confirmAction(action) {
     if (isSending) return;
 
+    cancelSpeech();
     setError("");
     setIsSending(true);
     setMessages((current) => [...current, { role: "user", content: `Confirm: ${action.summary}` }]);
@@ -470,18 +492,13 @@ function ChatbotSession() {
       if (result?.openUrl && result?.url) {
         navigate(result.url);
       }
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content:
-            result?.url && !result?.openUrl
-              ? `${result.text}\nOpen it from Lists: ${result.url}`
-              : result.text,
-        },
-      ]);
+      const replyText =
+        result?.url && !result?.openUrl
+          ? `${result.text}\nOpen it from Lists: ${result.url}`
+          : result.text;
+      setMessages((current) => [...current, { role: "assistant", content: replyText }]);
 
-      resumeHandsFree();
+      replyAloud(replyText);
     });
   }
 
@@ -764,7 +781,9 @@ function ChatbotSession() {
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
-                  placeholder={isListening ? "Listening..." : "Ask Stowed..."}
+                  placeholder={
+                    isSpeaking ? "Speaking..." : isListening ? "Listening..." : "Ask Stowed..."
+                  }
                   rows={2}
                 />
                 {canUseVoice && (
