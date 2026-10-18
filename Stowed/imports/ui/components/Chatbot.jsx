@@ -6,6 +6,9 @@ import { hasClientPermission } from "../../api/userMethods";
 import { useAuth } from "../../api/useAuth";
 import { SUGGESTED_PROMPTS, getPromptHelp } from "../../api/chatbot/prompts";
 import { ChatbotPromptExamples } from "./ChatbotPromptExamples";
+import { useSpeechRecognition } from "./useSpeechRecognition";
+import { useSpeechSynthesis } from "./useSpeechSynthesis";
+import { handleSpeechResult, speakHandsFreeReply } from "./voiceHelpers";
 import "./Chatbot.css";
 
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
@@ -133,15 +136,20 @@ const INITIAL_MESSAGES = [
   { role: "assistant", content: "Hi, I can help you manage your Stowed workspace." },
 ];
 
-export function Chatbot() {
+export function Chatbot({ initialOpen = false } = {}) {
   const { user } = useAuth();
-  return <ChatbotSession key={`${user?._id}:${user?.profile?.organisationId}`} />;
+  return (
+    <ChatbotSession
+      key={`${user?._id}:${user?.profile?.organisationId}`}
+      initialOpen={initialOpen}
+    />
+  );
 }
 
-function ChatbotSession() {
+function ChatbotSession({ initialOpen }) {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [conversationId, setConversationId] = useState(() => Random.id());
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -161,7 +169,11 @@ function ChatbotSession() {
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
+  const [isHandsFree, setIsHandsFree] = useState(false);
   const inputRef = useRef(null);
+  const draftBeforeVoiceRef = useRef("");
+  const isOpenRef = useRef(initialOpen);
+  const handsFreeRef = useRef(false);
 
   useEffect(() => {
     if (isSending || messages.length < 2) return;
@@ -195,6 +207,27 @@ function ChatbotSession() {
     const container = messagesRef.current;
     if (container) container.scrollTop = container.scrollHeight;
   }, [messages, isSending, isOpen, historyOpen]);
+
+  const {
+    isSupported: canUseVoice,
+    isListening,
+    error: voiceError,
+    start: startListening,
+    stop: stopListening,
+    abort: abortListening,
+  } = useSpeechRecognition({
+    onResult: (transcript, isFinal) =>
+      handleSpeechResult({
+        base: draftBeforeVoiceRef.current,
+        transcript,
+        isFinal,
+        handsFree: handsFreeRef.current,
+        send: sendMessage,
+        setDraft,
+      }),
+  });
+
+  const { isSupported: canSpeak, isSpeaking, speak, cancel: cancelSpeech } = useSpeechSynthesis();
 
   async function showHistory(loadMore = false) {
     setHistoryOpen(true);
@@ -273,8 +306,59 @@ function ChatbotSession() {
   );
 
   function openChat() {
+    isOpenRef.current = true;
     setIsOpen(true);
     window.setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  function closeChat() {
+    isOpenRef.current = false;
+    abortListening();
+    cancelSpeech();
+    setIsOpen(false);
+  }
+
+  function toggleListening() {
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    cancelSpeech();
+    draftBeforeVoiceRef.current = draft.trim();
+    startListening();
+  }
+
+  function toggleHandsFree() {
+    const next = !isHandsFree;
+    handsFreeRef.current = next;
+    setIsHandsFree(next);
+
+    if (!next) {
+      abortListening();
+      cancelSpeech();
+      return;
+    }
+
+    if (!isListening && !isSending) {
+      draftBeforeVoiceRef.current = draft.trim();
+      startListening();
+    }
+  }
+
+  function resumeHandsFree() {
+    if (handsFreeRef.current && isOpenRef.current) {
+      draftBeforeVoiceRef.current = "";
+      startListening();
+    }
+  }
+
+  function replyAloud(text) {
+    speakHandsFreeReply(text, {
+      isActive: () => handsFreeRef.current && isOpenRef.current,
+      canSpeak,
+      speak,
+      resume: resumeHandsFree,
+    });
   }
 
   function sendMessage(text = draft) {
@@ -287,8 +371,12 @@ function ChatbotSession() {
     ) {
       cancelAction({ title: "Create floor map" });
       setDraft("");
+      replyAloud("Cancelled. Nothing was changed.");
       return;
     }
+
+    abortListening();
+    cancelSpeech();
 
     const nextMessages = [...messages, { role: "user", content }];
     setMessages(nextMessages);
@@ -301,29 +389,21 @@ function ChatbotSession() {
         navigationCommand.permission &&
         !hasClientPermission(role, navigationCommand.permission)
       ) {
+        const deniedText = "Only an owner can create accounts for this organisation.";
         setPendingAction(null);
         setActiveTask(null);
-        setMessages([
-          ...nextMessages,
-          {
-            role: "assistant",
-            content: "Only an owner can create accounts for this organisation.",
-          },
-        ]);
+        setMessages([...nextMessages, { role: "assistant", content: deniedText }]);
         inputRef.current?.focus();
+        replyAloud(deniedText);
         return;
       }
+      const openedText = `Opened ${navigationCommand.label}.`;
       navigate(navigationCommand.route);
       setPendingAction(null);
       setActiveTask(null);
-      setMessages([
-        ...nextMessages,
-        {
-          role: "assistant",
-          content: `Opened ${navigationCommand.label}.`,
-        },
-      ]);
+      setMessages([...nextMessages, { role: "assistant", content: openedText }]);
       inputRef.current?.focus();
+      replyAloud(openedText);
       return;
     }
 
@@ -366,14 +446,17 @@ function ChatbotSession() {
           if (action.type === "navigate" && action.path.startsWith("/")) navigate(action.path);
         });
 
+        const replyText = result?.text || "I could not generate a response this time.";
         setMessages((current) => [
           ...current,
           {
             role: "assistant",
-            content: result?.text || "I could not generate a response this time.",
+            content: replyText,
             actions: result?.suggestedActions || [],
           },
         ]);
+
+        replyAloud(replyText);
       },
     );
   }
@@ -381,6 +464,7 @@ function ChatbotSession() {
   function confirmAction(action) {
     if (isSending) return;
 
+    cancelSpeech();
     setError("");
     setIsSending(true);
     setMessages((current) => [...current, { role: "user", content: `Confirm: ${action.summary}` }]);
@@ -401,16 +485,13 @@ function ChatbotSession() {
       if (result?.openUrl && result?.url) {
         navigate(result.url);
       }
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content:
-            result?.url && !result?.openUrl
-              ? `${result.text}\nOpen it from Lists: ${result.url}`
-              : result.text,
-        },
-      ]);
+      const replyText =
+        result?.url && !result?.openUrl
+          ? `${result.text}\nOpen it from Lists: ${result.url}`
+          : result.text;
+      setMessages((current) => [...current, { role: "assistant", content: replyText }]);
+
+      replyAloud(replyText);
     });
   }
 
@@ -465,14 +546,26 @@ function ChatbotSession() {
               {historyOpen ? "←" : "☰"}
             </button>
             <h2>{historyOpen ? "Chat history" : "Chatbot"}</h2>
-            <button
-              type="button"
-              className="chatbot-close"
-              aria-label="Close chatbot"
-              onClick={() => setIsOpen(false)}
-            >
-              ×
-            </button>
+            <div className="chatbot-header-actions">
+              {canUseVoice && (
+                <button
+                  type="button"
+                  className={`chatbot-handsfree${isHandsFree ? " active" : ""}`}
+                  onClick={toggleHandsFree}
+                  aria-pressed={isHandsFree}
+                >
+                  Hands-free {isHandsFree ? "on" : "off"}
+                </button>
+              )}
+              <button
+                type="button"
+                className="chatbot-close"
+                aria-label="Close chatbot"
+                onClick={closeChat}
+              >
+                ×
+              </button>
+            </div>
           </header>
 
           <div className="chatbot-workspace">
@@ -655,6 +748,11 @@ function ChatbotSession() {
                   {error}
                 </div>
               )}
+              {voiceError && (
+                <div className="chatbot-error" role="alert">
+                  {voiceError}
+                </div>
+              )}
               {saveStatus && (
                 <div className={`chatbot-save-status ${saveStatus}`} role="status">
                   {saveStatus === "saving" && "Saving conversation..."}
@@ -675,32 +773,44 @@ function ChatbotSession() {
                   ref={inputRef}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
-                  placeholder="Ask Stowed..."
+                  onKeyDown={handleComposerKeyDown}
+                  placeholder={
+                    isSpeaking ? "Speaking..." : isListening ? "Listening..." : "Ask Stowed..."
+                  }
                   rows={2}
                 />
+                {canUseVoice && (
+                  <button
+                    type="button"
+                    className={`chatbot-mic${isListening ? " listening" : ""}`}
+                    onClick={toggleListening}
+                    aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                    aria-pressed={isListening}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                  </button>
+                )}
                 <button type="submit" disabled={!canSend} aria-label="Send message">
                   Send
                 </button>
               </form>
             </div>
           </div>
-          )}
-
-          {error && <div className="chatbot-error">{error}</div>}
-
-          <form className="chatbot-composer" onSubmit={handleSubmit}>
-            <textarea
-              ref={inputRef}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={handleComposerKeyDown}
-              placeholder="Ask Stowed..."
-              rows={2}
-            />
-            <button type="submit" disabled={!canSend} aria-label="Send message">
-              Send
-            </button>
-          </form>
         </section>
       )}
 
@@ -708,7 +818,7 @@ function ChatbotSession() {
         type="button"
         className="chatbot-launcher"
         aria-label={isOpen ? "Chatbot open" : "Open chatbot"}
-        onClick={isOpen ? () => setIsOpen(false) : openChat}
+        onClick={isOpen ? closeChat : openChat}
       >
         <svg
           viewBox="0 0 24 24"
