@@ -12,14 +12,20 @@ import { DeleteShapeModal } from "./floorMapComponents/DeleteShapeModal";
 import { EditorSettingsModal } from "./floorMapComponents/EditorSettingsModal";
 import { DeleteUnitModal } from "./floorMapComponents/DeleteUnitModal";
 import { pageStyles, COLOURS } from "./floorMapComponents/FloorMapStyles";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { StorageLocationPanel } from "./floorMapComponents/StorageLocationPanel";
 import { UnitDetailsPanel } from "./floorMapComponents/UnitDetailsPanel";
 import { UnitStocktakePanel } from "./floorMapComponents/UnitStocktakePanel";
 import { Meteor } from "meteor/meteor";
 import { useTracker } from "meteor/react-meteor-data";
-import { FloorMaps, Sites, StorageUnits, MapShapes } from "/imports/api/locations/collections";
-import { Products } from "/imports/api/products/collections";
+import {
+  FloorMaps,
+  Sites,
+  StorageUnits,
+  StorageLocations,
+  MapShapes,
+} from "/imports/api/locations/collections";
+import { Products, ProductRecords } from "/imports/api/products/collections";
 import "../Global.css";
 import "./FloorMapPage.css";
 import { CreateShapeModal } from "./floorMapComponents/CreateShapeModal";
@@ -38,7 +44,7 @@ import {
 import { MapRouteInputs } from "./floorMapComponents/MapRouteInputs";
 import { MapState } from "./floorMapComponents/MapControls";
 import { FloorMapIcon } from "./floorMapComponents/FloorMapIcon";
-import { selectAvailableMap } from "./floorMapComponents/mapSelection";
+import { selectDefaultMap } from "./floorMapComponents/mapSelection";
 import {
   buttonStyles,
   COLLAPSED_SIDEBAR_WIDTH_PX,
@@ -332,10 +338,31 @@ function FloorMapPageInner() {
   };
 
   // Current floor map
-  const currentFloorMap = selectAvailableMap(floorMaps, floorMapId);
+  const currentFloorMap = selectDefaultMap(floorMaps, sites, floorMapId);
   const currentSite = sites.find((s) => s._id === currentFloorMap?.siteId);
   const siteFloorMaps = currentSite ? floorMaps.filter((f) => f.siteId === currentSite._id) : [];
   const mapReady = locationsReady && !!currentFloorMap;
+
+  // Only products with stock on this floor map can be picked on it
+  const floorProductIds = useTracker(() => {
+    Meteor.subscribe("productRecords");
+    if (!currentFloorMap) return new Set();
+    const unitIds = StorageUnits.find({ floorMapId: currentFloorMap._id }, { fields: { _id: 1 } })
+      .fetch()
+      .map((unit) => unit._id);
+    const locationIds = StorageLocations.find(
+      { storageUnitId: { $in: unitIds } },
+      { fields: { _id: 1 } },
+    )
+      .fetch()
+      .map((location) => location._id);
+    return new Set(
+      ProductRecords.find({ locationId: { $in: locationIds }, quantity: { $gt: 0 } })
+        .fetch()
+        .map((record) => record.productId),
+    );
+  }, [currentFloorMap?._id]);
+  const floorProducts = products.filter((product) => floorProductIds.has(product._id));
   // Route planning (picking a start point) is a view mode feature; route mode clicks edit walkways
   const isViewMode = canvasMode === CANVAS_MODES.VIEW;
   // Switching maps remounts the editor and would throw away unsaved layout edits
@@ -485,7 +512,7 @@ function FloorMapPageInner() {
     products.find((product) => product._id === productId)?.name ?? "Unknown product";
 
   const handleAddProduct = (productId) => {
-    if (!products.some((product) => product._id === productId)) return;
+    if (!floorProducts.some((product) => product._id === productId)) return;
     setSelectedProductIds((previous) =>
       previous.includes(productId) ? previous : [...previous, productId],
     );
@@ -1185,7 +1212,7 @@ function FloorMapPageInner() {
 
             <MapRouteInputs
               key={currentFloorMap?._id ?? "default"}
-              products={products}
+              products={floorProducts}
               productsReady={productsReady}
               selectedProductIds={selectedProductIds}
               onAddProduct={handleAddProduct}
@@ -1224,9 +1251,12 @@ function FloorMapPageInner() {
 
 export function FloorMapPage() {
   const { floorMapId } = useParams();
+  const [searchParams] = useSearchParams();
   // Owned here (outside the remounted EditorProvider) so the current mode
   // persists when switching between floor maps / warehouses.
-  const [canvasMode, setCanvasMode] = useState(CANVAS_MODES.VIEW);
+  const [canvasMode, setCanvasMode] = useState(() =>
+    searchParams.get("edit") === "1" ? CANVAS_MODES.EDIT : CANVAS_MODES.VIEW,
+  );
   return (
     <EditorProvider
       key={floorMapId ?? "default"}

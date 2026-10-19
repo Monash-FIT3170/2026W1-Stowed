@@ -27,7 +27,7 @@ export function MapRouteInputs({
   const productPlaceholder = !productsReady
     ? "Loading products..."
     : products.length === 0
-      ? "No products available"
+      ? "No stocked products on this floor"
       : availableProducts.length === 0
         ? "All products added"
         : "Select a product";

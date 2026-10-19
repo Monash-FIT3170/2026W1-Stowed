@@ -128,7 +128,8 @@ Meteor apps read secrets either from `process.env` or from a `Stowed/settings.js
 {
   "RESEND_API_KEY": "re_xxx",
   "RESEND_FROM": "myapp@resend.dev",
-  "RESET_SEED_TOKEN": "some-local-dev-token"
+  "RESET_SEED_TOKEN": "some-local-dev-token",
+  "GEMINI_API_KEY": "your-gemini-api-key"
 }
 ```
 
