@@ -272,10 +272,62 @@ const WAREHOUSE_STOCK = planStock("DCW", MAIN_WAREHOUSE, WAREHOUSE_PRODUCTS);
 const PARTS_STOCK = planStock("DCM", PARTS_STORE, PARTS_PRODUCTS);
 const STORE_STOCK = planStock("CST", CAMPUS_STORE, STORE_PRODUCTS);
 
+const CROSS_SITE_STOCK = [
+  {
+    name: "Disposable Face Masks (Box of 50)",
+    category: "Health & Safety",
+    brand: "3M",
+    unitCost: 11.5,
+    placements: [
+      ["SC-C1", 24],
+      ["DC-2B1", 30],
+    ],
+  },
+  {
+    name: "Spill Absorbent Pads (Pack of 50)",
+    category: "Facilities Supplies",
+    brand: "Oates",
+    unitCost: 26,
+    placements: [
+      ["WH-A1", 12],
+      ["DC-3C2", 18],
+    ],
+  },
+  {
+    name: "Safety Data Sheet Binder",
+    category: "Health & Safety",
+    brand: "Esselte",
+    unitCost: 9.5,
+    placements: [
+      ["SC-A2", 8],
+      ["WH-B2", 6],
+      ["DC-4A1", 10],
+    ],
+  },
+];
+
+const CROSS_SITE_PRODUCTS = CROSS_SITE_STOCK.map(({ placements, ...product }, i) => ({
+  ...product,
+  description: `${product.name} - stocked at both Clayton and Dandenong for route testing.`,
+  sku: `XST-${String(i + 1).padStart(3, "0")}`,
+  totalQuantity: placements.reduce((sum, [, quantity]) => sum + quantity, 0),
+  reorderAt: 10,
+}));
+
+const CROSS_SITE_RECORDS = CROSS_SITE_STOCK.flatMap(({ name, placements }) =>
+  placements.map(([code, quantity]) => [name, code, quantity]),
+);
+
 export const DEMO_PRODUCTS = [
+  ...CROSS_SITE_PRODUCTS,
   ...WAREHOUSE_STOCK.catalogue,
   ...PARTS_STOCK.catalogue,
   ...STORE_STOCK.catalogue,
 ];
 
-export const DEMO_RECORD_PLAN = [...WAREHOUSE_STOCK.plan, ...PARTS_STOCK.plan, ...STORE_STOCK.plan];
+export const DEMO_RECORD_PLAN = [
+  ...CROSS_SITE_RECORDS,
+  ...WAREHOUSE_STOCK.plan,
+  ...PARTS_STOCK.plan,
+  ...STORE_STOCK.plan,
+];

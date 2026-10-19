@@ -4,6 +4,7 @@ import { Products, ProductRecords } from "../products/collections";
 import { Sites, FloorMaps, StorageUnits, StorageLocations } from "../locations/collections";
 import { ProductCategories } from "../categories/collections";
 import { getCallerOrgId, assertOrgAccess, hasPermission } from "../userMethods";
+import { resolveDirections } from "./directions";
 import { ROLES } from "../roles";
 
 const SEARCH_LIMIT = 15;
@@ -44,6 +45,7 @@ export const TOOL_PERMISSIONS = [
   "products.create",
   "products.update",
   "products.delete",
+  "floorMapRoutes.generate",
   ...Object.values(NAVIGATION_PAGES).map((page) => page.permission),
 ];
 
@@ -156,6 +158,25 @@ export function buildToolDeclarations(can) {
         type: "object",
         properties: { productId: { type: "string" }, confirmed: { type: "boolean" } },
         required: ["productId"],
+      },
+    });
+  }
+
+  if (can("floorMapRoutes.generate")) {
+    tools.push({
+      type: "function",
+      name: "getDirections",
+      description:
+        "Show the user walking directions to one or more products on a floor map. Use it whenever they ask where something is, how to get to it, or for directions or a route. Pass the product names exactly as the user said them in productQueries. Do not guess ids. The tool asks the user any follow-up questions (which product, which floor) itself with on-screen choices, and then asks them to click where they are on the map - so just call it with what you know and relay its reply in one short sentence.",
+      parameters: {
+        type: "object",
+        properties: {
+          productQueries: {
+            type: "array",
+            items: { type: "string" },
+            description: "Product names, SKUs or brands the user mentioned.",
+          },
+        },
       },
     });
   }
@@ -437,6 +458,25 @@ async function navigate({ userId, args, actions }) {
   return { status: "navigating", path };
 }
 
+async function getDirections({ userId, args, actions }) {
+  if (!(await hasPermission(userId, "floorMapRoutes.generate"))) {
+    return { error: "You can't get directions with your role." };
+  }
+  const productQueries = Array.isArray(args.productQueries)
+    ? args.productQueries.filter((query) => typeof query === "string" && query.trim())
+    : [];
+  const result = await resolveDirections({ userId, productQueries });
+  actions.push(...result.actions);
+  return {
+    status: result.status,
+    reply: result.message,
+    instruction:
+      result.actions.length > 0
+        ? "The user can already see the on-screen prompt or map. Reply with one short sentence based on `reply`; do not list options or repeat details."
+        : "Reply briefly based on `reply`.",
+  };
+}
+
 const EXECUTORS = {
   searchProducts,
   getProduct,
@@ -447,6 +487,7 @@ const EXECUTORS = {
   deleteProduct,
   createUser,
   navigate,
+  getDirections,
 };
 
 /**

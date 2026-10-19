@@ -32,6 +32,8 @@ Meteor.methods({
         role: Match.OneOf("user", "assistant"),
         content: String,
         actions: Match.Optional([Object]),
+        choice: Match.Optional(Object),
+        selection: Match.Optional(Object),
       },
     ]);
     check(previousInteractionId, Match.Maybe(String));

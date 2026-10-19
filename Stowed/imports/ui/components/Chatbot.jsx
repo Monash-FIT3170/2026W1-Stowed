@@ -4,6 +4,7 @@ import { Meteor } from "meteor/meteor";
 import { useNavigate } from "react-router-dom";
 import { hasClientPermission } from "../../api/userMethods";
 import { useAuth } from "../../api/useAuth";
+import { DirectionsModal } from "./DirectionsModal";
 import { SUGGESTED_PROMPTS, getPromptHelp } from "../../api/chatbot/prompts";
 import { ChatbotPromptExamples } from "./ChatbotPromptExamples";
 import { useSpeechRecognition } from "./useSpeechRecognition";
@@ -132,6 +133,44 @@ export function findNavigationCommand(input) {
   return command;
 }
 
+function ChoicePrompt({ choice, disabled, onSubmit }) {
+  const [picked, setPicked] = useState([]);
+
+  function toggle(value) {
+    setPicked((current) =>
+      choice.multiSelect
+        ? current.includes(value)
+          ? current.filter((entry) => entry !== value)
+          : [...current, value]
+        : [value],
+    );
+  }
+
+  return (
+    <fieldset className="chatbot-choice" disabled={disabled}>
+      <legend>{choice.prompt}</legend>
+      {choice.options.map((option) => (
+        <label className="chatbot-choice-option" key={option.value}>
+          <input
+            type={choice.multiSelect ? "checkbox" : "radio"}
+            name={choice.id}
+            checked={picked.includes(option.value)}
+            onChange={() => toggle(option.value)}
+          />
+          <span>
+            {option.label}
+            {option.detail && <small>{option.detail}</small>}
+          </span>
+        </label>
+      ))}
+      <button type="button" disabled={picked.length === 0} onClick={() => onSubmit(choice, picked)}>
+        {choice.multiSelect ? "Continue" : "Select"}
+      </button>
+    </fieldset>
+  );
+}
+
+
 const INITIAL_MESSAGES = [
   { role: "assistant", content: "Hi, I can help you manage your Stowed workspace." },
 ];
@@ -168,6 +207,7 @@ function ChatbotSession({ initialOpen }) {
   const [error, setError] = useState("");
   const [previousInteractionId, setPreviousInteractionId] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
+  const [directionsRequest, setDirectionsRequest] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
   const [isHandsFree, setIsHandsFree] = useState(false);
   const inputRef = useRef(null);
@@ -361,7 +401,7 @@ function ChatbotSession({ initialOpen }) {
     });
   }
 
-  function sendMessage(text = draft) {
+  function sendMessage(text = draft, selection = null) {
     const content = text.trim();
     if (!content || isSending) return;
     if (
@@ -378,12 +418,15 @@ function ChatbotSession({ initialOpen }) {
     abortListening();
     cancelSpeech();
 
-    const nextMessages = [...messages, { role: "user", content }];
+    const nextMessages = [
+      ...messages,
+      { role: "user", content, ...(selection ? { selection } : {}) },
+    ];
     setMessages(nextMessages);
     setDraft("");
     setError("");
 
-    const navigationCommand = findNavigationCommand(content);
+    const navigationCommand = selection ? null : findNavigationCommand(content);
     if (navigationCommand) {
       if (
         navigationCommand.permission &&
@@ -411,7 +454,16 @@ function ChatbotSession({ initialOpen }) {
 
     Meteor.call(
       "chatbot.chat",
-      { messages: nextMessages, previousInteractionId, pendingAction },
+      {
+        messages: nextMessages.map(({ role, content: text, actions, selection: picked }) => ({
+          role,
+          content: text,
+          ...(actions ? { actions } : {}),
+          ...(picked ? { selection: picked } : {}),
+        })),
+        previousInteractionId,
+        pendingAction,
+      },
       (callError, result) => {
         setIsSending(false);
 
@@ -444,7 +496,9 @@ function ChatbotSession({ initialOpen }) {
         // The server only returns paths the user's role is allowed to open.
         result?.actions?.forEach((action) => {
           if (action.type === "navigate" && action.path.startsWith("/")) navigate(action.path);
+          if (action.type === "directions") setDirectionsRequest(action);
         });
+        const choice = result?.actions?.find((action) => action.type === "choice") || null;
 
         const replyText = result?.text || "I could not generate a response this time.";
         setMessages((current) => [
@@ -453,12 +507,20 @@ function ChatbotSession({ initialOpen }) {
             role: "assistant",
             content: replyText,
             actions: result?.suggestedActions || [],
+            ...(choice ? { choice } : {}),
           },
         ]);
 
         replyAloud(replyText);
       },
     );
+  }
+
+  function submitChoice(choice, values) {
+    const labels = choice.options
+      .filter((option) => values.includes(option.value))
+      .map((option) => option.label);
+    sendMessage(labels.join(", "), { kind: choice.kind, values, context: choice.context });
   }
 
   function confirmAction(action) {
@@ -672,6 +734,14 @@ function ChatbotSession({ initialOpen }) {
                     ) : (
                       message.content && <div className="chatbot-body">{message.content}</div>
                     )}
+                    {message.choice && (
+                      <ChoicePrompt
+                        key={message.choice.id}
+                        choice={message.choice}
+                        disabled={isSending || message !== visibleMessages.at(-1)}
+                        onSubmit={submitChoice}
+                      />
+                    )}
                     {message.actions?.length > 0 && (
                       <div className="chatbot-actions">
                         {message.actions.map((action) => (
@@ -812,6 +882,10 @@ function ChatbotSession({ initialOpen }) {
             </div>
           </div>
         </section>
+      )}
+
+      {directionsRequest && (
+        <DirectionsModal request={directionsRequest} onClose={() => setDirectionsRequest(null)} />
       )}
 
       <button
