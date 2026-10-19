@@ -25,10 +25,10 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          pattern='(^(feat|feature|style|fix|bugfix|docs|refactor|test|chore)(\([a-z0-9._/-]+\))?!?: .+|^Revert ")'
+          pattern='(^(feat|feature|style|fix|bugfix|docs|refactor|tests?|chore)(\([a-z0-9._/-]+\))?!?:[[:space:]]*.+|^Revert ")'
           failed=0
 
-          if ! printf '%s' "$PR_TITLE" | grep -Eq "$pattern"; then
+          if ! printf '%s' "$PR_TITLE" | grep -Eiq "$pattern"; then
             echo "::error::PR title does not follow the commit convention: '$PR_TITLE'"
             failed=1
           fi
@@ -36,7 +36,7 @@ jobs:
           while IFS= read -r line; do
             sha="${line%% *}"
             subject="${line#* }"
-            if ! printf '%s' "$subject" | grep -Eq "$pattern"; then
+            if ! printf '%s' "$subject" | grep -Eiq "$pattern"; then
               echo "::error::Commit $sha does not follow the commit convention: '$subject'"
               failed=1
             fi
