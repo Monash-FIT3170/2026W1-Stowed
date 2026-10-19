@@ -46,3 +46,5 @@ import "./customerLocationPreview.test.js";
 import "./directionsResolver.test.js";
 import "./directionsModal.test.js";
 import "./voice.test.js";
+import "./customerFloorMap.test.js";
+import "./tutorialContent.test.js";

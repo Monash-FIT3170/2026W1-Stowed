@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   addToShoppingList,
   getShoppingListQuantities,
@@ -25,6 +25,9 @@ import "./ShoppingListControl.css";
  * variant "card" is the foot of a product card: stepper plus add/remove button.
  * variant "row" is a cell in the shopping list, where every item is on the list
  * already - the stepper alone, with minus at one removing the row.
+ * variant "compact" is a line in a list (the floor map's unit panel): an "Add to
+ * list" button that adds one, which then becomes the live stepper - so the
+ * amount can be set right there, and minus at one takes it back off.
  */
 
 const MAX_QUANTITY = 99;
@@ -44,8 +47,15 @@ export function ShoppingListControl({ productId, productName, variant = "card", 
   // and a quick double tap on + would only count once. apply() is the only way
   // state changes, so the ref cannot drift from it and needs no resync here.
   const stateRef = useRef(state);
+  const rootRef = useRef(null);
+  // Set when an add or remove swaps which controls are showing while one of
+  // them had focus, so the effect below can hand focus to the new control.
+  const refocusRef = useRef(false);
 
   const apply = (next, entries) => {
+    const swapsControls = (stateRef.current.listed !== null) !== (next.listed !== null);
+    if (swapsControls)
+      refocusRef.current = Boolean(rootRef.current?.contains(document.activeElement));
     stateRef.current = next;
     setState(next);
     if (entries && onChange) onChange(entries);
@@ -93,37 +103,56 @@ export function ShoppingListControl({ productId, productName, variant = "card", 
 
   const subject = productName || "this item";
 
-  return (
-    <div className={`slc slc-${variant}`}>
-      <div className="slc-stepper">
-        <button
-          type="button"
-          className={`slc-step${willRemove ? " will-remove" : ""}`}
-          onClick={() => step(-1)}
-          /* Only a draft floors the minus: on the list there is always
-             something left to take away, even at one. */
-          disabled={!onList && quantity <= 1}
-          aria-label={
-            willRemove ? `Remove ${subject} from shopping list` : `Decrease quantity for ${subject}`
-          }
-        >
-          &minus;
-        </button>
-        <span className="slc-quantity" aria-live="polite">
-          {quantity}
-        </span>
-        <button
-          type="button"
-          className="slc-step"
-          onClick={() => step(1)}
-          disabled={quantity >= MAX_QUANTITY}
-          aria-label={`Increase quantity for ${subject}`}
-        >
-          +
-        </button>
-      </div>
+  // "card" always has both; "row" is only ever the stepper; "compact" swaps
+  // the add button for the stepper once the item is on the list.
+  const showStepper = variant !== "compact" || onList;
+  const showAction = variant === "card" || (variant === "compact" && !onList);
 
-      {variant === "card" && (
+  // In "compact" the pressed button disappears (add becomes the stepper, and
+  // minus at one brings add back), which would drop keyboard focus to the
+  // page. Move it to what replaced it: + after adding, Add after removing.
+  useEffect(() => {
+    if (variant !== "compact" || !refocusRef.current) return;
+    refocusRef.current = false;
+    const selector = onList ? ".slc-stepper > button:last-child" : ".slc-action";
+    rootRef.current?.querySelector(selector)?.focus();
+  }, [onList, variant]);
+
+  return (
+    <div ref={rootRef} className={`slc slc-${variant}`}>
+      {showStepper && (
+        <div className="slc-stepper">
+          <button
+            type="button"
+            className={`slc-step${willRemove ? " will-remove" : ""}`}
+            onClick={() => step(-1)}
+            /* Only a draft floors the minus: on the list there is always
+             something left to take away, even at one. */
+            disabled={!onList && quantity <= 1}
+            aria-label={
+              willRemove
+                ? `Remove ${subject} from shopping list`
+                : `Decrease quantity for ${subject}`
+            }
+          >
+            &minus;
+          </button>
+          <span className="slc-quantity" aria-live="polite">
+            {quantity}
+          </span>
+          <button
+            type="button"
+            className="slc-step"
+            onClick={() => step(1)}
+            disabled={quantity >= MAX_QUANTITY}
+            aria-label={`Increase quantity for ${subject}`}
+          >
+            +
+          </button>
+        </div>
+      )}
+
+      {showAction && (
         <button
           type="button"
           className={`slc-action${onList ? " on-list" : ""}`}
@@ -132,7 +161,11 @@ export function ShoppingListControl({ productId, productName, variant = "card", 
             onList ? `Remove ${subject} from shopping list` : `Add ${subject} to shopping list`
           }
         >
-          {onList ? "Remove from list" : "Add to shopping list"}
+          {variant === "compact"
+            ? "Add to list"
+            : onList
+              ? "Remove from list"
+              : "Add to shopping list"}
         </button>
       )}
     </div>

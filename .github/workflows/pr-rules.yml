@@ -25,7 +25,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          pattern='(^(feat|style|fix|bugfix|docs|refactor|test|chore)(\([a-z0-9._/-]+\))?!?: .+|^Revert ")'
+          pattern='(^(feat|feature|style|fix|bugfix|docs|refactor|test|chore)(\([a-z0-9._/-]+\))?!?: .+|^Revert ")'
           failed=0
 
           if ! printf '%s' "$PR_TITLE" | grep -Eq "$pattern"; then
