@@ -112,7 +112,7 @@ if (Meteor.isClient) {
       for (const sheet of Array.from(document.styleSheets)) {
         try {
           collect(sheet.cssRules);
-        } catch (error) {
+        } catch {
           continue;
         }
       }

@@ -57,7 +57,12 @@ describe("Chatbot prompt guide", function () {
 describe("Chatbot tool declarations", function () {
   it("gives a standard user read tools and navigation but no write tools", function () {
     const tools = toolsFor(ROLES.STANDARD);
-    assert.deepStrictEqual(names(tools), ["getDirections", "getProduct", "navigate", "searchProducts"]);
+    assert.deepStrictEqual(names(tools), [
+      "getDirections",
+      "getProduct",
+      "navigate",
+      "searchProducts",
+    ]);
   });
 
   it("gives an admin the product CRUD tools", function () {

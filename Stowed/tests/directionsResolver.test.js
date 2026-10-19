@@ -128,9 +128,7 @@ describeServer("Chatbot directions resolver", function () {
       await FloorMapRoutes.insertAsync({
         orgId: ORG,
         floorMapId: ids(`floor-${site}`),
-        nodes: [
-          { id: "a", x: 1, y: 1, type: "product", storageLocationIds: [ids(`loc-${site}`)] },
-        ],
+        nodes: [{ id: "a", x: 1, y: 1, type: "product", storageLocationIds: [ids(`loc-${site}`)] }],
         links: [],
         createdAt: now,
         updatedAt: now,

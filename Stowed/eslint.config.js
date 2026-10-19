@@ -81,10 +81,16 @@ module.exports = [
     languageOptions: { globals: { ...globals.node, ...globals.mocha } },
   },
 
-  // The accessibility widget test renders React into the DOM and dispatches DOM events, so it needs browser globals too.
+  // The accessibility widget and directions modal tests render React into the DOM and dispatches DOM events, so it needs browser globals too.
   {
-    files: ["tests/accessibility.test.js"],
+    files: ["tests/accessibility.test.js", "tests/directionsModal.test.js"],
     languageOptions: { globals: { ...globals.browser } },
+  },
+
+  // Meteor package manifests run inside Meteor's package loader, which injects Package.
+  {
+    files: ["packages/*/package.js"],
+    languageOptions: { globals: { Package: "readonly" } },
   },
 
   // CommonJS build/tooling config (eslint.config.js, rspack.config.js).

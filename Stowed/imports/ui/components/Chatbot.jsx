@@ -170,7 +170,6 @@ function ChoicePrompt({ choice, disabled, onSubmit }) {
   );
 }
 
-
 const INITIAL_MESSAGES = [
   { role: "assistant", content: "Hi, I can help you manage your Stowed workspace." },
 ];
