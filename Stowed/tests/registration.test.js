@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import "../imports/api/userMethods";
 import { Register } from "../imports/ui/Register";
+import { CreateAccountModal } from "../imports/ui/components/CreateAccountModal";
 import { ROLES } from "../imports/api/roles";
 
 function renderWithoutLayoutEffectWarning(element) {
@@ -35,6 +36,7 @@ describe("Authentication - Registration", function () {
     const html = renderRegister();
     assert.ok(html.includes("Organisation Name"));
     assert.ok(html.includes("Organisation Code"));
+    assert.ok(html.includes("every time you log in"), "explains what the org code is for");
     assert.ok(html.includes("Username"));
     assert.ok(html.includes("Email"));
     assert.ok(html.includes("Password"));
@@ -44,6 +46,17 @@ describe("Authentication - Registration", function () {
   it("hides role selector when self-registering", function () {
     const html = renderRegister();
     assert.ok(!html.includes("User Type"));
+  });
+
+  it("renders the owner create-account modal with a role selector and no org fields", function () {
+    const html = renderWithoutLayoutEffectWarning(
+      React.createElement(CreateAccountModal, { onClose: () => {} }),
+    );
+    assert.ok(html.includes("User Type"));
+    assert.ok(html.includes("Username"));
+    assert.ok(html.includes("Email"));
+    assert.ok(html.includes("Confirm Password"));
+    assert.ok(!html.includes("Organisation"));
   });
 
   if (Meteor.isServer) {
@@ -98,6 +111,41 @@ describe("Authentication - Registration", function () {
           },
         ]),
         (err) => err?.error === "org-required",
+      );
+    });
+
+    it("requires an organisation code even when the client sends an empty value", async function () {
+      const method = Meteor.server?.method_handlers?.["users.register"];
+
+      await assert.rejects(
+        method.apply({}, [
+          {
+            username: "tester",
+            email: "tester@example.com",
+            password: "123456",
+            orgCode: "",
+            orgName: "Acme",
+          },
+        ]),
+        (err) =>
+          err?.error === "org-required" && err.reason.includes("create an organisation code"),
+      );
+    });
+
+    it("rejects organisation codes with unsupported characters", async function () {
+      const method = Meteor.server?.method_handlers?.["users.register"];
+
+      await assert.rejects(
+        method.apply({}, [
+          {
+            username: "tester",
+            email: "tester@example.com",
+            password: "123456",
+            orgCode: "acme~hq",
+            orgName: "Acme",
+          },
+        ]),
+        (err) => err?.error === "invalid-org-code",
       );
     });
 

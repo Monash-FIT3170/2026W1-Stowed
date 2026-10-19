@@ -272,6 +272,41 @@ describe("Product methods", function () {
         },
       );
     });
+
+    [
+      [
+        "negative stock",
+        { totalQuantity: -5, assignments: [] },
+        "invalid-quantity",
+        "Stock can't be negative.",
+      ],
+      ["negative reorder level", { reorderAt: -1 }, "invalid-quantity", "Reorder level"],
+      ["negative sell price", { unitCost: -1 }, "invalid-price", "Sell price"],
+      ["negative purchase price", { purchaseCost: -0.5 }, "invalid-price", "Purchase price"],
+      [
+        "negative location quantity",
+        {
+          totalQuantity: 0,
+          assignments: [
+            { locationId: TEST_LOCATION_ID, quantity: 5 },
+            { locationId: TEST_LOCATION_ID, quantity: -5 },
+          ],
+        },
+        "invalid-quantity",
+        "Location quantities",
+      ],
+    ].forEach(([label, overrides, code, reason]) => {
+      it(`rejects ${label} with a friendly message`, async function () {
+        await assert.rejects(
+          () => callMethod("products.createWithAssignments", makeCreateParams(overrides)),
+          (err) => {
+            assert.strictEqual(err.error, code);
+            assert.ok(err.reason.includes(reason), err.reason);
+            return true;
+          },
+        );
+      });
+    });
   });
 
   // delete

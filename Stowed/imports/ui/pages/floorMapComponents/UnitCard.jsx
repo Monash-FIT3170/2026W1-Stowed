@@ -1,34 +1,15 @@
-import { useState } from "react";
-import { storagePanelStyles, COLOURS } from "./FloorMapStyles";
-
-/**
- * Card representing an already-placed storage unit
- *
- * @param {{name: string, width: number, height: number, fill: string, type?: string}} unit
- * @param {() => void} onClick - Handler triggered when the card is clicked
- *
- * @returns {JSX.Element} - Unit card UI element
- */
 export function UnitCard({ unit, onClick }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
-    <div
-      style={{
-        ...storagePanelStyles.card,
-        background: hovered ? COLOURS.UNIT_CARD_HOVER : storagePanelStyles.card.background,
-        cursor: "pointer",
-      }}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div style={{ ...storagePanelStyles.swatch, background: unit.fill }} />
-
-      <p style={storagePanelStyles.cardName}>{unit.name}</p>
-      <p style={storagePanelStyles.cardSub}>
+    <button type="button" className="floor-map-unit-card" onClick={onClick}>
+      <span
+        className="floor-map-unit-swatch"
+        style={{ backgroundColor: unit.fill }}
+        aria-hidden="true"
+      />
+      <span className="floor-map-unit-name">{unit.name}</span>
+      <span className="floor-map-unit-size">
         {unit.width.toFixed(2)} × {unit.height.toFixed(2)}m
-      </p>
-    </div>
+      </span>
+    </button>
   );
 }
