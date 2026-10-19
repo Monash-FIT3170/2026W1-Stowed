@@ -5,11 +5,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { getCallerOrgId, hasPermission, requirePermission } from "../userMethods";
 import { buildToolDeclarations, callMethodAs, executeTool, TOOL_PERMISSIONS } from "./tools";
+import { permissionForAction } from "./actionPermissions";
 import { FloorMaps, Sites, StorageLocations, StorageUnits } from "../locations/collections";
 import { buildRectShape, getBoundingBox } from "../locations/shapeUtils";
 import { Products } from "../products/collections";
 import { DIRECTIONS_CHOICE_KINDS, resolveDirections } from "./directions";
 import { ShoppingLists } from "../shoppingLists/collections";
+import { getPromptHelp } from "./prompts";
 import { ADD_PRODUCT_MODES, LIST_FREQUENCIES, LIST_ORIGINS } from "../shoppingLists/constants";
 import { isLowStock, toItem } from "../shoppingLists/generation";
 import {
@@ -27,8 +29,8 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 256;
 const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_ERROR_MESSAGE = "Sorry, we cannot help with that right now.";
 const MISSING_API_KEY_MESSAGE =
-  "The AI Assistant needs a Gemini API key before it can answer that. Start Meteor with --settings settings.json, or set GEMINI_API_KEY in your environment.";
-const ACTION_TYPES = {
+  "The AI Assistant needs a Gemini API key before it can answer that. Add GEMINI_API_KEY to your .env file (or settings.json) and restart Meteor.";
+export const ACTION_TYPES = {
   CREATE_SHOPPING_LIST: "createShoppingList",
   CREATE_LOW_STOCK_LIST: "createLowStockShoppingList",
   CREATE_SITE: "createSite",
@@ -68,12 +70,16 @@ const actionPattern = {
 };
 const SYSTEM_INSTRUCTION = [
   "You are the assistant inside Stowed, an inventory app for shops and storerooms.",
-  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, user accounts, and related workflows.",
-  "If the user asks for something outside Stowed's inventory and account-management scope, briefly say you can only help with Stowed tasks.",
+  "Help with inventory, stocktakes, locations, shopping lists, QR codes, storage units, and related workflows.",
+  "If the user asks for something outside Stowed's inventory scope, briefly say you can only help with Stowed tasks.",
+  "You cannot create, edit or delete user accounts. If asked, say only an owner can manage accounts, from the Accounts page.",
   "Use the tools to look things up and to act for the user; never invent product or location ids.",
   "You can only use the tools you are given - they match the user's role. If asked for something outside them, say you can't do that with their account.",
   "To create, edit or delete a product: first call the tool WITHOUT confirmed (this only previews, nothing changes), then tell the user exactly what will change and end your message with: Reply CONFIRM to proceed.",
   "If the user's next message is CONFIRM (any capitalisation, or a plain yes), immediately call the same tool again with exactly the same arguments plus confirmed true - do not ask again. Any other reply cancels the change.",
+  "To create staff accounts, you need a username and email for each person. Ask for anything missing, and never ask for or mention a password. Role is standard unless the user says admin.",
+  "Call createUser once per person WITHOUT confirmed first, then list every account (username, email, role) in one message and end with: Reply CONFIRM to proceed. When they confirm, call createUser again for every listed account with confirmed true.",
+  "After an account is created, say the person will get an email to set their password. If passwordEmailSent is false, say they can use Forgot password on the login page instead.",
   "When asked to take the user somewhere, use the navigate tool. Keep replies short.",
   "When the user asks where a product is, how to get to it, or for directions, call getDirections with the product names they said. It asks any follow-up questions itself with on-screen choices, so never ask the user to type ids or pick from a list in text.",
 ].join(" ");
@@ -119,7 +125,7 @@ function getAiClient() {
   if (!apiKey) {
     throw new Meteor.Error(
       "gemini-not-configured",
-      "Gemini API key is not configured. Start Meteor with --settings settings.json or set GEMINI_API_KEY.",
+      "Gemini API key is not configured. Add GEMINI_API_KEY to your .env file (or settings.json) and restart Meteor.",
     );
   }
 
@@ -302,17 +308,23 @@ function floorMapNameFrom(input) {
 }
 
 function siteNameFrom(input) {
+  const cleanSiteName = (value) =>
+    value
+      ?.replace(/[?.!]+$/, "")
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .trim() || null;
   const withLabel = input.match(
     /\b(?:for|on|in|at)\s+(?:the\s+)?(?:site|warehouse)\s+(.{2,100}?)(?=\s+(?:called|named|title(?:d)?|with (?:the )?name)\b|[?.!]*$)/i,
   );
-  if (withLabel) return withLabel[1].replace(/[?.!]+$/, "").trim();
+  if (withLabel) return cleanSiteName(withLabel[1]);
 
   const withoutLabel = input.match(
     /\b(?:for|on|in|at)\s+(.{2,100}?)(?=\s+(?:called|named|title(?:d)?|with (?:the )?name)\b|[?.!]*$)/i,
   );
-  if (withoutLabel) return withoutLabel[1].replace(/[?.!]+$/, "").trim();
+  if (withoutLabel) return cleanSiteName(withoutLabel[1]);
 
-  return valueAfter(input, ["site", "warehouse"]);
+  return cleanSiteName(valueAfter(input, ["site", "warehouse"]));
 }
 
 function unitNameFrom(input) {
@@ -512,7 +524,15 @@ export function buildPendingFloorMapAction(input, previousAction) {
   if (!previousAction || !FLOOR_MAP_ACTION_TYPES.has(previousAction.type)) return null;
 
   const payload = { ...previousAction.payload };
-  const nextName = extractPendingActionName(input, null);
+  const nextName =
+    extractPendingActionName(input, null) ||
+    (previousAction.type === ACTION_TYPES.CREATE_FLOOR_MAP && /\b(named|called)\b/i.test(input)
+      ? extractName(input, null)
+      : null);
+  if (previousAction.type === ACTION_TYPES.CREATE_FLOOR_MAP) {
+    const siteName = siteNameFrom(input);
+    if (siteName) payload.siteName = siteName;
+  }
   if (nextName) {
     if (
       previousAction.type === ACTION_TYPES.CREATE_SITE ||
@@ -901,7 +921,16 @@ async function confirmAction(userId, action) {
   };
 }
 
+// Every suggested action maps to the permission the app itself requires; unknown
+// types are refused. Runs before anything else so each action goes through one check.
+async function requireActionPermission(userId, action) {
+  const permission = permissionForAction(action.type);
+  if (!permission) throw new Meteor.Error("forbidden", "That action isn't available.");
+  await requirePermission(userId, permission);
+}
+
 async function runSuggestedAction(userId, action) {
+  await requireActionPermission(userId, action);
   if (FLOOR_MAP_ACTION_TYPES.has(action.type)) {
     return await confirmFloorMapAction(userId, action);
   }
@@ -1147,6 +1176,19 @@ Meteor.methods({
       }
     }
 
+    if (
+      /^(?:help|(?:show|list)(?: me)?(?: all)?(?: the)? prompts|what can you do)[?.!]*$/i.test(
+        input,
+      )
+    ) {
+      return {
+        text: getPromptHelp(),
+        interactionId: previousInteractionId,
+        suggestedActions: pendingAction ? [pendingAction] : [],
+        actions: [],
+      };
+    }
+
     if (pendingAction && AFFIRMATION.test(input)) {
       const result = await runSuggestedAction(this.userId, pendingAction);
       return {
@@ -1178,11 +1220,46 @@ Meteor.methods({
       };
     }
 
+    if (
+      /^(?:please\s+)?(?:create|make|add|build)(?:\s+(?:me|a|new|the))*\s+(?:floor\s*map|floormap)[.!?]*$/i.test(
+        input,
+      )
+    ) {
+      const orgId = await getCallerOrgId(this.userId);
+      const sites = orgId
+        ? await Sites.find({ orgId }, { sort: { name: 1 }, limit: 5 }).fetchAsync()
+        : [];
+      const exampleSite = sites[0]?.name || "Harbour";
+      return {
+        text: [
+          "To create a floor map, provide a map name and the site it belongs to.",
+          `Example: Create a floor map named "H3" in site ${JSON.stringify(exampleSite)}.`,
+          sites.length
+            ? `Available sites: ${sites.map((site) => JSON.stringify(site.name)).join(", ")}.`
+            : 'Create a site first, for example: Create a site named "Harbour".',
+          "Replace H3 with your map name and use an existing site name. I’ll show the details for you to confirm before creating it.",
+        ].join("\n\n"),
+        interactionId: previousInteractionId,
+        activeTask: "createFloorMap",
+        suggestedActions: [],
+        actions: [],
+      };
+    }
+
     const action =
       buildShoppingListAction(input, pendingAction) ||
       buildPendingFloorMapAction(input, pendingAction) ||
       buildFloorMapAction(input);
     if (action) {
+      const requiredPermission = permissionForAction(action.type);
+      if (!requiredPermission || !(await hasPermission(this.userId, requiredPermission))) {
+        return {
+          text: "Your account role doesn't allow that. Ask an admin or owner to do it.",
+          interactionId: previousInteractionId,
+          suggestedActions: [],
+        };
+      }
+
       return {
         text: pendingAction
           ? "I updated the pending action. Confirm it when it looks right, or keep describing changes."

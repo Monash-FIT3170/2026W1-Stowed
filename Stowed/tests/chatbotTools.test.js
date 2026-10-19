@@ -11,18 +11,21 @@ import {
 } from "../imports/api/locations/collections";
 import { hasClientPermission } from "../imports/api/userMethods";
 import { ROLES } from "../imports/api/roles";
+import { SUGGESTED_PROMPTS, getPromptHelp } from "../imports/api/chatbot/prompts";
 import "../imports/api/products/methods";
 import {
   buildToolDeclarations,
   executeTool,
   clearPendingActions,
 } from "../imports/api/chatbot/tools";
+import { ACTION_PERMISSIONS, permissionForAction } from "../imports/api/chatbot/actionPermissions";
 import { describeServer } from "./serverOnly";
 
 const ORG = "chatbot-test-org";
 const OTHER_ORG = "chatbot-test-other-org";
 const STANDARD_ID = "chatbot-test-standard";
 const ADMIN_ID = "chatbot-test-admin";
+const OWNER_ID = "chatbot-test-owner";
 const SITE = "chatbot-test-site";
 const FLOOR_MAP = "chatbot-test-floormap";
 const UNIT = "chatbot-test-unit";
@@ -32,6 +35,24 @@ const OTHER_PRODUCT = "chatbot-test-other-product";
 const names = (tools) => tools.map((tool) => tool.name).sort();
 const toolsFor = (role) =>
   buildToolDeclarations((permission) => hasClientPermission(role, permission));
+
+describe("Chatbot prompt guide", function () {
+  it("includes Help alongside the initial prompts and documents each option", function () {
+    assert.strictEqual(SUGGESTED_PROMPTS.length, 4);
+    assert.ok(SUGGESTED_PROMPTS.includes("Help"));
+    const guide = getPromptHelp();
+    for (const prompt of SUGGESTED_PROMPTS) assert.ok(guide.includes(prompt));
+    for (const group of [
+      "Shopping lists",
+      "Sites and floor maps",
+      "Products",
+      "Open a page",
+      "Continue or cancel a task",
+    ]) {
+      assert.ok(guide.includes(group));
+    }
+  });
+});
 
 describe("Chatbot tool declarations", function () {
   it("gives a standard user read tools and navigation but no write tools", function () {
@@ -56,11 +77,89 @@ describe("Chatbot tool declarations", function () {
     assert.ok(!pagesFor(ROLES.ADMIN).includes("accounts"));
     assert.ok(pagesFor(ROLES.OWNER).includes("accounts"));
   });
+
+  it("gives only an owner the createUser tool", function () {
+    assert.ok(!names(toolsFor(ROLES.STANDARD)).includes("createUser"));
+    assert.ok(!names(toolsFor(ROLES.ADMIN)).includes("createUser"));
+    assert.ok(names(toolsFor(ROLES.OWNER)).includes("createUser"));
+  });
+
+  it("never asks for a password and only allows standard or admin roles", function () {
+    const createUser = toolsFor(ROLES.OWNER).find((tool) => tool.name === "createUser");
+    const properties = createUser.parameters.properties;
+
+    assert.ok(!("password" in properties));
+    assert.deepStrictEqual(properties.role.enum, ["standard", "admin"]);
+    assert.deepStrictEqual(createUser.parameters.required, ["username", "email"]);
+  });
+});
+
+describe("Chatbot action permissions", function () {
+  const can = (role, type) => hasClientPermission(role, permissionForAction(type));
+  const locationActions = [
+    "createSite",
+    "createFloorMap",
+    "createStorageUnit",
+    "createStorageLocation",
+    "moveStorageUnit",
+    "resizeStorageUnit",
+    "showFloorMapEditor",
+  ];
+
+  it("maps every action to a permission the app actually defines", function () {
+    // OWNER holds every permission, so a typo'd permission name would fail here.
+    for (const [type, permission] of Object.entries(ACTION_PERMISSIONS)) {
+      assert.ok(permission, `${type} has no permission`);
+      assert.ok(hasClientPermission(ROLES.OWNER, permission), `${type} -> unknown "${permission}"`);
+    }
+  });
+
+  it("refuses unknown action types", function () {
+    assert.strictEqual(permissionForAction("deleteEverything"), undefined);
+  });
+
+  it("stops standard users changing locations or the floor map", function () {
+    for (const type of locationActions) {
+      assert.strictEqual(can(ROLES.STANDARD, type), false, `standard should not ${type}`);
+    }
+  });
+
+  it("still lets standard users do staff-level actions", function () {
+    for (const type of [
+      "createShoppingList",
+      "createLowStockShoppingList",
+      "assignStockToUnit",
+      "openStorageUnit",
+      "showLowStockFloorMap",
+    ]) {
+      assert.strictEqual(can(ROLES.STANDARD, type), true, `standard should be able to ${type}`);
+    }
+  });
+
+  it("lets admins run every action", function () {
+    for (const type of Object.keys(ACTION_PERMISSIONS)) {
+      assert.strictEqual(can(ROLES.ADMIN, type), true, `admin should be able to ${type}`);
+    }
+  });
+
+  it("only offers account pages to owners", function () {
+    const pagesFor = (role) =>
+      buildToolDeclarations((permission) => hasClientPermission(role, permission)).find(
+        (tool) => tool.name === "navigate",
+      ).parameters.properties.page.enum;
+
+    for (const page of ["create_account", "accounts"]) {
+      assert.ok(!pagesFor(ROLES.STANDARD).includes(page), `standard got ${page}`);
+      assert.ok(!pagesFor(ROLES.ADMIN).includes(page), `admin got ${page}`);
+      assert.ok(pagesFor(ROLES.OWNER).includes(page), `owner missing ${page}`);
+    }
+  });
 });
 
 describeServer("Chatbot tool execution", function () {
   const standardAllowed = new Set(names(toolsFor(ROLES.STANDARD)));
   const adminAllowed = new Set(names(toolsFor(ROLES.ADMIN)));
+  const ownerAllowed = new Set(names(toolsFor(ROLES.OWNER)));
   let turn = 0;
 
   const run = (userId, allowed, toolName, args, actions = []) =>
@@ -70,6 +169,8 @@ describeServer("Chatbot tool execution", function () {
 
   async function cleanup() {
     await Meteor.users.removeAsync({ _id: { $in: [STANDARD_ID, ADMIN_ID] } });
+    // also clears the owner and any accounts the createUser tests made
+    await Meteor.users.removeAsync({ "profile.organisationId": ORG });
     await Organisations.removeAsync({ _id: { $in: [ORG, OTHER_ORG] } });
     await ShoppingLists.removeAsync({ orgId: ORG });
     await Sites.removeAsync({ orgId: ORG });
@@ -98,6 +199,7 @@ describeServer("Chatbot tool execution", function () {
     for (const [_id, role] of [
       [STANDARD_ID, ROLES.STANDARD],
       [ADMIN_ID, ROLES.ADMIN],
+      [OWNER_ID, ROLES.OWNER],
     ]) {
       await Meteor.users.insertAsync({
         _id,
@@ -405,6 +507,125 @@ describeServer("Chatbot tool execution", function () {
     assert.deepStrictEqual(result.suggestedActions, []);
   });
 
+  it("returns the prompt guide locally without starting an action", async function () {
+    for (const content of ["Help", "help!", "Show all prompts", "What can you do?"]) {
+      const result = await callChatbot(STANDARD_ID, {
+        messages: [{ role: "user", content }],
+        previousInteractionId: null,
+        pendingAction: null,
+      });
+      assert.strictEqual(result.text, getPromptHelp());
+      assert.deepStrictEqual(result.suggestedActions, []);
+      assert.deepStrictEqual(result.actions, []);
+      assert.strictEqual(result.activeTask, undefined);
+    }
+  });
+
+  it("preserves the pending action when help is requested", async function () {
+    const action = {
+      id: "help-pending-floor-map",
+      type: "createFloorMap",
+      title: "Create floor map",
+      summary: 'Create a floor map named "H3".',
+      confirmLabel: "Create",
+      payload: { name: "H3", siteName: "Site" },
+    };
+    const result = await callChatbot(ADMIN_ID, {
+      messages: [{ role: "user", content: "Help" }],
+      previousInteractionId: "keep-interaction",
+      pendingAction: action,
+    });
+    assert.strictEqual(result.text, getPromptHelp());
+    assert.deepStrictEqual(result.suggestedActions, [action]);
+    assert.strictEqual(result.interactionId, "keep-interaction");
+  });
+
+  it("shows a floor-map example using an existing site without proposing a blank map", async function () {
+    const before = await FloorMaps.find({ orgId: ORG }).countAsync();
+    const result = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "create floor map" }],
+    });
+    assert.ok(result.text.includes('Create a floor map named "H3" in site "Site".'));
+    assert.ok(result.text.includes("confirm before creating"));
+    assert.strictEqual(result.activeTask, "createFloorMap");
+    assert.deepStrictEqual(result.suggestedActions, []);
+    assert.strictEqual(await FloorMaps.find({ orgId: ORG }).countAsync(), before);
+  });
+
+  it("explains that a site must be created first when there are no sites", async function () {
+    await Meteor.users.updateAsync(ADMIN_ID, { $set: { "profile.organisationId": OTHER_ORG } });
+    try {
+      const result = await callChatbot(ADMIN_ID, {
+        previousInteractionId: null,
+        pendingAction: null,
+        messages: [{ role: "user", content: "Please create a floor map" }],
+      });
+      assert.ok(result.text.includes('Create a site named "Harbour"'));
+      assert.strictEqual(result.activeTask, "createFloorMap");
+      assert.deepStrictEqual(result.suggestedActions, []);
+    } finally {
+      await Meteor.users.updateAsync(ADMIN_ID, { $set: { "profile.organisationId": ORG } });
+    }
+  });
+
+  it("keeps the map name and site from a complete floor-map request", async function () {
+    for (const input of [
+      'Create a floor map named "H3" in Harbour',
+      'Create a floor map named "H3" in site "Harbour".',
+      'Create a floor map named "H3" for site Harbour',
+    ]) {
+      const result = await callChatbot(ADMIN_ID, {
+        previousInteractionId: null,
+        pendingAction: null,
+        messages: [{ role: "user", content: input }],
+      });
+      const action = result.suggestedActions[0];
+      assert.strictEqual(action.payload.name, "H3");
+      assert.strictEqual(action.payload.siteName, "Harbour");
+      assert.ok(action.summary.includes('site "Harbour"'));
+    }
+  });
+
+  it("updates a pending floor map's name and site and creates it under that site", async function () {
+    const pendingAction = {
+      id: "chatbot-test-floor-map-action",
+      type: "createFloorMap",
+      title: "Create floor map",
+      summary: 'Create a floor map named "New floor map".',
+      confirmLabel: "Create",
+      payload: { name: "New floor map" },
+    };
+    const result = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction,
+      messages: [{ role: "user", content: 'Create a floor map named "H3" in site "Site"' }],
+    });
+    const action = result.suggestedActions[0];
+    assert.strictEqual(action.payload.name, "H3");
+    assert.strictEqual(action.payload.siteName, "Site");
+    assert.strictEqual(result.activeTask, undefined);
+    const siteOnly = await callChatbot(ADMIN_ID, {
+      previousInteractionId: null,
+      pendingAction: action,
+      messages: [{ role: "user", content: 'in site "Site"' }],
+    });
+    assert.strictEqual(siteOnly.suggestedActions[0].payload.name, "H3");
+    const confirmed = await Meteor.server.method_handlers["chatbot.confirmAction"].call(
+      { userId: ADMIN_ID },
+      { action },
+    );
+    try {
+      const map = await FloorMaps.findOneAsync(confirmed.floorMapId);
+      assert.strictEqual(confirmed.activeTask, undefined);
+      assert.strictEqual(map.name, "H3");
+      assert.strictEqual(map.siteId, SITE);
+    } finally {
+      await FloorMaps.removeAsync(confirmed.floorMapId);
+    }
+  });
+
   it("creates a site through the local action flow without an AI API key", async function () {
     const proposed = await callChatbot(ADMIN_ID, {
       previousInteractionId: null,
@@ -498,5 +719,98 @@ describeServer("Chatbot tool execution", function () {
     const list = await ShoppingLists.findOneAsync({ orgId: ORG, name: "Typed Confirm List" });
     assert.ok(list);
     assert.strictEqual(result.listId, list._id);
+  });
+
+  it("does not create an account until the owner confirms on a later turn", async function () {
+    const args = { username: "chat-new-staff", email: "Chat-New-Staff@Test.com" };
+
+    const proposed = await run(OWNER_ID, ownerAllowed, "createUser", args);
+    assert.strictEqual(proposed.status, "confirmation_required");
+
+    // Model tries to self-confirm within the same turn: still blocked.
+    const sameTurn = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.strictEqual(sameTurn.status, "confirmation_required");
+    assert.strictEqual(
+      await Meteor.users.find({ username: `${ORG}~chat-new-staff` }).countAsync(),
+      0,
+    );
+
+    turn += 1;
+    const created = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.strictEqual(created.status, "created");
+    assert.strictEqual(typeof created.passwordEmailSent, "boolean");
+    assert.ok(!("password" in created));
+
+    const user = await Meteor.users.findOneAsync(created.userId);
+    assert.strictEqual(user.username, `${ORG}~chat-new-staff`);
+    assert.strictEqual(user.emails[0].address, "chat-new-staff@test.com");
+    assert.strictEqual(user.profile.organisationId, ORG);
+    assert.strictEqual(user.profile.role, ROLES.STANDARD);
+  });
+
+  it("creates an admin account when the role is admin", async function () {
+    const args = { username: "chat-new-admin", email: "chat-new-admin@test.com", role: "admin" };
+    await run(OWNER_ID, ownerAllowed, "createUser", args);
+
+    turn += 1;
+    const created = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.strictEqual(created.role, "admin");
+    const user = await Meteor.users.findOneAsync(created.userId);
+    assert.strictEqual(user.profile.role, ROLES.ADMIN);
+  });
+
+  it("returns an error instead of creating a duplicate email", async function () {
+    const args = { username: "chat-duplicate", email: `${STANDARD_ID}@test.com` };
+    await run(OWNER_ID, ownerAllowed, "createUser", args);
+
+    turn += 1;
+    const result = await run(OWNER_ID, ownerAllowed, "createUser", { ...args, confirmed: true });
+    assert.ok(result.error);
+    assert.strictEqual(
+      await Meteor.users.find({ username: `${ORG}~chat-duplicate` }).countAsync(),
+      0,
+    );
+  });
+
+  it("refuses createUser for an admin", async function () {
+    const result = await run(ADMIN_ID, adminAllowed, "createUser", {
+      username: "chat-sneaky",
+      email: "chat-sneaky@test.com",
+      confirmed: true,
+    });
+    assert.ok(result.error);
+    assert.strictEqual(await Meteor.users.find({ username: `${ORG}~chat-sneaky` }).countAsync(), 0);
+  });
+
+  it("does not offer a standard user location changes", async function () {
+    const result = await callChatbot(STANDARD_ID, {
+      previousInteractionId: null,
+      pendingAction: null,
+      messages: [{ role: "user", content: "create site" }],
+    });
+
+    assert.deepStrictEqual(result.suggestedActions, []);
+    assert.ok(result.text.includes("role doesn't allow"));
+  });
+
+  it("blocks a standard user confirming a location change directly", async function () {
+    const action = {
+      id: "chatbot-test-forged-site",
+      type: "createSite",
+      title: "Create site",
+      summary: 'Create a site named "Forged Site".',
+      confirmLabel: "Create",
+      payload: { name: "Forged Site" },
+    };
+
+    await assert.rejects(
+      () =>
+        Meteor.server.method_handlers["chatbot.confirmAction"].call(
+          { userId: STANDARD_ID },
+          { action },
+        ),
+      (error) => error.error === "forbidden",
+    );
+    assert.strictEqual(await Sites.find({ name: "Forged Site" }).countAsync(), 0);
   });
 });

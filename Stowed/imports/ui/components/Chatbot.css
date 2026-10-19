@@ -39,9 +39,138 @@
 }
 
 .chatbot-header h2 {
+  flex: 1;
   margin: 0;
   font-size: 15px;
   font-weight: 700;
+}
+
+.chatbot-history-toggle {
+  width: 32px;
+  height: 32px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 19px;
+}
+
+.chatbot-workspace {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chatbot-chat {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.chatbot-history {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  background: var(--card-bg);
+  color: var(--text-dark);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition:
+    transform 180ms ease,
+    visibility 180ms;
+}
+
+.chatbot-history.visible {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.chatbot-history-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.chatbot-history-toolbar button,
+.chatbot-save-status button,
+.chatbot-history .chatbot-error button {
+  padding: 7px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chatbot-history button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chatbot-history-intro {
+  margin: 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.chatbot-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 14px;
+}
+
+.chatbot-history-list button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chatbot-history-list button[aria-current="true"] {
+  border-color: var(--accent-primary);
+}
+
+.chatbot-history-list time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.chatbot-save-status {
+  padding: 5px 12px;
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.chatbot-save-status.error {
+  color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatbot-history {
+    transition: none;
+  }
 }
 
 .chatbot-header span {
@@ -65,6 +194,7 @@
 
 .chatbot-messages {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -228,6 +358,13 @@
   outline-offset: 2px;
 }
 
+.chatbot-history button:focus-visible,
+.chatbot-history-toggle:focus-visible,
+.chatbot-save-status button:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
 .chatbot-composer button {
   min-height: 38px;
   padding: 0 13px;
@@ -277,6 +414,165 @@
   .chatbot-panel {
     height: min(520px, calc(100vh - 150px));
   }
+}
+
+.chatbot-composer .chatbot-mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: flex-end;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--border-subtle, #d9cfc0);
+  border-radius: 999px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-dark, #1a1a1a);
+  cursor: pointer;
+}
+
+.chatbot-composer .chatbot-mic:hover {
+  border-color: var(--accent-secondary, #e89b6f);
+}
+
+.chatbot-composer .chatbot-mic.listening {
+  border-color: var(--accent-primary, #b5532a);
+  background: var(--accent-primary, #b5532a);
+  color: #ffffff;
+  animation: chatbot-mic-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes chatbot-mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(181, 83, 42, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(181, 83, 42, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatbot-composer .chatbot-mic.listening {
+    animation: none;
+  }
+}
+
+.chatbot-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatbot-handsfree {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--cream);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chatbot-handsfree.active {
+  background: var(--accent-primary);
+  color: var(--card-bg);
+}
+
+.chatbot-handsfree:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+.chatbot-task-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.chatbot-task-status button {
+  flex-shrink: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font: inherit;
+  cursor: pointer;
+}
+
+.chatbot-task-status button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chatbot-task-status button:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.chatbot-prompt-guide {
+  color: var(--text-dark);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.chatbot-prompt-guide p {
+  margin: 0 0 10px;
+}
+
+.chatbot-prompt-guide details {
+  border-top: 1px solid var(--border-light);
+  padding: 9px 0;
+}
+
+.chatbot-prompt-guide summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.chatbot-prompt-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 9px;
+}
+
+.chatbot-prompt-examples button {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--input-bg);
+  color: var(--text-dark);
+  text-align: left;
+  overflow-wrap: anywhere;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chatbot-prompt-examples button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chatbot-prompt-examples button:focus-visible,
+.chatbot-prompt-guide summary:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+.chatbot-prompt-examples small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
 }
 
 /* Landscape: the dock is a capsule on the right edge instead, so the
