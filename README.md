@@ -33,7 +33,7 @@ This document is the handover guide for developers joining the project. It cover
 | **Inventory management** | Product create/edit/delete, product photos, search and filtering, categories, product lookup from the web (SerpAPI) to prefill new products, CSV import and full inventory export, multi-location stock (one product across many storage locations) |
 | **Shop floor mapping** | Sites → floor maps → storage units → storage locations; drag-and-drop floor map editor with custom shapes, grid snapping and walkways; shortest restocking/picking path |
 | **Stock monitoring** | Minimum-stock alerts, scheduled stocktakes with due/overdue status, recurring schedules, dashboard activity feed |
-| **Scanning** | Generate QR codes for locations and barcodes for products; scan with a device camera to look up or adjust stock |
+| **Scanning** | Generate QR codes for locations and barcodes for products; scan with a device camera to look up or adjust stock, or to add products to a floor map route |
 | **Shopping lists** | Build lists (including from low-stock items), share by email, mark stock as received and allocate it to a location |
 | **Access** | Organisations with role-based permissions (Standard / Admin / Owner), email verification and password reset |
 | **AI assistant** | Gemini-powered chatbot that can search products, create lists/units/users, navigate the app and give in-store directions; speech-to-text, text-to-speech and hands-free mode |
@@ -118,6 +118,8 @@ This document is the handover guide for developers joining the project. It cover
 |---|---|
 | `npm start` | Start the dev server (`meteor run`) |
 | `npm test` | Run the Mocha test suite once |
+| `npm run test:ci` | Run the server-side tests only (what CI runs) |
+| `npm run test:floor-map` | Run only the floor map tests |
 | `npm run test-app` | Run tests in watch mode with the full app (`TEST_WATCH=1`) |
 | `npm run lint` / `npm run lint:fix` | ESLint check / autofix |
 | `npm run format` / `npm run format:check` | Prettier write / check (the check runs in CI) |
@@ -127,7 +129,7 @@ This document is the handover guide for developers joining the project. It cover
 
 ## 5. Environment variables
 
-Secrets are read from `process.env`. `server/main.js` loads a `.env` file from the `Stowed/` folder with `dotenv`; `Stowed/.env.example` is the template. Some keys can also be supplied via `Meteor.settings` (`meteor run --settings settings.json`). **Never commit `.env` or real keys** – both `.env` and `settings.json` are gitignored.
+Secrets are read from `process.env`. `server/main.js` loads a `.env` file from the `Stowed/` folder with `dotenv`; `Stowed/.env.example` is the template. Some keys can also be supplied via `Meteor.settings` (`meteor run --settings settings.json`). **Never commit `.env` or real keys** – `.env` is gitignored. `settings.json` is also gitignored, but an empty `{}` copy is committed so `--settings settings.json` works; keep it empty.
 
 | Variable | Used for | If not set |
 |---|---|---|
@@ -279,7 +281,7 @@ Formatting is handled by Prettier and linting by ESLint – run `npm run lint:fi
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `ci.yml` – **Lint** | Push/PR to `main` or `develop` | `npm ci`, ESLint, Prettier check |
-| `ci.yml` – **Test** | Push/PR to `main` or `develop` | Installs Meteor 3.4.1, runs `npm test` |
+| `ci.yml` – **Test** | Push/PR to `main` or `develop` | Sets up Node 22 and Meteor 3.4.1, runs `npm run test:ci` (30-minute timeout) |
 | `ci.yml` – **Deploy** | Push to `main`, after lint and test pass | `meteor deploy $GALAXY_APP_URL --free` to Meteor Galaxy (one deploy at a time) |
 | `pr-rules.yml` | PR opened/edited/updated against `main` or `develop` | Fails if the PR title or any commit message isn't a conventional commit |
 | `reset-seed.yml` | Manual (Actions → "Run workflow", type `RESET`) | Calls `/admin/reset-seed` on the deployed app to **wipe and reseed** its database |
