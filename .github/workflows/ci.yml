@@ -80,8 +80,9 @@ jobs:
     name: Deploy to Galaxy (free tier)
     runs-on: ubuntu-latest
     needs: [lint, test] # only deploy if lint AND test pass
-    # Only on a direct push to main - never on PRs or on develop.
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Disabled: the live demo is shut down. To redeploy, restore the condition below.
+    # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false
     concurrency: # never run two deploys at once
       group: galaxy-deploy
       cancel-in-progress: false

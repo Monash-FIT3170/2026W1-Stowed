@@ -2,7 +2,7 @@
 
 **Stowed** is an inventory and stock management web app for small businesses, built with [Meteor](https://www.meteor.com/) and React. Staff can map their shop floor and storerooms, track exactly where every product is stored, keep stock counts accurate with QR/barcode scanning and scheduled stocktakes, and get the shortest restocking path around the floor. Customers can use a public, mobile-friendly view to search products, build a shopping list and get directions to items in store. An AI assistant (with voice and hands-free mode) can answer questions and carry out actions across the app.
 
-- **Live demo:** https://stowed.sandbox.galaxycloud.app/ 
+- **Live demo:** shut down. Redeploying needs new accounts and keys (e.g. Meteor Galaxy and the other service keys), and the `deploy` job in `.github/workflows/ci.yml` is disabled until then.
 - **Repository:** https://github.com/Monash-FIT3170/2026W1-Stowed
 - **Issue tracker:** https://github.com/Monash-FIT3170/2026W1-Stowed/issues
 
