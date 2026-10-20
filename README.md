@@ -20,10 +20,9 @@ This document is the handover guide for developers joining the project. It cover
 9. [Branching and pull request strategy](#9-branching-and-pull-request-strategy)
 10. [Versioning strategy](#10-versioning-strategy)
 11. [Troubleshooting](#11-troubleshooting)
-12. [Known issues and UAT outcomes](#12-known-issues-and-uat-outcomes)
-13. [Risks and costs](#13-risks-and-costs)
-14. [Suggested next steps](#14-suggested-next-steps)
-15. [Team](#15-team)
+12. [Risks and costs](#12-risks-and-costs)
+13. [Suggested next steps](#13-suggested-next-steps)
+14. [Team](#14-team)
 
 ---
 
@@ -319,13 +318,13 @@ subfeature/<task>  ──PR──▶  feature/<epic>  ──PR──▶  develop
    - Any new environment variables or migration steps
 6. **Review** – at least one approval from another developer and green CI (lint, test, PR rules) before merging. For PRs into `develop`, post the link in the team's develop-PR review channel so a reviewer picks it up quickly.
 7. **Merge** and delete the branch. Resolve conflicts by merging the latest base branch into yours, not by force-pushing over shared branches.
-8. **Release** – when `develop` is stable, open a `develop → main` PR (e.g. `chore: release v1.1.0`). Merging it deploys to production; then tag the release (see below).
+8. **Release** – when `develop` is stable, open a `develop → main` PR (e.g. `chore: release v1.1.0`). Merging it deploys to production. For future releases, also tag a version (see below).
 
 ---
 
 ## 10. Versioning strategy
 
-Stowed uses [Semantic Versioning](https://semver.org/): **`MAJOR.MINOR.PATCH`**.
+The project has not used a versioning scheme so far – there are no release tags, and `main` has simply been updated from `develop` at each milestone. For future releases, we recommend [Semantic Versioning](https://semver.org/): **`MAJOR.MINOR.PATCH`**.
 
 | Bump | When | Driven by commits like |
 |---|---|---|
@@ -333,7 +332,7 @@ Stowed uses [Semantic Versioning](https://semver.org/): **`MAJOR.MINOR.PATCH`**.
 | **MINOR** | New, backwards-compatible feature | `feat:` |
 | **PATCH** | Backwards-compatible bug fix or small improvement | `fix:`, `style:`, `refactor:`, `chore:` |
 
-**Release process**
+**Suggested release process**
 1. Merge the `develop → main` release PR.
 2. Update `"version"` in `Stowed/package.json`.
 3. Tag `main` and push the tag:
@@ -343,7 +342,7 @@ Stowed uses [Semantic Versioning](https://semver.org/): **`MAJOR.MINOR.PATCH`**.
    ```
 4. Create a GitHub Release from the tag; use "Generate release notes" so the conventional PR titles become the changelog.
 
-The state of `main` at the end of PI 4 (Week 12, 2026) should be tagged **`v1.0.0`** – the first complete release. No earlier tags exist.
+The first tagged release under this scheme would be **`v1.0.0`**, marking the state of `main` at handover.
 
 ---
 
@@ -386,29 +385,7 @@ Browsers only allow the camera (scanning) and microphone (voice) on **HTTPS or `
 
 ---
 
-## 12. Known issues and UAT outcomes
-
-User acceptance testing was run by Team 7 across four scenarios: business setup and onboarding; receiving deliveries and restocking; ordering stock, sharing lists and barcodes; and storeroom updates, data import and undo. Six issues were raised on GitHub and all have since been closed:
-
-| Issue | Type | Summary |
-|---|---|---|
-| [#160](https://github.com/Monash-FIT3170/2026W1-Stowed/issues/160) | Usability | Clearer organisation code guidance and errors when creating an organisation |
-| [#161](https://github.com/Monash-FIT3170/2026W1-Stowed/issues/161) | Bug | Error when sharing a shopping list by email |
-| [#162](https://github.com/Monash-FIT3170/2026W1-Stowed/issues/162) | Usability | Clearer guidance when marking a product as received into a location |
-| [#163](https://github.com/Monash-FIT3170/2026W1-Stowed/issues/163) | Bug | Product form input validation |
-| [#164](https://github.com/Monash-FIT3170/2026W1-Stowed/issues/164) | Bug | Floor map shape going out of bounds |
-| [#165](https://github.com/Monash-FIT3170/2026W1-Stowed/issues/165) | Usability | View / Edit mode toggle didn't look like a button |
-
-**Current known limitations**
-- No known bugs as of 20th October 2026
-- Galaxy free tier puts the app to sleep when idle, so the first request after a while is slow.
-- The chatbot depends on Gemini free-tier rate limits; heavy use can return rate-limit errors. A higher tier API key being used instead would Mitigate this.
-
-See the [issue tracker](https://github.com/Monash-FIT3170/2026W1-Stowed/issues) for the latest list.
-
----
-
-## 13. Risks and costs
+## 12. Risks and costs
 
 The full plan for production after Week 12 is in the separate Maintenance Plan document. In short:
 
@@ -432,7 +409,7 @@ If any of these move to a paid plan, the account owner of that key pays. Keys ar
 
 ---
 
-## 14. Suggested next steps
+## 13. Suggested next steps
 
 - Expand automated test coverage, especially camera scanning and the floor map editor UI.
 - Document the Methods/Publications API formally (e.g. JSDoc-generated reference).
@@ -442,7 +419,7 @@ If any of these move to a paid plan, the account owner of that key pays. Keys ar
 
 ---
 
-## 15. Team
+## 14. Team
 
 - Scott Nguyen: sngu0065@student.monash.edu
 - Josh Dinn: jdin0044@student.monash.edu
