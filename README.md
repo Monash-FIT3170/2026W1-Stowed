@@ -402,8 +402,7 @@ Current bugs and limitations at handover. New bugs should be raised on the [issu
 | Slow first load on the demo | Galaxy's free tier puts the app to sleep when idle. | Wait for it to wake, or use a paid container. |
 | Chatbot rate-limit errors | Gemini's free tier limits requests per minute/day; heavy use returns errors. | Wait and retry, or use a paid key. |
 | Voice mode browser support | Speech-to-text uses the Web Speech API, which is unreliable outside Chrome/Edge. | Use Chrome or Edge, or type instead. |
-| Camera/microphone blocked on LAN | Browsers block camera and mic on plain HTTP except `localhost`. | Use `localhost` or serve over HTTPS. |
-| TODO | Team to add any other bugs found during final testing. | |
+| Camera/microphone blocked on LAN | Browsers block camera and mic on plain HTTP except `localhost`. | Use `localhost` or serve over HTTPS. | |
 
 ---
 
