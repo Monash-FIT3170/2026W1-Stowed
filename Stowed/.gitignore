@@ -4,6 +4,7 @@ settings.json
 
 # Meteor Modern-Tools build context directories
 _build
+_build-*/
 */build-assets
 */build-chunks
 .rsdoctor

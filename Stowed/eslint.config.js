@@ -30,6 +30,7 @@ module.exports = [
       "node_modules/",
       ".meteor/local/",
       "_build/",
+      "_build-*/",
       "**/build-assets/**",
       "**/build-chunks/**",
       ".rsdoctor/",
