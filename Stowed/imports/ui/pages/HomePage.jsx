@@ -7,7 +7,6 @@ const FEATURES = [
   "Track inventory levels across every storage location",
   "Scan barcodes and QR codes to update stock on the go",
   "Build shopping lists and get low-stock alerts automatically",
-  "See usage forecasts to know what to restock and when",
   "Map your floor plan so anyone can find where things are stored",
 ];
 

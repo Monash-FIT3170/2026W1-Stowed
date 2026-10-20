@@ -32,13 +32,23 @@ This document is the handover guide for developers joining the project. It cover
 |---|---|
 | **Inventory management** | Product create/edit/delete, product photos, search and filtering, categories, product lookup from the web (SerpAPI) to prefill new products, CSV import and full inventory export, multi-location stock (one product across many storage locations) |
 | **Shop floor mapping** | Sites → floor maps → storage units → storage locations; drag-and-drop floor map editor with custom shapes, grid snapping and walkways; shortest restocking/picking path |
-| **Stock monitoring** | Minimum-stock alerts, scheduled stocktakes with due/overdue status, recurring schedules, stock forecast, dashboard activity feed |
+| **Stock monitoring** | Minimum-stock alerts, scheduled stocktakes with due/overdue status, recurring schedules, dashboard activity feed |
 | **Scanning** | Generate QR codes for locations and barcodes for products; scan with a device camera to look up or adjust stock |
 | **Shopping lists** | Build lists (including from low-stock items), share by email, mark stock as received and allocate it to a location |
 | **Access** | Organisations with role-based permissions (Standard / Admin / Owner), email verification and password reset |
 | **AI assistant** | Gemini-powered chatbot that can search products, create lists/units/users, navigate the app and give in-store directions; speech-to-text, text-to-speech and hands-free mode |
 | **Customer mode** | Public mobile view per organisation (`/org/:orgCode`): product search, shopping list and floor map with directions |
 | **Onboarding & accessibility** | Beginner tutorial, mobile/tablet layouts, accessibility settings |
+
+### Screenshots
+
+| Dashboard | Inventory |
+|---|---|
+| ![Dashboard with stock summary and activity feed](docs/screenshots/dashboard.png) | ![Inventory list with search and filters](docs/screenshots/inventory.png) |
+| **Floor map editor** | **Restocking route** |
+| ![Floor map editor with storage units on a grid](docs/screenshots/floor-map-editor.png) | ![Shortest restocking path drawn on the floor map](docs/screenshots/route.png) |
+| **AI assistant** | **Customer mode** |
+| ![Chatbot suggesting which locations to stocktake](docs/screenshots/chatbot.png) | ![Customer product search](docs/screenshots/customer-search.png) |
 
 ---
 
@@ -200,7 +210,7 @@ Routes are defined in `imports/ui/App.jsx`. Roles are `STANDARD = 1`, `ADMIN = 2
 | Who | Routes |
 |---|---|
 | Public | `/login`, `/register`, `/verify-email/:token`, `/forgot-password`, `/reset-password/:token` |
-| Staff | `/` and `/dashboard`, `/inventory` (+ `/new`, `/:productId`, `/:productId/edit`), `/floor-map` (+ `/:floorMapId`, `/:floorMapId/detail`), `/locations` (+ `/:locationId`, `/unit/:unitId`), `/scan` (+ `/settings`, `/product/:productId`), `/lists` (+ `/:listId`), `/stocktake/:locationId`, `/qr-codes`, `/forecast`, `/alerts`, `/settings` |
+| Staff | `/` and `/dashboard`, `/inventory` (+ `/new`, `/:productId`, `/:productId/edit`), `/floor-map` (+ `/:floorMapId`, `/:floorMapId/detail`), `/locations` (+ `/:locationId`, `/unit/:unitId`), `/scan` (+ `/settings`, `/product/:productId`), `/lists` (+ `/:listId`), `/stocktake/:locationId`, `/qr-codes`, `/alerts`, `/settings` |
 | Customer | `/org/:orgCode` → `/customer/search`, `/customer/search/:productId`, `/customer/lists`, `/customer/floor-map` |
 
 Examples: Standard staff can adjust stock, run stocktakes, plan routes and use the chatbot; Admins also manage products, locations and settings; only Owners can create and delete users.
@@ -383,6 +393,18 @@ Browsers only allow the camera (scanning) and microphone (voice) on **HTTPS or `
 - **Local:** stop the server, run `meteor reset` (wipes your **local** database only), then `npm start` to reseed.
 - **Deployed:** run the **Reset seed** workflow in GitHub Actions and type `RESET`. This is destructive – only use it on the demo deployment.
 
+### Known issues
+Current bugs and limitations at handover. New bugs should be raised on the [issue tracker](https://github.com/Monash-FIT3170/2026W1-Stowed/issues).
+
+| Issue | Details | Workaround / next step |
+|---|---|---|
+| Uploaded images are stored on the server's disk | `imports/api/upload.js` writes product/location photos to `Stowed/Uploads/images`. On Galaxy the disk is reset on every redeploy, so uploaded images disappear. | Move uploads to object storage (e.g. S3, Cloudinary) and store the URL. |
+| Slow first load on the demo | Galaxy's free tier puts the app to sleep when idle. | Wait for it to wake, or use a paid container. |
+| Chatbot rate-limit errors | Gemini's free tier limits requests per minute/day; heavy use returns errors. | Wait and retry, or use a paid key. |
+| Voice mode browser support | Speech-to-text uses the Web Speech API, which is unreliable outside Chrome/Edge. | Use Chrome or Edge, or type instead. |
+| Camera/microphone blocked on LAN | Browsers block camera and mic on plain HTTP except `localhost`. | Use `localhost` or serve over HTTPS. |
+| TODO | Team to add any other bugs found during final testing. | |
+
 ---
 
 ## 12. Risks and costs
@@ -411,6 +433,8 @@ If any of these move to a paid plan, the account owner of that key pays. Keys ar
 
 ## 13. Suggested next steps
 
+- Move image uploads to persistent storage (see [Known issues](#known-issues)).
+- Build demand forecasting (predict days until stock-out from `productActivities` history).
 - Expand automated test coverage, especially camera scanning and the floor map editor UI.
 - Document the Methods/Publications API formally (e.g. JSDoc-generated reference).
 - Add a PR template (`.github/pull_request_template.md`) matching [section 9](#9-branching-and-pull-request-strategy).
@@ -420,6 +444,42 @@ If any of these move to a paid plan, the account owner of that key pays. Keys ar
 ---
 
 ## 14. Team
+
+Thanks to everyone who built Stowed. This list follows the [all-contributors](https://allcontributors.org) spec; to add someone, run `npx all-contributors-cli add <github-username> <type>` from the repo root (config in `.all-contributorsrc`).
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/scottnguy3n101"><img src="https://avatars.githubusercontent.com/u/254105202?v=4?s=100" width="100px;" alt="Scott Nguyen"/><br /><sub><b>Scott Nguyen</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=scottnguy3n101" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/dinnyyy"><img src="https://avatars.githubusercontent.com/u/160369794?v=4?s=100" width="100px;" alt="Josh Dinn"/><br /><sub><b>Josh Dinn</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=dinnyyy" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sourcecodemorsecode"><img src="https://avatars.githubusercontent.com/u/115714918?v=4?s=100" width="100px;" alt="David Stuchbery"/><br /><sub><b>David Stuchbery</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=sourcecodemorsecode" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Rikki-Wallis"><img src="https://avatars.githubusercontent.com/u/187251470?v=4?s=100" width="100px;" alt="Rikki Wallis"/><br /><sub><b>Rikki Wallis</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=Rikki-Wallis" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/boblao8"><img src="https://avatars.githubusercontent.com/u/144657776?v=4?s=100" width="100px;" alt="Tim Blair"/><br /><sub><b>Tim Blair</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=boblao8" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/xyselenat-rgb"><img src="https://avatars.githubusercontent.com/u/266626975?v=4?s=100" width="100px;" alt="Selena Xue Yue Tan"/><br /><sub><b>Selena Xue Yue Tan</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=xyselenat-rgb" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/hamzah828"><img src="https://avatars.githubusercontent.com/u/243514476?v=4?s=100" width="100px;" alt="Hamzah Khan"/><br /><sub><b>Hamzah Khan</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=hamzah828" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jpersonn"><img src="https://avatars.githubusercontent.com/u/77474284?v=4?s=100" width="100px;" alt="Jason Huang"/><br /><sub><b>Jason Huang</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=jpersonn" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/AndrewH155"><img src="https://avatars.githubusercontent.com/u/85654219?v=4?s=100" width="100px;" alt="Andrew Ho"/><br /><sub><b>Andrew Ho</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=AndrewH155" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jessicap24"><img src="https://avatars.githubusercontent.com/u/266627903?v=4?s=100" width="100px;" alt="Jessica Pianta"/><br /><sub><b>Jessica Pianta</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=jessicap24" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/chaniva24"><img src="https://avatars.githubusercontent.com/u/253939512?v=4?s=100" width="100px;" alt="Chi Cheng (Ivana) Chan"/><br /><sub><b>Chi Cheng (Ivana) Chan</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=chaniva24" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jordanleong7"><img src="https://avatars.githubusercontent.com/u/104141126?v=4?s=100" width="100px;" alt="Jordan Leong"/><br /><sub><b>Jordan Leong</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=jordanleong7" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sman0077"><img src="https://avatars.githubusercontent.com/u/178406487?v=4?s=100" width="100px;" alt="Sameeksha Manjunath"/><br /><sub><b>Sameeksha Manjunath</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=sman0077" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/davan940202"><img src="https://avatars.githubusercontent.com/u/185575801?v=4?s=100" width="100px;" alt="Chuan-Han Chen"/><br /><sub><b>Chuan-Han Chen</b></sub></a><br /><a href="https://github.com/Monash-FIT3170/2026W1-Stowed/commits?author=davan940202" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+
+**Contact emails**
 
 - Scott Nguyen: sngu0065@student.monash.edu
 - Josh Dinn: jdin0044@student.monash.edu
@@ -434,3 +494,4 @@ If any of these move to a paid plan, the account owner of that key pays. Keys ar
 - Chi Cheng (Ivana) Chan: ccha0249@student.monash.edu
 - Jordan Leong: jleo0051@student.monash.edu
 - Sameeksha Manjunath: sman0077@student.monash.edu
+- Chuan-Han Chen: cche0259@student.monash.edu

@@ -18,7 +18,7 @@ const ROLE_COPY = {
   [ROLES.ADMIN]: {
     title: "Add an admin",
     description:
-      "Admins can manage products, categories, locations and floor maps, and access settings, forecasts and alerts.",
+      "Admins can manage products, categories, locations and floor maps, and access settings and alerts.",
   },
   [ROLES.STANDARD]: {
     title: "Add a team member",
