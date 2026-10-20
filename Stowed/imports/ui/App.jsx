@@ -9,7 +9,6 @@ import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
 import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
-import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { FloorMapDetailPage } from "./pages/FloorMapDetailPage";
@@ -33,7 +32,6 @@ import { CustomerProductDetailPage } from "./pages/CustomerProductDetailPage";
 import { CustomerShoppingListPage } from "./pages/CustomerShoppingListPage";
 import { CustomerFloorMapPage } from "./pages/CustomerFloorMapPage";
 import { HomePage } from "./pages/HomePage";
-import { ViewAccounts } from "./pages/ViewAccounts";
 import { useTracker } from "meteor/react-meteor-data";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -347,20 +345,6 @@ export function App() {
                 }
               />
               <Route
-                path="/forecast"
-                element={
-                  isLoggedIn ? (
-                    hasClientPermission(role, "route:/forecast") ? (
-                      <ForecastPage />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )
-                  ) : (
-                    <Navigate to="/login" replace />
-                  )
-                }
-              />
-              <Route
                 path="/alerts"
                 element={
                   isLoggedIn ? (
@@ -374,20 +358,8 @@ export function App() {
                   )
                 }
               />
-              <Route
-                path="/accounts"
-                element={
-                  isLoggedIn ? (
-                    hasClientPermission(role, "route:/accounts") ? (
-                      <ViewAccounts />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )
-                  ) : (
-                    <Navigate to="/login" replace />
-                  )
-                }
-              />
+              {/* account management now lives in a section of the settings page */}
+              <Route path="/accounts" element={<Navigate to="/settings#accounts" replace />} />
               <Route
                 path="/settings"
                 element={

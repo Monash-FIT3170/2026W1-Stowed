@@ -7,8 +7,10 @@ import {
   StorageUnits,
   MapShapes,
   StorageLocations,
+  FloorMapRoutes,
 } from "/imports/api/locations/collections";
 import { buildRectShape } from "/imports/api/locations/shapeUtils";
+import { validateRouteGraph } from "/imports/api/locations/routeGraph";
 import { backfillProductActivities } from "/imports/api/products/activityBackfill";
 import { ProductActivities, Products, ProductRecords } from "/imports/api/products/collections";
 import { ProductCategories } from "/imports/api/categories/collections";
@@ -20,6 +22,13 @@ import { computeNextRunAt } from "/imports/api/schedules/timing";
 import { startScheduler } from "/imports/api/schedules/scheduler";
 import { PRODUCT_CATALOGUE } from "/imports/api/seedData/products";
 import { LOCATION_LAYOUT, PRODUCT_RECORD_PLAN } from "/imports/api/seedData/locations";
+import { ROUTE_SEEDS } from "/imports/api/seedData/routes";
+import {
+  DEMO_SITES,
+  DEMO_PRODUCTS,
+  DEMO_RECORD_PLAN,
+  DEMO_ROUTE_SEEDS,
+} from "/imports/api/seedData/demoStores";
 import { SHOPPING_LIST_SEEDS } from "/imports/api/seedData/shoppingLists";
 import { SCHEDULE_SEEDS } from "/imports/api/seedData/schedules";
 import { FAKE_ACCOUNT_SEEDS } from "/imports/api/seedData/users";
@@ -100,7 +109,7 @@ async function seedProducts(seedOrgId) {
   const now = new Date();
   const categoryCache = new Map();
 
-  for (const item of PRODUCT_CATALOGUE) {
+  for (const item of [...PRODUCT_CATALOGUE, ...DEMO_PRODUCTS]) {
     const existing = await Products.findOneAsync({ orgId: seedOrgId, name: item.name });
     if (existing) continue;
 
@@ -122,7 +131,7 @@ async function seedProducts(seedOrgId) {
   }
 }
 
-async function seedLocations(seedOrgId) {
+async function seedLayout(seedOrgId, layout) {
   const now = new Date();
 
   const monthsAgo = (months) => {
@@ -131,11 +140,11 @@ async function seedLocations(seedOrgId) {
     return date;
   };
 
-  let site = await Sites.findOneAsync({ orgId: seedOrgId, name: LOCATION_LAYOUT.site.name });
+  let site = await Sites.findOneAsync({ orgId: seedOrgId, name: layout.site.name });
   if (!site) {
     const siteId = await Sites.insertAsync({
       orgId: seedOrgId,
-      ...LOCATION_LAYOUT.site,
+      ...layout.site,
       createdAt: now,
       updatedAt: now,
     });
@@ -143,7 +152,7 @@ async function seedLocations(seedOrgId) {
   }
   const siteId = site._id;
 
-  for (const floor of LOCATION_LAYOUT.floors) {
+  for (const floor of layout.floors) {
     let floorMap = await FloorMaps.findOneAsync({ orgId: seedOrgId, siteId, name: floor.name });
     if (!floorMap) {
       const floorMapId = await FloorMaps.insertAsync({
@@ -151,6 +160,7 @@ async function seedLocations(seedOrgId) {
         siteId,
         name: floor.name,
         imageUrl: "",
+        ...(floor.floorSize ? { floorSize: floor.floorSize } : {}),
         createdAt: now,
         updatedAt: now,
       });
@@ -212,6 +222,63 @@ async function seedLocations(seedOrgId) {
   return siteId;
 }
 
+async function seedLocations(seedOrgId) {
+  const [primary, ...others] = [LOCATION_LAYOUT, ...DEMO_SITES];
+  const siteId = await seedLayout(seedOrgId, primary);
+  for (const layout of others) await seedLayout(seedOrgId, layout);
+  return siteId;
+}
+
+async function seedRoutes(seedOrgId) {
+  const now = new Date();
+
+  for (const routeSeed of [...ROUTE_SEEDS, ...DEMO_ROUTE_SEEDS]) {
+    const floorMap = await FloorMaps.findOneAsync({
+      orgId: seedOrgId,
+      name: routeSeed.floorName,
+    });
+    if (!floorMap) continue;
+    if (await FloorMapRoutes.findOneAsync({ floorMapId: floorMap._id })) continue;
+
+    const units = await StorageUnits.find({ floorMapId: floorMap._id }).fetchAsync();
+    const unitsByName = new Map(units.map((u) => [u.name, u]));
+    const locations = await StorageLocations.find({
+      storageUnitId: { $in: units.map((u) => u._id) },
+    }).fetchAsync();
+    const locationsByCode = new Map(locations.map((l) => [l.code, l]));
+
+    const nodes = routeSeed.nodes.map(({ id, x, y, unit, locations: codes }) =>
+      unit
+        ? {
+            id,
+            x,
+            y,
+            type: "product",
+            storageUnitId: unitsByName.get(unit)._id,
+            storageLocationIds: codes.map((code) => locationsByCode.get(code)._id),
+          }
+        : { id, x, y, type: "walkway" },
+    );
+    const links = routeSeed.links.map(([fromId, toId], i) => ({
+      id: `l${i + 1}`,
+      fromId,
+      toId,
+    }));
+
+    const problem = validateRouteGraph(nodes, links);
+    if (problem) throw new Error(`Invalid seed route for "${routeSeed.floorName}": ${problem}`);
+
+    await FloorMapRoutes.insertAsync({
+      orgId: seedOrgId,
+      floorMapId: floorMap._id,
+      nodes,
+      links,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
+
 async function seedProductRecords() {
   const now = new Date();
   const products = await Products.find().fetchAsync();
@@ -220,7 +287,10 @@ async function seedProductRecords() {
   const locations = await StorageLocations.find().fetchAsync();
   const locationsByCode = new Map(locations.map((l) => [l.code, l]));
 
-  for (const [productName, locationCode, quantity] of PRODUCT_RECORD_PLAN) {
+  for (const [productName, locationCode, quantity] of [
+    ...PRODUCT_RECORD_PLAN,
+    ...DEMO_RECORD_PLAN,
+  ]) {
     const product = productsByName.get(productName);
     const location = locationsByCode.get(locationCode);
     if (!product || !location) continue;
@@ -326,6 +396,7 @@ export async function seedDatabase() {
   await seedFakeAccounts(seedOrgId);
   await seedProducts(seedOrgId);
   const siteId = await seedLocations(seedOrgId);
+  await seedRoutes(seedOrgId);
   await seedProductRecords();
   await seedShoppingListsAndSchedules(seedOrgId, siteId);
   await backfillProductActivities(seedOrgId);
@@ -340,6 +411,7 @@ export async function resetDatabase() {
   await ProductRecords.removeAsync({});
   await Products.removeAsync({});
   await ProductCategories.removeAsync({});
+  await FloorMapRoutes.removeAsync({});
   await StorageLocations.removeAsync({});
   await StorageUnits.removeAsync({});
   await MapShapes.removeAsync({});

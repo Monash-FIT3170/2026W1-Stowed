@@ -4,7 +4,6 @@ import { logoutUser } from "/imports/api/userMethods";
 import { hasClientPermission } from "/imports/api/userMethods";
 import { useNavigate } from "react-router-dom";
 import { useTracker } from "meteor/react-meteor-data";
-import { ROLES } from "/imports/api/roles";
 import { Organisations } from "/imports/api/organisations";
 import { AccessibilityWidget } from "./accessibility/AccessibilityWidget";
 import "./Global.css";
@@ -20,7 +19,6 @@ const WORKSPACE_LINKS = [
 
 const TOOL_LINKS = [
   { to: "/qr-codes", label: "QR Codes", icon: "⚏" },
-  //  { to: "/forecast", label: "Forecast", icon: "🔮" },
   { to: "/alerts", label: "Stocktake", icon: "⚠️" },
 ];
 
@@ -55,11 +53,13 @@ function ToolsIcon() {
   );
 }
 
-function AccountIcon() {
+function OrganisationIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <circle cx="12" cy="7" r="4" />
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18z" />
+      <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+      <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+      <path d="M10 6h4M10 10h4M10 14h4M10 18h4" />
     </svg>
   );
 }
@@ -152,35 +152,32 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  const ALL_ACCOUNT_LINKS = [{ to: "/register", label: "Create Account" }];
-  if (role >= ROLES.OWNER) {
-    ALL_ACCOUNT_LINKS.push({ to: "/accounts", label: "Manage Accounts" });
-  }
-  ALL_ACCOUNT_LINKS.push({ to: "/settings", label: "Settings" });
-  const ACCOUNT_LINKS = ALL_ACCOUNT_LINKS.filter((link) =>
-    link.to === "/register"
-      ? hasClientPermission(role, "create-users")
-      : hasClientPermission(role, `route:${link.to}`),
-  );
+  const ORGANISATION_LINKS = [{ to: "/settings", label: "Settings" }];
 
+  // Groups with no links this role can open are left out entirely.
   const sections = [
     {
       label: "Workspace",
       icon: <WorkspaceIcon />,
-      links: WORKSPACE_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)),
+      links: WORKSPACE_LINKS,
       end: "/dashboard",
     },
     {
       label: "Tools",
       icon: <ToolsIcon />,
-      links: TOOL_LINKS.filter((link) => hasClientPermission(role, `route:${link.to}`)),
+      links: TOOL_LINKS,
     },
     {
-      label: "Account",
-      icon: <AccountIcon />,
-      links: ACCOUNT_LINKS,
+      label: "Organisation",
+      icon: <OrganisationIcon />,
+      links: ORGANISATION_LINKS,
     },
-  ];
+  ]
+    .map((section) => ({
+      ...section,
+      links: section.links.filter((link) => hasClientPermission(role, `route:${link.to}`)),
+    }))
+    .filter((section) => section.links.length > 0);
 
   const canScan = hasClientPermission(role, "route:/scan");
   // Split the sections so the scan button renders in the middle of the dock

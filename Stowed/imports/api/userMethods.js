@@ -46,7 +46,6 @@ const PERMISSIONS = {
   "route:/settings": ROLES.ADMIN,
   "route:/scan": ROLES.STANDARD, // camera scanner — all staff
   "route:/qr-codes": ROLES.STANDARD, // codes hub — workers print/scan labels too
-  "route:/forecast": ROLES.ADMIN,
   "route:/alerts": ROLES.ADMIN,
   "route:/create-product": ROLES.ADMIN,
   "route:/edit-product": ROLES.ADMIN,

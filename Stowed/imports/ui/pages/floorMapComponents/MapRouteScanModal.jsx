@@ -1,16 +1,10 @@
-
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Meteor } from "meteor/meteor";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { parseScannedUrl } from "/imports/api/products/codes";
 
-export function MapRouteScanModal({
-  products,
-  selectedProductIds,
-  onAddProduct,
-  onClose,
-}) {
+export function MapRouteScanModal({ products, selectedProductIds, onAddProduct, onClose }) {
   const [status, setStatus] = useState("Starting camera...");
   const [manualCode, setManualCode] = useState("");
   const [matches, setMatches] = useState([]);
@@ -44,9 +38,7 @@ export function MapRouteScanModal({
     const path = parseScannedUrl(code, window.location.origin);
 
     if (path) {
-      const match = path.match(
-        /^\/(?:inventory|scan\/product)\/([^/?#]+)/
-      );
+      const match = path.match(/^\/(?:inventory|scan\/product)\/([^/?#]+)/);
 
       if (!match) {
         setStatus("This QR code does not refer to a product.");
@@ -99,10 +91,7 @@ export function MapRouteScanModal({
     document.addEventListener("keydown", onKeyDown);
 
     const scanner = new Html5Qrcode("map-product-scan-region", {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-      ],
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128],
       useBarCodeDetectorIfSupported: true,
       verbose: false,
     });
@@ -143,9 +132,7 @@ export function MapRouteScanModal({
       })
       .catch((error) => {
         if (!cancelled) {
-          setStatus(
-            `Camera unavailable: ${error.message || error}. Enter a code below.`
-          );
+          setStatus(`Camera unavailable: ${error.message || error}. Enter a code below.`);
         }
       });
 
@@ -215,10 +202,7 @@ export function MapRouteScanModal({
           </button>
         </div>
 
-        <div
-          id="map-product-scan-region"
-          className="map-product-scan-camera"
-        />
+        <div id="map-product-scan-region" className="map-product-scan-camera" />
 
         <p className="map-product-scan-status" role="status">
           {status}
@@ -241,9 +225,7 @@ export function MapRouteScanModal({
         )}
 
         <form onSubmit={handleManualSubmit}>
-          <label htmlFor="map-product-manual-code">
-            No camera? Enter SKU or product ID
-          </label>
+          <label htmlFor="map-product-manual-code">No camera? Enter SKU or product ID</label>
 
           <div className="map-product-scan-manual">
             <input
@@ -260,15 +242,11 @@ export function MapRouteScanModal({
           </div>
         </form>
 
-        <button
-          type="button"
-          className="btn-secondary map-product-scan-done"
-          onClick={onClose}
-        >
+        <button type="button" className="btn-secondary map-product-scan-done" onClick={onClose}>
           Done
         </button>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
