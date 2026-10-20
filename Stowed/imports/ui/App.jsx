@@ -9,7 +9,6 @@ import { CreateProductPage } from "./pages/CreateProductPage";
 import { ListsPage } from "./pages/ListsPage";
 import { ShoppingListDetailPage } from "./pages/ShoppingListDetailPage";
 import { QRCodesPage } from "./pages/QRCodesPage";
-import { ForecastPage } from "./pages/ForecastPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { FloorMapPage } from "./pages/FloorMapPage";
 import { FloorMapDetailPage } from "./pages/FloorMapDetailPage";
@@ -337,20 +336,6 @@ export function App() {
                   isLoggedIn ? (
                     hasClientPermission(role, "route:/qr-codes") ? (
                       <QRCodesPage />
-                    ) : (
-                      <Navigate to="/" replace />
-                    )
-                  ) : (
-                    <Navigate to="/login" replace />
-                  )
-                }
-              />
-              <Route
-                path="/forecast"
-                element={
-                  isLoggedIn ? (
-                    hasClientPermission(role, "route:/forecast") ? (
-                      <ForecastPage />
                     ) : (
                       <Navigate to="/" replace />
                     )

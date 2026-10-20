@@ -32,7 +32,6 @@ export const NAVIGATION_PAGES = {
   shopping_lists: { path: () => "/lists", permission: "route:/lists" },
   scan: { path: () => "/scan", permission: "route:/scan" },
   qr_codes: { path: () => "/qr-codes", permission: "route:/qr-codes" },
-  forecast: { path: () => "/forecast", permission: "route:/forecast" },
   alerts: { path: () => "/alerts", permission: "route:/alerts" },
   create_account: { path: () => "/register", permission: "create-users" },
   accounts: { path: () => "/accounts", permission: "route:/accounts" },

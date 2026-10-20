@@ -57,7 +57,6 @@ export const PROMPT_GROUPS = [
       "Open QR codes.",
       "Open stocktake.",
       "Open scan.",
-      "Open forecast.",
       "Open settings.",
       "Create account — opens account registration for owners.",
     ],

@@ -37,10 +37,18 @@ jobs:
   test:
     name: Run product tests (Meteor + Mocha)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Stowed/package-lock.json
 
       - name: Install Meteor 3.4.1
         run: curl https://install.meteor.com/?release=3.4.1 | sh
@@ -60,9 +68,11 @@ jobs:
         working-directory: Stowed
         run: npm ci
 
-      - name: Run product tests
+      # Runs all application tests, including the grouped floor-map suites.
+      # These tests execute on the server; a browser driver is not required.
+      - name: Run application tests including floor map
         working-directory: Stowed
-        run: npm test
+        run: npm run test:ci
         env:
           MOCHA_REPORTER: spec
 
@@ -70,8 +80,9 @@ jobs:
     name: Deploy to Galaxy (free tier)
     runs-on: ubuntu-latest
     needs: [lint, test] # only deploy if lint AND test pass
-    # Only on a direct push to main - never on PRs or on develop.
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Disabled: the live demo is shut down. To redeploy, restore the condition below.
+    # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false
     concurrency: # never run two deploys at once
       group: galaxy-deploy
       cancel-in-progress: false

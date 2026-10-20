@@ -6,7 +6,6 @@ import { act } from "react-dom/test-utils";
 import { MemoryRouter, StaticRouter } from "react-router-dom";
 import { Meteor } from "meteor/meteor";
 import { AlertsPage } from "../imports/ui/pages/AlertsPage";
-import { ForecastPage } from "../imports/ui/pages/ForecastPage";
 import { ListsPage } from "../imports/ui/pages/ListsPage";
 import { QRCodesPage } from "../imports/ui/pages/QRCodesPage";
 import { DashboardPage } from "../imports/ui/pages/DashboardPage";
@@ -181,14 +180,11 @@ describe("page rendering", function () {
 
     try {
       const alerts = renderWithRouter(React.createElement(AlertsPage));
-      const forecast = renderToStaticMarkup(React.createElement(ForecastPage));
       const lists = renderWithRouter(React.createElement(ListsPage));
       const qrCodes = renderWithRouter(React.createElement(QRCodesPage));
 
       assert.ok(alerts.includes("Stock"));
       assert.ok(alerts.includes("Alerts"));
-      assert.ok(forecast.includes("Demand"));
-      assert.ok(forecast.includes("Forecast"));
       assert.ok(lists.includes("Shopping"));
       assert.ok(lists.includes("Lists"));
       assert.ok(qrCodes.includes("QR"));
